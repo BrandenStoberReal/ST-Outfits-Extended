@@ -51,19 +51,31 @@ export class OutfitPanel {
             slotElement.querySelector('.slot-change').addEventListener('click', async () => {
                 const message = await this.outfitManager.changeOutfitItem(slot.name);
                 if (message) {
-                    // Use STscript command to send system message
-                    const { eventSource, event_types } = getContext();
-                    await eventSource.emit(event_types.COMMAND_SEND, {
-                        command: 'sys',
-                        text: message,
-                        isSystem: true
-                    });
+                    this.sendSystemMessage(message);
                     this.renderSlots();
                 }
             });
 
             slotsContainer.appendChild(slotElement);
         });
+    }
+
+    // NEW: Send system messages using the /sys command
+    sendSystemMessage(message) {
+        try {
+            const context = getContext();
+            context.sendSystemMessage(message);
+            console.log("[OutfitPanel] Sent system message:", message);
+        } catch (error) {
+            console.error("[OutfitPanel] Failed to send system message", error);
+            // Fallback to creating message manually
+            const chatInput = document.getElementById('send_textarea');
+            if (chatInput) {
+                chatInput.value = `/sys ${message}`;
+                const sendButton = document.querySelector('#send_but');
+                if (sendButton) sendButton.click();
+            }
+        }
     }
 
     formatSlotName(name) {
@@ -101,6 +113,16 @@ export class OutfitPanel {
             this.domElement.style.display = 'none';
         }
         this.isVisible = false;
+    }
+
+    // NEW: Update character name in panel
+    updateCharacter(name) {
+        this.outfitManager.setCharacter(name);
+        if (this.domElement) {
+            const header = this.domElement.querySelector('.outfit-header h3');
+            if (header) header.textContent = `${name}'s Outfit`;
+        }
+        this.renderSlots();
     }
 
     render() {
