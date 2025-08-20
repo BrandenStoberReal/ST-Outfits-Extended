@@ -1,4 +1,5 @@
-import { extension_settings } from "../../../../extensions.js";
+import { extension_settings, getContext } from "../../../../extensions.js";
+import { saveSettingsDebounced } from "../../../../script.js";
 
 export class OutfitManager {
     constructor(slots) {
@@ -50,38 +51,33 @@ export class OutfitManager {
             console.error("[OutfitManager] Variable set failed", name, value, error);
         }
     }
-
+    
     async setOutfitItem(slot, value) {
         const previousValue = this.currentValues[slot];
         const varName = this.getVarName(slot);
 
-        try {
-            // Update global variable
-            this.setGlobalVariable(varName, value);
-            this.currentValues[slot] = value;
+        // Update global variable
+        this.setGlobalVariable(varName, value);
+        this.currentValues[slot] = value;
 
-            // Generate system message
-            let message;
-            if (previousValue === 'None' && value !== 'None') {
-                message = `${this.character} put on ${value}.`;
-            } else if (value === 'None') {
-                message = `${this.character} removed ${previousValue}.`;
-            } else {
-                message = `${this.character} changed from ${previousValue} to ${value}.`;
-            }
+        // Save settings immediately since we're modifying global state
+        saveSettingsDebounced();
 
-            // Send system message
-            if (window.generateSystemMessage) {
-                window.generateSystemMessage(message, true);
-            } else {
-                console.warn("System message function not found");
-            }
-
-            return true;
-        } catch (error) {
-            console.error("[OutfitManager] Set outfit item failed", error);
-            return false;
+        // Generate system message
+        let message;
+        if (previousValue === 'None' && value !== 'None') {
+            message = `${this.character} put on ${value}.`;
+        } else if (value === 'None') {
+            message = `${this.character} removed ${previousValue}.`;
+        } else {
+            message = `${this.character} changed from ${previousValue} to ${value}.`;
         }
+
+        // CORRECTED: Use ST's slash command processor
+        const context = getContext();
+        context.executeSlashCommandImmediately(`/sys compact=true ${message}`);
+
+        return true;
     }
 
     async changeOutfitItem(slot) {
@@ -126,5 +122,31 @@ export class OutfitManager {
             value: this.currentValues[slot],
             varName: this.getVarName(slot)
         }));
+    // Initialize all slots to "None" on first use
+    ensureInitialized() {
+        let initialized = false;
+
+        this.slots.forEach(slot => {
+            const varName = this.getVarName(slot);
+            const currentValue = this.getGlobalVariable(varName);
+
+            if (currentValue === undefined || currentValue === null) {
+                this.setGlobalVariable(varName, 'None');
+                initialized = true;
+            }
+        });
+
+        if (initialized) {
+            saveSettingsDebounced();
+            this.loadOutfit(); // Refresh local values
+        }
+    }
+
+    // Call this after setting character
+    setCharacter(name) {
+        if (name === this.character) return;
+        this.character = name;
+        this.ensureInitialized(); // NEW: Initialize on character set
+        this.loadOutfit();
     }
 }
