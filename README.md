@@ -2,6 +2,8 @@
 
 *This extension lets you keep track of what is your AI character is wearing (or not wearing).*
 
+<img width="386" height="1212" alt="Image" src="https://github.com/user-attachments/assets/af3bead4-23a9-44f6-bd55-96786ba4a3cf" />
+
 ## Installation and Usage
 
 ### Installation
