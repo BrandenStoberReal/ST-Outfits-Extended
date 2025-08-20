@@ -66,12 +66,15 @@ export class OutfitPanel {
     toggle() {
         this.isVisible ? this.hide() : this.show();
     }
-
+    
     show() {
         if (!this.domElement) {
             this.domElement = this.createPanel();
-            dragElement($(this.domElement));
+            this.dragElement($(this.domElement));
         }
+
+        // NEW: Ensure initialized when panel is shown
+        this.outfitManager.ensureInitialized();
 
         this.domElement.style.display = 'block';
         this.renderSlots();
