@@ -98,14 +98,19 @@ try {
     }
 
     // Start initialization
-    $(async () => {
-        try {
-            await initializeExtension();
-            console.log("[OutfitTracker] Extension loaded successfully");
-        } catch (error) {
-            console.error("[OutfitTracker] Initialization failed", error);
-        }
-    });
+$(async () => {
+    try {
+        await initializeExtension();
+        console.log("[OutfitTracker] Extension loaded successfully");
+
+        // NEW: Initialize immediately after load
+        const charName = getCharacterName();
+        outfitManager.setCharacter(charName);
+        outfitManager.ensureInitialized();
+    } catch (error) {
+        console.error("[OutfitTracker] Initialization failed", error);
+    }
+});
 
 } catch (loadingError) {
     console.error("[OutfitTracker] Critical loading error", loadingError);
