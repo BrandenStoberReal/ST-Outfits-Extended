@@ -43,7 +43,6 @@ try {
             try {
                 const charName = getCharacterName();
                 outfitManager.setCharacter(charName);
-                // NEW: Update panel with new character
                 outfitPanel.updateCharacter(charName);
                 console.log(`[OutfitTracker] Set character: ${charName}`);
             } catch (error) {
@@ -55,10 +54,7 @@ try {
             try {
                 const { eventSource, event_types } = getContext();
                 eventSource.on(event_types.CHAT_CHANGED, updateForCurrentCharacter);
-
-                // NEW: Also update when character is changed but chat remains
                 eventSource.on(event_types.CHARACTER_CHANGED, updateForCurrentCharacter);
-
                 console.log("[OutfitTracker] Event listeners set up");
             } catch (error) {
                 console.error("[OutfitTracker] Event listener setup failed", error);
@@ -69,15 +65,46 @@ try {
             if (!extension_settings[MODULE_NAME]) {
                 extension_settings[MODULE_NAME] = {
                     autoOpen: true,
-                    position: 'right'
+                    position: 'right',
+                    enableSysMessages: true  // NEW: Default to true
                 };
             }
+        }
+
+        // NEW: Create settings UI in extensions menu
+        function createSettingsUI() {
+            const settingsHtml = `
+            <div class="outfit-extension-settings">
+                <div class="inline-drawer">
+                    <div class="inline-drawer-toggle inline-drawer-header">
+                        <b>Outfit Tracker Settings</b>
+                        <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+                    </div>
+                    <div class="inline-drawer-content">
+                        <div class="flex-container">
+                            <label for="outfit-sys-toggle">Enable system messages</label>
+                            <input type="checkbox" id="outfit-sys-toggle"
+                                   ${extension_settings[MODULE_NAME].enableSysMessages ? 'checked' : ''}>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            `;
+
+            $("#extensions_settings").append(settingsHtml);
+
+            // Event listener for toggle
+            $("#outfit-sys-toggle").on("input", function() {
+                extension_settings[MODULE_NAME].enableSysMessages = $(this).prop('checked');
+                saveSettingsDebounced();
+            });
         }
 
         initSettings();
         registerOutfitCommand();
         setupEventListeners();
         updateForCurrentCharacter();
+        createSettingsUI();  // NEW: Add settings UI
 
         if (extension_settings[MODULE_NAME].autoOpen) {
             setTimeout(() => {
