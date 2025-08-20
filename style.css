@@ -50,7 +50,7 @@
 
 .outfit-slot {
     display: flex;
-    align-items: center;
+    flex-direction: column;
     background: var(--black30a);
     border-radius: 8px;
     padding: 10px;
@@ -62,15 +62,19 @@
 }
 
 .slot-label {
-    flex: 1;
     font-weight: bold;
     text-transform: capitalize;
 }
 
 .slot-value {
-    flex: 2;
-    padding: 0 10px;
+    margin: 5px 0;
+    padding: 5px 0;
     word-break: break-word;
+}
+
+.slot-actions {
+    display: flex;
+    justify-content: flex-end;
 }
 
 .slot-change {
