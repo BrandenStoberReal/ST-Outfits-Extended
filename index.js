@@ -1,14 +1,11 @@
 import { getContext, extension_settings } from "../../../extensions.js";
 
-// Debugging setup
 console.log("[OutfitTracker] Starting extension loading...");
 
 try {
-    // Create a safe loader function
     async function initializeExtension() {
         console.log("[OutfitTracker] Importing modules...");
 
-        // Use dynamic imports for better error handling
         const { OutfitManager } = await import("./src/OutfitManager.js");
         const { OutfitPanel } = await import("./src/OutfitPanel.js");
 
@@ -23,17 +20,14 @@ try {
             'footunderwear'
         ];
 
-        // Initialize manager and panel
         const outfitManager = new OutfitManager(SLOTS);
         const outfitPanel = new OutfitPanel(outfitManager);
 
-        // Get current character
         function getCharacterName() {
             const context = getContext();
             return context.characters[context.characterId]?.name || 'Unknown';
         }
 
-        // Register panel toggle command
         function registerOutfitCommand() {
             try {
                 const { registerSlashCommand } = SillyTavern.getContext();
@@ -45,30 +39,32 @@ try {
             }
         }
 
-        // Initialize for current character
         function updateForCurrentCharacter() {
             try {
                 const charName = getCharacterName();
                 outfitManager.setCharacter(charName);
-                outfitPanel.render();
+                // NEW: Update panel with new character
+                outfitPanel.updateCharacter(charName);
                 console.log(`[OutfitTracker] Set character: ${charName}`);
             } catch (error) {
                 console.error("[OutfitTracker] Character update failed", error);
             }
         }
 
-        // Set up event listeners
         function setupEventListeners() {
             try {
                 const { eventSource, event_types } = getContext();
                 eventSource.on(event_types.CHAT_CHANGED, updateForCurrentCharacter);
+
+                // NEW: Also update when character is changed but chat remains
+                eventSource.on(event_types.CHARACTER_CHANGED, updateForCurrentCharacter);
+
                 console.log("[OutfitTracker] Event listeners set up");
             } catch (error) {
                 console.error("[OutfitTracker] Event listener setup failed", error);
             }
         }
 
-        // Initialize settings
         function initSettings() {
             if (!extension_settings[MODULE_NAME]) {
                 extension_settings[MODULE_NAME] = {
@@ -78,13 +74,11 @@ try {
             }
         }
 
-        // Run initialization sequence
         initSettings();
         registerOutfitCommand();
         setupEventListeners();
         updateForCurrentCharacter();
 
-        // Auto-open if enabled
         if (extension_settings[MODULE_NAME].autoOpen) {
             setTimeout(() => {
                 try {
@@ -97,7 +91,6 @@ try {
         }
     }
 
-    // Start initialization
     $(async () => {
         try {
             await initializeExtension();
