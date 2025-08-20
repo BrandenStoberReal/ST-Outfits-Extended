@@ -23,14 +23,6 @@ export class OutfitManager {
         return `${this.character.replace(/\s+/g, '_')}_${slot}`;
     }
 
-    loadOutfit() {
-        this.slots.forEach(slot => {
-            const varName = this.getVarName(slot);
-            const value = this.getGlobalVariable(varName) || 'None';
-            this.currentValues[slot] = value;
-        });
-    }
-
     getGlobalVariable(name) {
         return window[name] ||
                (extension_settings.variables?.global?.[name] || 'None');
@@ -49,6 +41,20 @@ export class OutfitManager {
         } catch (error) {
             console.error("[OutfitManager] Variable set failed", name, value, error);
         }
+    }
+
+    loadOutfit() {
+        this.slots.forEach(slot => {
+            const varName = this.getVarName(slot);
+            let value = this.getGlobalVariable(varName);
+
+            // Initialize to 'None' if doesn't exist
+            if (value === 'None' || !extension_settings.variables?.global?.[varName]) {
+                this.setGlobalVariable(varName, 'None');
+            }
+
+            this.currentValues[slot] = value;
+        });
     }
 
     async setOutfitItem(slot, value) {
@@ -70,17 +76,10 @@ export class OutfitManager {
                 message = `${this.character} changed from ${previousValue} to ${value}.`;
             }
 
-            // Send system message
-            if (window.generateSystemMessage) {
-                window.generateSystemMessage(message, true);
-            } else {
-                console.warn("System message function not found");
-            }
-
-            return true;
+            return message;
         } catch (error) {
             console.error("[OutfitManager] Set outfit item failed", error);
-            return false;
+            return null;
         }
     }
 
@@ -92,7 +91,7 @@ export class OutfitManager {
             if (currentValue === 'None') {
                 // Wear something
                 newValue = prompt(`What is ${this.character} wearing on their ${slot}?`, "");
-                if (newValue === null) return false; // User canceled
+                if (newValue === null) return null; // User canceled
             } else {
                 // Remove or replace
                 const choice = prompt(
@@ -101,7 +100,7 @@ export class OutfitManager {
                     ""
                 );
 
-                if (choice === null) return false; // User canceled
+                if (choice === null) return null; // User canceled
 
                 if (choice.toLowerCase() === 'remove') {
                     newValue = 'None';
@@ -113,10 +112,10 @@ export class OutfitManager {
             if (newValue !== currentValue) {
                 return this.setOutfitItem(slot, newValue);
             }
-            return false;
+            return null;
         } catch (error) {
             console.error("[OutfitManager] Change outfit failed", error);
-            return false;
+            return null;
         }
     }
 
