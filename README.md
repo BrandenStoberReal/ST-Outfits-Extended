@@ -29,6 +29,8 @@ Add this section into your Character Description or Author's Notes or World Info
 
 If you want system messages to appear after changing clothes, enable system messages option under "Extensions -> Outfit Tracker Settings"
 
+If you want to remove a clothing, enter "remove" or "None" as clothing name.
+
 ## License
 
 Creative Commons Zero
