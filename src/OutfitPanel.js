@@ -72,7 +72,7 @@ export class OutfitPanel {
                 return;
             }
 
-            chatInput.value = `/sys ${message}`;
+            chatInput.value = `/sys compact=true ${message}`;
 
             const sendButton = document.querySelector('#send_but');
             if (sendButton) {
