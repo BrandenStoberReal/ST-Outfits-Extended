@@ -23,6 +23,14 @@ export class OutfitManager {
         return `${this.character.replace(/\s+/g, '_')}_${slot}`;
     }
 
+    loadOutfit() {
+        this.slots.forEach(slot => {
+            const varName = this.getVarName(slot);
+            const value = this.getGlobalVariable(varName) || 'None';
+            this.currentValues[slot] = value;
+        });
+    }
+
     getGlobalVariable(name) {
         return window[name] ||
                (extension_settings.variables?.global?.[name] || 'None');
@@ -41,20 +49,6 @@ export class OutfitManager {
         } catch (error) {
             console.error("[OutfitManager] Variable set failed", name, value, error);
         }
-    }
-
-    loadOutfit() {
-        this.slots.forEach(slot => {
-            const varName = this.getVarName(slot);
-            let value = this.getGlobalVariable(varName);
-
-            // Initialize to 'None' if doesn't exist
-            if (value === 'None' || !extension_settings.variables?.global?.[varName]) {
-                this.setGlobalVariable(varName, 'None');
-            }
-
-            this.currentValues[slot] = value;
-        });
     }
 
     async setOutfitItem(slot, value) {
