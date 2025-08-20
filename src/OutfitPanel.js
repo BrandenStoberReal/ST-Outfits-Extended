@@ -1,3 +1,5 @@
+import { getContext } from "../../../../extensions.js";
+
 export class OutfitPanel {
     constructor(outfitManager) {
         this.outfitManager = outfitManager;
@@ -46,10 +48,18 @@ export class OutfitPanel {
                 </div>
             `;
 
-            slotElement.querySelector('.slot-change').addEventListener('click', () => {
-                this.outfitManager.changeOutfitItem(slot.name).then(updated => {
-                    if (updated) this.renderSlots();
-                });
+            slotElement.querySelector('.slot-change').addEventListener('click', async () => {
+                const message = await this.outfitManager.changeOutfitItem(slot.name);
+                if (message) {
+                    // Use STscript command to send system message
+                    const { eventSource, event_types } = getContext();
+                    await eventSource.emit(event_types.COMMAND_SEND, {
+                        command: 'sys',
+                        text: message,
+                        isSystem: true
+                    });
+                    this.renderSlots();
+                }
             });
 
             slotsContainer.appendChild(slotElement);
