@@ -8,7 +8,12 @@
 
 ### Installation
 
-*Install using ST's inbuilt extension installer.* 
+Open *Extensions*
+
+Click *Install Extension*
+
+Write `https://github.com/lannashelton/ST-Outfits/` into the git url text field
+
 
 ### Usage
 
