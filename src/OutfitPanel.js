@@ -1,3 +1,5 @@
+import { extension_settings } from "../../../../extensions.js";
+
 export class OutfitPanel {
     constructor(outfitManager) {
         this.outfitManager = outfitManager;
@@ -49,7 +51,10 @@ export class OutfitPanel {
             slotElement.querySelector('.slot-change').addEventListener('click', async () => {
                 const message = await this.outfitManager.changeOutfitItem(slot.name);
                 if (message) {
-                    this.sendSystemMessage(message);
+                    // NEW: Check if system messages are enabled
+                    if (extension_settings.outfit_tracker?.enableSysMessages !== false) {
+                        this.sendSystemMessage(message);
+                    }
                     this.renderSlots();
                 }
             });
@@ -58,26 +63,22 @@ export class OutfitPanel {
         });
     }
 
-    // SAFE SYSTEM MESSAGE SENDING (without breaking UI)
+    // SAFE SYSTEM MESSAGE SENDING
     sendSystemMessage(message) {
         try {
-            // Use native ST command input method
             const chatInput = document.getElementById('send_textarea');
             if (!chatInput) {
                 console.warn("Couldn't find chat input element");
                 return;
             }
 
-            // Set the command
             chatInput.value = `/sys ${message}`;
 
-            // Find the send button
             const sendButton = document.querySelector('#send_but');
             if (sendButton) {
                 sendButton.click();
             } else {
                 console.warn("Couldn't find send button");
-                // Fallback: simulate Enter key press
                 const event = new KeyboardEvent('keydown', {
                     key: 'Enter',
                     code: 'Enter',
@@ -111,7 +112,6 @@ export class OutfitPanel {
         this.renderSlots();
         this.isVisible = true;
 
-        // Add event listeners
         this.domElement.querySelector('#outfit-refresh').addEventListener('click', () => {
             this.outfitManager.loadOutfit();
             this.renderSlots();
@@ -143,7 +143,7 @@ export class OutfitPanel {
     }
 }
 
-// Dragging functionality (simplified)
+// Dragging functionality
 function dragElement(element) {
     let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
     const header = element.find('.outfit-header')[0];
