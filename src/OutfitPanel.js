@@ -1,4 +1,3 @@
-// src/OutfitPanel.js
 export class OutfitPanel {
     constructor(outfitManager) {
         this.outfitManager = outfitManager;
@@ -39,12 +38,9 @@ export class OutfitPanel {
             slotElement.className = 'outfit-slot';
             slotElement.dataset.slot = slot.name;
 
-            // Updated layout - value below slot name
             slotElement.innerHTML = `
-                <div class="slot-info">
-                    <div class="slot-label">${this.formatSlotName(slot.name)}</div>
-                    <div class="slot-value">${slot.value}</div>
-                </div>
+                <div class="slot-label">${this.formatSlotName(slot.name)}</div>
+                <div class="slot-value">${slot.value}</div>
                 <div class="slot-actions">
                     <button class="slot-change">Change</button>
                 </div>
