@@ -90,3 +90,19 @@
     background: var(--SmartThemeBodyColor);
     color: var(--SmartThemeBodyBgColor);
 }
+
+/* NEW: Settings UI styles */
+.outfit-extension-settings {
+    margin: 10px 0;
+}
+
+.outfit-extension-settings .flex-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 5px;
+}
+
+.outfit-extension-settings label {
+    flex-grow: 1;
+}
