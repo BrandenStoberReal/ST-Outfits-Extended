@@ -27,6 +27,8 @@ Add this section into your Character Description or Author's Notes or World Info
 **Foot Underwear:** {{getglobalvar::<BOT>_footunderwear}}
 ```
 
+If you want system messages to appear after changing clothes, enable system messages option under "Extensions -> Outfit Tracker Settings"
+
 ## License
 
 Creative Commons Zero
