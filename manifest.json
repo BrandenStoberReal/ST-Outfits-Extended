@@ -1,0 +1,9 @@
+{
+    "display_name": "ST-Outfits",
+    "author": "Lucanna",
+    "version": "1.0.0",
+    "homePage": "https://github.com/lannashelton/ST-Outfits",
+    "js": "index.js",
+    "css": "style.css",
+    "loading_order": 15
+}
