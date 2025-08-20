@@ -1,5 +1,3 @@
-import { getContext } from "../../../../extensions.js";
-
 export class OutfitPanel {
     constructor(outfitManager) {
         this.outfitManager = outfitManager;
@@ -60,21 +58,35 @@ export class OutfitPanel {
         });
     }
 
-    // NEW: Send system messages using the /sys command
+    // SAFE SYSTEM MESSAGE SENDING (without breaking UI)
     sendSystemMessage(message) {
         try {
-            const context = getContext();
-            context.sendSystemMessage(message);
-            console.log("[OutfitPanel] Sent system message:", message);
-        } catch (error) {
-            console.error("[OutfitPanel] Failed to send system message", error);
-            // Fallback to creating message manually
+            // Use native ST command input method
             const chatInput = document.getElementById('send_textarea');
-            if (chatInput) {
-                chatInput.value = `/sys ${message}`;
-                const sendButton = document.querySelector('#send_but');
-                if (sendButton) sendButton.click();
+            if (!chatInput) {
+                console.warn("Couldn't find chat input element");
+                return;
             }
+
+            // Set the command
+            chatInput.value = `/sys ${message}`;
+
+            // Find the send button
+            const sendButton = document.querySelector('#send_but');
+            if (sendButton) {
+                sendButton.click();
+            } else {
+                console.warn("Couldn't find send button");
+                // Fallback: simulate Enter key press
+                const event = new KeyboardEvent('keydown', {
+                    key: 'Enter',
+                    code: 'Enter',
+                    bubbles: true
+                });
+                chatInput.dispatchEvent(event);
+            }
+        } catch (error) {
+            console.error("Failed to send system message:", error);
         }
     }
 
@@ -115,7 +127,6 @@ export class OutfitPanel {
         this.isVisible = false;
     }
 
-    // NEW: Update character name in panel
     updateCharacter(name) {
         this.outfitManager.setCharacter(name);
         if (this.domElement) {
