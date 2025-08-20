@@ -1,12 +1,14 @@
-// index.js
 import { getContext, extension_settings } from "../../../extensions.js";
 
 // Debugging setup
 console.log("[OutfitTracker] Starting extension loading...");
 
 try {
+    // Create a safe loader function
     async function initializeExtension() {
         console.log("[OutfitTracker] Importing modules...");
+
+        // Use dynamic imports for better error handling
         const { OutfitManager } = await import("./src/OutfitManager.js");
         const { OutfitPanel } = await import("./src/OutfitPanel.js");
 
@@ -21,17 +23,20 @@ try {
             'footunderwear'
         ];
 
+        // Initialize manager and panel
         const outfitManager = new OutfitManager(SLOTS);
         const outfitPanel = new OutfitPanel(outfitManager);
 
+        // Get current character
         function getCharacterName() {
             const context = getContext();
             return context.characters[context.characterId]?.name || 'Unknown';
         }
 
+        // Register panel toggle command
         function registerOutfitCommand() {
             try {
-                const { registerSlashCommand } = getContext();
+                const { registerSlashCommand } = SillyTavern.getContext();
                 registerSlashCommand('outfit', () => outfitPanel.toggle(),
                     [], 'Toggle outfit tracker panel', true, true);
                 console.log("[OutfitTracker] Slash command registered");
@@ -40,6 +45,7 @@ try {
             }
         }
 
+        // Initialize for current character
         function updateForCurrentCharacter() {
             try {
                 const charName = getCharacterName();
@@ -51,6 +57,7 @@ try {
             }
         }
 
+        // Set up event listeners
         function setupEventListeners() {
             try {
                 const { eventSource, event_types } = getContext();
@@ -61,6 +68,7 @@ try {
             }
         }
 
+        // Initialize settings
         function initSettings() {
             if (!extension_settings[MODULE_NAME]) {
                 extension_settings[MODULE_NAME] = {
@@ -70,11 +78,13 @@ try {
             }
         }
 
+        // Run initialization sequence
         initSettings();
         registerOutfitCommand();
         setupEventListeners();
         updateForCurrentCharacter();
 
+        // Auto-open if enabled
         if (extension_settings[MODULE_NAME].autoOpen) {
             setTimeout(() => {
                 try {
@@ -87,6 +97,7 @@ try {
         }
     }
 
+    // Start initialization
     $(async () => {
         try {
             await initializeExtension();
