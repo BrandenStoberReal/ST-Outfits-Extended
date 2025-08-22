@@ -13,18 +13,20 @@ export class BotOutfitPanel {
         panel.id = 'bot-outfit-panel';
         panel.className = 'outfit-panel';
 
-        panel.innerHTML = `
-            <div class="outfit-header">
-                <h3>${this.outfitManager.character}'s Outfit</h3>
-                <div class="outfit-actions">
-                    <span class="outfit-action" id="bot-outfit-refresh">↻</span>
-                    <span class="outfit-action" id="bot-outfit-close">×</span>
+        if (!this.domElement) {
+            panel.innerHTML = `
+                <div class="outfit-header">
+                    <h3>${this.outfitManager.character}'s Outfit</h3>
+                    <div class="outfit-actions">
+                        <span class="outfit-action" id="bot-outfit-refresh">↻</span>
+                        <span class="outfit-action" id="bot-outfit-close">×</span>
+                    </div>
                 </div>
-            </div>
-            <div class="outfit-slots"></div>
-        `;
+                <div class="outfit-slots"></div>
+            `;
 
-        document.body.appendChild(panel);
+            document.body.appendChild(panel);
+        }
         return panel;
     }
 
@@ -32,6 +34,8 @@ export class BotOutfitPanel {
         if (!this.domElement) return;
 
         const slotsContainer = this.domElement.querySelector('.outfit-slots');
+        if (!slotsContainer) return;
+        
         slotsContainer.innerHTML = '';
         const outfitData = this.outfitManager.getOutfitData();
 
@@ -89,25 +93,27 @@ export class BotOutfitPanel {
     }
 
     show() {
-        if (!this.domElement) {
-            this.domElement = this.createPanel();
-            dragElement($(this.domElement));
-        }
-
+        this.domElement = this.createPanel();
         this.domElement.style.display = 'block';
         this.renderSlots();
         this.isVisible = true;
 
-        this.domElement.querySelector('#bot-outfit-refresh').addEventListener('click', () => {
-            this.outfitManager.loadOutfit();
-            this.renderSlots();
-        });
+        if (this.domElement) {
+            dragElement($(this.domElement));
+            
+            this.domElement.querySelector('#bot-outfit-refresh')?.addEventListener('click', () => {
+                this.outfitManager.loadOutfit();
+                this.renderSlots();
+            });
 
-        this.domElement.querySelector('#bot-outfit-close').addEventListener('click', () => this.hide());
+            this.domElement.querySelector('#bot-outfit-close')?.addEventListener('click', () => this.hide());
+        }
     }
 
     hide() {
-        if (this.domElement) this.domElement.style.display = 'none';
+        if (this.domElement) {
+            this.domElement.style.display = 'none';
+        }
         this.isVisible = false;
     }
 
