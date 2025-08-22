@@ -59,18 +59,25 @@ export class UserOutfitPanel {
         });
     }
 
+    // Fixed to use correct system message format
     sendSystemMessage(message) {
         try {
             const chatInput = document.getElementById('send_textarea');
             if (!chatInput) return;
-            chatInput.value = message;
+            // Prepend /sys command for proper system message
+            chatInput.value = `/sys ${message}`;
             
-            const event = new KeyboardEvent('keydown', {
-                key: 'Enter',
-                code: 'Enter',
-                bubbles: true
-            });
-            chatInput.dispatchEvent(event);
+            const sendButton = document.querySelector('#send_but');
+            if (sendButton) {
+                sendButton.click();
+            } else {
+                const event = new KeyboardEvent('keydown', {
+                    key: 'Enter',
+                    code: 'Enter',
+                    bubbles: true
+                });
+                chatInput.dispatchEvent(event);
+            }
         } catch (error) {
             console.error("Failed to send system message:", error);
         }
