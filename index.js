@@ -15,7 +15,6 @@ async function initializeExtension() {
         'footunderwear'
     ];
 
-    const context = getContext();
     const { BotOutfitManager } = await import("./src/BotOutfitManager.js");
     const { BotOutfitPanel } = await import("./src/BotOutfitPanel.js");
     const { UserOutfitManager } = await import("./src/UserOutfitManager.js");
@@ -26,25 +25,29 @@ async function initializeExtension() {
     const botPanel = new BotOutfitPanel(botManager);
     const userPanel = new UserOutfitPanel(userManager);
     
-    // Corrected slash command registration
     function registerOutfitCommands() {
         const { registerSlashCommand } = SillyTavern.getContext();
         
-        // Register commands without spaces in names
-        registerSlashCommand('outfit-bot', () => botPanel.toggle(),
-            [], 'Toggle character outfit tracker', true, true);
+        registerSlashCommand('outfit-bot', () => {
+            console.log("Bot Outfit command triggered");
+            botPanel.toggle();
+        }, [], 'Toggle character outfit tracker', true, true);
             
-        registerSlashCommand('outfit-user', () => userPanel.toggle(),
-            [], 'Toggle user outfit tracker', true, true);
+        registerSlashCommand('outfit-user', () => {
+            console.log("User Outfit command triggered");
+            userPanel.toggle();
+        }, [], 'Toggle user outfit tracker', true, true);
     }
 
     function updateForCurrentCharacter() {
+        const context = getContext();
         const charName = context.characters[context.characterId]?.name || 'Unknown';
         botManager.setCharacter(charName);
         botPanel.updateCharacter(charName);
     }
 
     function setupEventListeners() {
+        const context = getContext();
         const { eventSource, event_types } = context;
         eventSource.on(event_types.CHAT_CHANGED, updateForCurrentCharacter);
         eventSource.on(event_types.CHARACTER_CHANGED, updateForCurrentCharacter);
