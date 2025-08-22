@@ -1,4 +1,5 @@
 import { getContext, extension_settings } from "../../../extensions.js";
+import { saveSettingsDebounced } from "../../../../script.js";
 
 console.log("[OutfitTracker] Starting extension loading...");
 
@@ -25,13 +26,15 @@ async function initializeExtension() {
     const botPanel = new BotOutfitPanel(botManager);
     const userPanel = new UserOutfitPanel(userManager);
     
+    // Corrected slash command registration
     function registerOutfitCommands() {
         const { registerSlashCommand } = SillyTavern.getContext();
         
-        registerSlashCommand('outfit bot', () => botPanel.toggle(),
+        // Register commands without spaces in names
+        registerSlashCommand('outfit-bot', () => botPanel.toggle(),
             [], 'Toggle character outfit tracker', true, true);
             
-        registerSlashCommand('outfit user', () => userPanel.toggle(),
+        registerSlashCommand('outfit-user', () => userPanel.toggle(),
             [], 'Toggle user outfit tracker', true, true);
     }
 
