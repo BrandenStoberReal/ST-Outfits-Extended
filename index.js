@@ -2,131 +2,129 @@ import { getContext, extension_settings } from "../../../extensions.js";
 
 console.log("[OutfitTracker] Starting extension loading...");
 
-try {
-    async function initializeExtension() {
-        console.log("[OutfitTracker] Importing modules...");
+async function initializeExtension() {
+    const MODULE_NAME = 'outfit_tracker';
+    const SLOTS = [
+        'headwear',
+        'topwear',
+        'topunderwear',
+        'bottomwear',
+        'bottomunderwear',
+        'footwear',
+        'footunderwear'
+    ];
 
-        const { OutfitManager } = await import("./src/OutfitManager.js");
-        const { OutfitPanel } = await import("./src/OutfitPanel.js");
+    const context = getContext();
+    const { BotOutfitManager } = await import("./src/BotOutfitManager.js");
+    const { BotOutfitPanel } = await import("./src/BotOutfitPanel.js");
+    const { UserOutfitManager } = await import("./src/UserOutfitManager.js");
+    const { UserOutfitPanel } = await import("./src/UserOutfitPanel.js");
+    
+    const botManager = new BotOutfitManager(SLOTS);
+    const userManager = new UserOutfitManager(SLOTS);
+    const botPanel = new BotOutfitPanel(botManager);
+    const userPanel = new UserOutfitPanel(userManager);
+    
+    function registerOutfitCommands() {
+        const { registerSlashCommand } = SillyTavern.getContext();
+        
+        registerSlashCommand('outfit bot', () => botPanel.toggle(),
+            [], 'Toggle character outfit tracker', true, true);
+            
+        registerSlashCommand('outfit user', () => userPanel.toggle(),
+            [], 'Toggle user outfit tracker', true, true);
+    }
 
-        const MODULE_NAME = 'outfit_tracker';
-        const SLOTS = [
-            'headwear',
-            'topwear',
-            'topunderwear',
-            'bottomwear',
-            'bottomunderwear',
-            'footwear',
-            'footunderwear'
-        ];
+    function updateForCurrentCharacter() {
+        const charName = context.characters[context.characterId]?.name || 'Unknown';
+        botManager.setCharacter(charName);
+        botPanel.updateCharacter(charName);
+    }
 
-        const outfitManager = new OutfitManager(SLOTS);
-        const outfitPanel = new OutfitPanel(outfitManager);
+    function setupEventListeners() {
+        const { eventSource, event_types } = context;
+        eventSource.on(event_types.CHAT_CHANGED, updateForCurrentCharacter);
+        eventSource.on(event_types.CHARACTER_CHANGED, updateForCurrentCharacter);
+    }
 
-        function getCharacterName() {
-            const context = getContext();
-            return context.characters[context.characterId]?.name || 'Unknown';
-        }
-
-        function registerOutfitCommand() {
-            try {
-                const { registerSlashCommand } = SillyTavern.getContext();
-                registerSlashCommand('outfit', () => outfitPanel.toggle(),
-                    [], 'Toggle outfit tracker panel', true, true);
-                console.log("[OutfitTracker] Slash command registered");
-            } catch (error) {
-                console.error("[OutfitTracker] Command registration failed", error);
-            }
-        }
-
-        function updateForCurrentCharacter() {
-            try {
-                const charName = getCharacterName();
-                outfitManager.setCharacter(charName);
-                outfitPanel.updateCharacter(charName);
-                console.log(`[OutfitTracker] Set character: ${charName}`);
-            } catch (error) {
-                console.error("[OutfitTracker] Character update failed", error);
-            }
-        }
-
-        function setupEventListeners() {
-            try {
-                const { eventSource, event_types } = getContext();
-                eventSource.on(event_types.CHAT_CHANGED, updateForCurrentCharacter);
-                eventSource.on(event_types.CHARACTER_CHANGED, updateForCurrentCharacter);
-                console.log("[OutfitTracker] Event listeners set up");
-            } catch (error) {
-                console.error("[OutfitTracker] Event listener setup failed", error);
-            }
-        }
-
-        function initSettings() {
-            if (!extension_settings[MODULE_NAME]) {
-                extension_settings[MODULE_NAME] = {
-                    autoOpen: true,
-                    position: 'right',
-                    enableSysMessages: true  // NEW: Default to true
-                };
-            }
-        }
-
-        // NEW: Create settings UI in extensions menu
-        function createSettingsUI() {
-            const settingsHtml = `
-            <div class="outfit-extension-settings">
-                <div class="inline-drawer">
-                    <div class="inline-drawer-toggle inline-drawer-header">
-                        <b>Outfit Tracker Settings</b>
-                        <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
-                    </div>
-                    <div class="inline-drawer-content">
-                        <div class="flex-container">
-                            <label for="outfit-sys-toggle">Enable system messages</label>
-                            <input type="checkbox" id="outfit-sys-toggle"
-                                   ${extension_settings[MODULE_NAME].enableSysMessages ? 'checked' : ''}>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            `;
-
-            $("#extensions_settings").append(settingsHtml);
-
-            // Event listener for toggle
-            $("#outfit-sys-toggle").on("input", function() {
-                extension_settings[MODULE_NAME].enableSysMessages = $(this).prop('checked');
-                saveSettingsDebounced();
-            });
-        }
-
-        initSettings();
-        registerOutfitCommand();
-        setupEventListeners();
-        updateForCurrentCharacter();
-        createSettingsUI();  // NEW: Add settings UI
-
-        if (extension_settings[MODULE_NAME].autoOpen) {
-            setTimeout(() => {
-                try {
-                    outfitPanel.show();
-                    console.log("[OutfitTracker] Panel auto-opened");
-                } catch (error) {
-                    console.error("[OutfitTracker] Auto-open failed", error);
-                }
-            }, 1000);
+    function initSettings() {
+        if (!extension_settings[MODULE_NAME]) {
+            extension_settings[MODULE_NAME] = {
+                autoOpenBot: true,
+                autoOpenUser: false,
+                position: 'right',
+                enableSysMessages: true
+            };
         }
     }
 
-    $(async () => {
-        try {
-            await initializeExtension();
-            console.log("[OutfitTracker] Extension loaded successfully");
-        } catch (error) {
-            console.error("[OutfitTracker] Initialization failed", error);
-        }
-    });
+    function createSettingsUI() {
+        const settingsHtml = `
+        <div class="outfit-extension-settings">
+            <div class="inline-drawer">
+                <div class="inline-drawer-toggle inline-drawer-header">
+                    <b>Outfit Tracker Settings</b>
+                    <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+                </div>
+                <div class="inline-drawer-content">
+                    <div class="flex-container">
+                        <label for="outfit-sys-toggle">Enable system messages</label>
+                        <input type="checkbox" id="outfit-sys-toggle"
+                                ${extension_settings[MODULE_NAME].enableSysMessages ? 'checked' : ''}>
+                    </div>
+                    <div class="flex-container">
+                        <label for="outfit-auto-bot">Auto-open character panel</label>
+                        <input type="checkbox" id="outfit-auto-bot"
+                                ${extension_settings[MODULE_NAME].autoOpenBot ? 'checked' : ''}>
+                    </div>
+                    <div class="flex-container">
+                        <label for="outfit-auto-user">Auto-open user panel</label>
+                        <input type="checkbox" id="outfit-auto-user"
+                                ${extension_settings[MODULE_NAME].autoOpenUser ? 'checked' : ''}>
+                    </div>
+                </div>
+            </div>
+        </div>
+        `;
 
-} catch (loadingError) {
-    console.error("[OutfitTracker] Critical loading error", loadingError);
+        $("#extensions_settings").append(settingsHtml);
+
+        $("#outfit-sys-toggle").on("input", function() {
+            extension_settings[MODULE_NAME].enableSysMessages = $(this).prop('checked');
+            saveSettingsDebounced();
+        });
+        
+        $("#outfit-auto-bot").on("input", function() {
+            extension_settings[MODULE_NAME].autoOpenBot = $(this).prop('checked');
+            saveSettingsDebounced();
+        });
+        
+        $("#outfit-auto-user").on("input", function() {
+            extension_settings[MODULE_NAME].autoOpenUser = $(this).prop('checked');
+            saveSettingsDebounced();
+        });
+    }
+
+    initSettings();
+    registerOutfitCommands();
+    setupEventListeners();
+    updateForCurrentCharacter();
+    createSettingsUI();
+
+    if (extension_settings[MODULE_NAME].autoOpenBot) {
+        setTimeout(() => botPanel.show(), 1000);
+    }
+    
+    if (extension_settings[MODULE_NAME].autoOpenUser) {
+        setTimeout(() => userPanel.show(), 1000);
+    }
 }
+
+$(async () => {
+    try {
+        await initializeExtension();
+        console.log("[OutfitTracker] Extension loaded successfully");
+    } catch (error) {
+        console.error("[OutfitTracker] Initialization failed", error);
+    }
+});
