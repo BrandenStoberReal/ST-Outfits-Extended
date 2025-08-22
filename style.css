@@ -43,29 +43,38 @@
 .outfit-slots {
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    gap: 8px;
 }
 
 .outfit-slot {
     display: flex;
-    align-items: center;
-    padding: 5px;
+    flex-direction: column;
+    padding: 8px;
     background: var(--background);
     border: 1px solid var(--border-color-1);
     border-radius: 5px;
 }
 
 .slot-label {
-    flex: 1;
     font-weight: bold;
-    padding-right: 5px;
+    margin-bottom: 5px;
 }
 
 .slot-value {
-    flex: 2;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    margin-bottom: 8px;
+    padding: 5px;
+    background: var(--body-background-alt);
+    border-radius: 4px;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    white-space: normal;
+    max-height: 100px;
+    overflow-y: auto;
+}
+
+.slot-actions {
+    display: flex;
+    justify-content: flex-end;
 }
 
 .slot-actions button {
@@ -73,8 +82,9 @@
     color: var(--button-text-color);
     border: none;
     border-radius: 3px;
-    padding: 4px 8px;
+    padding: 5px 10px;
     cursor: pointer;
+    font-size: 0.9em;
 }
 
 .slot-actions button:hover {
