@@ -37,20 +37,20 @@ export class UserOutfitPanel {
         
         slotsContainer.innerHTML = '';
         const outfitData = this.outfitManager.getOutfitData();
-
+    
         outfitData.forEach(slot => {
             const slotElement = document.createElement('div');
             slotElement.className = 'outfit-slot';
             slotElement.dataset.slot = slot.name;
-
+    
             slotElement.innerHTML = `
                 <div class="slot-label">${this.formatSlotName(slot.name)}</div>
-                <div class="slot-value">${slot.value}</div>
+                <div class="slot-value" title="${slot.value}">${slot.value}</div>
                 <div class="slot-actions">
                     <button class="slot-change">Change</button>
                 </div>
             `;
-
+    
             slotElement.querySelector('.slot-change').addEventListener('click', async () => {
                 const message = await this.outfitManager.changeOutfitItem(slot.name);
                 if (message && extension_settings.outfit_tracker?.enableSysMessages) {
@@ -58,7 +58,7 @@ export class UserOutfitPanel {
                 }
                 this.renderSlots();
             });
-
+    
             slotsContainer.appendChild(slotElement);
         });
     }
