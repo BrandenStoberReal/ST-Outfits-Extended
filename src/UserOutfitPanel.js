@@ -13,24 +13,28 @@ export class UserOutfitPanel {
         panel.id = 'user-outfit-panel';
         panel.className = 'outfit-panel';
 
-        panel.innerHTML = `
-            <div class="outfit-header">
-                <h3>Your Outfit</h3>
-                <div class="outfit-actions">
-                    <span class="outfit-action" id="user-outfit-refresh">↻</span>
-                    <span class="outfit-action" id="user-outfit-close">×</span>
+        if (!this.domElement) {
+            panel.innerHTML = `
+                <div class="outfit-header">
+                    <h3>Your Outfit</h3>
+                    <div class="outfit-actions">
+                        <span class="outfit-action" id="user-outfit-refresh">↻</span>
+                        <span class="outfit-action" id="user-outfit-close">×</span>
+                    </div>
                 </div>
-            </div>
-            <div class="outfit-slots"></div>
-        `;
+                <div class="outfit-slots"></div>
+            `;
 
-        document.body.appendChild(panel);
+            document.body.appendChild(panel);
+        }
         return panel;
     }
 
     renderSlots() {
         if (!this.domElement) return;
         const slotsContainer = this.domElement.querySelector('.outfit-slots');
+        if (!slotsContainer) return;
+        
         slotsContainer.innerHTML = '';
         const outfitData = this.outfitManager.getOutfitData();
 
@@ -59,12 +63,10 @@ export class UserOutfitPanel {
         });
     }
 
-    // Fixed to use correct system message format
     sendSystemMessage(message) {
         try {
             const chatInput = document.getElementById('send_textarea');
             if (!chatInput) return;
-            // Prepend /sys command for proper system message
             chatInput.value = `/sys ${message}`;
             
             const sendButton = document.querySelector('#send_but');
@@ -95,25 +97,27 @@ export class UserOutfitPanel {
     }
 
     show() {
-        if (!this.domElement) {
-            this.domElement = this.createPanel();
-            dragElement($(this.domElement));
-        }
-
+        this.domElement = this.createPanel();
         this.domElement.style.display = 'block';
         this.renderSlots();
         this.isVisible = true;
 
-        this.domElement.querySelector('#user-outfit-refresh').addEventListener('click', () => {
-            this.outfitManager.loadOutfit();
-            this.renderSlots();
-        });
+        if (this.domElement) {
+            dragElement($(this.domElement));
+            
+            this.domElement.querySelector('#user-outfit-refresh')?.addEventListener('click', () => {
+                this.outfitManager.loadOutfit();
+                this.renderSlots();
+            });
 
-        this.domElement.querySelector('#user-outfit-close').addEventListener('click', () => this.hide());
+            this.domElement.querySelector('#user-outfit-close')?.addEventListener('click', () => this.hide());
+        }
     }
 
     hide() {
-        if (this.domElement) this.domElement.style.display = 'none';
+        if (this.domElement) {
+            this.domElement.style.display = 'none';
+        }
         this.isVisible = false;
     }
 }
