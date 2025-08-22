@@ -1,6 +1,7 @@
 import { extension_settings } from "../../../../extensions.js";
+import { dragElement } from './shared.js';
 
-export class OutfitPanel {
+export class BotOutfitPanel {
     constructor(outfitManager) {
         this.outfitManager = outfitManager;
         this.isVisible = false;
@@ -9,15 +10,15 @@ export class OutfitPanel {
 
     createPanel() {
         const panel = document.createElement('div');
-        panel.id = 'outfit-panel';
+        panel.id = 'bot-outfit-panel';
         panel.className = 'outfit-panel';
 
         panel.innerHTML = `
             <div class="outfit-header">
                 <h3>${this.outfitManager.character}'s Outfit</h3>
                 <div class="outfit-actions">
-                    <span class="outfit-action" id="outfit-refresh">↻</span>
-                    <span class="outfit-action" id="outfit-close">×</span>
+                    <span class="outfit-action" id="bot-outfit-refresh">↻</span>
+                    <span class="outfit-action" id="bot-outfit-close">×</span>
                 </div>
             </div>
             <div class="outfit-slots"></div>
@@ -32,7 +33,6 @@ export class OutfitPanel {
 
         const slotsContainer = this.domElement.querySelector('.outfit-slots');
         slotsContainer.innerHTML = '';
-
         const outfitData = this.outfitManager.getOutfitData();
 
         outfitData.forEach(slot => {
@@ -50,42 +50,28 @@ export class OutfitPanel {
 
             slotElement.querySelector('.slot-change').addEventListener('click', async () => {
                 const message = await this.outfitManager.changeOutfitItem(slot.name);
-                if (message) {
-                    // NEW: Check if system messages are enabled
-                    if (extension_settings.outfit_tracker?.enableSysMessages !== false) {
-                        this.sendSystemMessage(message);
-                    }
-                    this.renderSlots();
+                if (message && extension_settings.outfit_tracker?.enableSysMessages) {
+                    this.sendSystemMessage(message);
                 }
+                this.renderSlots();
             });
 
             slotsContainer.appendChild(slotElement);
         });
     }
 
-    // SAFE SYSTEM MESSAGE SENDING
     sendSystemMessage(message) {
         try {
             const chatInput = document.getElementById('send_textarea');
-            if (!chatInput) {
-                console.warn("Couldn't find chat input element");
-                return;
-            }
-
+            if (!chatInput) return;
             chatInput.value = `/sys compact=true ${message}`;
-
-            const sendButton = document.querySelector('#send_but');
-            if (sendButton) {
-                sendButton.click();
-            } else {
-                console.warn("Couldn't find send button");
-                const event = new KeyboardEvent('keydown', {
-                    key: 'Enter',
-                    code: 'Enter',
-                    bubbles: true
-                });
-                chatInput.dispatchEvent(event);
-            }
+            
+            const event = new KeyboardEvent('keydown', {
+                key: 'Enter',
+                code: 'Enter',
+                bubbles: true
+            });
+            chatInput.dispatchEvent(event);
         } catch (error) {
             console.error("Failed to send system message:", error);
         }
@@ -112,18 +98,16 @@ export class OutfitPanel {
         this.renderSlots();
         this.isVisible = true;
 
-        this.domElement.querySelector('#outfit-refresh').addEventListener('click', () => {
+        this.domElement.querySelector('#bot-outfit-refresh').addEventListener('click', () => {
             this.outfitManager.loadOutfit();
             this.renderSlots();
         });
 
-        this.domElement.querySelector('#outfit-close').addEventListener('click', () => this.hide());
+        this.domElement.querySelector('#bot-outfit-close').addEventListener('click', () => this.hide());
     }
 
     hide() {
-        if (this.domElement) {
-            this.domElement.style.display = 'none';
-        }
+        if (this.domElement) this.domElement.style.display = 'none';
         this.isVisible = false;
     }
 
@@ -134,46 +118,5 @@ export class OutfitPanel {
             if (header) header.textContent = `${name}'s Outfit`;
         }
         this.renderSlots();
-    }
-
-    render() {
-        if (this.isVisible) {
-            this.renderSlots();
-        }
-    }
-}
-
-// Dragging functionality
-function dragElement(element) {
-    let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
-    const header = element.find('.outfit-header')[0];
-
-    if (header) {
-        header.onmousedown = dragMouseDown;
-    }
-
-    function dragMouseDown(e) {
-        e = e || window.event;
-        e.preventDefault();
-        pos3 = e.clientX;
-        pos4 = e.clientY;
-        document.onmouseup = closeDragElement;
-        document.onmousemove = elementDrag;
-    }
-
-    function elementDrag(e) {
-        e = e || window.event;
-        e.preventDefault();
-        pos1 = pos3 - e.clientX;
-        pos2 = pos4 - e.clientY;
-        pos3 = e.clientX;
-        pos4 = e.clientY;
-        element[0].style.top = (element[0].offsetTop - pos2) + "px";
-        element[0].style.left = (element[0].offsetLeft - pos1) + "px";
-    }
-
-    function closeDragElement() {
-        document.onmouseup = null;
-        document.onmousemove = null;
     }
 }
