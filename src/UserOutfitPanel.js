@@ -74,7 +74,7 @@ export class UserOutfitPanel {
                     return;
                 }
                 
-                chatInput.value = `/sys ${message}`;
+                chatInput.value = `/sys compact=true ${message}`;
                 chatInput.dispatchEvent(new Event('input', { bubbles: true }));
                 
                 setTimeout(() => {
