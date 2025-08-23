@@ -19,8 +19,20 @@ export class UserOutfitManager {
         });
     }
 
+    // Initialize variables for new characters
+    initializeOutfit() {
+        this.slots.forEach(slot => {
+            const varName = this.getVarName(slot);
+            if (this.getGlobalVariable(varName) === 'None') {
+                this.setGlobalVariable(varName, 'None');
+            }
+        });
+        this.loadOutfit();
+    }
+
     getGlobalVariable(name) {
-        return window[name] || (extension_settings.variables?.global?.[name] || 'None');
+        const globalVars = extension_settings.variables?.global || {};
+        return globalVars[name] || window[name] || 'None';
     }
 
     setGlobalVariable(name, value) {
@@ -36,11 +48,11 @@ export class UserOutfitManager {
         this.currentValues[slot] = value;
 
         if (previousValue === 'None' && value !== 'None') {
-            return `You put on ${value}.`;
+            return `{{user}} put on ${value}.`;
         } else if (value === 'None') {
-            return `You removed ${previousValue}.`;
+            return `{{user}} removed ${previousValue}.`;
         } else {
-            return `You changed from ${previousValue} to ${value}.`;
+            return `{{user}} changed from ${previousValue} to ${value}.`;
         }
     }
 

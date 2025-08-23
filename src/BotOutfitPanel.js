@@ -1,3 +1,4 @@
+import { getContext } from "../../../../extensions.js";
 import { extension_settings } from "../../../../extensions.js";
 import { dragElement } from './shared.js';
 
@@ -64,21 +65,36 @@ export class BotOutfitPanel {
         });
     }
 
+    // Fix system message sending
     sendSystemMessage(message) {
-        try {
-            const chatInput = document.getElementById('send_textarea');
-            if (!chatInput) return;
-            chatInput.value = `/sys compact=true ${message}`;
-            
-            const event = new KeyboardEvent('keydown', {
-                key: 'Enter',
-                code: 'Enter',
-                bubbles: true
-            });
-            chatInput.dispatchEvent(event);
-        } catch (error) {
-            console.error("Failed to send system message:", error);
-        }
+        setTimeout(() => {
+            try {
+                const chatInput = document.getElementById('send_textarea');
+                if (!chatInput) {
+                    console.error('Chat input not found');
+                    return;
+                }
+                
+                chatInput.value = `/sys compact=true ${message}`;
+                chatInput.dispatchEvent(new Event('input', { bubbles: true }));
+                
+                setTimeout(() => {
+                    const sendButton = document.querySelector('#send_but');
+                    if (sendButton) {
+                        sendButton.click();
+                    } else {
+                        const event = new KeyboardEvent('keydown', {
+                            key: 'Enter',
+                            code: 'Enter',
+                            bubbles: true
+                        });
+                        chatInput.dispatchEvent(event);
+                    }
+                }, 100);
+            } catch (error) {
+                console.error("Failed to send system message:", error);
+            }
+        }, 100);
     }
 
     formatSlotName(name) {
@@ -101,8 +117,9 @@ export class BotOutfitPanel {
         if (this.domElement) {
             dragElement($(this.domElement));
             
+            // Add initialization when refreshing
             this.domElement.querySelector('#bot-outfit-refresh')?.addEventListener('click', () => {
-                this.outfitManager.loadOutfit();
+                this.outfitManager.initializeOutfit();
                 this.renderSlots();
             });
 
