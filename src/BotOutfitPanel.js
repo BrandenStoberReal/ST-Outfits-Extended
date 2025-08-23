@@ -1,3 +1,4 @@
+import { getContext } from "../../../../extensions.js";
 import { extension_settings } from "../../../../extensions.js";
 import { dragElement } from './shared.js';
 
@@ -64,18 +65,15 @@ export class BotOutfitPanel {
         });
     }
 
+    // Fix system message sending
     sendSystemMessage(message) {
         try {
-            const chatInput = document.getElementById('send_textarea');
-            if (!chatInput) return;
-            chatInput.value = `/sys compact=true ${message}`;
-            
-            const event = new KeyboardEvent('keydown', {
-                key: 'Enter',
-                code: 'Enter',
-                bubbles: true
-            });
-            chatInput.dispatchEvent(event);
+            const context = getContext();
+            if (context.send) {
+                context.send('System', `/sys ${message}`, true);
+            } else {
+                console.error('Send function not available in context');
+            }
         } catch (error) {
             console.error("Failed to send system message:", error);
         }
@@ -101,8 +99,9 @@ export class BotOutfitPanel {
         if (this.domElement) {
             dragElement($(this.domElement));
             
+            // Add initialization when refreshing
             this.domElement.querySelector('#bot-outfit-refresh')?.addEventListener('click', () => {
-                this.outfitManager.loadOutfit();
+                this.outfitManager.initializeOutfit();
                 this.renderSlots();
             });
 
