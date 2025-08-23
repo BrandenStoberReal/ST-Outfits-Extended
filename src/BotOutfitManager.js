@@ -14,6 +14,17 @@ export class BotOutfitManager {
         this.loadOutfit();
     }
 
+    // Initialize variables for new characters
+    initializeOutfit() {
+        this.slots.forEach(slot => {
+            const varName = this.getVarName(slot);
+            if (this.getGlobalVariable(varName) === 'None') {
+                this.setGlobalVariable(varName, 'None');
+            }
+        });
+        this.loadOutfit();
+    }
+
     getVarName(slot) {
         return `${this.character.replace(/\s+/g, '_')}_${slot}`;
     }
@@ -26,7 +37,8 @@ export class BotOutfitManager {
     }
 
     getGlobalVariable(name) {
-        return window[name] || (extension_settings.variables?.global?.[name] || 'None');
+        const globalVars = extension_settings.variables?.global || {};
+        return globalVars[name] || window[name] || 'None';
     }
 
     setGlobalVariable(name, value) {
