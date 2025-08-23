@@ -48,7 +48,7 @@ export class UserOutfitManager {
         this.currentValues[slot] = value;
 
         if (previousValue === 'None' && value !== 'None') {
-            return `You put on ${value}.`;
+            return `{{user}} put on ${value}.`;
         } else if (value === 'None') {
             return `{{user}} removed ${previousValue}.`;
         } else {
