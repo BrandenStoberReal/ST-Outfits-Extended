@@ -66,16 +66,34 @@ export class UserOutfitPanel {
 
     // Fix system message sending
     sendSystemMessage(message) {
-        try {
-            const context = getContext();
-            if (context.send) {
-                context.send('System', `/sys ${message}`, true);
-            } else {
-                console.error('Send function not available in context');
+        setTimeout(() => {
+            try {
+                const chatInput = document.getElementById('send_textarea');
+                if (!chatInput) {
+                    console.error('Chat input not found');
+                    return;
+                }
+                
+                chatInput.value = `/sys ${message}`;
+                chatInput.dispatchEvent(new Event('input', { bubbles: true }));
+                
+                setTimeout(() => {
+                    const sendButton = document.querySelector('#send_but');
+                    if (sendButton) {
+                        sendButton.click();
+                    } else {
+                        const event = new KeyboardEvent('keydown', {
+                            key: 'Enter',
+                            code: 'Enter',
+                            bubbles: true
+                        });
+                        chatInput.dispatchEvent(event);
+                    }
+                }, 100);
+            } catch (error) {
+                console.error("Failed to send system message:", error);
             }
-        } catch (error) {
-            console.error("Failed to send system message:", error);
-        }
+        }, 100);
     }
 
     formatSlotName(name) {
