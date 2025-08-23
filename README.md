@@ -17,9 +17,15 @@ Write `https://github.com/lannashelton/ST-Outfits/` into the git url text field
 
 ### Usage
 
-Use `/outfit` slash command to open the outfit window.
+Use `/outfit-bot` slash command to open the AI character's outfit window.
 
-Add this section into your Character Description or Author's Notes or World Info Entry (depending on how you prefer to prompt AI) to let AI see the current outfit.
+Use `/outfit-user` slash command to open your character's outfit window.
+
+Hold click and drag the windows to position them as you desire.
+
+If this is your first time using outfit system for the active character, click the refresh button on top of the outfit window to generate the variables.
+
+Add this prompt into your Character Description or Author's Notes or World Info Entry (depending on how you prefer to prompt AI) to let AI see the current outfit.
 
 ```
 **<BOT>'s Current Outfit**
@@ -30,6 +36,15 @@ Add this section into your Character Description or Author's Notes or World Info
 **Bottom Underwear:** {{getglobalvar::<BOT>_bottomunderwear}}
 **Footwear:** {{getglobalvar::<BOT>_footwear}}
 **Foot Underwear:** {{getglobalvar::<BOT>_footunderwear}}
+
+**{{user}}'s Current Outfit**
+**Headwear:** {{getglobalvar::User_headwear}}
+**Topwear:** {{getglobalvar::User_topwear}}
+**Top Underwear:** {{getglobalvar::User_topunderwear}}
+**Bottomwear:** {{getglobalvar::User_bottomwear}}
+**Bottom Underwear:** {{getglobalvar::User_bottomunderwear}}
+**Footwear:** {{getglobalvar::User_footwear}}
+**Foot Underwear:** {{getglobalvar::User_footunderwear}}
 ```
 
 If you want system messages to appear after changing clothes, enable system messages option under "Extensions -> Outfit Tracker Settings"
