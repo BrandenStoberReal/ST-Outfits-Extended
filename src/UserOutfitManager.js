@@ -50,9 +50,9 @@ export class UserOutfitManager {
         if (previousValue === 'None' && value !== 'None') {
             return `You put on ${value}.`;
         } else if (value === 'None') {
-            return `You removed ${previousValue}.`;
+            return `{{user}} removed ${previousValue}.`;
         } else {
-            return `You changed from ${previousValue} to ${value}.`;
+            return `{{user}} changed from ${previousValue} to ${value}.`;
         }
     }
 
