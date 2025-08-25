@@ -51,6 +51,12 @@ If you want system messages to appear after changing clothes, enable system mess
 
 If you want to remove a clothing, enter "remove" or "None" as clothing name.
 
+### Planned Features
+- Background of control windows are currently transparent and it makes it difficult to read in non-plain backgrounds. Will add solid backgrounds to windows.
+- Will add a button to let AI auto-fill their outfit slots based on what they are wearing.
+- Will add Accessorry Slots. This slots will be for things such as glasses, necklaces, backpacks, belts etc. This accessory slots can also be used for bondage items such as ball gags, blindfolds, restraints etc.
+- Will add a "Save Current Outfit" button for creating outfit presets and quickly switch between saved outfits.
+
 ## License
 
 Creative Commons Zero
