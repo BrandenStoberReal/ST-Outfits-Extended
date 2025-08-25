@@ -54,11 +54,11 @@ export class BotOutfitManager {
         this.currentValues[slot] = value;
 
         if (previousValue === 'None' && value !== 'None') {
-            return `${this.character} put on ${value}.`;
+            return `[Outfit System] ${this.character} put on ${value}.`;
         } else if (value === 'None') {
-            return `${this.character} removed ${previousValue}.`;
+            return `[Outfit System] ${this.character} removed ${previousValue}.`;
         } else {
-            return `${this.character} changed from ${previousValue} to ${value}.`;
+            return `[Outfit System] ${this.character} changed from ${previousValue} to ${value}.`;
         }
     }
 
