@@ -1,8 +1,8 @@
 # Outfit Tracker Extension for SillyTavern
 
-*This extension lets you keep track of what is your AI character is wearing (or not wearing).*
+*This extension lets you keep track of what is you and your AI character is wearing (or not wearing).*
 
-<img width="386" height="1212" alt="Image" src="https://github.com/user-attachments/assets/af3bead4-23a9-44f6-bd55-96786ba4a3cf" />
+<img width="758" height="1133" alt="Image" src="https://github.com/user-attachments/assets/9510c1af-ba34-417f-9768-a9ea7703cb2b" />
 
 ## Installation and Usage
 
