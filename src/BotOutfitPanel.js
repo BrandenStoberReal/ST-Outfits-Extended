@@ -9,7 +9,7 @@ export class BotOutfitPanel {
         this.accessorySlots = accessorySlots;
         this.isVisible = false;
         this.domElement = null;
-        this.currentTab = 'clothing'; // Default to Clothing tab
+        this.currentTab = 'clothing';
         this.saveSettingsDebounced = saveSettingsDebounced;
     }
 
@@ -40,7 +40,6 @@ export class BotOutfitPanel {
 
         document.body.appendChild(panel);
         
-        // Attach tab event listeners
         const tabs = panel.querySelectorAll('.outfit-tab');
         tabs.forEach(tab => {
             tab.addEventListener('click', (event) => {
@@ -48,7 +47,6 @@ export class BotOutfitPanel {
                 this.currentTab = tabName;
                 this.renderContent();
                 
-                // Update active tab
                 tabs.forEach(t => t.classList.remove('active'));
                 event.target.classList.add('active');
             });
@@ -81,7 +79,7 @@ export class BotOutfitPanel {
     renderSlots(slots, container) {
         const outfitData = this.outfitManager.getOutfitData(slots);
     
-        outfitslots.forEach(slot => {
+        outfitData.forEach(slot => { // FIX TYPO: changed outfitslots -> outfitData
             const slotElement = document.createElement('div');
             slotElement.className = 'outfit-slot';
             slotElement.dataset.slot = slot.name;
@@ -133,7 +131,7 @@ export class BotOutfitPanel {
                     this.renderContent();
                 });
                 
-                presetElement.querySelector('.delete-preset').addEventListener('click', async () => {
+                presetElement.querySelector('.delete-preset').addEventListener('click', () => {
                     if (confirm(`Delete "${preset}" outfit?`)) {
                         const message = this.outfitManager.deletePreset(preset);
                         if (message && extension_settings.outfit_tracker?.enableSysMessages) {
@@ -148,7 +146,6 @@ export class BotOutfitPanel {
             });
         }
         
-        // Add save current button
         const saveButton = document.createElement('button');
         saveButton.className = 'save-outfit-btn';
         saveButton.textContent = 'Save Current Outfit';
@@ -222,7 +219,6 @@ export class BotOutfitPanel {
         if (this.domElement) {
             dragElement($(this.domElement));
             
-            // Add event listeners
             this.domElement.querySelector('#bot-outfit-refresh')?.addEventListener('click', () => {
                 this.outfitManager.initializeOutfit();
                 this.renderContent();
