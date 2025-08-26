@@ -1,4 +1,13 @@
 .outfit-panel {
+    background-color: rgba(var(--body-background-r), var(--body-background-g), var(--body-background-b), 0.96) !important;
+    backdrop-filter: blur(5px);
+}
+
+.slot-value {
+    background: rgba(var(--body-background-alt-r), var(--body-background-alt-g), var(--body-background-alt-b), 0.8) !important;
+}
+
+.outfit-panel {
     position: fixed;
     top: 60px;
     right: 20px;
