@@ -5,7 +5,7 @@ console.log("[OutfitTracker] Starting extension loading...");
 
 async function initializeExtension() {
     const MODULE_NAME = 'outfit_tracker';
-    const SLOTS = [
+    const CLOTHING_SLOTS = [
         'headwear',
         'topwear',
         'topunderwear',
@@ -15,13 +15,28 @@ async function initializeExtension() {
         'footunderwear'
     ];
 
+    // Add new accessory slots
+    const ACCESSORY_SLOTS = [
+        'head-accessory',
+        'eyes-accessory',
+        'mouth-accessory',
+        'neck-accessory',
+        'body-accessory',
+        'arms-accessory',
+        'hands-accessory',
+        'waist-accessory',
+        'bottom-accessory',
+        'legs-accessory',
+        'foot-accessory'
+    ];
+
     const { BotOutfitManager } = await import("./src/BotOutfitManager.js");
     const { BotOutfitPanel } = await import("./src/BotOutfitPanel.js");
     const { UserOutfitManager } = await import("./src/UserOutfitManager.js");
     const { UserOutfitPanel } = await import("./src/UserOutfitPanel.js");
     
-    const botManager = new BotOutfitManager(SLOTS);
-    const userManager = new UserOutfitManager(SLOTS);
+    const botManager = new BotOutfitManager(CLOTHING_SLOTS, ACCESSORY_SLOTS);
+    const userManager = new UserOutfitManager(CLOTHING_SLOTS, ACCESSORY_SLOTS);
     const botPanel = new BotOutfitPanel(botManager);
     const userPanel = new UserOutfitPanel(userManager);
     
@@ -53,13 +68,16 @@ async function initializeExtension() {
         eventSource.on(event_types.CHARACTER_CHANGED, updateForCurrentCharacter);
     }
 
+    // Add presets to settings initialization
     function initSettings() {
         if (!extension_settings[MODULE_NAME]) {
             extension_settings[MODULE_NAME] = {
                 autoOpenBot: true,
                 autoOpenUser: false,
                 position: 'right',
-                enableSysMessages: true
+                enableSysMessages: true,
+                bot_presets: {},
+                user_presets: []
             };
         }
     }
