@@ -48,7 +48,7 @@ Add a prompt like this into your Character Description or Author's Notes or Worl
 
 *Note: This prompt doesn't include accessory slots. If you want to use accessory slots as well, please add them using the variables I've shared below.*
 
-**Keep in mind, you don't have to use every variable or slot exists.** You can make your outfit prompt as complex or simple as you want. You should only use the slots you want to use. However AI can only see the things you show it in the prompt.
+**Keep in mind, you don't have to use every variable or slot exists.** You can make your outfit prompt as complex or simple as you want. You should only use the slots you want to use. However AI can only see the things you show it in the prompt. The prompt piece I shared above is just a guideline. You can get creative and use the variables this system creates however you find useful and personalize your outfit prompt as you like.
 
 If you want system messages to appear after changing clothes, enable system messages option under "Extensions -> Outfit Tracker Settings". There are also settings to automatically open windows when you start SillyTavern if you don't want to use commands every time.
 
