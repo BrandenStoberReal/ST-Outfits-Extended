@@ -3,8 +3,44 @@ import { saveSettingsDebounced } from "../../../../script.js";
 
 console.log("[OutfitTracker] Starting extension loading...");
 
+// Get the absolute base path for this extension
+function getExtensionBasePath() {
+    const scripts = document.getElementsByTagName('script');
+    for (let i = 0; i < scripts.length; i++) {
+        const src = scripts[i].src;
+        if (src && src.includes('ST-Outfits/index.js')) {
+            const path = src.substring(0, src.lastIndexOf('/'));
+            console.log(`Extension base path: ${path}`);
+            return path;
+        }
+    }
+    console.warn("Could not determine extension base path, using fallback");
+    return ''; // Fallback
+}
+
+const moduleName = 'outfit_tracker';
+const EXTENSION_BASE = getExtensionBasePath();
+
+try {
+    // Import all dependencies at the top level
+    import(`${EXTENSION_BASE}/src/BotOutfitManager.js`)
+        .then(module => window.BotOutfitManager = module.BotOutfitManager);
+    
+    import(`${EXTENSION_BASE}/src/BotOutfitPanel.js`)
+        .then(module => window.BotOutfitPanel = module.BotOutfitPanel);
+    
+    import(`${EXTENSION_BASE}/src/UserOutfitManager.js`)
+        .then(module => window.UserOutfitManager = module.UserOutfitManager);
+    
+    import(`${EXTENSION_BASE}/src/UserOutfitPanel.js`)
+        .then(module => window.UserOutfitPanel = module.UserOutfitPanel);
+    
+    console.log("JS modules successfully imported");
+} catch (error) {
+    console.error("Failed to import JS modules:", error);
+}
+
 async function initializeExtension() {
-    const MODULE_NAME = 'outfit_tracker';
     const CLOTHING_SLOTS = [
         'headwear',
         'topwear',
@@ -30,16 +66,6 @@ async function initializeExtension() {
         'foot-accessory'
     ];
 
-    // Debugg import failures
-    console.log("Importing BotOutfitManager...");
-    const { BotOutfitManager } = await import("./src/BotOutfitManager.js");
-    console.log("Importing BotOutfitPanel...");
-    const { BotOutfitPanel } = await import("./src/BotOutfitPanel.js");
-    console.log("Importing UserOutfitManager...");
-    const { UserOutfitManager } = await import("./src/UserOutfitManager.js");
-    console.log("Importing UserOutfitPanel...");
-    const { UserOutfitPanel } = await import("./src/UserOutfitPanel.js");
-    
     console.log("Creating managers and panels...");
     const botManager = new BotOutfitManager(CLOTHING_SLOTS, ACCESSORY_SLOTS);
     const userManager = new UserOutfitManager(CLOTHING_SLOTS, ACCESSORY_SLOTS);
@@ -149,16 +175,13 @@ async function initializeExtension() {
     createSettingsUI();
 
     // Show panels if enabled
-    if (extension_settings[MODULE_NAME].autoOpenBot) {
-        console.log("Auto-opening bot panel");
+    if (extension_settings[moduleName].autoOpenBot) {
         botPanel.show();
     }
     
-    if (extension_settings[MODULE_NAME].autoOpenUser) {
-        console.log("Auto-opening user panel");
+    if (extension_settings[moduleName].autoOpenUser) {
         userPanel.show();
     }
-    
     console.log("Initialization complete");
 }
 
@@ -169,7 +192,6 @@ $(async () => {
         console.log("[OutfitTracker] Extension loaded successfully");
     } catch (error) {
         console.error("[OutfitTracker] Initialization failed", error);
-        
         // Show error to user
         toastr.error("Outfit Tracker failed to load. Check console for details.");
     }
