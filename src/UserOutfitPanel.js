@@ -24,7 +24,7 @@ export class UserOutfitPanel {
 
         panel.innerHTML = `
             <div class="outfit-header">
-                <h3>Your Outfit</h3>
+                <h3>${this.outfitManager.character}'s Outfit</h3>
                 <div class="outfit-actions">
                     <span class="outfit-action" id="user-outfit-refresh">↻</span>
                     <span class="outfit-action" id="user-outfit-close">×</span>
@@ -35,7 +35,7 @@ export class UserOutfitPanel {
                 <button class="outfit-tab${this.currentTab === 'accessories' ? ' active' : ''}" data-tab="accessories">Accessories</button>
                 <button class="outfit-tab${this.currentTab === 'outfits' ? ' active' : ''}" data-tab="outfits">Outfits</button>
             </div>
-            <div class="tab-content" id="user-outfit-tab-content"></div>
+            <div class="outfit-content" id="user-outfit-tab-content"></div> <!-- UPDATED CONTAINER -->
         `;
 
         document.body.appendChild(panel);
