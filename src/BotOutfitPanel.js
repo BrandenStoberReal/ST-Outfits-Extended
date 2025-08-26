@@ -35,7 +35,7 @@ export class BotOutfitPanel {
                 <button class="outfit-tab${this.currentTab === 'accessories' ? ' active' : ''}" data-tab="accessories">Accessories</button>
                 <button class="outfit-tab${this.currentTab === 'outfits' ? ' active' : ''}" data-tab="outfits">Outfits</button>
             </div>
-            <div class="tab-content" id="bot-outfit-tab-content"></div>
+            <div class="outfit-content" id="bot-outfit-tab-content"></div> <!-- UPDATED CONTAINER -->
         `;
 
         document.body.appendChild(panel);
