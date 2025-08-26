@@ -24,7 +24,7 @@ export class UserOutfitPanel {
 
         panel.innerHTML = `
             <div class="outfit-header">
-                <h3>${{user}}'s Outfit</h3>
+                <h3>$Your Outfit</h3>
                 <div class="outfit-actions">
                     <span class="outfit-action" id="user-outfit-refresh">↻</span>
                     <span class="outfit-action" id="user-outfit-close">×</span>
