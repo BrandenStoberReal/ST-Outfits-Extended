@@ -125,7 +125,7 @@ export class UserOutfitManager {
         }
         
         if (changed) {
-            return `[Outfit System] You wore the "${presetName}" outfit.`;
+            return `[Outfit System] You changed into the "${presetName}" outfit.`;
         }
         
         return `[Outfit System] You were already wearing the "${presetName}" outfit.`;
