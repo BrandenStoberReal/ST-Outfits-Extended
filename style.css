@@ -1,75 +1,135 @@
-.outfit-panel {
+#bot-outfit-panel,
+#user-outfit-panel {
     position: fixed;
-    top: 60px;
+    top: 100px;
     right: 20px;
     width: 300px;
-    min-height: 200px;
-    max-height: 80vh;
-    background: var(--body-background);
-    border: 1px solid var(--border-color-0);
     border-radius: 10px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    padding: 12px;
     z-index: 10000;
-    padding: 10px;
-    display: none;
-    overflow-y: auto;
+    display: none; /* Only one display property */
+    color: #ffffff;
+    user-select: none;
+    font-size: 0.9em;
+    max-height: 80vh; /* Constrain height */
+    flex-direction: column; /* Now we only have one display property */
 }
 
+#bot-outfit-panel {
+    background: linear-gradient(135deg, #7a57d1 0%, #6559e0 100%);
+    border: 1px solid #8783e1;
+}
+
+#user-outfit-panel {
+    background: linear-gradient(135deg, #1e88e5 0%, #3d5afe 100%);
+    border: 1px solid #64b5f6;
+}
+
+/* Header Styles */
 .outfit-header {
+    cursor: move;
+    padding-bottom: 8px;
+    margin-bottom: 8px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding-bottom: 5px;
-    border-bottom: 1px solid var(--border-color-2);
-    margin-bottom: 8px;
+    border-bottom: 1px solid rgba(255,255,255,0.3);
+    flex-shrink: 0;
 }
 
 .outfit-header h3 {
     margin: 0;
-    font-size: 1.2em;
+    font-size: 1.3em;
+    font-weight: 700;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
 }
 
-.outfit-actions {
+/* Tabs Navigation */
+.outfit-tabs {
     display: flex;
-    gap: 5px;
-}
-
-.outfit-action {
-    cursor: pointer;
-    font-size: 1.4em;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    background: rgba(0, 0, 0, 0.15);
+    border-radius: 8px;
     padding: 3px;
+    flex-shrink: 0;
 }
 
+.outfit-tab {
+    flex: 1;
+    text-align: center;
+    padding: 6px 4px;
+    border: none;
+    border-radius: 6px;
+    background: none;
+    color: rgba(255,255,255,0.8);
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.7em;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    text-shadow: 0 1px 1px rgba(0,0,0,0.1);
+}
+
+.outfit-tab:hover {
+    background: rgba(255,255,255,0.15);
+}
+
+.outfit-tab.active {
+    background: rgba(255,255,255,0.25) !important;
+    color: #fff;
+}
+
+/* Main Content Area - Scrollable */
+.outfit-content {
+    flex: 1;  /* Takes remaining space */
+    overflow-y: auto; /* ACTIVE scrollbar */
+    padding-right: 4px;
+    min-height: 0;
+}
+
+/* Slots Styling */
 .outfit-slots {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: 1fr;
     gap: 8px;
 }
 
 .outfit-slot {
-    display: flex;
-    flex-direction: column;
-    padding: 8px;
-    background: var(--background);
-    border: 1px solid var(--border-color-1);
-    border-radius: 5px;
+    padding: 10px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 8px;
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(255,255,255,0.1);
 }
 
 .slot-label {
-    font-weight: bold;
-    margin-bottom: 5px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    font-size: 0.9em;
+    color: rgba(255, 255, 255, 0.9);
+    display: flex;
+    align-items: center;
+}
+
+.slot-label:before {
+    content: "•";
+    margin-right: 5px;
+    font-size: 1.2em;
 }
 
 .slot-value {
-    margin-bottom: 8px;
-    padding: 5px;
-    background: var(--body-background-alt);
-    border-radius: 4px;
+    min-height: 30px;
+    padding: 6px;
+    border-radius: 5px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255,255,255,0.05);
     word-wrap: break-word;
-    overflow-wrap: break-word;
-    white-space: normal;
-    max-height: 100px;
-    overflow-y: auto;
+    overflow: hidden;
+    font-size: 0.85em;
+    line-height: 1.3;
+    margin-bottom: 8px;
 }
 
 .slot-actions {
@@ -78,35 +138,124 @@
 }
 
 .slot-actions button {
-    background: var(--button-background);
-    color: var(--button-text-color);
+    background: rgba(255,255,255,0.15);
+    color: #fff;
     border: none;
-    border-radius: 3px;
-    padding: 5px 10px;
+    border-radius: 5px;
+    padding: 4px 10px;
     cursor: pointer;
-    font-size: 0.9em;
+    font-weight: 600;
+    font-size: 0.75em;
 }
 
 .slot-actions button:hover {
-    background: var(--button-background-hover);
+    background: rgba(255,255,255,0.25);
 }
 
-/* Character panel styling */
-#bot-outfit-panel {
-    border-color: #9d79e2;
+/* Presets Styling */
+.outfit-preset {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 10px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 6px;
+    margin-bottom: 6px;
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(255,255,255,0.1);
 }
 
-#bot-outfit-panel .outfit-header {
-    background: var(--background-metamenu);
-    border-bottom: 1px solid #9d79e2;
+.preset-name {
+    font-weight: 500;
+    font-size: 0.85em;
+    text-shadow: 0 1px 1px rgba(0,0,0,0.1);
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding-right: 8px;
 }
 
-/* User panel styling */
-#user-outfit-panel {
-    border-color: #79e29d;
+.preset-actions {
+    display: flex;
+    gap: 6px;
 }
 
-#user-outfit-panel .outfit-header {
-    background: var(--background-metamenu);
-    border-bottom: 1px solid #79e29d;
+.preset-actions button {
+    padding: 4px 8px;
+    border: none;
+    border-radius: 5px;
+    background: rgba(255,255,255,0.15);
+    color: #fff;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.7em;
+    text-shadow: 0 1px 1px rgba(0,0,0,0.1);
+    min-width: 40px;
+}
+
+.preset-actions button:hover {
+    background: rgba(255,255,255,0.25);
+}
+
+.load-preset {
+    background: rgba(102, 187, 106, 0.25) !important;
+}
+
+.delete-preset {
+    background: rgba(229, 115, 115, 0.25) !important;
+}
+
+.save-outfit-btn {
+    width: 100%;
+    margin-top: 10px;
+    padding: 8px;
+    border: none;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.8em;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+
+.save-outfit-btn:hover {
+    background: rgba(255,255,255,0.2);
+}
+
+/* Icons styling */
+.outfit-actions span {
+    cursor: pointer;
+    font-size: 1.1em;
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+
+.outfit-actions span:hover {
+    background: rgba(255,255,255,0.2);
+}
+
+/* Scrollbar styling */
+.outfit-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.outfit-content::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 3px;
+}
+
+.outfit-content::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.2);
+    border-radius: 3px;
+}
+
+.outfit-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(255,255,255,0.3);
+}
+
+/* Hover effects */
+.outfit-slot:hover, .outfit-preset:hover {
+    background: rgba(255,255,255,0.15);
 }

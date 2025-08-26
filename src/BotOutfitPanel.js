@@ -3,44 +3,84 @@ import { extension_settings } from "../../../../extensions.js";
 import { dragElement } from './shared.js';
 
 export class BotOutfitPanel {
-    constructor(outfitManager) {
+    constructor(outfitManager, clothingSlots, accessorySlots, saveSettingsDebounced) {
         this.outfitManager = outfitManager;
+        this.clothingSlots = clothingSlots;
+        this.accessorySlots = accessorySlots;
         this.isVisible = false;
         this.domElement = null;
+        this.currentTab = 'clothing';
+        this.saveSettingsDebounced = saveSettingsDebounced;
     }
 
     createPanel() {
+        if (this.domElement) {
+            return this.domElement;
+        }
+
         const panel = document.createElement('div');
         panel.id = 'bot-outfit-panel';
         panel.className = 'outfit-panel';
 
-        if (!this.domElement) {
-            panel.innerHTML = `
-                <div class="outfit-header">
-                    <h3>${this.outfitManager.character}'s Outfit</h3>
-                    <div class="outfit-actions">
-                        <span class="outfit-action" id="bot-outfit-refresh">↻</span>
-                        <span class="outfit-action" id="bot-outfit-close">×</span>
-                    </div>
+        panel.innerHTML = `
+            <div class="outfit-header">
+                <h3>${this.outfitManager.character}'s Outfit</h3>
+                <div class="outfit-actions">
+                    <span class="outfit-action" id="bot-outfit-refresh">↻</span>
+                    <span class="outfit-action" id="bot-outfit-close">×</span>
                 </div>
-                <div class="outfit-slots"></div>
-            `;
+            </div>
+            <div class="outfit-tabs">
+                <button class="outfit-tab${this.currentTab === 'clothing' ? ' active' : ''}" data-tab="clothing">Clothing</button>
+                <button class="outfit-tab${this.currentTab === 'accessories' ? ' active' : ''}" data-tab="accessories">Accessories</button>
+                <button class="outfit-tab${this.currentTab === 'outfits' ? ' active' : ''}" data-tab="outfits">Outfits</button>
+            </div>
+            <div class="outfit-content" id="bot-outfit-tab-content"></div> <!-- UPDATED CONTAINER -->
+        `;
 
-            document.body.appendChild(panel);
-        }
+        document.body.appendChild(panel);
+        
+        const tabs = panel.querySelectorAll('.outfit-tab');
+        tabs.forEach(tab => {
+            tab.addEventListener('click', (event) => {
+                const tabName = event.target.dataset.tab;
+                this.currentTab = tabName;
+                this.renderContent();
+                
+                tabs.forEach(t => t.classList.remove('active'));
+                event.target.classList.add('active');
+            });
+        });
+
         return panel;
     }
 
-    renderSlots() {
+    renderContent() {
         if (!this.domElement) return;
-    
-        const slotsContainer = this.domElement.querySelector('.outfit-slots');
-        if (!slotsContainer) return;
         
-        slotsContainer.innerHTML = '';
-        const outfitData = this.outfitManager.getOutfitData();
+        // Get the scrollable content container
+        const contentArea = this.domElement.querySelector('.outfit-content');
+        if (!contentArea) return;
+        
+        contentArea.innerHTML = '';
+        
+        switch(this.currentTab) {
+            case 'clothing':
+                this.renderSlots(this.clothingSlots, contentArea);
+                break;
+            case 'accessories':
+                this.renderSlots(this.accessorySlots, contentArea);
+                break;
+            case 'outfits':
+                this.renderPresets(contentArea);
+                break;
+        }
+    }
+
+    renderSlots(slots, container) {
+        const outfitData = this.outfitManager.getOutfitData(slots);
     
-        outfitData.forEach(slot => {
+        outfitData.forEach(slot => { // FIX TYPO: changed outfitslots -> outfitData
             const slotElement = document.createElement('div');
             slotElement.className = 'outfit-slot';
             slotElement.dataset.slot = slot.name;
@@ -58,14 +98,73 @@ export class BotOutfitPanel {
                 if (message && extension_settings.outfit_tracker?.enableSysMessages) {
                     this.sendSystemMessage(message);
                 }
-                this.renderSlots();
+                this.saveSettingsDebounced();
+                this.renderContent();
             });
     
-            slotsContainer.appendChild(slotElement);
+            container.appendChild(slotElement);
         });
     }
 
-    // Fix system message sending
+    renderPresets(container) {
+        const presets = this.outfitManager.getPresets();
+        
+        if (presets.length === 0) {
+            container.innerHTML = '<div>No saved outfits for this character.</div>';
+        } else {
+            presets.forEach(preset => {
+                const presetElement = document.createElement('div');
+                presetElement.className = 'outfit-preset';
+                presetElement.innerHTML = `
+                    <div class="preset-name">${preset}</div>
+                    <div class="preset-actions">
+                        <button class="load-preset" data-preset="${preset}">Wear</button>
+                        <button class="delete-preset" data-preset="${preset}">×</button>
+                    </div>
+                `;
+                
+                presetElement.querySelector('.load-preset').addEventListener('click', async () => {
+                    const message = await this.outfitManager.loadPreset(preset);
+                    if (message && extension_settings.outfit_tracker?.enableSysMessages) {
+                        this.sendSystemMessage(message);
+                    }
+                    this.saveSettingsDebounced();
+                    this.renderContent();
+                });
+                
+                presetElement.querySelector('.delete-preset').addEventListener('click', () => {
+                    if (confirm(`Delete "${preset}" outfit?`)) {
+                        const message = this.outfitManager.deletePreset(preset);
+                        if (message && extension_settings.outfit_tracker?.enableSysMessages) {
+                            this.sendSystemMessage(message);
+                        }
+                        this.saveSettingsDebounced();
+                        this.renderPresets(container);
+                    }
+                });
+                
+                container.appendChild(presetElement);
+            });
+        }
+        
+        const saveButton = document.createElement('button');
+        saveButton.className = 'save-outfit-btn';
+        saveButton.textContent = 'Save Current Outfit';
+        saveButton.addEventListener('click', async () => {
+            const presetName = prompt('Name this outfit:');
+            if (presetName) {
+                const message = await this.outfitManager.savePreset(presetName.trim());
+                if (message && extension_settings.outfit_tracker?.enableSysMessages) {
+                    this.sendSystemMessage(message);
+                }
+                this.saveSettingsDebounced();
+                this.renderPresets(container);
+            }
+        });
+        
+        container.appendChild(saveButton);
+    }
+
     sendSystemMessage(message) {
         setTimeout(() => {
             try {
@@ -101,6 +200,7 @@ export class BotOutfitPanel {
         return name
             .replace(/([a-z])([A-Z])/g, '$1 $2')
             .replace(/^./, str => str.toUpperCase())
+            .replace(/-/g, ' ')
             .replace('underwear', 'Underwear');
     }
 
@@ -109,18 +209,20 @@ export class BotOutfitPanel {
     }
 
     show() {
-        this.domElement = this.createPanel();
-        this.domElement.style.display = 'block';
-        this.renderSlots();
+        if (!this.domElement) {
+            this.domElement = this.createPanel();
+        }
+        
+        this.renderContent();
+        this.domElement.style.display = 'flex'; // CHANGED to flex
         this.isVisible = true;
 
         if (this.domElement) {
             dragElement($(this.domElement));
             
-            // Add initialization when refreshing
             this.domElement.querySelector('#bot-outfit-refresh')?.addEventListener('click', () => {
                 this.outfitManager.initializeOutfit();
-                this.renderSlots();
+                this.renderContent();
             });
 
             this.domElement.querySelector('#bot-outfit-close')?.addEventListener('click', () => this.hide());
@@ -140,6 +242,6 @@ export class BotOutfitPanel {
             const header = this.domElement.querySelector('.outfit-header h3');
             if (header) header.textContent = `${name}'s Outfit`;
         }
-        this.renderSlots();
+        this.renderContent();
     }
 }

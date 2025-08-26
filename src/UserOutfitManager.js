@@ -19,7 +19,6 @@ export class UserOutfitManager {
         });
     }
 
-    // Initialize variables for new characters
     initializeOutfit() {
         this.slots.forEach(slot => {
             const varName = this.getVarName(slot);
@@ -79,11 +78,76 @@ export class UserOutfitManager {
         return null;
     }
 
-    getOutfitData() {
-        return this.slots.map(slot => ({
+    getOutfitData(slots) {
+        return slots.map(slot => ({
             name: slot,
             value: this.currentValues[slot],
             varName: this.getVarName(slot)
         }));
+    }
+    
+    savePreset(presetName) {
+        // Initialize presets if needed
+        if (!extension_settings.outfit_tracker.presets) {
+            extension_settings.outfit_tracker.presets = { bot: {}, user: {} };
+        }
+        
+        // Create preset data for all slots
+        const presetData = {};
+        this.slots.forEach(slot => {
+            presetData[slot] = this.currentValues[slot];
+        });
+        
+        // Save or update preset
+        extension_settings.outfit_tracker.presets.user[presetName] = presetData;
+        
+        if (extension_settings.outfit_tracker.enableSysMessages) {
+            return `[Outfit System] Saved your "${presetName}" outfit.`;
+        }
+        return '';
+    }
+    
+    async loadPreset(presetName) {
+        if (!extension_settings.outfit_tracker.presets?.user?.[presetName]) {
+            return `[Outfit System] Preset "${presetName}" not found.`;
+        }
+        
+        const preset = extension_settings.outfit_tracker.presets.user[presetName];
+        let changed = false;
+        
+        for (const [slot, value] of Object.entries(preset)) {
+            if (this.slots.includes(slot) && this.currentValues[slot] !== value) {
+                const varName = this.getVarName(slot);
+                this.setGlobalVariable(varName, value);
+                this.currentValues[slot] = value;
+                changed = true;
+            }
+        }
+        
+        if (changed) {
+            return `[Outfit System] You changed into the "${presetName}" outfit.`;
+        }
+        
+        return `[Outfit System] You were already wearing the "${presetName}" outfit.`;
+    }
+    
+    deletePreset(presetName) {
+        if (!extension_settings.outfit_tracker.presets?.user?.[presetName]) {
+            return `[Outfit System] Preset "${presetName}" not found.`;
+        }
+        
+        delete extension_settings.outfit_tracker.presets.user[presetName];
+        
+        if (extension_settings.outfit_tracker.enableSysMessages) {
+            return `[Outfit System] Deleted your "${presetName}" outfit.`;
+        }
+        return '';
+    }
+    
+    getPresets() {
+        if (!extension_settings.outfit_tracker.presets?.user) {
+            return [];
+        }
+        return Object.keys(extension_settings.outfit_tracker.presets.user);
     }
 }

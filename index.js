@@ -5,7 +5,7 @@ console.log("[OutfitTracker] Starting extension loading...");
 
 async function initializeExtension() {
     const MODULE_NAME = 'outfit_tracker';
-    const SLOTS = [
+    const CLOTHING_SLOTS = [
         'headwear',
         'topwear',
         'topunderwear',
@@ -14,26 +14,44 @@ async function initializeExtension() {
         'footwear',
         'footunderwear'
     ];
+    
+    const ACCESSORY_SLOTS = [
+        'head-accessory',
+        'eyes-accessory',
+        'mouth-accessory',
+        'neck-accessory',
+        'body-accessory',
+        'arms-accessory',
+        'hands-accessory',
+        'waist-accessory',
+        'bottom-accessory',
+        'legs-accessory',
+        'foot-accessory'
+    ];
 
     const { BotOutfitManager } = await import("./src/BotOutfitManager.js");
     const { BotOutfitPanel } = await import("./src/BotOutfitPanel.js");
     const { UserOutfitManager } = await import("./src/UserOutfitManager.js");
     const { UserOutfitPanel } = await import("./src/UserOutfitPanel.js");
     
-    const botManager = new BotOutfitManager(SLOTS);
-    const userManager = new UserOutfitManager(SLOTS);
-    const botPanel = new BotOutfitPanel(botManager);
-    const userPanel = new UserOutfitPanel(userManager);
+    const botManager = new BotOutfitManager([...CLOTHING_SLOTS, ...ACCESSORY_SLOTS]);
+    const userManager = new UserOutfitManager([...CLOTHING_SLOTS, ...ACCESSORY_SLOTS]);
+    const botPanel = new BotOutfitPanel(botManager, CLOTHING_SLOTS, ACCESSORY_SLOTS, saveSettingsDebounced);
+    const userPanel = new UserOutfitPanel(userManager, CLOTHING_SLOTS, ACCESSORY_SLOTS, saveSettingsDebounced);
+    
+    // Store panels globally for access in other functions
+    window.botOutfitPanel = botPanel;
+    window.userOutfitPanel = userPanel;
     
     function registerOutfitCommands() {
         const { registerSlashCommand } = SillyTavern.getContext();
         
-        registerSlashCommand('outfit-bot', () => {
+        registerSlashCommand('outfit-bot', (...args) => {
             console.log("Bot Outfit command triggered");
             botPanel.toggle();
         }, [], 'Toggle character outfit tracker', true, true);
             
-        registerSlashCommand('outfit-user', () => {
+        registerSlashCommand('outfit-user', (...args) => {
             console.log("User Outfit command triggered");
             userPanel.toggle();
         }, [], 'Toggle user outfit tracker', true, true);
@@ -59,7 +77,11 @@ async function initializeExtension() {
                 autoOpenBot: true,
                 autoOpenUser: false,
                 position: 'right',
-                enableSysMessages: true
+                enableSysMessages: true,
+                presets: {
+                    bot: {},
+                    user: {}
+                }
             };
         }
     }
