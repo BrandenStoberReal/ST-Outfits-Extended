@@ -92,17 +92,21 @@
     color: #fff;
 }
 
-/* Slots Styling */
+/* Slots Container - Scrollable */
 .outfit-slots {
     display: grid;
     grid-template-columns: 1fr;
     gap: 8px;
-    max-height: 55vh;
+    max-height: 60vh; /* Increased height */
+    min-height: 200px;
     overflow-y: auto;
     padding-right: 4px;
+    scrollbar-width: thin; /* For Firefox */
 }
 
+
 .outfit-slot {
+    min-height: 100px; /* Added minimum height */
     padding: 10px;
     background: rgba(255,255,255,0.08);
     border-radius: 8px;
@@ -272,4 +276,36 @@
 
 .outfit-slots::-webkit-scrollbar-thumb:hover {
     background: rgba(255,255,255,0.3);
+}
+
+#bot-outfit-tab-content,
+#user-outfit-tab-content {
+    display: flex;
+    flex-direction: column;
+    max-height: 60vh; /* Set maximum height */
+    overflow: hidden; /* Container doesn't scroll */
+}
+
+/* Custom scrollbar */
+.outfit-slots::-webkit-scrollbar {
+    width: 8px;
+}
+
+.outfit-slots::-webkit-scrollbar-track {
+    background: rgba(255,255,255,0.05);
+    border-radius: 4px;
+}
+
+.outfit-slots::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.2);
+    border-radius: 4px;
+}
+
+.outfit-slots::-webkit-scrollbar-thumb:hover {
+    background: rgba(255,255,255,0.3);
+}
+
+/* Header adjustments */
+.outfit-header {
+    flex-shrink: 0; /* Prevent shrinking when scrolling */
 }
