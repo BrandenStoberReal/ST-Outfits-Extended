@@ -3,13 +3,14 @@ import { extension_settings } from "../../../../extensions.js";
 import { dragElement } from './shared.js';
 
 export class UserOutfitPanel {
-    constructor(outfitManager, clothingSlots, accessorySlots) {
+    constructor(outfitManager, clothingSlots, accessorySlots, saveSettingsDebounced) {
         this.outfitManager = outfitManager;
         this.clothingSlots = clothingSlots;
         this.accessorySlots = accessorySlots;
         this.isVisible = false;
         this.domElement = null;
         this.currentTab = 'clothing'; // Default to Clothing tab
+        this.saveSettingsDebounced = saveSettingsDebounced;
     }
 
     createPanel() {
@@ -98,6 +99,7 @@ export class UserOutfitPanel {
                 if (message && extension_settings.outfit_tracker?.enableSysMessages) {
                     this.sendSystemMessage(message);
                 }
+                this.saveSettingsDebounced();
                 this.renderContent();
             });
     
@@ -127,6 +129,7 @@ export class UserOutfitPanel {
                     if (message && extension_settings.outfit_tracker?.enableSysMessages) {
                         this.sendSystemMessage(message);
                     }
+                    this.saveSettingsDebounced();
                     this.renderContent();
                 });
                 
@@ -136,6 +139,7 @@ export class UserOutfitPanel {
                         if (message && extension_settings.outfit_tracker?.enableSysMessages) {
                             this.sendSystemMessage(message);
                         }
+                        this.saveSettingsDebounced();
                         this.renderPresets(container);
                     }
                 });
@@ -155,6 +159,7 @@ export class UserOutfitPanel {
                 if (message && extension_settings.outfit_tracker?.enableSysMessages) {
                     this.sendSystemMessage(message);
                 }
+                this.saveSettingsDebounced();
                 this.renderPresets(container);
             }
         });
