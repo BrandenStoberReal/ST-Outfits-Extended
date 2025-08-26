@@ -1,112 +1,85 @@
+/* Add solid colors for readability */
 .outfit-panel {
-    position: fixed;
-    top: 60px;
-    right: 20px;
-    width: 300px;
-    min-height: 200px;
-    max-height: 80vh;
     background: var(--body-background);
-    border: 1px solid var(--border-color-0);
-    border-radius: 10px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    z-index: 10000;
-    padding: 10px;
-    display: none;
-    overflow-y: auto;
+    /* Add slight transparency for aesthetic */
+    background: linear-gradient(135deg, 
+        rgba(var(--body-background-rgb), 0.97) 0%, 
+        rgba(var(--body-background-alt-rgb), 0.97) 100%
+    );
+    backdrop-filter: blur(5px);
 }
 
-.outfit-header {
+/* New tab styling */
+.outfit-tabs {
+    display: flex;
+    justify-content: center;
+    border-bottom: 1px solid var(--border-color-2);
+    padding: 8px 0 0;
+}
+
+.outfit-tab-btn {
+    padding: 6px 12px;
+    background: transparent;
+    border: none;
+    border-bottom: 3px solid transparent;
+    color: var(--body-text-color);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.outfit-tab-btn.active {
+    border-bottom-color: var(--kawaii-accent);
+    color: var(--kawaii-accent);
+}
+
+.outfit-tab-content {
+    display: none;
+}
+
+.outfit-tab-content.active {
+    display: block;
+}
+
+.outfit-preset-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding-bottom: 5px;
-    border-bottom: 1px solid var(--border-color-2);
-    margin-bottom: 8px;
+    padding: 6px;
+    border-bottom: 1px solid var(--border-color-1);
 }
 
-.outfit-header h3 {
-    margin: 0;
-    font-size: 1.2em;
+.outfit-preset-name {
+    flex-grow: 1;
+    cursor: pointer;
 }
 
-.outfit-actions {
+.outfit-preset-actions {
     display: flex;
     gap: 5px;
 }
 
-.outfit-action {
-    cursor: pointer;
-    font-size: 1.4em;
-    padding: 3px;
-}
-
-.outfit-slots {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.outfit-slot {
-    display: flex;
-    flex-direction: column;
-    padding: 8px;
-    background: var(--background);
-    border: 1px solid var(--border-color-1);
-    border-radius: 5px;
-}
-
-.slot-label {
-    font-weight: bold;
-    margin-bottom: 5px;
-}
-
-.slot-value {
-    margin-bottom: 8px;
-    padding: 5px;
-    background: var(--body-background-alt);
-    border-radius: 4px;
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-    white-space: normal;
-    max-height: 100px;
-    overflow-y: auto;
-}
-
-.slot-actions {
-    display: flex;
-    justify-content: flex-end;
-}
-
-.slot-actions button {
+.preset-wear-btn {
     background: var(--button-background);
     color: var(--button-text-color);
     border: none;
     border-radius: 3px;
-    padding: 5px 10px;
+    padding: 3px 8px;
     cursor: pointer;
-    font-size: 0.9em;
 }
 
-.slot-actions button:hover {
-    background: var(--button-background-hover);
+.preset-delete-btn {
+    background: var(--button-danger-background);
+    color: var(--button-text-color);
+    border: none;
+    border-radius: 3px;
+    padding: 3px 8px;
+    cursor: pointer;
 }
 
-/* Character panel styling */
-#bot-outfit-panel {
-    border-color: #9d79e2;
-}
-
-#bot-outfit-panel .outfit-header {
-    background: var(--background-metamenu);
-    border-bottom: 1px solid #9d79e2;
-}
-
-/* User panel styling */
-#user-outfit-panel {
-    border-color: #79e29d;
-}
-
-#user-outfit-panel .outfit-header {
-    background: var(--background-metamenu);
-    border-bottom: 1px solid #79e29d;
+.tab-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
 }
