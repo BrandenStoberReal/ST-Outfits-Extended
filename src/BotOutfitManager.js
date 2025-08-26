@@ -1,10 +1,13 @@
 import { extension_settings } from "../../../../extensions.js";
 import { saveSettingsDebounced } from "../../../../script.js";
 
+console.log("[BotOutfitManager] Starting loading...");
+
+const moduleName = 'outfit_tracker';
+
 export class BotOutfitManager {
     constructor(clothingSlots, accessorySlots) {
-        // Debug logs for constructor
-        console.log("BotOutfitManager created with slots:", { clothingSlots, accessorySlots });
+        console.log("BotOutfitManager initialized");
         
         this.clothingSlots = clothingSlots;
         this.accessorySlots = accessorySlots;
