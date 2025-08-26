@@ -3,6 +3,9 @@ import { saveSettingsDebounced } from "../../../../script.js";
 
 export class BotOutfitManager {
     constructor(clothingSlots, accessorySlots) {
+        // Debug logs for constructor
+        console.log("BotOutfitManager created with slots:", { clothingSlots, accessorySlots });
+        
         this.clothingSlots = clothingSlots;
         this.accessorySlots = accessorySlots;
         this.slots = [...clothingSlots, ...accessorySlots];
@@ -13,12 +16,13 @@ export class BotOutfitManager {
 
     setCharacter(name) {
         if (name === this.character) return;
+        console.log(`BotOutfitManager character: ${name} (was: ${this.character})`);
         this.character = name;
         this.loadOutfit();
     }
 
-    // Initialize variables for new characters
     initializeOutfit() {
+        console.log("Initializing outfit for character:", this.character);
         this.slots.forEach(slot => {
             const varName = this.getVarName(slot);
             if (this.getGlobalVariable(varName) === 'None') {
@@ -29,13 +33,16 @@ export class BotOutfitManager {
     }
 
     getVarName(slot) {
-        return `${this.character.replace(/\s+/g, '_')}_${slot}`;
+        const varName = `oc_${this.character.replace(/\s+/g, '_')}_${slot}`;
+        console.log(`Slot var name: ${slot} => ${varName}`);
+        return varName;
     }
 
     loadOutfit() {
         this.slots.forEach(slot => {
             const varName = this.getVarName(slot);
             this.currentValues[slot] = this.getGlobalVariable(varName) || 'None';
+            console.log(`Loaded ${slot}: ${this.currentValues[slot]}`);
         });
     }
 
@@ -50,75 +57,29 @@ export class BotOutfitManager {
         extension_settings.variables.global[name] = value;
     }
 
-    savePreset(name) {
-        if (!extension_settings.outfit_tracker.bot_presets) {
-            extension_settings.outfit_tracker.bot_presets = {};
-        }
-        
-        if (!extension_settings.outfit_tracker.bot_presets[this.character]) {
-            extension_settings.outfit_tracker.bot_presets[this.character] = {};
-        }
-        
-        extension_settings.outfit_tracker.bot_presets[this.character][name] = {
-            ...this.currentValues
-        };
-        
-        saveSettingsDebounced();
-        return `[Outfit System] Outfit preset "${name}" saved for ${this.character}`;
-    }
-    
-    loadPreset(name) {
-        const presets = extension_settings.outfit_tracker.bot_presets?.[this.character];
-        if (!presets || !presets[name]) return null;
-        
-        const preset = presets[name];
-        const changes = [];
-        
-        // Apply preset values
-        for (const slot in preset) {
-            if (this.slots.includes(slot) && this.currentValues[slot] !== preset[slot]) {
-                this.setOutfitItem(slot, preset[slot]);
-                changes.push(`${slot}: ${preset[slot]}`);
-            }
-        }
-        
-        return {
-            message: `[Outfit System] ${this.character} wore the "${name}" outfit.`,
-            changes
-        };
-    }
-    
-    getPresetNames() {
-        const presets = extension_settings.outfit_tracker.bot_presets?.[this.character];
-        return presets ? Object.keys(presets) : [];
-    }
-    
-    deletePreset(name) {
-        const presets = extension_settings.outfit_tracker.bot_presets?.[this.character];
-        if (!presets || !presets[name]) return false;
-        
-        delete presets[name];
-        saveSettingsDebounced();
-        return true;
-    }
-
     async setOutfitItem(slot, value) {
         const previousValue = this.currentValues[slot];
         const varName = this.getVarName(slot);
         this.setGlobalVariable(varName, value);
         this.currentValues[slot] = value;
 
+        let message = '';
         if (previousValue === 'None' && value !== 'None') {
-            return `[Outfit System] ${this.character} put on ${value}.`;
+            message = `[Outfit System] ${this.character} put on ${value}.`;
         } else if (value === 'None') {
-            return `[Outfit System] ${this.character} removed ${previousValue}.`;
+            message = `[Outfit System] ${this.character} removed ${previousValue}.`;
         } else {
-            return `[Outfit System] ${this.character} changed from ${previousValue} to ${value}.`;
+            message = `[Outfit System] ${this.character} changed from ${previousValue} to ${value}.`;
         }
+        
+        console.log(`Set outfit item: ${slot} to ${value}, message: ${message}`);
+        return message;
     }
 
     async changeOutfitItem(slot) {
         const currentValue = this.currentValues[slot];
+        console.log(`Changing outfit item: ${slot}, current: ${currentValue}`);
+        
         let newValue = currentValue;
 
         if (currentValue === 'None') {
@@ -141,10 +102,88 @@ export class BotOutfitManager {
     }
 
     getOutfitData() {
-        return this.slots.map(slot => ({
+        const data = this.slots.map(slot => ({
             name: slot,
             value: this.currentValues[slot],
             varName: this.getVarName(slot)
         }));
+        
+        console.log("Getting outfit data:", data);
+        return data;
+    }
+    
+    // PRESET FUNCTIONS
+    savePreset(name) {
+        console.log(`Saving preset: ${name} for ${this.character}`);
+        
+        if (!extension_settings.outfit_tracker.bot_presets) {
+            extension_settings.outfit_tracker.bot_presets = {};
+        }
+        
+        if (!extension_settings.outfit_tracker.bot_presets[this.character]) {
+            extension_settings.outfit_tracker.bot_presets[this.character] = {};
+        }
+        
+        extension_settings.outfit_tracker.bot_presets[this.character][name] = {
+            ...this.currentValues
+        };
+        
+        saveSettingsDebounced();
+        
+        const message = `[Outfit System] Outfit preset "${name}" saved for ${this.character}`;
+        console.log(message);
+        return message;
+    }
+    
+    loadPreset(name) {
+        console.log(`Loading preset: ${name} for ${this.character}`);
+        
+        const presets = extension_settings.outfit_tracker.bot_presets?.[this.character];
+        if (!presets || !presets[name]) {
+            console.log(`Preset ${name} not found for character ${this.character}`);
+            return null;
+        }
+        
+        const preset = presets[name];
+        const changes = [];
+        
+        // Apply preset values
+        for (const slot in preset) {
+            if (this.slots.includes(slot) && this.currentValues[slot] !== preset[slot]) {
+                this.setGlobalVariable(this.getVarName(slot), preset[slot]);
+                this.currentValues[slot] = preset[slot];
+                changes.push(slot);
+            }
+        }
+        
+        const message = `[Outfit System] ${this.character} wore the "${name}" outfit.`;
+        console.log(message, { changes });
+        
+        return {
+            message,
+            changes
+        };
+    }
+    
+    getPresetNames() {
+        const presets = extension_settings.outfit_tracker.bot_presets?.[this.character] || {};
+        const names = Object.keys(presets);
+        console.log(`Preset names for ${this.character}:`, names);
+        return names;
+    }
+    
+    deletePreset(name) {
+        console.log(`Deleting preset: ${name} for ${this.character}`);
+        
+        const presets = extension_settings.outfit_tracker.bot_presets?.[this.character];
+        if (!presets || !presets[name]) {
+            console.log(`Preset ${name} not found`);
+            return false;
+        }
+        
+        delete presets[name];
+        saveSettingsDebounced();
+        console.log(`Deleted preset: ${name}`);
+        return true;
     }
 }
