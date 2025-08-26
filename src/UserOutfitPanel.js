@@ -58,7 +58,8 @@ export class UserOutfitPanel {
     renderContent() {
         if (!this.domElement) return;
         
-        const contentArea = this.domElement.querySelector('#user-outfit-tab-content');
+        // Get the scrollable content container
+        const contentArea = this.domElement.querySelector('.outfit-content');
         if (!contentArea) return;
         
         contentArea.innerHTML = '';
