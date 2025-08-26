@@ -1,5 +1,4 @@
 import { extension_settings } from "../../../../extensions.js";
-import { saveSettingsDebounced } from "../../../../script.js";
 
 export class UserOutfitManager {
     constructor(slots) {
