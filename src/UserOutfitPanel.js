@@ -214,7 +214,7 @@ export class UserOutfitPanel {
         }
         
         this.renderContent();
-        this.domElement.style.display = 'block';
+        this.domElement.style.display = 'flex'; // CHANGED to flex
         this.isVisible = true;
 
         if (this.domElement) {
