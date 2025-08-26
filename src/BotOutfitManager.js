@@ -33,7 +33,7 @@ export class BotOutfitManager {
     }
 
     getVarName(slot) {
-        const varName = `oc_${this.character.replace(/\s+/g, '_')}_${slot}`;
+        const varName = `${this.character.replace(/\s+/g, '_')}_${slot}`;
         console.log(`Slot var name: ${slot} => ${varName}`);
         return varName;
     }
