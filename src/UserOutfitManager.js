@@ -1,8 +1,11 @@
 import { extension_settings } from "../../../../extensions.js";
+import { saveSettingsDebounced } from "../../../../script.js";
 
 export class UserOutfitManager {
-    constructor(slots) {
-        this.slots = slots;
+    constructor(clothingSlots, accessorySlots) {
+        this.clothingSlots = clothingSlots;
+        this.accessorySlots = accessorySlots;
+        this.slots = [...clothingSlots, ...accessorySlots];
         this.currentValues = {};
         this.slots.forEach(slot => this.currentValues[slot] = 'None');
         this.loadOutfit();
@@ -85,5 +88,56 @@ export class UserOutfitManager {
             value: this.currentValues[slot],
             varName: this.getVarName(slot)
         }));
+    }
+    
+    // PRESET FUNCTIONS
+    savePreset(name) {
+        if (!extension_settings.outfit_tracker.user_presets) {
+            extension_settings.outfit_tracker.user_presets = {};
+        }
+        
+        extension_settings.outfit_tracker.user_presets[name] = {
+            ...this.currentValues
+        };
+        
+        saveSettingsDebounced();
+        return `[Outfit System] Outfit preset "${name}" saved`;
+    }
+    
+    loadPreset(name) {
+        if (!extension_settings.outfit_tracker.user_presets?.[name]) {
+            return null;
+        }
+        
+        const preset = extension_settings.outfit_tracker.user_presets[name];
+        const changes = [];
+        
+        // Apply preset values
+        for (const slot in preset) {
+            if (this.slots.includes(slot) && this.currentValues[slot] !== preset[slot]) {
+                // Directly set without triggering individual messages
+                this.setGlobalVariable(this.getVarName(slot), preset[slot]);
+                this.currentValues[slot] = preset[slot];
+                changes.push(slot);
+            }
+        }
+        
+        return {
+            message: `[Outfit System] {{user}} wore the "${name}" outfit.`,
+            changes
+        };
+    }
+    
+    getPresetNames() {
+        if (!extension_settings.outfit_tracker.user_presets) return [];
+        return Object.keys(extension_settings.outfit_tracker.user_presets);
+    }
+    
+    deletePreset(name) {
+        if (!extension_settings.outfit_tracker.user_presets?.[name]) return false;
+        
+        delete extension_settings.outfit_tracker.user_presets[name];
+        saveSettingsDebounced();
+        return true;
     }
 }
