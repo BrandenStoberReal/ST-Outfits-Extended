@@ -136,7 +136,7 @@ export class BotOutfitManager {
         }
         
         if (changed) {
-            return `[Outfit System] ${this.character} wore the "${presetName}" outfit.`;
+            return `[Outfit System] ${this.character} changed into the "${presetName}" outfit.`;
         }
         
         return `[Outfit System] ${this.character} was already wearing the "${presetName}" outfit.`;
