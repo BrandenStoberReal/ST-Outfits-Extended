@@ -13,9 +13,10 @@
     display: none;
     color: #ffffff;
     user-select: none;
-    transition: transform 0.3s ease;
     font-size: 0.9em;
     max-height: 80vh;
+    display: flex;
+    flex-direction: column;
 }
 
 /* User Outfit Panel - Compact Blue Theme */
@@ -33,29 +34,22 @@
     display: none;
     color: #ffffff;
     user-select: none;
-    transition: transform 0.3s ease;
     font-size: 0.9em;
     max-height: 80vh;
-}
-
-/* Container for all content - enables scroll */
-.panel-content {
     display: flex;
     flex-direction: column;
-    max-height: 64vh; /* Allows header and tabs to stay visible */
-    overflow: hidden;
 }
 
 /* Header Styles */
 .outfit-header {
     cursor: move;
     padding-bottom: 8px;
-    margin-bottom: 8px; /* Reduced margin */
+    margin-bottom: 8px;
     display: flex;
     justify-content: space-between;
     align-items: center;
     border-bottom: 1px solid rgba(255,255,255,0.3);
-    flex-shrink: 0; /* Prevents shrinking */
+    flex-shrink: 0;
 }
 
 .outfit-header h3 {
@@ -73,7 +67,7 @@
     background: rgba(0, 0, 0, 0.15);
     border-radius: 8px;
     padding: 3px;
-    flex-shrink: 0; /* Prevents shrinking */
+    flex-shrink: 0;
 }
 
 .outfit-tab {
@@ -85,7 +79,6 @@
     background: none;
     color: rgba(255,255,255,0.8);
     cursor: pointer;
-    transition: all 0.3s ease;
     font-weight: 600;
     font-size: 0.7em;
     text-transform: uppercase;
@@ -102,26 +95,18 @@
     color: #fff;
 }
 
-/* Tab content container - SCROLLABLE AREA */
-.tab-content-container {
-    flex-grow: 1; /* Takes all remaining space */
-    overflow-y: auto; /* Enables vertical scrolling */
+/* Main Content Area - Scrollable */
+.outfit-content {
+    flex: 1;  /* Takes remaining space */
+    overflow-y: auto; /* Add scroll when needed */
     padding-right: 4px;
-    scrollbar-width: thin;
-    max-height: 100%;
 }
 
-/* Will contain either slots or presets */
-.tab-content {
-    min-height: 100%;
-}
-
-/* Slots Styling - Now contained in scrollable area */
+/* Slots Styling */
 .outfit-slots {
     display: grid;
     grid-template-columns: 1fr;
     gap: 8px;
-    padding-bottom: 4px; /* Extra space at bottom */
 }
 
 .outfit-slot {
@@ -172,7 +157,6 @@
     border-radius: 5px;
     padding: 4px 10px;
     cursor: pointer;
-    transition: all 0.3s ease;
     font-weight: 600;
     font-size: 0.75em;
 }
@@ -217,7 +201,6 @@
     background: rgba(255,255,255,0.15);
     color: #fff;
     cursor: pointer;
-    transition: all 0.3s ease;
     font-weight: 600;
     font-size: 0.7em;
     text-shadow: 0 1px 1px rgba(0,0,0,0.1);
@@ -247,7 +230,6 @@
     cursor: pointer;
     font-weight: 600;
     font-size: 0.8em;
-    transition: all 0.3s ease;
     text-shadow: 0 1px 2px rgba(0,0,0,0.2);
 }
 
@@ -261,35 +243,32 @@
     font-size: 1.1em;
     padding: 4px 8px;
     border-radius: 4px;
-    transition: all 0.2s ease;
 }
 
 .outfit-actions span:hover {
     background: rgba(255,255,255,0.2);
 }
 
-/* Scrollbar styling for tab content */
-.tab-content-container::-webkit-scrollbar {
+/* Scrollbar styling */
+.outfit-content::-webkit-scrollbar {
     width: 6px;
 }
 
-.tab-content-container::-webkit-scrollbar-track {
+.outfit-content::-webkit-scrollbar-track {
     background: rgba(0, 0, 0, 0.1);
     border-radius: 3px;
 }
 
-.tab-content-container::-webkit-scrollbar-thumb {
+.outfit-content::-webkit-scrollbar-thumb {
     background: rgba(255,255,255,0.2);
     border-radius: 3px;
 }
 
-.tab-content-container::-webkit-scrollbar-thumb:hover {
+.outfit-content::-webkit-scrollbar-thumb:hover {
     background: rgba(255,255,255,0.3);
 }
 
 /* Hover effects */
 .outfit-slot:hover, .outfit-preset:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-    transition: all 0.2s ease;
+    background: rgba(255,255,255,0.15);
 }
