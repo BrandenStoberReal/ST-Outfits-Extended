@@ -1,43 +1,29 @@
-/* Bot Outfit Panel - Compact Purple Theme */
-#bot-outfit-panel {
-    position: fixed;
-    top: 100px;
-    right: 20px;
-    width: 300px;
-    background: linear-gradient(135deg, #7a57d1 0%, #6559e0 100%);
-    border: 1px solid #8783e1;
-    border-radius: 10px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-    padding: 12px;
-    z-index: 10000;
-    display: none;
-    color: #ffffff;
-    user-select: none;
-    font-size: 0.9em;
-    max-height: 80vh;
-    display: flex;
-    flex-direction: column;
-}
-
-/* User Outfit Panel - Compact Blue Theme */
+#bot-outfit-panel,
 #user-outfit-panel {
     position: fixed;
     top: 100px;
     right: 20px;
     width: 300px;
-    background: linear-gradient(135deg, #1e88e5 0%, #3d5afe 100%);
-    border: 1px solid #64b5f6;
     border-radius: 10px;
     box-shadow: 0 4px 20px rgba(0,0,0,0.3);
     padding: 12px;
     z-index: 10000;
-    display: none;
+    display: none; /* Only one display property */
     color: #ffffff;
     user-select: none;
     font-size: 0.9em;
-    max-height: 80vh;
-    display: flex;
-    flex-direction: column;
+    max-height: 80vh; /* Constrain height */
+    flex-direction: column; /* Now we only have one display property */
+}
+
+#bot-outfit-panel {
+    background: linear-gradient(135deg, #7a57d1 0%, #6559e0 100%);
+    border: 1px solid #8783e1;
+}
+
+#user-outfit-panel {
+    background: linear-gradient(135deg, #1e88e5 0%, #3d5afe 100%);
+    border: 1px solid #64b5f6;
 }
 
 /* Header Styles */
@@ -98,8 +84,9 @@
 /* Main Content Area - Scrollable */
 .outfit-content {
     flex: 1;  /* Takes remaining space */
-    overflow-y: auto; /* Add scroll when needed */
+    overflow-y: auto; /* ACTIVE scrollbar */
     padding-right: 4px;
+    min-height: 0;
 }
 
 /* Slots Styling */
