@@ -15,7 +15,7 @@ async function initializeExtension() {
         'footunderwear'
     ];
 
-    // Add new accessory slots
+    // Updated detailed accessory slots
     const ACCESSORY_SLOTS = [
         'head-accessory',
         'eyes-accessory',
@@ -30,11 +30,17 @@ async function initializeExtension() {
         'foot-accessory'
     ];
 
+    // Debugg import failures
+    console.log("Importing BotOutfitManager...");
     const { BotOutfitManager } = await import("./src/BotOutfitManager.js");
+    console.log("Importing BotOutfitPanel...");
     const { BotOutfitPanel } = await import("./src/BotOutfitPanel.js");
+    console.log("Importing UserOutfitManager...");
     const { UserOutfitManager } = await import("./src/UserOutfitManager.js");
+    console.log("Importing UserOutfitPanel...");
     const { UserOutfitPanel } = await import("./src/UserOutfitPanel.js");
     
+    console.log("Creating managers and panels...");
     const botManager = new BotOutfitManager(CLOTHING_SLOTS, ACCESSORY_SLOTS);
     const userManager = new UserOutfitManager(CLOTHING_SLOTS, ACCESSORY_SLOTS);
     const botPanel = new BotOutfitPanel(botManager);
@@ -57,6 +63,7 @@ async function initializeExtension() {
     function updateForCurrentCharacter() {
         const context = getContext();
         const charName = context.characters[context.characterId]?.name || 'Unknown';
+        console.log(`Updating for character: ${charName}`);
         botManager.setCharacter(charName);
         botPanel.updateCharacter(charName);
     }
@@ -66,9 +73,9 @@ async function initializeExtension() {
         const { eventSource, event_types } = context;
         eventSource.on(event_types.CHAT_CHANGED, updateForCurrentCharacter);
         eventSource.on(event_types.CHARACTER_CHANGED, updateForCurrentCharacter);
+        console.log("Event listeners set up");
     }
 
-    // Add presets to settings initialization
     function initSettings() {
         if (!extension_settings[MODULE_NAME]) {
             extension_settings[MODULE_NAME] = {
@@ -77,8 +84,11 @@ async function initializeExtension() {
                 position: 'right',
                 enableSysMessages: true,
                 bot_presets: {},
-                user_presets: []
+                user_presets: {}
             };
+            console.log("Initialized new settings");
+        } else {
+            console.log("Loaded existing settings");
         }
     }
 
@@ -112,6 +122,7 @@ async function initializeExtension() {
         `;
 
         $("#extensions_settings").append(settingsHtml);
+        console.log("Settings UI created");
 
         $("#outfit-sys-toggle").on("input", function() {
             extension_settings[MODULE_NAME].enableSysMessages = $(this).prop('checked');
@@ -129,26 +140,37 @@ async function initializeExtension() {
         });
     }
 
+    // Initialize core functions
+    console.log("Initializing extension with logging...");
     initSettings();
     registerOutfitCommands();
     setupEventListeners();
     updateForCurrentCharacter();
     createSettingsUI();
 
+    // Show panels if enabled
     if (extension_settings[MODULE_NAME].autoOpenBot) {
-        setTimeout(() => botPanel.show(), 1000);
+        console.log("Auto-opening bot panel");
+        botPanel.show();
     }
     
     if (extension_settings[MODULE_NAME].autoOpenUser) {
-        setTimeout(() => userPanel.show(), 1000);
+        console.log("Auto-opening user panel");
+        userPanel.show();
     }
+    
+    console.log("Initialization complete");
 }
 
 $(async () => {
     try {
+        console.log("[OutfitTracker] Starting initialization...");
         await initializeExtension();
         console.log("[OutfitTracker] Extension loaded successfully");
     } catch (error) {
         console.error("[OutfitTracker] Initialization failed", error);
+        
+        // Show error to user
+        toastr.error("Outfit Tracker failed to load. Check console for details.");
     }
 });
