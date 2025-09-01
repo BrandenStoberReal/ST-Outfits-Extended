@@ -141,14 +141,14 @@ Important: Always use the exact slot names listed above. Never invent new slot n
             // Additional delay to ensure everything is settled
             await this.delay(1000);
             
-            this.showPopup('Generating outfit commands...', 'info');
+            this.showPopup('Checking for outfit changes...', 'info');
             await this.executeGenCommand();
             this.consecutiveFailures = 0;
-            this.showPopup('Outfit check completed successfully.', 'success');
+            this.showPopup('Outfit check completed.', 'success');
         } catch (error) {
             console.error('Outfit command processing failed:', error);
             this.consecutiveFailures++;
-            this.showPopup(`Auto outfit check failed ${this.consecutiveFailures} time(s).`, 'error');
+            this.showPopup(`Outfit check failed ${this.consecutiveFailures} time(s).`, 'error');
         } finally {
             this.isProcessing = false;
             this.lastProcessTime = Date.now();
@@ -202,28 +202,38 @@ Important: Always use the exact slot names listed above. Never invent new slot n
 
     async executeCommands(commands) {
         if (!commands || commands.length === 0) {
-            this.showPopup('No outfit commands found in generated output.', 'info');
-            return;
+            return; // No commands found, silently return
         }
         
         let executedCount = 0;
+        const individualMessages = [];
+        
         for (const command of commands) {
             try {
                 const match = command.match(/outfit-system_(\w+)_(\w+)\(([^)]*)\)/);
                 if (match) {
                     const [, action, slot, value] = match;
-                    await this.executeCommand(action, slot, value.replace(/"/g, ''));
+                    const message = await this.executeCommand(action, slot, value.replace(/"/g, ''));
                     executedCount++;
+                    
+                    if (message) {
+                        individualMessages.push(message);
+                    }
                 }
             } catch (error) {
                 console.error(`Error executing command "${command}":`, error);
-                this.showPopup(`Failed to execute outfit command: ${command}`, 'error');
             }
         }
         
+        // Send individual outfit change messages instead of summary
         if (executedCount > 0 && extension_settings.outfit_tracker?.enableSysMessages) {
-            this.sendSystemMessage(`[Outfit System] Processed ${executedCount} outfit change(s) automatically.`);
-            this.showPopup(`Applied ${executedCount} outfit change(s).`, 'success');
+            for (const message of individualMessages) {
+                await this.sendSystemMessage(message);
+                await this.delay(500); // Small delay between messages
+            }
+            
+            // Update the outfit panel to reflect changes
+            this.updateOutfitPanel();
         }
     }
 
@@ -234,18 +244,21 @@ Important: Always use the exact slot names listed above. Never invent new slot n
             throw new Error(`Invalid slot: ${slot}`);
         }
 
-        switch(action) {
-            case 'wear':
-                await this.outfitManager.setOutfitItem(slot, value);
-                break;
-            case 'remove':
-                await this.outfitManager.setOutfitItem(slot, 'None');
-                break;
-            case 'change':
-                await this.outfitManager.setOutfitItem(slot, value);
-                break;
-            default:
-                throw new Error(`Unknown action: ${action}`);
+        // Use the outfitManager's setOutfitItem which returns the proper message
+        return await this.outfitManager.setOutfitItem(slot, action === 'remove' ? 'None' : value);
+    }
+
+    // Update the outfit panel to reflect changes
+    updateOutfitPanel() {
+        if (window.botOutfitPanel && window.botOutfitPanel.isVisible) {
+            setTimeout(() => {
+                try {
+                    window.botOutfitPanel.outfitManager.loadOutfit();
+                    window.botOutfitPanel.renderContent();
+                } catch (error) {
+                    console.error('Failed to update outfit panel:', error);
+                }
+            }, 300);
         }
     }
 
@@ -286,25 +299,29 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         }
     }
 
-    sendSystemMessage(message) {
-        try {
-            const chatInput = document.getElementById('send_textarea');
-            if (!chatInput) return;
-            
-            chatInput.value = `/sys compact=true ${message}`;
-            chatInput.dispatchEvent(new Event('input', { bubbles: true }));
-            
-            setTimeout(() => {
-                const event = new KeyboardEvent('keydown', {
-                    key: 'Enter',
-                    code: 'Enter',
-                    bubbles: true
-                });
-                chatInput.dispatchEvent(event);
-            }, 100);
-        } catch (error) {
-            console.error('Failed to send system message:', error);
-        }
+    async sendSystemMessage(message) {
+        return new Promise((resolve) => {
+            try {
+                const chatInput = document.getElementById('send_textarea');
+                if (!chatInput) return resolve();
+                
+                chatInput.value = `/sys compact=true ${message}`;
+                chatInput.dispatchEvent(new Event('input', { bubbles: true }));
+                
+                setTimeout(() => {
+                    const event = new KeyboardEvent('keydown', {
+                        key: 'Enter',
+                        code: 'Enter',
+                        bubbles: true
+                    });
+                    chatInput.dispatchEvent(event);
+                    resolve();
+                }, 100);
+            } catch (error) {
+                console.error('Failed to send system message:', error);
+                resolve();
+            }
+        });
     }
 
     delay(ms) {
