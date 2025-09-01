@@ -14,6 +14,7 @@ export class AutoOutfitSystem {
         this.generationCheckInterval = null;
         this.lastMessageTime = 0;
         this.pendingMessages = [];
+        this.lastAIMessageId = null;
     }
 
     getDefaultPrompt() {
@@ -63,51 +64,64 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         const { eventSource, event_types } = getContext();
         this.removeEventListener();
         
-        // Listen for CHARACTER_MESSAGE_RENDERED instead - more reliable
-        this.messageHandler = this.handleCharacterMessage.bind(this);
-        eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, this.messageHandler);
+        // Use a different approach - listen for chat changes and check for new AI messages
+        this.chatChangeHandler = this.handleChatChange.bind(this);
+        eventSource.on(event_types.CHAT_CHANGED, this.chatChangeHandler);
         
-        console.log('[AutoOutfitSystem] Event listener set up for CHARACTER_MESSAGE_RENDERED');
+        // Also listen for new messages being added
+        this.messageSentHandler = this.handleMessageSent.bind(this);
+        eventSource.on(event_types.MESSAGE_SENT, this.messageSentHandler);
+        
+        console.log('[AutoOutfitSystem] Event listeners set up');
     }
 
-    handleCharacterMessage(data) {
+    handleChatChange() {
+        // Reset tracking when chat changes
+        this.lastAIMessageId = null;
+    }
+
+    handleMessageSent(data) {
         if (!this.isEnabled || this.isProcessing) return;
         
-        console.log('[AutoOutfitSystem] Character message rendered:', data);
-        
-        // Use a safer approach - check the last message in chat instead of event data
-        setTimeout(() => {
-            if (this.lastMessageWasAI()) {
-                this.processOutfitCommands().catch(error => {
-                    console.error('Auto outfit processing failed:', error);
-                    this.consecutiveFailures++;
-                });
-            }
-        }, 2000);
-    }
-
-    lastMessageWasAI() {
-        try {
-            const { chat } = getContext();
-            if (!chat || chat.length === 0) return false;
-            
-            const lastMessage = chat[chat.length - 1];
-            return lastMessage && !lastMessage.is_user && !lastMessage.is_system;
-        } catch (error) {
-            console.error('Error checking last message:', error);
-            return false;
+        // Track the last message ID to avoid processing the same message multiple times
+        if (data && data.mes_id) {
+            this.lastAIMessageId = data.mes_id;
         }
     }
 
     removeEventListener() {
         const { eventSource, event_types } = getContext();
-        if (this.messageHandler) {
-            eventSource.off(event_types.CHARACTER_MESSAGE_RENDERED, this.messageHandler);
+        if (this.chatChangeHandler) {
+            eventSource.off(event_types.CHAT_CHANGED, this.chatChangeHandler);
+        }
+        if (this.messageSentHandler) {
+            eventSource.off(event_types.MESSAGE_SENT, this.messageSentHandler);
         }
         if (this.generationCheckInterval) {
             clearInterval(this.generationCheckInterval);
             this.generationCheckInterval = null;
         }
+    }
+
+    checkForNewAIMessages() {
+        try {
+            const { chat } = getContext();
+            if (!chat || chat.length === 0) return false;
+            
+            const lastMessage = chat[chat.length - 1];
+            
+            // Only process AI messages that haven't been processed yet
+            if (!lastMessage.is_user && 
+                !lastMessage.is_system && 
+                lastMessage.mes_id !== this.lastAIMessageId) {
+                
+                this.lastAIMessageId = lastMessage.mes_id;
+                return true;
+            }
+        } catch (error) {
+            console.error('Error checking for AI messages:', error);
+        }
+        return false;
     }
 
     isGenerationActive() {
@@ -327,24 +341,19 @@ Important: Always use the exact slot names listed above. Never invent new slot n
     async sendSystemMessage(message) {
         return new Promise((resolve) => {
             try {
+                // Use the direct send method instead of /sys command
                 const { sendSystemMessage } = getContext();
                 
-                // Use SillyTavern's internal system message function
                 if (sendSystemMessage) {
                     sendSystemMessage(message);
                     resolve();
                     return;
                 }
                 
-                // Fallback to manual method
-                this.sendSystemMessageManual(message).then(resolve).catch(() => {
-                    // If manual method fails, try one more time after delay
-                    setTimeout(() => {
-                        this.sendSystemMessageManual(message).then(resolve).catch(() => {
-                            console.error('Failed to send system message after retry');
-                            resolve();
-                        });
-                    }, 1000);
+                // Fallback - use a different approach that doesn't interfere with /sys
+                this.sendSystemMessageAlternative(message).then(resolve).catch(() => {
+                    console.error('Failed to send system message');
+                    resolve();
                 });
             } catch (error) {
                 console.error('Failed to send system message:', error);
@@ -353,50 +362,38 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         });
     }
 
-    async sendSystemMessageManual(message) {
+    async sendSystemMessageAlternative(message) {
         return new Promise((resolve, reject) => {
             try {
-                const chatInput = document.getElementById('send_textarea');
-                if (!chatInput) {
-                    reject(new Error('Chat input not found'));
-                    return;
-                }
-                
-                // Clear any existing content first
-                chatInput.value = '';
-                chatInput.dispatchEvent(new Event('input', { bubbles: true }));
-                
-                setTimeout(() => {
-                    // Set the system message
-                    chatInput.value = `/sys compact=true ${message}`;
-                    chatInput.dispatchEvent(new Event('input', { bubbles: true }));
-                    
-                    setTimeout(() => {
-                        // Try to find and click the send button directly
-                        const sendButton = document.querySelector('#send_but');
-                        if (sendButton && !sendButton.disabled) {
-                            sendButton.click();
-                            resolve();
-                            return;
-                        }
-                        
-                        // If send button not available, try keyboard event
-                        const event = new KeyboardEvent('keydown', {
-                            key: 'Enter',
-                            code: 'Enter',
-                            keyCode: 13,
-                            which: 13,
-                            bubbles: true,
-                            cancelable: true
-                        });
-                        
-                        if (chatInput.dispatchEvent(event)) {
+                // Create a temporary button to send the message
+                const tempButton = document.createElement('button');
+                tempButton.style.display = 'none';
+                tempButton.onclick = () => {
+                    try {
+                        const { addOneMessage } = getContext();
+                        if (addOneMessage) {
+                            addOneMessage({
+                                is_system: true,
+                                is_user: false,
+                                mes: message,
+                                name: 'System',
+                                send_date: Date.now()
+                            });
                             resolve();
                         } else {
-                            reject(new Error('Keyboard event failed'));
+                            reject(new Error('addOneMessage not available'));
                         }
-                    }, 100);
+                    } catch (error) {
+                        reject(error);
+                    }
+                };
+                
+                document.body.appendChild(tempButton);
+                tempButton.click();
+                setTimeout(() => {
+                    document.body.removeChild(tempButton);
                 }, 100);
+                
             } catch (error) {
                 reject(error);
             }
@@ -435,6 +432,15 @@ Important: Always use the exact slot names listed above. Never invent new slot n
             await this.processOutfitCommands();
         } catch (error) {
             this.showPopup(`Manual trigger failed: ${error.message}`, 'error');
+        }
+    }
+
+    // Manual trigger method that can be called from elsewhere
+    triggerOutfitCheck() {
+        if (this.checkForNewAIMessages()) {
+            this.processOutfitCommands().catch(error => {
+                console.error('Manual outfit check failed:', error);
+            });
         }
     }
 }
