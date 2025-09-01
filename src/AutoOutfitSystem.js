@@ -8,12 +8,9 @@ export class AutoOutfitSystem {
         this.systemPrompt = this.getDefaultPrompt();
         this.commandPattern = /outfit-system_(\w+)_(\w+)\(([^)]*)\)/g;
         this.isProcessing = false;
-        this.lastProcessTime = null;
         this.consecutiveFailures = 0;
         this.maxConsecutiveFailures = 5;
-        this.lastChatLength = 0;
-        this.pollingInterval = null;
-        this.lastMessageId = null;
+        this.eventHandler = null;
     }
 
     getDefaultPrompt() {
@@ -37,7 +34,7 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         
         this.isEnabled = true;
         this.consecutiveFailures = 0;
-        this.setupPolling();
+        this.setupEventListeners();
         return '[Outfit System] Auto outfit updates enabled.';
     }
 
@@ -45,77 +42,38 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         if (!this.isEnabled) return '[Outfit System] Auto outfit updates already disabled.';
         
         this.isEnabled = false;
-        this.stopPolling();
+        this.removeEventListeners();
         return '[Outfit System] Auto outfit updates disabled.';
     }
 
-    setPrompt(prompt) {
-        this.systemPrompt = prompt || this.getDefaultPrompt();
-        return '[Outfit System] System prompt updated.';
-    }
-
-    resetToDefaultPrompt() {
-        this.systemPrompt = this.getDefaultPrompt();
-        return '[Outfit System] Reset to default prompt.';
-    }
-
-    setupPolling() {
-        this.stopPolling();
+    setupEventListeners() {
+        this.removeEventListeners();
         
-        // Poll every 3 seconds to check for new AI messages
-        this.pollingInterval = setInterval(() => {
-            this.checkForNewAIMessages();
-        }, 3000);
+        const { eventSource, event_types } = getContext();
         
-        console.log('[AutoOutfitSystem] Polling started');
-    }
-
-    stopPolling() {
-        if (this.pollingInterval) {
-            clearInterval(this.pollingInterval);
-            this.pollingInterval = null;
-        }
-    }
-
-    checkForNewAIMessages() {
-        if (!this.isEnabled || this.isProcessing || this.isGenerationActive()) return;
-        
-        try {
-            const { chat } = getContext();
-            if (!chat || chat.length === 0) return;
-            
-            const lastMessage = chat[chat.length - 1];
-            
-            // Check if this is a new AI message that we haven't processed
-            if (lastMessage && 
-                !lastMessage.is_user && 
-                !lastMessage.is_system &&
-                lastMessage.mes_id !== this.lastMessageId) {
-                
-                this.lastMessageId = lastMessage.mes_id;
-                console.log('[AutoOutfitSystem] New AI message detected, processing...');
-                
-                // Process after a short delay to ensure message is fully rendered
+        // Listen for when AI messages are fully rendered (after generation completes)
+        this.eventHandler = (data) => {
+            if (this.isEnabled && !this.isProcessing) {
+                console.log('[AutoOutfitSystem] AI message rendered, processing...');
                 setTimeout(() => {
                     this.processOutfitCommands().catch(error => {
                         console.error('Auto outfit processing failed:', error);
                         this.consecutiveFailures++;
                     });
-                }, 2000);
+                }, 1500); // Wait a bit for message to be fully processed
             }
-        } catch (error) {
-            console.error('Error checking for AI messages:', error);
-        }
+        };
+        
+        eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, this.eventHandler);
+        console.log('[AutoOutfitSystem] Event listener registered');
     }
 
-    isGenerationActive() {
-        try {
-            // Check for active generation indicators
-            const stopButton = document.querySelector('#stop_generation');
-            return stopButton && stopButton.style.display !== 'none';
-        } catch (error) {
-            console.error('Error checking generation status:', error);
-            return false;
+    removeEventListeners() {
+        if (this.eventHandler) {
+            const { eventSource, event_types } = getContext();
+            eventSource.off(event_types.CHARACTER_MESSAGE_RENDERED, this.eventHandler);
+            this.eventHandler = null;
+            console.log('[AutoOutfitSystem] Event listener removed');
         }
     }
 
@@ -127,18 +85,13 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         }
 
         if (this.isProcessing) {
+            console.log('[AutoOutfitSystem] Already processing, skipping');
             return;
         }
         
         this.isProcessing = true;
         
         try {
-            // Wait for any ongoing generation to complete
-            await this.waitForGenerationComplete();
-            
-            // Additional delay to ensure everything is settled
-            await this.delay(1000);
-            
             this.showPopup('Checking for outfit changes...', 'info');
             await this.executeGenCommand();
             this.consecutiveFailures = 0;
@@ -149,23 +102,7 @@ Important: Always use the exact slot names listed above. Never invent new slot n
             this.showPopup(`Outfit check failed ${this.consecutiveFailures} time(s).`, 'error');
         } finally {
             this.isProcessing = false;
-            this.lastProcessTime = Date.now();
         }
-    }
-
-    waitForGenerationComplete() {
-        return new Promise((resolve) => {
-            if (!this.isGenerationActive()) {
-                return resolve();
-            }
-            
-            const checkInterval = setInterval(() => {
-                if (!this.isGenerationActive()) {
-                    clearInterval(checkInterval);
-                    resolve();
-                }
-            }, 1000);
-        });
     }
 
     async executeGenCommand() {
@@ -179,7 +116,7 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         
         const promptText = `${this.systemPrompt}\n\nRecent Messages:\n${recentMessages}`;
         
-        console.log('Generating outfit commands quietly...');
+        console.log('[AutoOutfitSystem] Generating outfit commands quietly...');
         const result = await generateQuietPrompt({
             quietPrompt: promptText
         });
@@ -188,7 +125,7 @@ Important: Always use the exact slot names listed above. Never invent new slot n
             throw new Error('No output generated from generation');
         }
         
-        console.log('Generated result:', result);
+        console.log('[AutoOutfitSystem] Generated result:', result);
         
         // Parse and execute commands
         const commands = this.parseGeneratedText(result);
@@ -210,7 +147,8 @@ Important: Always use the exact slot names listed above. Never invent new slot n
 
     async executeCommands(commands) {
         if (!commands || commands.length === 0) {
-            return; // No commands found, silently return
+            console.log('[AutoOutfitSystem] No outfit commands found');
+            return;
         }
         
         let executedCount = 0;
@@ -223,6 +161,7 @@ Important: Always use the exact slot names listed above. Never invent new slot n
                     const [, action, slot, value] = match;
                     const cleanValue = value.replace(/"/g, '').trim();
                     
+                    console.log(`[AutoOutfitSystem] Executing: ${action} ${slot} "${cleanValue}"`);
                     const message = await this.executeCommand(action, slot, cleanValue);
                     executedCount++;
                     
@@ -237,9 +176,10 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         
         // Send individual outfit change messages using proper SillyTavern API
         if (executedCount > 0 && extension_settings.outfit_tracker?.enableSysMessages) {
+            console.log(`[AutoOutfitSystem] Sending ${executedCount} system messages`);
             for (const message of individualMessages) {
                 await this.sendSystemMessage(message);
-                await this.delay(800); // Small delay between messages
+                await this.delay(500); // Small delay between messages
             }
             
             // Update the outfit panel to reflect changes
@@ -294,7 +234,7 @@ Important: Always use the exact slot names listed above. Never invent new slot n
             if (sendSystemMessage) {
                 // Use the proper SillyTavern system message function
                 sendSystemMessage(message);
-                console.log('System message sent:', message);
+                console.log('[AutoOutfitSystem] System message sent:', message);
                 return;
             }
             
@@ -382,17 +322,11 @@ Important: Always use the exact slot names listed above. Never invent new slot n
             hasPrompt: !!this.systemPrompt,
             promptLength: this.systemPrompt?.length || 0,
             isProcessing: this.isProcessing,
-            consecutiveFailures: this.consecutiveFailures,
-            lastProcessTime: this.lastProcessTime ? new Date(this.lastProcessTime).toLocaleTimeString() : 'Never'
+            consecutiveFailures: this.consecutiveFailures
         };
     }
 
     async manualTrigger() {
-        if (!this.isEnabled) {
-            this.showPopup('Enable auto updates first with /outfit-auto on', 'warning');
-            return;
-        }
-        
         if (this.isProcessing) {
             this.showPopup('Auto outfit check already in progress.', 'warning');
             return;
@@ -404,5 +338,15 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         } catch (error) {
             this.showPopup(`Manual trigger failed: ${error.message}`, 'error');
         }
+    }
+
+    setPrompt(prompt) {
+        this.systemPrompt = prompt || this.getDefaultPrompt();
+        return '[Outfit System] System prompt updated.';
+    }
+
+    resetToDefaultPrompt() {
+        this.systemPrompt = this.getDefaultPrompt();
+        return '[Outfit System] Reset to default prompt.';
     }
 }
