@@ -11,10 +11,9 @@ export class AutoOutfitSystem {
         this.lastProcessTime = null;
         this.consecutiveFailures = 0;
         this.maxConsecutiveFailures = 5;
-        this.generationCheckInterval = null;
-        this.lastMessageTime = 0;
-        this.pendingMessages = [];
         this.lastAIMessageId = null;
+        this.pollingInterval = null;
+        this.lastChatLength = 0;
     }
 
     getDefaultPrompt() {
@@ -38,7 +37,7 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         
         this.isEnabled = true;
         this.consecutiveFailures = 0;
-        this.setupEventListener();
+        this.setupPolling();
         return '[Outfit System] Auto outfit updates enabled.';
     }
 
@@ -46,7 +45,7 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         if (!this.isEnabled) return '[Outfit System] Auto outfit updates already disabled.';
         
         this.isEnabled = false;
-        this.removeEventListener();
+        this.stopPolling();
         return '[Outfit System] Auto outfit updates disabled.';
     }
 
@@ -60,68 +59,58 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         return '[Outfit System] Reset to default prompt.';
     }
 
-    setupEventListener() {
-        const { eventSource, event_types } = getContext();
-        this.removeEventListener();
+    setupPolling() {
+        this.stopPolling();
         
-        // Use a different approach - listen for chat changes and check for new AI messages
-        this.chatChangeHandler = this.handleChatChange.bind(this);
-        eventSource.on(event_types.CHAT_CHANGED, this.chatChangeHandler);
+        // Poll every 2 seconds to check for new AI messages
+        this.pollingInterval = setInterval(() => {
+            this.checkForNewAIMessages();
+        }, 2000);
         
-        // Also listen for new messages being added
-        this.messageSentHandler = this.handleMessageSent.bind(this);
-        eventSource.on(event_types.MESSAGE_SENT, this.messageSentHandler);
-        
-        console.log('[AutoOutfitSystem] Event listeners set up');
+        console.log('[AutoOutfitSystem] Polling started');
     }
 
-    handleChatChange() {
-        // Reset tracking when chat changes
-        this.lastAIMessageId = null;
-    }
-
-    handleMessageSent(data) {
-        if (!this.isEnabled || this.isProcessing) return;
-        
-        // Track the last message ID to avoid processing the same message multiple times
-        if (data && data.mes_id) {
-            this.lastAIMessageId = data.mes_id;
-        }
-    }
-
-    removeEventListener() {
-        const { eventSource, event_types } = getContext();
-        if (this.chatChangeHandler) {
-            eventSource.off(event_types.CHAT_CHANGED, this.chatChangeHandler);
-        }
-        if (this.messageSentHandler) {
-            eventSource.off(event_types.MESSAGE_SENT, this.messageSentHandler);
-        }
-        if (this.generationCheckInterval) {
-            clearInterval(this.generationCheckInterval);
-            this.generationCheckInterval = null;
+    stopPolling() {
+        if (this.pollingInterval) {
+            clearInterval(this.pollingInterval);
+            this.pollingInterval = null;
         }
     }
 
     checkForNewAIMessages() {
+        if (!this.isEnabled || this.isProcessing) return;
+        
         try {
             const { chat } = getContext();
-            if (!chat || chat.length === 0) return false;
+            if (!chat || chat.length === 0) return;
             
-            const lastMessage = chat[chat.length - 1];
-            
-            // Only process AI messages that haven't been processed yet
-            if (!lastMessage.is_user && 
-                !lastMessage.is_system && 
-                lastMessage.mes_id !== this.lastAIMessageId) {
+            // Check if chat length changed (new message added)
+            if (chat.length !== this.lastChatLength) {
+                this.lastChatLength = chat.length;
                 
-                this.lastAIMessageId = lastMessage.mes_id;
-                return true;
+                const lastMessage = chat[chat.length - 1];
+                
+                // Only process AI messages that aren't system messages
+                if (lastMessage && 
+                    !lastMessage.is_user && 
+                    !lastMessage.is_system &&
+                    lastMessage.mes_id !== this.lastAIMessageId) {
+                    
+                    this.lastAIMessageId = lastMessage.mes_id;
+                    console.log('[AutoOutfitSystem] New AI message detected, processing...');
+                    
+                    // Wait a bit before processing to ensure generation is complete
+                    setTimeout(() => {
+                        this.processOutfitCommands().catch(error => {
+                            console.error('Auto outfit processing failed:', error);
+                            this.consecutiveFailures++;
+                        });
+                    }, 3000);
+                }
             }
         } catch (error) {
             console.error('Error checking for AI messages:', error);
         }
-        return false;
     }
 
     isGenerationActive() {
@@ -259,11 +248,11 @@ Important: Always use the exact slot names listed above. Never invent new slot n
             }
         }
         
-        // Send individual outfit change messages instead of summary
+        // Send individual outfit change messages
         if (executedCount > 0 && extension_settings.outfit_tracker?.enableSysMessages) {
             for (const message of individualMessages) {
-                await this.sendSystemMessage(message);
-                await this.delay(500); // Small delay between messages
+                await this.addSystemMessage(message);
+                await this.delay(500);
             }
             
             // Update the outfit panel to reflect changes
@@ -338,64 +327,36 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         }
     }
 
-    async sendSystemMessage(message) {
+    async addSystemMessage(message) {
         return new Promise((resolve) => {
             try {
-                // Use the direct send method instead of /sys command
-                const { sendSystemMessage } = getContext();
+                const { addOneMessage, chat } = getContext();
                 
-                if (sendSystemMessage) {
-                    sendSystemMessage(message);
-                    resolve();
-                    return;
-                }
-                
-                // Fallback - use a different approach that doesn't interfere with /sys
-                this.sendSystemMessageAlternative(message).then(resolve).catch(() => {
-                    console.error('Failed to send system message');
-                    resolve();
-                });
-            } catch (error) {
-                console.error('Failed to send system message:', error);
-                resolve();
-            }
-        });
-    }
-
-    async sendSystemMessageAlternative(message) {
-        return new Promise((resolve, reject) => {
-            try {
-                // Create a temporary button to send the message
-                const tempButton = document.createElement('button');
-                tempButton.style.display = 'none';
-                tempButton.onclick = () => {
-                    try {
-                        const { addOneMessage } = getContext();
-                        if (addOneMessage) {
-                            addOneMessage({
-                                is_system: true,
-                                is_user: false,
-                                mes: message,
-                                name: 'System',
-                                send_date: Date.now()
-                            });
-                            resolve();
-                        } else {
-                            reject(new Error('addOneMessage not available'));
-                        }
-                    } catch (error) {
-                        reject(error);
+                if (addOneMessage && chat) {
+                    // Add the system message directly to chat
+                    addOneMessage({
+                        is_system: true,
+                        is_user: false,
+                        mes: message,
+                        name: 'System',
+                        send_date: Date.now(),
+                        mes_id: 'sys_' + Date.now() + Math.random().toString(36).substr(2, 9)
+                    });
+                    
+                    // Save the chat to persist the message
+                    const { saveChatConditional } = getContext();
+                    if (saveChatConditional) {
+                        saveChatConditional();
                     }
-                };
-                
-                document.body.appendChild(tempButton);
-                tempButton.click();
-                setTimeout(() => {
-                    document.body.removeChild(tempButton);
-                }, 100);
-                
+                    
+                    resolve();
+                } else {
+                    console.error('addOneMessage not available');
+                    resolve();
+                }
             } catch (error) {
-                reject(error);
+                console.error('Failed to add system message:', error);
+                resolve();
             }
         });
     }
@@ -411,8 +372,7 @@ Important: Always use the exact slot names listed above. Never invent new slot n
             promptLength: this.systemPrompt?.length || 0,
             isProcessing: this.isProcessing,
             consecutiveFailures: this.consecutiveFailures,
-            lastProcessTime: this.lastProcessTime ? new Date(this.lastProcessTime).toLocaleTimeString() : 'Never',
-            lastMessageTime: this.lastMessageTime ? new Date(this.lastMessageTime).toLocaleTimeString() : 'Never'
+            lastProcessTime: this.lastProcessTime ? new Date(this.lastProcessTime).toLocaleTimeString() : 'Never'
         };
     }
 
@@ -432,15 +392,6 @@ Important: Always use the exact slot names listed above. Never invent new slot n
             await this.processOutfitCommands();
         } catch (error) {
             this.showPopup(`Manual trigger failed: ${error.message}`, 'error');
-        }
-    }
-
-    // Manual trigger method that can be called from elsewhere
-    triggerOutfitCheck() {
-        if (this.checkForNewAIMessages()) {
-            this.processOutfitCommands().catch(error => {
-                console.error('Manual outfit check failed:', error);
-            });
         }
     }
 }
