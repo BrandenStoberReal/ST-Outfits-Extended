@@ -11,9 +11,9 @@ export class AutoOutfitSystem {
         this.lastProcessTime = null;
         this.consecutiveFailures = 0;
         this.maxConsecutiveFailures = 5;
-        this.lastAIMessageId = null;
-        this.pollingInterval = null;
         this.lastChatLength = 0;
+        this.pollingInterval = null;
+        this.lastMessageId = null;
     }
 
     getDefaultPrompt() {
@@ -62,10 +62,10 @@ Important: Always use the exact slot names listed above. Never invent new slot n
     setupPolling() {
         this.stopPolling();
         
-        // Poll every 2 seconds to check for new AI messages
+        // Poll every 3 seconds to check for new AI messages
         this.pollingInterval = setInterval(() => {
             this.checkForNewAIMessages();
-        }, 2000);
+        }, 3000);
         
         console.log('[AutoOutfitSystem] Polling started');
     }
@@ -78,35 +78,30 @@ Important: Always use the exact slot names listed above. Never invent new slot n
     }
 
     checkForNewAIMessages() {
-        if (!this.isEnabled || this.isProcessing) return;
+        if (!this.isEnabled || this.isProcessing || this.isGenerationActive()) return;
         
         try {
             const { chat } = getContext();
             if (!chat || chat.length === 0) return;
             
-            // Check if chat length changed (new message added)
-            if (chat.length !== this.lastChatLength) {
-                this.lastChatLength = chat.length;
+            const lastMessage = chat[chat.length - 1];
+            
+            // Check if this is a new AI message that we haven't processed
+            if (lastMessage && 
+                !lastMessage.is_user && 
+                !lastMessage.is_system &&
+                lastMessage.mes_id !== this.lastMessageId) {
                 
-                const lastMessage = chat[chat.length - 1];
+                this.lastMessageId = lastMessage.mes_id;
+                console.log('[AutoOutfitSystem] New AI message detected, processing...');
                 
-                // Only process AI messages that aren't system messages
-                if (lastMessage && 
-                    !lastMessage.is_user && 
-                    !lastMessage.is_system &&
-                    lastMessage.mes_id !== this.lastAIMessageId) {
-                    
-                    this.lastAIMessageId = lastMessage.mes_id;
-                    console.log('[AutoOutfitSystem] New AI message detected, processing...');
-                    
-                    // Wait a bit before processing to ensure generation is complete
-                    setTimeout(() => {
-                        this.processOutfitCommands().catch(error => {
-                            console.error('Auto outfit processing failed:', error);
-                            this.consecutiveFailures++;
-                        });
-                    }, 3000);
-                }
+                // Process after a short delay to ensure message is fully rendered
+                setTimeout(() => {
+                    this.processOutfitCommands().catch(error => {
+                        console.error('Auto outfit processing failed:', error);
+                        this.consecutiveFailures++;
+                    });
+                }, 2000);
             }
         } catch (error) {
             console.error('Error checking for AI messages:', error);
@@ -115,33 +110,13 @@ Important: Always use the exact slot names listed above. Never invent new slot n
 
     isGenerationActive() {
         try {
-            // Check multiple indicators of active generation
+            // Check for active generation indicators
             const stopButton = document.querySelector('#stop_generation');
-            const sendButton = document.querySelector('#send_but');
-            
-            return (stopButton && stopButton.style.display !== 'none') ||
-                   (sendButton && sendButton.disabled) ||
-                   document.querySelector('.generating') !== null ||
-                   document.querySelector('.msg_in_progress') !== null;
+            return stopButton && stopButton.style.display !== 'none';
         } catch (error) {
             console.error('Error checking generation status:', error);
             return false;
         }
-    }
-
-    waitForGenerationComplete() {
-        return new Promise((resolve) => {
-            if (!this.isGenerationActive()) {
-                return resolve();
-            }
-            
-            const checkInterval = setInterval(() => {
-                if (!this.isGenerationActive()) {
-                    clearInterval(checkInterval);
-                    resolve();
-                }
-            }, 500);
-        });
     }
 
     async processOutfitCommands() {
@@ -178,15 +153,25 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         }
     }
 
+    waitForGenerationComplete() {
+        return new Promise((resolve) => {
+            if (!this.isGenerationActive()) {
+                return resolve();
+            }
+            
+            const checkInterval = setInterval(() => {
+                if (!this.isGenerationActive()) {
+                    clearInterval(checkInterval);
+                    resolve();
+                }
+            }, 1000);
+        });
+    }
+
     async executeGenCommand() {
         const recentMessages = this.getLastMessages(3);
         if (!recentMessages.trim()) {
             throw new Error('No recent messages to process');
-        }
-
-        // Double-check that no generation is active
-        if (this.isGenerationActive()) {
-            throw new Error('Generation still active - cannot proceed');
         }
 
         // Use generateQuietPrompt for background processing
@@ -236,7 +221,9 @@ Important: Always use the exact slot names listed above. Never invent new slot n
                 const match = command.match(/outfit-system_(\w+)_(\w+)\(([^)]*)\)/);
                 if (match) {
                     const [, action, slot, value] = match;
-                    const message = await this.executeCommand(action, slot, value.replace(/"/g, ''));
+                    const cleanValue = value.replace(/"/g, '').trim();
+                    
+                    const message = await this.executeCommand(action, slot, cleanValue);
                     executedCount++;
                     
                     if (message) {
@@ -248,11 +235,11 @@ Important: Always use the exact slot names listed above. Never invent new slot n
             }
         }
         
-        // Send individual outfit change messages
+        // Send individual outfit change messages using proper SillyTavern API
         if (executedCount > 0 && extension_settings.outfit_tracker?.enableSysMessages) {
             for (const message of individualMessages) {
                 await this.sendSystemMessage(message);
-                await this.delay(500);
+                await this.delay(800); // Small delay between messages
             }
             
             // Update the outfit panel to reflect changes
@@ -300,6 +287,64 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         }
     }
 
+    async sendSystemMessage(message) {
+        try {
+            const { sendSystemMessage } = getContext();
+            
+            if (sendSystemMessage) {
+                // Use the proper SillyTavern system message function
+                sendSystemMessage(message);
+                console.log('System message sent:', message);
+                return;
+            }
+            
+            // Fallback: Use the chat input method
+            await this.sendSystemMessageFallback(message);
+            
+        } catch (error) {
+            console.error('Failed to send system message:', error);
+            throw error;
+        }
+    }
+
+    async sendSystemMessageFallback(message) {
+        return new Promise((resolve, reject) => {
+            try {
+                const chatInput = document.getElementById('send_textarea');
+                if (!chatInput) {
+                    reject(new Error('Chat input not found'));
+                    return;
+                }
+                
+                // Store current value
+                const originalValue = chatInput.value;
+                
+                // Set the system message
+                chatInput.value = `/sys ${message}`;
+                chatInput.dispatchEvent(new Event('input', { bubbles: true }));
+                
+                setTimeout(() => {
+                    // Try to find and click the send button
+                    const sendButton = document.querySelector('#send_but');
+                    if (sendButton && !sendButton.disabled) {
+                        sendButton.click();
+                        setTimeout(() => {
+                            // Restore original value
+                            chatInput.value = originalValue;
+                            chatInput.dispatchEvent(new Event('input', { bubbles: true }));
+                            resolve();
+                        }, 100);
+                        return;
+                    }
+                    
+                    reject(new Error('Send button not available'));
+                }, 100);
+            } catch (error) {
+                reject(error);
+            }
+        });
+    }
+
     showPopup(message, type = 'info') {
         try {
             if (typeof toastr !== 'undefined') {
@@ -325,80 +370,6 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         } catch (error) {
             console.error('Failed to show popup:', error);
         }
-    }
-
-    async sendSystemMessage(message) {
-        return new Promise((resolve) => {
-            try {
-                const { sendSystemMessage } = getContext();
-                
-                if (sendSystemMessage) {
-                    // Use the proper system message function
-                    sendSystemMessage(message);
-                    console.log('System message sent via sendSystemMessage:', message);
-                    resolve();
-                    return;
-                }
-                
-                // Fallback: Use the chat input method but with better handling
-                this.sendSystemMessageFallback(message).then(resolve).catch(error => {
-                    console.error('Failed to send system message:', error);
-                    resolve();
-                });
-                
-            } catch (error) {
-                console.error('Failed to send system message:', error);
-                resolve();
-            }
-        });
-    }
-
-    async sendSystemMessageFallback(message) {
-        return new Promise((resolve, reject) => {
-            try {
-                const chatInput = document.getElementById('send_textarea');
-                if (!chatInput) {
-                    reject(new Error('Chat input not found'));
-                    return;
-                }
-                
-                // Clear any existing content first
-                chatInput.value = '';
-                chatInput.dispatchEvent(new Event('input', { bubbles: true }));
-                
-                setTimeout(() => {
-                    // Set the system message with proper formatting
-                    const formattedMessage = `/sys ${message}`;
-                    chatInput.value = formattedMessage;
-                    chatInput.dispatchEvent(new Event('input', { bubbles: true }));
-                    
-                    setTimeout(() => {
-                        // Try to find and click the send button directly
-                        const sendButton = document.querySelector('#send_but');
-                        if (sendButton && !sendButton.disabled) {
-                            sendButton.click();
-                            resolve();
-                            return;
-                        }
-                        
-                        // If send button not available, try keyboard event
-                        const event = new KeyboardEvent('keydown', {
-                            key: 'Enter',
-                            code: 'Enter',
-                            keyCode: 13,
-                            which: 13,
-                            bubbles: true,
-                            cancelable: true
-                        });
-                        
-                        chatInput.dispatchEvent(event);
-                        resolve();
-                    }, 100);
-                }, 100);
-            } catch (error) {
-                reject(error);
-            }
-        });
     }
 
     delay(ms) {
