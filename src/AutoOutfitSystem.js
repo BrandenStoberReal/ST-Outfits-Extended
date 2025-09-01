@@ -7,15 +7,12 @@ export class AutoOutfitSystem {
         this.isEnabled = false;
         this.systemPrompt = this.getDefaultPrompt();
         this.commandPattern = /outfit-system_(\w+)_(\w+)\(([^)]*)\)/g;
-        this.messageHandler = null;
-        this.retryCount = 0;
-        this.maxRetries = 3;
-        this.retryDelay = 2000; // 2 seconds between retries
         this.isProcessing = false;
         this.lastProcessTime = null;
         this.consecutiveFailures = 0;
         this.maxConsecutiveFailures = 5;
-        this.lastMessageId = null;
+        this.tempVarName = 'outfitsystem_charmes';
+        this.generationTimeout = null;
     }
 
     getDefaultPrompt() {
@@ -38,7 +35,7 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         if (this.isEnabled) return '[Outfit System] Auto outfit updates already enabled.';
         
         this.isEnabled = true;
-        this.consecutiveFailures = 0; // Reset failure counter when enabling
+        this.consecutiveFailures = 0;
         this.setupEventListener();
         return '[Outfit System] Auto outfit updates enabled.';
     }
@@ -48,6 +45,7 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         
         this.isEnabled = false;
         this.removeEventListener();
+        this.cleanupTempVar();
         return '[Outfit System] Auto outfit updates disabled.';
     }
 
@@ -63,12 +61,10 @@ Important: Always use the exact slot names listed above. Never invent new slot n
 
     setupEventListener() {
         const { eventSource, event_types } = getContext();
-        
-        // Remove any existing listener first
         this.removeEventListener();
         
-        // Listen for when AI messages are fully rendered (completed)
-        this.messageHandler = this.handleMessage.bind(this);
+        // Listen for completed AI messages
+        this.messageHandler = this.handleCompletedMessage.bind(this);
         eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, this.messageHandler);
     }
 
@@ -77,190 +73,158 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         if (this.messageHandler) {
             eventSource.off(event_types.CHARACTER_MESSAGE_RENDERED, this.messageHandler);
         }
+        if (this.generationTimeout) {
+            clearTimeout(this.generationTimeout);
+            this.generationTimeout = null;
+        }
     }
 
-    async handleMessage(data) {
-        // Skip if not enabled, processing, or no prompt
-        if (!this.isEnabled || !this.systemPrompt || this.isProcessing) return;
-
-        // Get the current chat context to check the latest message
-        const context = getContext();
-        const chat = context.chat || [];
+    async handleCompletedMessage() {
+        if (!this.isEnabled || this.isProcessing) return;
         
-        if (chat.length === 0) return;
-        
-        // Get the latest AI message (should be the one that just rendered)
-        const latestMessage = chat[chat.length - 1];
-        
-        // Skip if this isn't an AI message or if we've already processed it
-        if (latestMessage.is_user || latestMessage.mes_id === this.lastMessageId) return;
-        
-        // Store the message ID to prevent duplicate processing
-        this.lastMessageId = latestMessage.mes_id;
-        
-        try {
-            // Show starting message as popup
-            this.showPopup('Auto outfit check started, please wait...', 'info');
-            
-            // Wait a moment to ensure the message is fully settled
-            setTimeout(async () => {
-                await this.processOutfitCommands();
-            }, 1000);
-        } catch (error) {
-            console.error('Auto outfit processing error:', error);
-            this.showPopup('Auto outfit check failed to start.', 'error');
-        }
+        // Wait a moment to ensure the message is fully settled
+        this.generationTimeout = setTimeout(async () => {
+            await this.processOutfitCommands();
+        }, 1500);
     }
 
     async processOutfitCommands() {
         if (this.isProcessing) {
-            console.log('[OutfitSystem] Already processing, skipping duplicate request');
             this.showPopup('Auto outfit check already in progress.', 'warning');
             return;
         }
 
         if (this.consecutiveFailures >= this.maxConsecutiveFailures) {
-            console.warn('[OutfitSystem] Too many consecutive failures, auto-disabling');
             this.disable();
             this.showPopup('Auto outfit updates disabled due to repeated failures.', 'error');
             return;
         }
 
         this.isProcessing = true;
-        this.retryCount = 0;
         
         try {
-            await this.executeWithRetry();
+            this.showPopup('Starting outfit command generation...', 'info');
+            await this.executeGenCommand();
+            this.consecutiveFailures = 0;
+            this.showPopup('Outfit check completed successfully.', 'success');
         } catch (error) {
-            console.error('[OutfitSystem] Final processing failure:', error);
+            console.error('Outfit command processing failed:', error);
             this.consecutiveFailures++;
             this.showPopup(`Auto outfit check failed ${this.consecutiveFailures} time(s).`, 'error');
         } finally {
             this.isProcessing = false;
             this.lastProcessTime = Date.now();
+            this.cleanupTempVar();
         }
     }
 
-    async executeWithRetry() {
-        while (this.retryCount < this.maxRetries) {
-            try {
-                await this.executeSingleAttempt();
-                this.consecutiveFailures = 0; // Reset on success
-                this.showPopup('Auto outfit check completed successfully.', 'success');
-                return; // Success, exit retry loop
-            } catch (error) {
-                this.retryCount++;
-                
-                if (this.retryCount < this.maxRetries) {
-                    console.warn(`[OutfitSystem] Attempt ${this.retryCount} failed, retrying in ${this.retryDelay}ms:`, error.message);
-                    this.showPopup(`Auto outfit check failed (attempt ${this.retryCount}), retrying...`, 'warning');
-                    await this.delay(this.retryDelay);
-                } else {
-                    console.error('[OutfitSystem] All retry attempts failed:', error);
-                    this.showPopup('Auto outfit check failed 3 times.', 'error');
-                    throw error; // Re-throw after final retry
-                }
-            }
-        }
-    }
-
-    async executeSingleAttempt() {
-        // Get the last 3 completed messages
+    async executeGenCommand() {
         const recentMessages = this.getLastMessages(3);
         if (!recentMessages.trim()) {
             throw new Error('No recent messages to process');
         }
 
-        this.showPopup('Generating outfit commands...', 'info');
-
-        // Use generateRaw() to generate outfit commands in the background
-        // This is equivalent to /gen as=system but doesn't interfere with chat
-        const generatedCommands = await this.generateOutfitCommands(recentMessages);
+        // Clean up any previous temp variable
+        this.cleanupTempVar();
         
-        await this.executeCommands(generatedCommands);
-    }
-
-    async generateOutfitCommands(recentMessages) {
-        const { generateRaw } = getContext();
+        // Construct the /gen command with pipe to temporary variable
+        const genCommand = `/gen as=system lock=on ${this.systemPrompt}\n\nRecent Messages:\n${recentMessages} | /setvar key=${this.tempVarName} {{pipe}}`;
         
-        if (!generateRaw) {
-            throw new Error('generateRaw function not available');
+        // Execute the command
+        await this.sendChatCommand(genCommand);
+        
+        // Wait for generation to complete and check for results
+        const generatedText = await this.waitForGenerationResult(10000); // 10 second timeout
+        
+        if (!generatedText) {
+            throw new Error('No output generated from /gen command');
         }
-
-        // Use generateRaw to simulate /gen as=system behavior without chat interference
-        const result = await generateRaw({
-            systemPrompt: 'You are an outfit command parser. Extract valid outfit commands from the text.',
-            prompt: `${this.systemPrompt}\n\nRecent Messages:\n${recentMessages}\n\nIMPORTANT: Output ONLY valid outfit commands in the specified format.`,
-            jsonSchema: {
-                name: 'OutfitCommands',
-                description: 'Extracted outfit commands from text',
-                strict: true,
-                value: {
-                    '$schema': 'http://json-schema.org/draft-04/schema#',
-                    'type': 'object',
-                    'properties': {
-                        'commands': {
-                            'type': 'array',
-                            'items': {
-                                'type': 'string'
-                            }
-                        }
-                    },
-                    'required': ['commands']
-                }
-            }
-        });
-
-        return this.parseGeneratedResult(result);
+        
+        // Parse and execute commands
+        const commands = this.parseGeneratedText(generatedText);
+        await this.executeCommands(commands);
     }
 
-    parseGeneratedResult(result) {
-        try {
-            if (typeof result === 'string' && result.trim()) {
-                const parsed = JSON.parse(result);
-                if (parsed && Array.isArray(parsed.commands)) {
-                    return parsed.commands;
+    async sendChatCommand(command) {
+        return new Promise((resolve) => {
+            const chatInput = document.getElementById('send_textarea');
+            if (!chatInput) {
+                throw new Error('Chat input not found');
+            }
+            
+            chatInput.value = command;
+            chatInput.dispatchEvent(new Event('input', { bubbles: true }));
+            
+            setTimeout(() => {
+                const sendButton = document.querySelector('#send_but');
+                if (sendButton) {
+                    sendButton.click();
+                } else {
+                    const event = new KeyboardEvent('keydown', {
+                        key: 'Enter',
+                        code: 'Enter',
+                        bubbles: true
+                    });
+                    chatInput.dispatchEvent(event);
                 }
+                resolve();
+            }, 100);
+        });
+    }
+
+    async waitForGenerationResult(timeoutMs = 10000) {
+        const startTime = Date.now();
+        
+        while (Date.now() - startTime < timeoutMs) {
+            const result = this.getTempVarValue();
+            if (result && result.trim()) {
+                return result;
+            }
+            await this.delay(500); // Check every 500ms
+        }
+        
+        return null;
+    }
+
+    getTempVarValue() {
+        try {
+            const globalVars = extension_settings.variables?.global || {};
+            return globalVars[this.tempVarName] || window[this.tempVarName] || '';
+        } catch (error) {
+            console.error('Failed to get temporary variable:', error);
+            return '';
+        }
+    }
+
+    cleanupTempVar() {
+        try {
+            if (extension_settings.variables?.global?.[this.tempVarName]) {
+                delete extension_settings.variables.global[this.tempVarName];
+            }
+            if (window[this.tempVarName]) {
+                delete window[this.tempVarName];
             }
         } catch (error) {
-            console.error('Failed to parse generated commands:', error);
-            
-            // Fallback: try to extract commands using regex from the raw text
-            if (typeof result === 'string') {
-                const commands = [];
-                const matches = result.matchAll(this.commandPattern);
-                
-                for (const match of matches) {
-                    commands.push(match[0]);
-                }
-                
-                if (commands.length > 0) {
-                    return commands;
-                }
-            }
-            
-            throw new Error('No valid outfit commands found in generated output');
+            console.error('Failed to cleanup temporary variable:', error);
         }
-        return [];
     }
 
-    async delay(ms) {
-        return new Promise(resolve => setTimeout(resolve, ms));
-    }
-
-    getLastMessages(count = 3) {
-        const { chat } = getContext();
-        if (!chat || chat.length === 0) return '';
+    parseGeneratedText(text) {
+        if (!text) return [];
         
-        const recentMessages = chat.slice(-count);
-        return recentMessages.map(msg => 
-            `${msg.is_user ? 'User' : 'AI'}: ${msg.mes}`
-        ).join('\n');
+        const commands = [];
+        const matches = text.matchAll(this.commandPattern);
+        
+        for (const match of matches) {
+            commands.push(match[0]);
+        }
+        
+        return commands;
     }
 
     async executeCommands(commands) {
         if (!commands || commands.length === 0) {
-            this.showPopup('No outfit commands generated from recent messages.', 'info');
+            this.showPopup('No outfit commands found in generated output.', 'info');
             return;
         }
         
@@ -280,9 +244,8 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         }
         
         if (executedCount > 0 && extension_settings.outfit_tracker?.enableSysMessages) {
-            // Only send actual outfit changes as system messages
             this.sendSystemMessage(`[Outfit System] Processed ${executedCount} outfit change(s) automatically.`);
-            this.showPopup(`Applied ${executedCount} outfit change(s) from AI analysis.`, 'success');
+            this.showPopup(`Applied ${executedCount} outfit change(s).`, 'success');
         }
     }
 
@@ -306,6 +269,20 @@ Important: Always use the exact slot names listed above. Never invent new slot n
             default:
                 throw new Error(`Unknown action: ${action}`);
         }
+    }
+
+    async delay(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    getLastMessages(count = 3) {
+        const { chat } = getContext();
+        if (!chat || chat.length === 0) return '';
+        
+        const recentMessages = chat.slice(-count);
+        return recentMessages.map(msg => 
+            `${msg.is_user ? 'User' : 'AI'}: ${msg.mes}`
+        ).join('\n');
     }
 
     showPopup(message, type = 'info') {
@@ -360,27 +337,12 @@ Important: Always use the exact slot names listed above. Never invent new slot n
             hasPrompt: !!this.systemPrompt,
             promptLength: this.systemPrompt?.length || 0,
             isProcessing: this.isProcessing,
-            retryCount: this.retryCount,
             consecutiveFailures: this.consecutiveFailures,
             lastProcessTime: this.lastProcessTime ? new Date(this.lastProcessTime).toLocaleTimeString() : 'Never',
-            lastProcessAgo: this.lastProcessTime ? this.formatTimeAgo(this.lastProcessTime) : 'Never',
-            lastMessageId: this.lastMessageId
+            tempVarExists: !!this.getTempVarValue()
         };
     }
 
-    formatTimeAgo(timestamp) {
-        const now = Date.now();
-        const diff = now - timestamp;
-        const seconds = Math.floor(diff / 1000);
-        
-        if (seconds < 60) return `${seconds}s ago`;
-        const minutes = Math.floor(seconds / 60);
-        if (minutes < 60) return `${minutes}m ago`;
-        const hours = Math.floor(minutes / 60);
-        return `${hours}h ago`;
-    }
-
-    // Manual trigger for testing/debugging
     async manualTrigger() {
         if (!this.isEnabled) {
             this.showPopup('Auto updates are disabled. Enable first with /outfit-auto on', 'warning');
