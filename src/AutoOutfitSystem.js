@@ -13,6 +13,7 @@ export class AutoOutfitSystem {
         this.maxConsecutiveFailures = 5;
         this.generationCheckInterval = null;
         this.lastMessageTime = 0;
+        this.pendingMessages = [];
     }
 
     getDefaultPrompt() {
@@ -302,26 +303,100 @@ Important: Always use the exact slot names listed above. Never invent new slot n
     async sendSystemMessage(message) {
         return new Promise((resolve) => {
             try {
-                const chatInput = document.getElementById('send_textarea');
-                if (!chatInput) return resolve();
+                const { sendSystemMessage } = getContext();
                 
-                chatInput.value = `/sys compact=true ${message}`;
-                chatInput.dispatchEvent(new Event('input', { bubbles: true }));
-                
-                setTimeout(() => {
-                    const event = new KeyboardEvent('keydown', {
-                        key: 'Enter',
-                        code: 'Enter',
-                        bubbles: true
-                    });
-                    chatInput.dispatchEvent(event);
+                // Use SillyTavern's internal system message function
+                if (sendSystemMessage) {
+                    sendSystemMessage(message);
                     resolve();
-                }, 100);
+                    return;
+                }
+                
+                // Fallback to manual method with retry logic
+                this.sendSystemMessageManual(message).then(resolve).catch(() => {
+                    // If manual method fails, try one more time after delay
+                    setTimeout(() => {
+                        this.sendSystemMessageManual(message).then(resolve).catch(() => {
+                            console.error('Failed to send system message after retry');
+                            resolve();
+                        });
+                    }, 1000);
+                });
             } catch (error) {
                 console.error('Failed to send system message:', error);
                 resolve();
             }
         });
+    }
+
+    async sendSystemMessageManual(message) {
+        return new Promise((resolve, reject) => {
+            try {
+                const chatInput = document.getElementById('send_textarea');
+                if (!chatInput) {
+                    reject(new Error('Chat input not found'));
+                    return;
+                }
+                
+                // Clear any existing content first
+                chatInput.value = '';
+                chatInput.dispatchEvent(new Event('input', { bubbles: true }));
+                
+                setTimeout(() => {
+                    // Set the system message
+                    chatInput.value = `/sys compact=true ${message}`;
+                    chatInput.dispatchEvent(new Event('input', { bubbles: true }));
+                    
+                    setTimeout(() => {
+                        // Try to find and click the send button directly
+                        const sendButton = document.querySelector('#send_but');
+                        if (sendButton && !sendButton.disabled) {
+                            sendButton.click();
+                            resolve();
+                            return;
+                        }
+                        
+                        // If send button not available, try keyboard event
+                        const event = new KeyboardEvent('keydown', {
+                            key: 'Enter',
+                            code: 'Enter',
+                            keyCode: 13,
+                            which: 13,
+                            bubbles: true,
+                            cancelable: true
+                        });
+                        
+                        if (chatInput.dispatchEvent(event)) {
+                            resolve();
+                        } else {
+                            reject(new Error('Keyboard event failed'));
+                        }
+                    }, 100);
+                }, 100);
+            } catch (error) {
+                reject(error);
+            }
+        });
+    }
+
+    // Check if there's a pending command in the chat input and send it
+    checkAndSendPendingCommand() {
+        try {
+            const chatInput = document.getElementById('send_textarea');
+            if (!chatInput || !chatInput.value) return false;
+            
+            // Check if it's a system message that might be stuck
+            if (chatInput.value.startsWith('/sys')) {
+                const sendButton = document.querySelector('#send_but');
+                if (sendButton && !sendButton.disabled) {
+                    sendButton.click();
+                    return true;
+                }
+            }
+        } catch (error) {
+            console.error('Error checking pending command:', error);
+        }
+        return false;
     }
 
     delay(ms) {
