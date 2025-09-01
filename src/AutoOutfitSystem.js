@@ -15,8 +15,8 @@ export class AutoOutfitSystem {
         this.lastProcessTime = null;
         this.consecutiveFailures = 0;
         this.maxConsecutiveFailures = 5;
-        this.lastGenerationId = null; // Track the last processed generation
-        this.pendingGeneration = null; // Store the last generation data
+        this.lastMessageId = null;
+        this.tempVarName = 'outfitsystem_charmes'; // Temporary variable name
     }
 
     getDefaultPrompt() {
@@ -68,76 +68,52 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         // Remove any existing listener first
         this.removeEventListener();
         
-        // Listen for generation completion events
-        this.generationStartHandler = this.handleGenerationStart.bind(this);
-        this.generationEndHandler = this.handleGenerationEnd.bind(this);
-        
-        eventSource.on(event_types.GENERATION_AFTER_COMMANDS, this.generationStartHandler);
-        eventSource.on(event_types.GENERATION_ENDED, this.generationEndHandler);
+        // Listen for when AI messages are fully rendered (completed)
+        this.messageHandler = this.handleMessage.bind(this);
+        eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, this.messageHandler);
     }
 
     removeEventListener() {
         const { eventSource, event_types } = getContext();
-        if (this.generationStartHandler) {
-            eventSource.off(event_types.GENERATION_AFTER_COMMANDS, this.generationStartHandler);
-        }
-        if (this.generationEndHandler) {
-            eventSource.off(event_types.GENERATION_ENDED, this.generationEndHandler);
+        if (this.messageHandler) {
+            eventSource.off(event_types.CHARACTER_MESSAGE_RENDERED, this.messageHandler);
         }
     }
 
-    handleGenerationStart(data) {
-        // Store that a generation is starting
-        this.pendingGeneration = {
-            startTime: Date.now(),
-            data: data
-        };
-    }
-
-    async handleGenerationEnd(data) {
+    async handleMessage(data) {
         // Skip if not enabled, processing, or no prompt
         if (!this.isEnabled || !this.systemPrompt || this.isProcessing) return;
+
+        // Get the current chat context to check the latest message
+        const context = getContext();
+        const chat = context.chat || [];
         
-        // Skip if generation failed or was aborted
-        if (data?.error || data?.aborted) {
-            console.log('[OutfitSystem] Generation failed or aborted, skipping processing');
-            this.pendingGeneration = null;
-            return;
-        }
+        if (chat.length === 0) return;
         
-        // Skip if we don't have a pending generation or it's too old
-        if (!this.pendingGeneration || (Date.now() - this.pendingGeneration.startTime > 30000)) {
-            this.pendingGeneration = null;
-            return;
-        }
+        // Get the latest AI message (should be the one that just rendered)
+        const latestMessage = chat[chat.length - 1];
         
-        // Skip if this is a duplicate generation (same ID)
-        if (data?.mes_id && data.mes_id === this.lastGenerationId) {
-            console.log('[OutfitSystem] Duplicate generation ID, skipping');
-            this.pendingGeneration = null;
-            return;
-        }
+        // Skip if this isn't an AI message or if we've already processed it
+        if (latestMessage.is_user || latestMessage.mes_id === this.lastMessageId) return;
         
-        // Store the generation ID to prevent duplicate processing
-        this.lastGenerationId = data?.mes_id;
+        // Store the message ID to prevent duplicate processing
+        this.lastMessageId = latestMessage.mes_id;
         
         try {
             // Show starting message as popup
             this.showPopup('Auto outfit check started, please wait...', 'info');
             
-            // Process the completed generation
+            // Wait a moment to ensure the message is fully settled
             setTimeout(async () => {
-                await this.processGenerationOutput(data);
-            }, 1000); // Short delay to ensure everything is settled
+                await this.processOutfitCommands();
+            }, 1000);
         } catch (error) {
             console.error('Auto outfit processing error:', error);
             this.showPopup('Auto outfit check failed to start.', 'error');
-        } finally {
-            this.pendingGeneration = null;
         }
     }
 
-    async processGenerationOutput(generationData) {
+    async processOutfitCommands() {
         if (this.isProcessing) {
             console.log('[OutfitSystem] Already processing, skipping duplicate request');
             this.showPopup('Auto outfit check already in progress.', 'warning');
@@ -155,7 +131,7 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         this.retryCount = 0;
         
         try {
-            await this.executeWithRetry(generationData);
+            await this.executeWithRetry();
         } catch (error) {
             console.error('[OutfitSystem] Final processing failure:', error);
             this.consecutiveFailures++;
@@ -163,13 +139,14 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         } finally {
             this.isProcessing = false;
             this.lastProcessTime = Date.now();
+            this.cleanupTempVar(); // Clean up temporary variable
         }
     }
 
-    async executeWithRetry(generationData) {
+    async executeWithRetry() {
         while (this.retryCount < this.maxRetries) {
             try {
-                await this.executeSingleAttempt(generationData);
+                await this.executeSingleAttempt();
                 this.consecutiveFailures = 0; // Reset on success
                 this.showPopup('Auto outfit check completed successfully.', 'success');
                 return; // Success, exit retry loop
@@ -189,99 +166,148 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         }
     }
 
-    async executeSingleAttempt(generationData) {
-        const { generateRaw } = getContext();
+    async executeSingleAttempt() {
+        // Get the last 3 completed messages
+        const recentMessages = this.getLastMessages(3);
+        if (!recentMessages.trim()) {
+            throw new Error('No recent messages to process');
+        }
+
+        this.showPopup('Generating outfit commands using /gen command...', 'info');
+
+        // Use /gen as=system command with pipe to temporary variable
+        await this.executeGenCommand(recentMessages);
         
-        if (!generateRaw) {
-            throw new Error('generateRaw function not available');
+        // Wait a moment for the command to complete
+        await this.delay(1000);
+        
+        // Check the temporary variable for generated commands
+        const generatedOutput = this.getTempVarValue();
+        if (!generatedOutput) {
+            throw new Error('No output generated from /gen command');
         }
-
-        // Extract the generated text from the completed generation
-        const generatedText = this.extractGeneratedText(generationData);
-        if (!generatedText.trim()) {
-            throw new Error('No generated text to process');
-        }
-
-        this.showPopup('Analyzing AI response for outfit commands...', 'info');
-
-        // Use the generated text as the prompt for command extraction
-        const result = await generateRaw({
-            systemPrompt: 'You are an outfit command parser. Extract valid outfit commands from the generated text.',
-            prompt: `${this.systemPrompt}\n\nGenerated AI Text:\n${generatedText}\n\nIMPORTANT: Extract ONLY completed outfit commands from the text above.`,
-            jsonSchema: {
-                name: 'OutfitCommands',
-                description: 'Extracted outfit commands from generated text',
-                strict: true,
-                value: {
-                    '$schema': 'http://json-schema.org/draft-04/schema#',
-                    'type': 'object',
-                    'properties': {
-                        'commands': {
-                            'type': 'array',
-                            'items': {
-                                'type': 'string'
-                            }
-                        }
-                    },
-                    'required': ['commands']
-                }
-            }
-        });
-
-        const parsedResult = this.parseResult(result);
-        await this.executeCommands(parsedResult.commands || []);
+        
+        // Parse the generated output for commands
+        const commands = this.parseGeneratedOutput(generatedOutput);
+        await this.executeCommands(commands);
     }
 
-    extractGeneratedText(generationData) {
-        // Try to extract the generated text from various possible locations
-        if (generationData?.mes) {
-            return generationData.mes; // Most likely location
-        }
-        if (generationData?.text) {
-            return generationData.text;
-        }
-        if (generationData?.result?.text) {
-            return generationData.result.text;
-        }
-        if (generationData?.response) {
-            return generationData.response;
-        }
-        
-        // Fallback: check the chat for the latest AI message
-        const context = getContext();
-        const chat = context.chat || [];
-        if (chat.length > 0) {
-            const latestMessage = chat[chat.length - 1];
-            if (!latestMessage.is_user) {
-                return latestMessage.mes;
+    async executeGenCommand(recentMessages) {
+        try {
+            const chatInput = document.getElementById('send_textarea');
+            if (!chatInput) {
+                throw new Error('Chat input not found');
             }
+            
+            // Construct the /gen command with pipe to temporary variable
+            const genCommand = `/gen as=system lock=on ${this.systemPrompt}\n\nRecent Messages:\n${recentMessages} | /setvar key=${this.tempVarName} {{pipe}}`;
+            
+            chatInput.value = genCommand;
+            chatInput.dispatchEvent(new Event('input', { bubbles: true }));
+            
+            // Send the command
+            setTimeout(() => {
+                const sendButton = document.querySelector('#send_but');
+                if (sendButton) {
+                    sendButton.click();
+                } else {
+                    const event = new KeyboardEvent('keydown', {
+                        key: 'Enter',
+                        code: 'Enter',
+                        bubbles: true
+                    });
+                    chatInput.dispatchEvent(event);
+                }
+            }, 100);
+            
+            // Wait for command to complete
+            await this.delay(3000);
+            
+        } catch (error) {
+            console.error('Failed to execute /gen command:', error);
+            throw new Error('Failed to execute outfit command generation');
         }
+    }
+
+    getTempVarValue() {
+        try {
+            // Check both extension settings and window global variables
+            const globalVars = extension_settings.variables?.global || {};
+            return globalVars[this.tempVarName] || window[this.tempVarName] || '';
+        } catch (error) {
+            console.error('Failed to get temporary variable value:', error);
+            return '';
+        }
+    }
+
+    cleanupTempVar() {
+        try {
+            // Clean up the temporary variable
+            if (extension_settings.variables?.global?.[this.tempVarName]) {
+                delete extension_settings.variables.global[this.tempVarName];
+            }
+            if (window[this.tempVarName]) {
+                delete window[this.tempVarName];
+            }
+        } catch (error) {
+            console.error('Failed to cleanup temporary variable:', error);
+        }
+    }
+
+    parseGeneratedOutput(output) {
+        if (!output) return [];
         
-        return '';
+        try {
+            // First try to parse as JSON (if the AI followed structured output)
+            if (output.trim().startsWith('{') || output.trim().startsWith('[')) {
+                const parsed = JSON.parse(output);
+                if (parsed && Array.isArray(parsed.commands)) {
+                    return parsed.commands;
+                }
+            }
+            
+            // Otherwise, extract commands using regex pattern matching
+            const commands = [];
+            const matches = output.matchAll(this.commandPattern);
+            
+            for (const match of matches) {
+                commands.push(match[0]);
+            }
+            
+            return commands;
+            
+        } catch (error) {
+            console.error('Failed to parse generated output:', error);
+            
+            // Fallback: try regex extraction even if JSON parsing failed
+            const commands = [];
+            const matches = output.matchAll(this.commandPattern);
+            
+            for (const match of matches) {
+                commands.push(match[0]);
+            }
+            
+            return commands;
+        }
     }
 
     async delay(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
 
-    parseResult(result) {
-        try {
-            if (typeof result === 'string' && result.trim()) {
-                const parsed = JSON.parse(result);
-                if (parsed && Array.isArray(parsed.commands)) {
-                    return { commands: parsed.commands };
-                }
-            }
-        } catch (error) {
-            console.error('Failed to parse outfit commands:', error);
-            throw new Error('Invalid JSON response from AI');
-        }
-        return { commands: [] };
+    getLastMessages(count = 3) {
+        const { chat } = getContext();
+        if (!chat || chat.length === 0) return '';
+        
+        const recentMessages = chat.slice(-count);
+        return recentMessages.map(msg => 
+            `${msg.is_user ? 'User' : 'AI'}: ${msg.mes}`
+        ).join('\n');
     }
 
     async executeCommands(commands) {
         if (!commands || commands.length === 0) {
-            this.showPopup('No outfit commands found in AI response.', 'info');
+            this.showPopup('No outfit commands found in generated output.', 'info');
             return;
         }
         
@@ -303,7 +329,7 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         if (executedCount > 0 && extension_settings.outfit_tracker?.enableSysMessages) {
             // Only send actual outfit changes as system messages
             this.sendSystemMessage(`[Outfit System] Processed ${executedCount} outfit change(s) automatically.`);
-            this.showPopup(`Applied ${executedCount} outfit change(s) from AI response.`, 'success');
+            this.showPopup(`Applied ${executedCount} outfit change(s) from AI analysis.`, 'success');
         }
     }
 
@@ -385,7 +411,8 @@ Important: Always use the exact slot names listed above. Never invent new slot n
             consecutiveFailures: this.consecutiveFailures,
             lastProcessTime: this.lastProcessTime ? new Date(this.lastProcessTime).toLocaleTimeString() : 'Never',
             lastProcessAgo: this.lastProcessTime ? this.formatTimeAgo(this.lastProcessTime) : 'Never',
-            lastGenerationId: this.lastGenerationId
+            lastMessageId: this.lastMessageId,
+            tempVarValue: this.getTempVarValue() || 'Empty'
         };
     }
 
@@ -410,18 +437,7 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         
         try {
             this.showPopup('Manual outfit check started...', 'info');
-            // For manual trigger, we'll process the last AI message
-            const context = getContext();
-            const chat = context.chat || [];
-            const aiMessages = chat.filter(msg => !msg.is_user);
-            
-            if (aiMessages.length === 0) {
-                this.showPopup('No AI messages found to process.', 'warning');
-                return;
-            }
-            
-            const lastAIMessage = aiMessages[aiMessages.length - 1];
-            await this.processGenerationOutput({ mes: lastAIMessage.mes });
+            await this.processOutfitCommands();
         } catch (error) {
             this.showPopup(`Manual trigger failed: ${error.message}`, 'error');
         }
