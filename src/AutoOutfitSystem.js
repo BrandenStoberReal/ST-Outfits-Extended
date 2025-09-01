@@ -79,12 +79,14 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         }
     }
 
-    async handleCompletedMessage() {
+    handleCompletedMessage() {
         if (!this.isEnabled || this.isProcessing) return;
         
         // Wait a moment to ensure the message is fully settled
-        this.generationTimeout = setTimeout(async () => {
-            await this.processOutfitCommands();
+        this.generationTimeout = setTimeout(() => {
+            this.processOutfitCommands().catch(error => {
+                console.error('Auto outfit processing failed:', error);
+            });
         }, 1500);
     }
 
@@ -135,7 +137,7 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         await this.executeSlashCommand(genCommand);
         
         // Wait for generation to complete and check for results
-        const generatedText = await this.waitForGenerationResult(15000); // 15 second timeout
+        const generatedText = await this.waitForGenerationResult(15000);
         
         if (!generatedText) {
             throw new Error('No output generated from /gen command');
@@ -154,7 +156,8 @@ Important: Always use the exact slot names listed above. Never invent new slot n
     async executeSlashCommand(command) {
         return new Promise((resolve, reject) => {
             try {
-                const { SlashCommandParser } = getContext();
+                const context = getContext();
+                const { SlashCommandParser } = context;
                 
                 if (!SlashCommandParser) {
                     throw new Error('Slash command parser not available');
@@ -173,21 +176,17 @@ Important: Always use the exact slot names listed above. Never invent new slot n
                 console.error('Failed to execute slash command:', error);
                 
                 // Fallback: try to send via chat input
-                try {
-                    await this.sendViaChatInput(command);
-                    resolve();
-                } catch (fallbackError) {
-                    reject(fallbackError);
-                }
+                this.sendViaChatInput(command).then(resolve).catch(reject);
             }
         });
     }
 
     async sendViaChatInput(command) {
-        return new Promise((resolve) => {
+        return new Promise((resolve, reject) => {
             const chatInput = document.getElementById('send_textarea');
             if (!chatInput) {
-                throw new Error('Chat input not found');
+                reject(new Error('Chat input not found'));
+                return;
             }
             
             // Set the command
@@ -200,6 +199,7 @@ Important: Always use the exact slot names listed above. Never invent new slot n
                 const sendButton = document.querySelector('#send_but, .send-button, [id*="send"], button[onclick*="send"]');
                 if (sendButton) {
                     sendButton.click();
+                    resolve();
                 } else {
                     // Fallback: simulate Enter key press
                     const event = new KeyboardEvent('keydown', {
@@ -211,9 +211,8 @@ Important: Always use the exact slot names listed above. Never invent new slot n
                         cancelable: true
                     });
                     chatInput.dispatchEvent(event);
+                    resolve();
                 }
-                
-                resolve();
             }, 200);
         });
     }
@@ -226,7 +225,7 @@ Important: Always use the exact slot names listed above. Never invent new slot n
             if (result && result.trim()) {
                 return result;
             }
-            await this.delay(500); // Check every 500ms
+            await this.delay(500);
         }
         
         return null;
@@ -317,7 +316,7 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         }
     }
 
-    async delay(ms) {
+    delay(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
 
