@@ -8,6 +8,7 @@ export class BotOutfitPanel {
         this.clothingSlots = clothingSlots;
         this.accessorySlots = accessorySlots;
         this.isVisible = false;
+        this.isMinimized = false;
         this.domElement = null;
         this.currentTab = 'clothing';
         this.saveSettingsDebounced = saveSettingsDebounced;
@@ -26,6 +27,7 @@ export class BotOutfitPanel {
             <div class="outfit-header">
                 <h3>${this.outfitManager.character}'s Outfit</h3>
                 <div class="outfit-actions">
+                    <span class="outfit-action" id="bot-outfit-minimize">−</span>
                     <span class="outfit-action" id="bot-outfit-refresh">↻</span>
                     <span class="outfit-action" id="bot-outfit-close">×</span>
                 </div>
@@ -35,7 +37,7 @@ export class BotOutfitPanel {
                 <button class="outfit-tab${this.currentTab === 'accessories' ? ' active' : ''}" data-tab="accessories">Accessories</button>
                 <button class="outfit-tab${this.currentTab === 'outfits' ? ' active' : ''}" data-tab="outfits">Outfits</button>
             </div>
-            <div class="outfit-content" id="bot-outfit-tab-content"></div> <!-- UPDATED CONTAINER -->
+            <div class="outfit-content" id="bot-outfit-tab-content"></div>
         `;
 
         document.body.appendChild(panel);
@@ -56,9 +58,8 @@ export class BotOutfitPanel {
     }
 
     renderContent() {
-        if (!this.domElement) return;
+        if (!this.domElement || this.isMinimized) return;
         
-        // Get the scrollable content container
         const contentArea = this.domElement.querySelector('.outfit-content');
         if (!contentArea) return;
         
@@ -80,7 +81,7 @@ export class BotOutfitPanel {
     renderSlots(slots, container) {
         const outfitData = this.outfitManager.getOutfitData(slots);
     
-        outfitData.forEach(slot => { // FIX TYPO: changed outfitslots -> outfitData
+        outfitData.forEach(slot => {
             const slotElement = document.createElement('div');
             slotElement.className = 'outfit-slot';
             slotElement.dataset.slot = slot.name;
@@ -139,7 +140,7 @@ export class BotOutfitPanel {
                             this.sendSystemMessage(message);
                         }
                         this.saveSettingsDebounced();
-                        this.renderPresets(container);
+                        this.renderContent();
                     }
                 });
                 
@@ -158,7 +159,7 @@ export class BotOutfitPanel {
                     this.sendSystemMessage(message);
                 }
                 this.saveSettingsDebounced();
-                this.renderPresets(container);
+                this.renderContent();
             }
         });
         
@@ -208,18 +209,47 @@ export class BotOutfitPanel {
         this.isVisible ? this.hide() : this.show();
     }
 
+    toggleMinimize() {
+        this.isMinimized = !this.isMinimized;
+        this.updateMinimizeState();
+    }
+
+    updateMinimizeState() {
+        if (!this.domElement) return;
+        
+        const contentArea = this.domElement.querySelector('.outfit-content');
+        const tabs = this.domElement.querySelector('.outfit-tabs');
+        const minimizeBtn = this.domElement.querySelector('#bot-outfit-minimize');
+        
+        if (this.isMinimized) {
+            contentArea.style.display = 'none';
+            tabs.style.display = 'none';
+            minimizeBtn.textContent = '+';
+            this.domElement.style.height = 'auto';
+        } else {
+            contentArea.style.display = 'block';
+            tabs.style.display = 'flex';
+            minimizeBtn.textContent = '−';
+            this.renderContent();
+        }
+    }
+
     show() {
         if (!this.domElement) {
             this.domElement = this.createPanel();
         }
         
         this.renderContent();
-        this.domElement.style.display = 'flex'; // CHANGED to flex
+        this.domElement.style.display = 'flex';
         this.isVisible = true;
 
         if (this.domElement) {
             dragElement($(this.domElement));
             
+            this.domElement.querySelector('#bot-outfit-minimize')?.addEventListener('click', () => {
+                this.toggleMinimize();
+            });
+
             this.domElement.querySelector('#bot-outfit-refresh')?.addEventListener('click', () => {
                 this.outfitManager.initializeOutfit();
                 this.renderContent();
@@ -234,6 +264,7 @@ export class BotOutfitPanel {
             this.domElement.style.display = 'none';
         }
         this.isVisible = false;
+        this.isMinimized = false;
     }
 
     updateCharacter(name) {
