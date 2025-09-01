@@ -128,13 +128,14 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         this.cleanupTempVar();
         
         // Construct the /gen command with pipe to temporary variable
-        const genCommand = `/gen as=system lock=on ${this.systemPrompt}\n\nRecent Messages:\n${recentMessages} | /setvar key=${this.tempVarName} {{pipe}}`;
+        const promptText = `${this.systemPrompt}\n\nRecent Messages:\n${recentMessages}`;
+        const genCommand = `/gen as=system lock=on ${this.escapePrompt(promptText)} | /setvar key=${this.tempVarName} {{pipe}}`;
         
-        // Execute the command
-        await this.sendChatCommand(genCommand);
+        // Execute the command using SillyTavern's command system
+        await this.executeSlashCommand(genCommand);
         
         // Wait for generation to complete and check for results
-        const generatedText = await this.waitForGenerationResult(10000); // 10 second timeout
+        const generatedText = await this.waitForGenerationResult(15000); // 15 second timeout
         
         if (!generatedText) {
             throw new Error('No output generated from /gen command');
@@ -145,34 +146,79 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         await this.executeCommands(commands);
     }
 
-    async sendChatCommand(command) {
+    escapePrompt(text) {
+        // Escape special characters for command input
+        return text.replace(/"/g, '\\"').replace(/\n/g, '\\n');
+    }
+
+    async executeSlashCommand(command) {
+        return new Promise((resolve, reject) => {
+            try {
+                const { SlashCommandParser } = getContext();
+                
+                if (!SlashCommandParser) {
+                    throw new Error('Slash command parser not available');
+                }
+                
+                // Parse and execute the command
+                const result = SlashCommandParser.parse(command);
+                
+                if (result && result.success) {
+                    resolve(result);
+                } else {
+                    throw new Error('Failed to parse slash command');
+                }
+                
+            } catch (error) {
+                console.error('Failed to execute slash command:', error);
+                
+                // Fallback: try to send via chat input
+                try {
+                    await this.sendViaChatInput(command);
+                    resolve();
+                } catch (fallbackError) {
+                    reject(fallbackError);
+                }
+            }
+        });
+    }
+
+    async sendViaChatInput(command) {
         return new Promise((resolve) => {
             const chatInput = document.getElementById('send_textarea');
             if (!chatInput) {
                 throw new Error('Chat input not found');
             }
             
+            // Set the command
             chatInput.value = command;
             chatInput.dispatchEvent(new Event('input', { bubbles: true }));
             
+            // Wait a moment for the input to be processed
             setTimeout(() => {
-                const sendButton = document.querySelector('#send_but');
+                // Find and click the send button
+                const sendButton = document.querySelector('#send_but, .send-button, [id*="send"], button[onclick*="send"]');
                 if (sendButton) {
                     sendButton.click();
                 } else {
+                    // Fallback: simulate Enter key press
                     const event = new KeyboardEvent('keydown', {
                         key: 'Enter',
                         code: 'Enter',
-                        bubbles: true
+                        keyCode: 13,
+                        which: 13,
+                        bubbles: true,
+                        cancelable: true
                     });
                     chatInput.dispatchEvent(event);
                 }
+                
                 resolve();
-            }, 100);
+            }, 200);
         });
     }
 
-    async waitForGenerationResult(timeoutMs = 10000) {
+    async waitForGenerationResult(timeoutMs = 15000) {
         const startTime = Date.now();
         
         while (Date.now() - startTime < timeoutMs) {
