@@ -63,15 +63,15 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         const { eventSource, event_types } = getContext();
         this.removeEventListener();
         
-        // Listen for completed AI messages - use GENERATION_ENDED instead
-        this.messageHandler = this.handleGenerationEnd.bind(this);
-        eventSource.on(event_types.GENERATION_ENDED, this.messageHandler);
+        // Listen for completed AI messages - use MESSAGE_RECEIVED instead
+        this.messageHandler = this.handleMessageReceived.bind(this);
+        eventSource.on(event_types.MESSAGE_RECEIVED, this.messageHandler);
     }
 
     removeEventListener() {
         const { eventSource, event_types } = getContext();
         if (this.messageHandler) {
-            eventSource.off(event_types.GENERATION_ENDED, this.messageHandler);
+            eventSource.off(event_types.MESSAGE_RECEIVED, this.messageHandler);
         }
         if (this.generationTimeout) {
             clearTimeout(this.generationTimeout);
@@ -79,15 +79,15 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         }
     }
 
-    handleGenerationEnd() {
+    handleMessageReceived() {
         if (!this.isEnabled || this.isProcessing) return;
         
-        // Wait a moment to ensure generation is fully complete
+        // Wait a moment before processing to ensure message is settled
         this.generationTimeout = setTimeout(() => {
             this.processOutfitCommands().catch(error => {
                 console.error('Auto outfit processing failed:', error);
             });
-        }, 1000);
+        }, 1500);
     }
 
     async processOutfitCommands() {
@@ -130,12 +130,10 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         // Check various indicators that generation might be active
         const sendButton = document.querySelector('#send_but');
         const stopButton = document.querySelector('#stop_generation');
-        const generatingIndicator = document.querySelector('.generating-indicator');
         
         return (
             (sendButton && sendButton.disabled) ||
             (stopButton && stopButton.style.display !== 'none') ||
-            (generatingIndicator && generatingIndicator.style.display !== 'none') ||
             document.body.classList.contains('generating')
         );
     }
@@ -153,15 +151,19 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         const promptText = `${this.systemPrompt}\n\nRecent Messages:\n${recentMessages}`;
         const genCommand = `/gen as=system lock=on ${this.escapePrompt(promptText)} | /setvar key=${this.tempVarName} {{pipe}}`;
         
-        // Execute the command using SillyTavern's command system
-        await this.executeSlashCommandDirect(genCommand);
+        console.log('Executing outfit command:', genCommand);
+        
+        // Execute the command using chat input method
+        await this.sendViaChatInput(genCommand);
         
         // Wait for generation to complete and check for results
-        const generatedText = await this.waitForGenerationResult(20000);
+        const generatedText = await this.waitForGenerationResult(25000);
         
         if (!generatedText) {
             throw new Error('No output generated from /gen command');
         }
+        
+        console.log('Generated text:', generatedText);
         
         // Parse and execute commands
         const commands = this.parseGeneratedText(generatedText);
@@ -173,40 +175,55 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         return text.replace(/"/g, '\\"').replace(/\n/g, '\\n');
     }
 
-    async executeSlashCommandDirect(command) {
+    async sendViaChatInput(command) {
         return new Promise((resolve, reject) => {
-            try {
-                const context = getContext();
-                const { SlashCommandParser } = context;
-                
-                if (!SlashCommandParser) {
-                    throw new Error('Slash command parser not available');
-                }
-                
-                // Use the direct execution method instead of chat input
-                const result = SlashCommandParser.executeCommand(command);
-                
-                if (result && typeof result.then === 'function') {
-                    // Handle promise-based execution
-                    result.then(resolve).catch(reject);
-                } else {
-                    resolve(result);
-                }
-                
-            } catch (error) {
-                console.error('Failed to execute slash command directly:', error);
-                reject(error);
+            const chatInput = document.getElementById('send_textarea');
+            if (!chatInput) {
+                reject(new Error('Chat input not found'));
+                return;
             }
+            
+            // Clear any existing content
+            chatInput.value = '';
+            chatInput.dispatchEvent(new Event('input', { bubbles: true }));
+            
+            // Set the command after a brief delay
+            setTimeout(() => {
+                chatInput.value = command;
+                chatInput.dispatchEvent(new Event('input', { bubbles: true }));
+                
+                // Wait a moment for the input to be processed
+                setTimeout(() => {
+                    // Find and click the send button
+                    const sendButton = document.querySelector('#send_but');
+                    if (sendButton && !sendButton.disabled) {
+                        sendButton.click();
+                        resolve();
+                    } else {
+                        // Fallback: simulate Enter key press
+                        const event = new KeyboardEvent('keydown', {
+                            key: 'Enter',
+                            code: 'Enter',
+                            keyCode: 13,
+                            which: 13,
+                            bubbles: true,
+                            cancelable: true
+                        });
+                        chatInput.dispatchEvent(event);
+                        resolve();
+                    }
+                }, 300);
+            }, 300);
         });
     }
 
-    async waitForGenerationResult(timeoutMs = 20000) {
+    async waitForGenerationResult(timeoutMs = 25000) {
         const startTime = Date.now();
         
         while (Date.now() - startTime < timeoutMs) {
             // Check if generation is still active
             if (this.isGenerationActive()) {
-                await this.delay(500);
+                await this.delay(1000);
                 continue;
             }
             
@@ -214,7 +231,7 @@ Important: Always use the exact slot names listed above. Never invent new slot n
             if (result && result.trim()) {
                 return result;
             }
-            await this.delay(500);
+            await this.delay(1000);
         }
         
         return null;
