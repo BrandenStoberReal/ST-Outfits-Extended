@@ -11,6 +11,7 @@ export class AutoOutfitSystem {
         this.lastProcessTime = null;
         this.consecutiveFailures = 0;
         this.maxConsecutiveFailures = 5;
+        this.generationCheckInterval = null;
     }
 
     getDefaultPrompt() {
@@ -60,28 +61,56 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         const { eventSource, event_types } = getContext();
         this.removeEventListener();
         
-        // Listen for CHARACTER_MESSAGE_RENDERED instead of generation events
-        this.messageHandler = this.handleCharacterMessage.bind(this);
-        eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, this.messageHandler);
+        // Listen for generation completion
+        this.messageHandler = this.handleGenerationComplete.bind(this);
+        eventSource.on(event_types.GENERATION_ENDED, this.messageHandler);
     }
 
-    handleCharacterMessage(data) {
-        if (!this.isEnabled || this.isProcessing) return;
+    handleGenerationComplete(data) {
+        if (!this.isEnabled || this.isProcessing || !data?.success) return;
         
-        // Add a delay to ensure UI is stable
+        // Wait a bit longer to ensure everything is settled
         setTimeout(() => {
             this.processOutfitCommands().catch(error => {
                 console.error('Auto outfit processing failed:', error);
                 this.consecutiveFailures++;
             });
-        }, 2000);
+        }, 3000);
     }
 
     removeEventListener() {
         const { eventSource, event_types } = getContext();
         if (this.messageHandler) {
-            eventSource.off(event_types.CHARACTER_MESSAGE_RENDERED, this.messageHandler);
+            eventSource.off(event_types.GENERATION_ENDED, this.messageHandler);
         }
+        if (this.generationCheckInterval) {
+            clearInterval(this.generationCheckInterval);
+            this.generationCheckInterval = null;
+        }
+    }
+
+    isGenerationActive() {
+        // Check multiple indicators of active generation
+        return document.querySelector('#stop_generation:not([style*="none"])') !== null ||
+               document.querySelector('#send_but[disabled]') !== null ||
+               document.querySelector('.generating') !== null ||
+               document.querySelector('.msg_in_progress') !== null;
+    }
+
+    waitForGenerationComplete() {
+        return new Promise((resolve) => {
+            if (!this.isGenerationActive()) {
+                return resolve();
+            }
+            
+            this.generationCheckInterval = setInterval(() => {
+                if (!this.isGenerationActive()) {
+                    clearInterval(this.generationCheckInterval);
+                    this.generationCheckInterval = null;
+                    resolve();
+                }
+            }, 500);
+        });
     }
 
     async processOutfitCommands() {
@@ -95,6 +124,9 @@ Important: Always use the exact slot names listed above. Never invent new slot n
             this.showPopup('Auto outfit check already in progress.', 'warning');
             return;
         }
+        
+        // Wait until ALL generation is completely finished
+        await this.waitForGenerationComplete();
         
         this.isProcessing = true;
         
@@ -119,15 +151,19 @@ Important: Always use the exact slot names listed above. Never invent new slot n
             throw new Error('No recent messages to process');
         }
 
-        // Use generateRaw API instead of /gen command
-        const { generateRaw } = getContext();
+        // Double-check that no generation is active
+        if (this.isGenerationActive()) {
+            throw new Error('Generation still active - cannot proceed');
+        }
+
+        // Use generateQuietPrompt instead of generateRaw for background processing
+        const { generateQuietPrompt } = getContext();
         
         const promptText = `${this.systemPrompt}\n\nRecent Messages:\n${recentMessages}`;
         
-        console.log('Generating outfit commands...');
-        const result = await generateRaw({
-            systemPrompt: this.systemPrompt,
-            prompt: recentMessages
+        console.log('Generating outfit commands quietly...');
+        const result = await generateQuietPrompt({
+            quietPrompt: promptText
         });
 
         if (!result) {
