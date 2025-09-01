@@ -60,7 +60,7 @@ Important: Always use the exact slot names listed above. Never invent new slot n
                         console.error('Auto outfit processing failed:', error);
                         this.consecutiveFailures++;
                     });
-                }, 1500); // Wait a bit for message to be fully processed
+                }, 2000); // Wait a bit for message to be fully processed
             }
         };
         
@@ -111,25 +111,63 @@ Important: Always use the exact slot names listed above. Never invent new slot n
             throw new Error('No recent messages to process');
         }
 
-        // Use generateQuietPrompt for background processing
-        const { generateQuietPrompt } = getContext();
+        // Use generateRaw instead of generateQuietPrompt for more reliable generation
+        const { generateRaw } = getContext();
         
-        const promptText = `${this.systemPrompt}\n\nRecent Messages:\n${recentMessages}`;
+        const promptText = `${this.systemPrompt}\n\nRecent Messages:\n${recentMessages}\n\nOutput:`;
         
-        console.log('[AutoOutfitSystem] Generating outfit commands quietly...');
-        const result = await generateQuietPrompt({
-            quietPrompt: promptText
-        });
+        console.log('[AutoOutfitSystem] Generating outfit commands with generateRaw...');
+        
+        try {
+            const result = await generateRaw({
+                prompt: promptText,
+                systemPrompt: "You are an outfit change detection system. Analyze the conversation and output outfit commands when clothing changes occur."
+            });
 
-        if (!result) {
-            throw new Error('No output generated from generation');
+            if (!result) {
+                throw new Error('No output generated from generation');
+            }
+            
+            console.log('[AutoOutfitSystem] Generated result:', result);
+            
+            // Parse and execute commands
+            const commands = this.parseGeneratedText(result);
+            await this.executeCommands(commands);
+            
+        } catch (error) {
+            console.error('[AutoOutfitSystem] Generation failed:', error);
+            
+            // Fallback: Try generateQuietPrompt if generateRaw fails
+            console.log('[AutoOutfitSystem] Trying fallback with generateQuietPrompt...');
+            await this.tryFallbackGeneration(promptText);
         }
-        
-        console.log('[AutoOutfitSystem] Generated result:', result);
-        
-        // Parse and execute commands
-        const commands = this.parseGeneratedText(result);
-        await this.executeCommands(commands);
+    }
+
+    async tryFallbackGeneration(promptText) {
+        try {
+            const { generateQuietPrompt } = getContext();
+            
+            if (!generateQuietPrompt) {
+                throw new Error('generateQuietPrompt not available');
+            }
+            
+            const result = await generateQuietPrompt({
+                quietPrompt: promptText
+            });
+
+            if (!result) {
+                throw new Error('No output generated from fallback generation');
+            }
+            
+            console.log('[AutoOutfitSystem] Fallback result:', result);
+            
+            const commands = this.parseGeneratedText(result);
+            await this.executeCommands(commands);
+            
+        } catch (fallbackError) {
+            console.error('[AutoOutfitSystem] Fallback generation also failed:', fallbackError);
+            throw new Error(`Both generation methods failed: ${fallbackError.message}`);
+        }
     }
 
     parseGeneratedText(text) {
@@ -142,6 +180,7 @@ Important: Always use the exact slot names listed above. Never invent new slot n
             commands.push(match[0]);
         }
         
+        console.log(`[AutoOutfitSystem] Found ${commands.length} commands:`, commands);
         return commands;
     }
 
