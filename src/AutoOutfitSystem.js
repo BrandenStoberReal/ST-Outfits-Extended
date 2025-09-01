@@ -12,6 +12,7 @@ export class AutoOutfitSystem {
         this.consecutiveFailures = 0;
         this.maxConsecutiveFailures = 5;
         this.generationCheckInterval = null;
+        this.lastMessageTime = 0;
     }
 
     getDefaultPrompt() {
@@ -61,27 +62,32 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         const { eventSource, event_types } = getContext();
         this.removeEventListener();
         
-        // Listen for generation completion
-        this.messageHandler = this.handleGenerationComplete.bind(this);
-        eventSource.on(event_types.GENERATION_ENDED, this.messageHandler);
+        // Listen for AI messages being received
+        this.messageHandler = this.handleMessageReceived.bind(this);
+        eventSource.on(event_types.MESSAGE_RECEIVED, this.messageHandler);
     }
 
-    handleGenerationComplete(data) {
-        if (!this.isEnabled || this.isProcessing || !data?.success) return;
+    handleMessageReceived(data) {
+        if (!this.isEnabled || this.isProcessing) return;
         
-        // Wait a bit longer to ensure everything is settled
-        setTimeout(() => {
-            this.processOutfitCommands().catch(error => {
-                console.error('Auto outfit processing failed:', error);
-                this.consecutiveFailures++;
-            });
-        }, 3000);
+        // Only trigger for AI messages
+        if (data && data.mes && !data.is_user) {
+            this.lastMessageTime = Date.now();
+            
+            // Wait a bit and then process
+            setTimeout(() => {
+                this.processOutfitCommands().catch(error => {
+                    console.error('Auto outfit processing failed:', error);
+                    this.consecutiveFailures++;
+                });
+            }, 2000);
+        }
     }
 
     removeEventListener() {
         const { eventSource, event_types } = getContext();
         if (this.messageHandler) {
-            eventSource.off(event_types.GENERATION_ENDED, this.messageHandler);
+            eventSource.off(event_types.MESSAGE_RECEIVED, this.messageHandler);
         }
         if (this.generationCheckInterval) {
             clearInterval(this.generationCheckInterval);
@@ -91,8 +97,11 @@ Important: Always use the exact slot names listed above. Never invent new slot n
 
     isGenerationActive() {
         // Check multiple indicators of active generation
-        return document.querySelector('#stop_generation:not([style*="none"])') !== null ||
-               document.querySelector('#send_but[disabled]') !== null ||
+        const stopButton = document.querySelector('#stop_generation');
+        const sendButton = document.querySelector('#send_but');
+        
+        return (stopButton && stopButton.style.display !== 'none') ||
+               (sendButton && sendButton.disabled) ||
                document.querySelector('.generating') !== null ||
                document.querySelector('.msg_in_progress') !== null;
     }
@@ -103,10 +112,9 @@ Important: Always use the exact slot names listed above. Never invent new slot n
                 return resolve();
             }
             
-            this.generationCheckInterval = setInterval(() => {
+            const checkInterval = setInterval(() => {
                 if (!this.isGenerationActive()) {
-                    clearInterval(this.generationCheckInterval);
-                    this.generationCheckInterval = null;
+                    clearInterval(checkInterval);
                     resolve();
                 }
             }, 500);
@@ -121,16 +129,18 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         }
 
         if (this.isProcessing) {
-            this.showPopup('Auto outfit check already in progress.', 'warning');
             return;
         }
-        
-        // Wait until ALL generation is completely finished
-        await this.waitForGenerationComplete();
         
         this.isProcessing = true;
         
         try {
+            // Wait for any ongoing generation to complete
+            await this.waitForGenerationComplete();
+            
+            // Additional delay to ensure everything is settled
+            await this.delay(1000);
+            
             this.showPopup('Generating outfit commands...', 'info');
             await this.executeGenCommand();
             this.consecutiveFailures = 0;
@@ -156,7 +166,7 @@ Important: Always use the exact slot names listed above. Never invent new slot n
             throw new Error('Generation still active - cannot proceed');
         }
 
-        // Use generateQuietPrompt instead of generateRaw for background processing
+        // Use generateQuietPrompt for background processing
         const { generateQuietPrompt } = getContext();
         
         const promptText = `${this.systemPrompt}\n\nRecent Messages:\n${recentMessages}`;
@@ -297,6 +307,10 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         }
     }
 
+    delay(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
     getStatus() {
         return {
             enabled: this.isEnabled,
@@ -304,7 +318,8 @@ Important: Always use the exact slot names listed above. Never invent new slot n
             promptLength: this.systemPrompt?.length || 0,
             isProcessing: this.isProcessing,
             consecutiveFailures: this.consecutiveFailures,
-            lastProcessTime: this.lastProcessTime ? new Date(this.lastProcessTime).toLocaleTimeString() : 'Never'
+            lastProcessTime: this.lastProcessTime ? new Date(this.lastProcessTime).toLocaleTimeString() : 'Never',
+            lastMessageTime: this.lastMessageTime ? new Date(this.lastMessageTime).toLocaleTimeString() : 'Never'
         };
     }
 
