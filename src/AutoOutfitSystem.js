@@ -5,25 +5,51 @@ export class AutoOutfitSystem {
     constructor(outfitManager) {
         this.outfitManager = outfitManager;
         this.isEnabled = false;
-        this.systemPrompt = ''; // Will be set by user
+        this.systemPrompt = this.getDefaultPrompt();
         this.commandPattern = /outfit-system_(\w+)_(\w+)\(([^)]*)\)/g;
+        this.messageHandler = null;
+    }
+
+    getDefaultPrompt() {
+        return `Analyze the character's actions in the recent messages. If the character puts on, wears, removes, or changes any clothing items, output the appropriate outfit commands. Use the format: outfit-system_[action]_[slot]("[item name]").
+
+Available actions: wear, remove, change
+Available slots: headwear, topwear, topunderwear, bottomwear, bottomunderwear, footwear, footunderwear, head-accessory, eyes-accessory, mouth-accessory, neck-accessory, body-accessory, arms-accessory, hands-accessory, waist-accessory, bottom-accessory, legs-accessory, foot-accessory
+
+Example commands:
+- outfit-system_wear_headwear("Red Baseball Cap")
+- outfit-system_remove_topwear()
+- outfit-system_change_bottomwear("Blue Jeans")
+
+Only output commands if clothing changes are explicitly mentioned. If no changes, output empty array.
+
+Important: Always use the exact slot names listed above. Never invent new slot names.`;
     }
 
     enable() {
+        if (this.isEnabled) return '[Outfit System] Auto outfit updates already enabled.';
+        
         this.isEnabled = true;
         this.setupEventListener();
         return '[Outfit System] Auto outfit updates enabled.';
     }
 
     disable() {
+        if (!this.isEnabled) return '[Outfit System] Auto outfit updates already disabled.';
+        
         this.isEnabled = false;
         this.removeEventListener();
         return '[Outfit System] Auto outfit updates disabled.';
     }
 
     setPrompt(prompt) {
-        this.systemPrompt = prompt;
+        this.systemPrompt = prompt || this.getDefaultPrompt();
         return '[Outfit System] System prompt updated.';
+    }
+
+    resetToDefaultPrompt() {
+        this.systemPrompt = this.getDefaultPrompt();
+        return '[Outfit System] Reset to default prompt.';
     }
 
     setupEventListener() {
@@ -63,7 +89,7 @@ export class AutoOutfitSystem {
         try {
             const result = await generateRaw({
                 systemPrompt: 'You are an outfit command parser. Extract valid outfit commands from the text.',
-                prompt: `${this.systemPrompt}\n\nLast message: ${this.getLastMessages(3)}`,
+                prompt: `${this.systemPrompt}\n\nLast 3 messages:\n${this.getLastMessages(3)}`,
                 jsonSchema: {
                     name: 'OutfitCommands',
                     description: 'Extracted outfit commands from text',
@@ -94,7 +120,8 @@ export class AutoOutfitSystem {
 
     getLastMessages(count = 3) {
         const { chat } = getContext();
-        return chat.slice(-count).map(msg => 
+        const recentMessages = chat.slice(-count);
+        return recentMessages.map(msg => 
             `${msg.is_user ? 'User' : 'AI'}: ${msg.mes}`
         ).join('\n');
     }
@@ -129,18 +156,22 @@ export class AutoOutfitSystem {
             return;
         }
 
-        switch(action) {
-            case 'wear':
-                await this.outfitManager.setOutfitItem(slot, value);
-                break;
-            case 'remove':
-                await this.outfitManager.setOutfitItem(slot, 'None');
-                break;
-            case 'change':
-                await this.outfitManager.setOutfitItem(slot, value);
-                break;
-            default:
-                console.warn(`Unknown action: ${action}`);
+        try {
+            switch(action) {
+                case 'wear':
+                    await this.outfitManager.setOutfitItem(slot, value);
+                    break;
+                case 'remove':
+                    await this.outfitManager.setOutfitItem(slot, 'None');
+                    break;
+                case 'change':
+                    await this.outfitManager.setOutfitItem(slot, value);
+                    break;
+                default:
+                    console.warn(`Unknown action: ${action}`);
+            }
+        } catch (error) {
+            console.error(`Error executing outfit command ${action}_${slot}:`, error);
         }
     }
 
@@ -148,6 +179,7 @@ export class AutoOutfitSystem {
         return {
             enabled: this.isEnabled,
             hasPrompt: !!this.systemPrompt,
+            promptLength: this.systemPrompt?.length || 0,
             lastProcessed: new Date().toLocaleTimeString()
         };
     }
