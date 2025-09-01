@@ -63,32 +63,46 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         const { eventSource, event_types } = getContext();
         this.removeEventListener();
         
-        // Listen for AI messages being received
-        this.messageHandler = this.handleMessageReceived.bind(this);
-        eventSource.on(event_types.MESSAGE_RECEIVED, this.messageHandler);
+        // Listen for CHARACTER_MESSAGE_RENDERED instead - more reliable
+        this.messageHandler = this.handleCharacterMessage.bind(this);
+        eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, this.messageHandler);
+        
+        console.log('[AutoOutfitSystem] Event listener set up for CHARACTER_MESSAGE_RENDERED');
     }
 
-    handleMessageReceived(data) {
+    handleCharacterMessage(data) {
         if (!this.isEnabled || this.isProcessing) return;
         
-        // Only trigger for AI messages
-        if (data && data.mes && !data.is_user) {
-            this.lastMessageTime = Date.now();
-            
-            // Wait a bit and then process
-            setTimeout(() => {
+        console.log('[AutoOutfitSystem] Character message rendered:', data);
+        
+        // Use a safer approach - check the last message in chat instead of event data
+        setTimeout(() => {
+            if (this.lastMessageWasAI()) {
                 this.processOutfitCommands().catch(error => {
                     console.error('Auto outfit processing failed:', error);
                     this.consecutiveFailures++;
                 });
-            }, 2000);
+            }
+        }, 2000);
+    }
+
+    lastMessageWasAI() {
+        try {
+            const { chat } = getContext();
+            if (!chat || chat.length === 0) return false;
+            
+            const lastMessage = chat[chat.length - 1];
+            return lastMessage && !lastMessage.is_user && !lastMessage.is_system;
+        } catch (error) {
+            console.error('Error checking last message:', error);
+            return false;
         }
     }
 
     removeEventListener() {
         const { eventSource, event_types } = getContext();
         if (this.messageHandler) {
-            eventSource.off(event_types.MESSAGE_RECEIVED, this.messageHandler);
+            eventSource.off(event_types.CHARACTER_MESSAGE_RENDERED, this.messageHandler);
         }
         if (this.generationCheckInterval) {
             clearInterval(this.generationCheckInterval);
@@ -97,14 +111,19 @@ Important: Always use the exact slot names listed above. Never invent new slot n
     }
 
     isGenerationActive() {
-        // Check multiple indicators of active generation
-        const stopButton = document.querySelector('#stop_generation');
-        const sendButton = document.querySelector('#send_but');
-        
-        return (stopButton && stopButton.style.display !== 'none') ||
-               (sendButton && sendButton.disabled) ||
-               document.querySelector('.generating') !== null ||
-               document.querySelector('.msg_in_progress') !== null;
+        try {
+            // Check multiple indicators of active generation
+            const stopButton = document.querySelector('#stop_generation');
+            const sendButton = document.querySelector('#send_but');
+            
+            return (stopButton && stopButton.style.display !== 'none') ||
+                   (sendButton && sendButton.disabled) ||
+                   document.querySelector('.generating') !== null ||
+                   document.querySelector('.msg_in_progress') !== null;
+        } catch (error) {
+            console.error('Error checking generation status:', error);
+            return false;
+        }
     }
 
     waitForGenerationComplete() {
@@ -264,13 +283,18 @@ Important: Always use the exact slot names listed above. Never invent new slot n
     }
 
     getLastMessages(count = 3) {
-        const { chat } = getContext();
-        if (!chat || chat.length === 0) return '';
-        
-        const recentMessages = chat.slice(-count);
-        return recentMessages.map(msg => 
-            `${msg.is_user ? 'User' : msg.name}: ${msg.mes}`
-        ).join('\n');
+        try {
+            const { chat } = getContext();
+            if (!chat || chat.length === 0) return '';
+            
+            const recentMessages = chat.slice(-count);
+            return recentMessages.map(msg => 
+                `${msg.is_user ? 'User' : (msg.name || 'AI')}: ${msg.mes}`
+            ).join('\n');
+        } catch (error) {
+            console.error('Error getting last messages:', error);
+            return '';
+        }
     }
 
     showPopup(message, type = 'info') {
@@ -312,7 +336,7 @@ Important: Always use the exact slot names listed above. Never invent new slot n
                     return;
                 }
                 
-                // Fallback to manual method with retry logic
+                // Fallback to manual method
                 this.sendSystemMessageManual(message).then(resolve).catch(() => {
                     // If manual method fails, try one more time after delay
                     setTimeout(() => {
@@ -377,26 +401,6 @@ Important: Always use the exact slot names listed above. Never invent new slot n
                 reject(error);
             }
         });
-    }
-
-    // Check if there's a pending command in the chat input and send it
-    checkAndSendPendingCommand() {
-        try {
-            const chatInput = document.getElementById('send_textarea');
-            if (!chatInput || !chatInput.value) return false;
-            
-            // Check if it's a system message that might be stuck
-            if (chatInput.value.startsWith('/sys')) {
-                const sendButton = document.querySelector('#send_but');
-                if (sendButton && !sendButton.disabled) {
-                    sendButton.click();
-                    return true;
-                }
-            }
-        } catch (error) {
-            console.error('Error checking pending command:', error);
-        }
-        return false;
     }
 
     delay(ms) {
