@@ -1,6 +1,5 @@
 import { getContext } from "../../../../extensions.js";
 import { extension_settings } from "../../../../extensions.js";
-import { generateRaw } from "../../../../script.js";
 
 export class AutoOutfitSystem {
     constructor(outfitManager) {
@@ -120,14 +119,15 @@ Important: Always use the exact slot names listed above. Never invent new slot n
             throw new Error('No recent messages to process');
         }
 
-        // Use generateRaw instead of /gen command
+        // Use generateRaw API instead of /gen command
+        const { generateRaw } = getContext();
+        
         const promptText = `${this.systemPrompt}\n\nRecent Messages:\n${recentMessages}`;
         
         console.log('Generating outfit commands...');
         const result = await generateRaw({
             systemPrompt: this.systemPrompt,
-            prompt: recentMessages,
-            quiet: true // This should prevent UI updates
+            prompt: recentMessages
         });
 
         if (!result) {
