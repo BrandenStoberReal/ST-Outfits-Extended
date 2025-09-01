@@ -1,5 +1,6 @@
 import { getContext } from "../../../../extensions.js";
 import { extension_settings } from "../../../../extensions.js";
+import { generateRaw } from "../../../../script.js";
 
 export class AutoOutfitSystem {
     constructor(outfitManager) {
@@ -11,8 +12,6 @@ export class AutoOutfitSystem {
         this.lastProcessTime = null;
         this.consecutiveFailures = 0;
         this.maxConsecutiveFailures = 5;
-        this.tempVarName = 'outfitsystem_charmes';
-        this.generationTimeout = null;
     }
 
     getDefaultPrompt() {
@@ -45,7 +44,6 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         
         this.isEnabled = false;
         this.removeEventListener();
-        this.cleanupTempVar();
         return '[Outfit System] Auto outfit updates disabled.';
     }
 
@@ -63,42 +61,27 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         const { eventSource, event_types } = getContext();
         this.removeEventListener();
         
-        // Listen when generation finishes
-        this.messageHandler = this.handleGenerationEnded.bind(this);
-        eventSource.on(event_types.GENERATION_ENDED, this.messageHandler);
+        // Listen for CHARACTER_MESSAGE_RENDERED instead of generation events
+        this.messageHandler = this.handleCharacterMessage.bind(this);
+        eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, this.messageHandler);
     }
 
-    handleGenerationEnded(data) {
-        // Only run if generation was successful and outfit system is enabled
-        if (!this.isEnabled || this.isProcessing || !data?.success) return;
-        if (!this.lastMessageWasAI()) return;
-
-        // Process after a short delay to ensure UI updates
+    handleCharacterMessage(data) {
+        if (!this.isEnabled || this.isProcessing) return;
+        
+        // Add a delay to ensure UI is stable
         setTimeout(() => {
             this.processOutfitCommands().catch(error => {
                 console.error('Auto outfit processing failed:', error);
                 this.consecutiveFailures++;
             });
-        }, 1000);
-    }
-
-    lastMessageWasAI() {
-        const { chat, characterId } = getContext();
-        if (!chat || chat.length === 0) return false;
-        
-        const lastMessage = chat[chat.length - 1];
-        return !lastMessage.is_user && 
-               !lastMessage.is_system;
+        }, 2000);
     }
 
     removeEventListener() {
         const { eventSource, event_types } = getContext();
         if (this.messageHandler) {
-            eventSource.off(event_types.GENERATION_ENDED, this.messageHandler);
-        }
-        if (this.generationTimeout) {
-            clearTimeout(this.generationTimeout);
-            this.generationTimeout = null;
+            eventSource.off(event_types.CHARACTER_MESSAGE_RENDERED, this.messageHandler);
         }
     }
 
@@ -109,9 +92,10 @@ Important: Always use the exact slot names listed above. Never invent new slot n
             return;
         }
 
-        // Wait until any generation locks are cleared
-        await this.waitForIdleGeneration();
-        if (this.isProcessing) return;
+        if (this.isProcessing) {
+            this.showPopup('Auto outfit check already in progress.', 'warning');
+            return;
+        }
         
         this.isProcessing = true;
         
@@ -119,6 +103,7 @@ Important: Always use the exact slot names listed above. Never invent new slot n
             this.showPopup('Generating outfit commands...', 'info');
             await this.executeGenCommand();
             this.consecutiveFailures = 0;
+            this.showPopup('Outfit check completed successfully.', 'success');
         } catch (error) {
             console.error('Outfit command processing failed:', error);
             this.consecutiveFailures++;
@@ -126,30 +111,7 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         } finally {
             this.isProcessing = false;
             this.lastProcessTime = Date.now();
-            this.cleanupTempVar();
         }
-    }
-
-    // Wait until SillyTavern is ready to accept new commands
-    waitForIdleGeneration() {
-        return new Promise((resolve) => {
-            const checkIdle = () => {
-                if (this.isGenerationActive()) {
-                    setTimeout(checkIdle, 500);
-                } else {
-                    resolve();
-                }
-            };
-            checkIdle();
-        });
-    }
-
-    isGenerationActive() {
-        // Robust check for any ongoing generation
-        return document.querySelector('#stop_generation:not([style*="none"])') || 
-               document.querySelector('#send_but[disabled]') ||
-               document.querySelector('.generating') ||
-               document.querySelector('.msg_in_progress');
     }
 
     async executeGenCommand() {
@@ -158,114 +120,25 @@ Important: Always use the exact slot names listed above. Never invent new slot n
             throw new Error('No recent messages to process');
         }
 
-        // Clean up any previous temp variable
-        this.cleanupTempVar();
-        
-        // Construct the /gen command
+        // Use generateRaw instead of /gen command
         const promptText = `${this.systemPrompt}\n\nRecent Messages:\n${recentMessages}`;
-        const genCommand = `/gen as=system lock=on ${this.escapePrompt(promptText)} | /setvar key=${this.tempVarName} {{pipe}}`;
         
-        console.log('Executing outfit command:', genCommand);
-        await this.sendViaChatInput(genCommand);
-        
-        // Wait for generation result
-        const generatedText = await this.waitForGenerationResult(30000);
-        
-        if (!generatedText) {
-            throw new Error('No output generated from /gen command');
+        console.log('Generating outfit commands...');
+        const result = await generateRaw({
+            systemPrompt: this.systemPrompt,
+            prompt: recentMessages,
+            quiet: true // This should prevent UI updates
+        });
+
+        if (!result) {
+            throw new Error('No output generated from generation');
         }
         
-        console.log('Generated text:', generatedText);
+        console.log('Generated result:', result);
         
         // Parse and execute commands
-        const commands = this.parseGeneratedText(generatedText);
+        const commands = this.parseGeneratedText(result);
         await this.executeCommands(commands);
-    }
-
-    escapePrompt(text) {
-        // Escape double quotes and preserve newlines
-        return text.replace(/"/g, '\\"').replace(/\n/g, '\\n');
-    }
-
-    async sendViaChatInput(command) {
-        return new Promise((resolve) => {
-            // Use the chat input bypass method
-            const chatInput = document.getElementById('send_textarea');
-            if (!chatInput) {
-                throw new Error('Chat input not found');
-            }
-            
-            // Clear any existing content immediately
-            chatInput.value = '';
-            chatInput.dispatchEvent(new Event('input', { bubbles: true }));
-            
-            // Set the command after a brief delay
-            setTimeout(() => {
-                chatInput.value = command;
-                chatInput.dispatchEvent(new Event('input', { bubbles: true }));
-                
-                // Wait a moment for the input to be processed
-                setTimeout(() => {
-                    // Trigger send via keyboard event
-                    const enterEvent = new KeyboardEvent('keydown', {
-                        key: 'Enter',
-                        code: 'Enter',
-                        keyCode: 13,
-                        which: 13,
-                        bubbles: true,
-                        cancelable: true
-                    });
-                    chatInput.dispatchEvent(enterEvent);
-                    resolve();
-                }, 300);
-            }, 300);
-        });
-    }
-
-    async waitForGenerationResult(timeoutMs = 30000) {
-        const startTime = Date.now();
-        const isGenerationComplete = () => {
-            return !this.isGenerationActive() || 
-                   document.querySelector('.swipe_right')?.style.display === 'block';
-        };
-        
-        while (Date.now() - startTime < timeoutMs) {
-            if (!isGenerationComplete()) {
-                await this.delay(500);
-                continue;
-            }
-            
-            const result = this.getTempVarValue();
-            if (result && result.trim()) {
-                return result;
-            }
-            await this.delay(500);
-        }
-        
-        return null;
-    }
-
-    getTempVarValue() {
-        try {
-            const globalVars = extension_settings.variables?.global || {};
-            return globalVars[this.tempVarName] || window[this.tempVarName] || '';
-        } catch (error) {
-            console.error('Failed to get temporary variable:', error);
-            return '';
-        }
-    }
-
-    cleanupTempVar() {
-        try {
-            if (extension_settings.variables?.global?.[this.tempVarName]) {
-                delete extension_settings.variables.global[this.tempVarName];
-            }
-            if (window[this.tempVarName]) {
-                delete window[this.tempVarName];
-            }
-        } catch (error) {
-            console.error('Failed to cleanup temporary variable:', error);
-        }
     }
 
     parseGeneratedText(text) {
@@ -282,7 +155,10 @@ Important: Always use the exact slot names listed above. Never invent new slot n
     }
 
     async executeCommands(commands) {
-        if (!commands || commands.length === 0) return;
+        if (!commands || commands.length === 0) {
+            this.showPopup('No outfit commands found in generated output.', 'info');
+            return;
+        }
         
         let executedCount = 0;
         for (const command of commands) {
@@ -295,11 +171,13 @@ Important: Always use the exact slot names listed above. Never invent new slot n
                 }
             } catch (error) {
                 console.error(`Error executing command "${command}":`, error);
+                this.showPopup(`Failed to execute outfit command: ${command}`, 'error');
             }
         }
         
         if (executedCount > 0 && extension_settings.outfit_tracker?.enableSysMessages) {
             this.sendSystemMessage(`[Outfit System] Processed ${executedCount} outfit change(s) automatically.`);
+            this.showPopup(`Applied ${executedCount} outfit change(s).`, 'success');
         }
     }
 
@@ -323,10 +201,6 @@ Important: Always use the exact slot names listed above. Never invent new slot n
             default:
                 throw new Error(`Unknown action: ${action}`);
         }
-    }
-
-    delay(ms) {
-        return new Promise(resolve => setTimeout(resolve, ms));
     }
 
     getLastMessages(count = 3) {
@@ -394,14 +268,18 @@ Important: Always use the exact slot names listed above. Never invent new slot n
             promptLength: this.systemPrompt?.length || 0,
             isProcessing: this.isProcessing,
             consecutiveFailures: this.consecutiveFailures,
-            lastProcessTime: this.lastProcessTime ? new Date(this.lastProcessTime).toLocaleTimeString() : 'Never',
-            tempVarExists: !!this.getTempVarValue()
+            lastProcessTime: this.lastProcessTime ? new Date(this.lastProcessTime).toLocaleTimeString() : 'Never'
         };
     }
 
     async manualTrigger() {
         if (!this.isEnabled) {
             this.showPopup('Enable auto updates first with /outfit-auto on', 'warning');
+            return;
+        }
+        
+        if (this.isProcessing) {
+            this.showPopup('Auto outfit check already in progress.', 'warning');
             return;
         }
         
