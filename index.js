@@ -75,6 +75,11 @@ async function initializeExtension() {
                 toastr.info(`Auto outfit: ${status.enabled ? 'ON' : 'OFF'}\nPrompt length: ${status.promptLength} chars`);
             }
         }, [], 'Toggle auto outfit updates (on/off)', true, true);
+
+        registerSlashCommand('outfit-auto-trigger', async (...args) => {
+            const result = await autoOutfitSystem.manualTrigger();
+            toastr.info(result, 'Manual Outfit Check');
+        }, [], 'Manually trigger auto outfit check', true, true);
         
         registerSlashCommand('outfit-prompt', (...args) => {
             const prompt = args.join(' ');
