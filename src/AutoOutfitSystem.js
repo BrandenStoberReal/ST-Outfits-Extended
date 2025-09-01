@@ -15,7 +15,8 @@ export class AutoOutfitSystem {
         this.lastProcessTime = null;
         this.consecutiveFailures = 0;
         this.maxConsecutiveFailures = 5;
-        this.lastMessageId = null; // Track the last processed message ID
+        this.lastGenerationId = null; // Track the last processed generation
+        this.pendingGeneration = null; // Store the last generation data
     }
 
     getDefaultPrompt() {
@@ -67,52 +68,76 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         // Remove any existing listener first
         this.removeEventListener();
         
-        // Listen for when the AI message is fully rendered (not when received)
-        this.messageHandler = this.handleMessage.bind(this);
-        eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, this.messageHandler);
+        // Listen for generation completion events
+        this.generationStartHandler = this.handleGenerationStart.bind(this);
+        this.generationEndHandler = this.handleGenerationEnd.bind(this);
+        
+        eventSource.on(event_types.GENERATION_AFTER_COMMANDS, this.generationStartHandler);
+        eventSource.on(event_types.GENERATION_ENDED, this.generationEndHandler);
     }
 
     removeEventListener() {
         const { eventSource, event_types } = getContext();
-        if (this.messageHandler) {
-            eventSource.off(event_types.CHARACTER_MESSAGE_RENDERED, this.messageHandler);
+        if (this.generationStartHandler) {
+            eventSource.off(event_types.GENERATION_AFTER_COMMANDS, this.generationStartHandler);
+        }
+        if (this.generationEndHandler) {
+            eventSource.off(event_types.GENERATION_ENDED, this.generationEndHandler);
         }
     }
 
-    async handleMessage(data) {
+    handleGenerationStart(data) {
+        // Store that a generation is starting
+        this.pendingGeneration = {
+            startTime: Date.now(),
+            data: data
+        };
+    }
+
+    async handleGenerationEnd(data) {
         // Skip if not enabled, processing, or no prompt
         if (!this.isEnabled || !this.systemPrompt || this.isProcessing) return;
-
-        // Get the current chat context to check the latest message
-        const context = getContext();
-        const chat = context.chat || [];
         
-        if (chat.length === 0) return;
+        // Skip if generation failed or was aborted
+        if (data?.error || data?.aborted) {
+            console.log('[OutfitSystem] Generation failed or aborted, skipping processing');
+            this.pendingGeneration = null;
+            return;
+        }
         
-        // Get the latest AI message (should be the one that just rendered)
-        const latestMessage = chat[chat.length - 1];
+        // Skip if we don't have a pending generation or it's too old
+        if (!this.pendingGeneration || (Date.now() - this.pendingGeneration.startTime > 30000)) {
+            this.pendingGeneration = null;
+            return;
+        }
         
-        // Skip if this isn't an AI message or if we've already processed it
-        if (latestMessage.is_user || latestMessage.mes_id === this.lastMessageId) return;
+        // Skip if this is a duplicate generation (same ID)
+        if (data?.mes_id && data.mes_id === this.lastGenerationId) {
+            console.log('[OutfitSystem] Duplicate generation ID, skipping');
+            this.pendingGeneration = null;
+            return;
+        }
         
-        // Store the message ID to prevent duplicate processing
-        this.lastMessageId = latestMessage.mes_id;
+        // Store the generation ID to prevent duplicate processing
+        this.lastGenerationId = data?.mes_id;
         
         try {
             // Show starting message as popup
             this.showPopup('Auto outfit check started, please wait...', 'info');
             
-            // Wait an additional moment to ensure the message is fully settled
+            // Process the completed generation
             setTimeout(async () => {
-                await this.processOutfitCommands();
-            }, 1500); // Increased delay to ensure completion
+                await this.processGenerationOutput(data);
+            }, 1000); // Short delay to ensure everything is settled
         } catch (error) {
             console.error('Auto outfit processing error:', error);
             this.showPopup('Auto outfit check failed to start.', 'error');
+        } finally {
+            this.pendingGeneration = null;
         }
     }
 
-    async processOutfitCommands() {
+    async processGenerationOutput(generationData) {
         if (this.isProcessing) {
             console.log('[OutfitSystem] Already processing, skipping duplicate request');
             this.showPopup('Auto outfit check already in progress.', 'warning');
@@ -130,7 +155,7 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         this.retryCount = 0;
         
         try {
-            await this.executeWithRetry();
+            await this.executeWithRetry(generationData);
         } catch (error) {
             console.error('[OutfitSystem] Final processing failure:', error);
             this.consecutiveFailures++;
@@ -141,10 +166,10 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         }
     }
 
-    async executeWithRetry() {
+    async executeWithRetry(generationData) {
         while (this.retryCount < this.maxRetries) {
             try {
-                await this.executeSingleAttempt();
+                await this.executeSingleAttempt(generationData);
                 this.consecutiveFailures = 0; // Reset on success
                 this.showPopup('Auto outfit check completed successfully.', 'success');
                 return; // Success, exit retry loop
@@ -164,27 +189,28 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         }
     }
 
-    async executeSingleAttempt() {
+    async executeSingleAttempt(generationData) {
         const { generateRaw } = getContext();
         
         if (!generateRaw) {
             throw new Error('generateRaw function not available');
         }
 
-        // Get the last 3 completed messages (not the one currently generating)
-        const recentMessages = this.getLastCompletedMessages(3);
-        if (!recentMessages.trim()) {
-            throw new Error('No recent completed messages to process');
+        // Extract the generated text from the completed generation
+        const generatedText = this.extractGeneratedText(generationData);
+        if (!generatedText.trim()) {
+            throw new Error('No generated text to process');
         }
 
-        this.showPopup('Analyzing recent messages for outfit changes...', 'info');
+        this.showPopup('Analyzing AI response for outfit commands...', 'info');
 
+        // Use the generated text as the prompt for command extraction
         const result = await generateRaw({
-            systemPrompt: 'You are an outfit command parser. Extract valid outfit commands from COMPLETED text.',
-            prompt: `${this.systemPrompt}\n\nLast 3 COMPLETED messages:\n${recentMessages}\n\nIMPORTANT: Only analyze COMPLETED messages, not partial/in-progress text.`,
+            systemPrompt: 'You are an outfit command parser. Extract valid outfit commands from the generated text.',
+            prompt: `${this.systemPrompt}\n\nGenerated AI Text:\n${generatedText}\n\nIMPORTANT: Extract ONLY completed outfit commands from the text above.`,
             jsonSchema: {
                 name: 'OutfitCommands',
-                description: 'Extracted outfit commands from completed text',
+                description: 'Extracted outfit commands from generated text',
                 strict: true,
                 value: {
                     '$schema': 'http://json-schema.org/draft-04/schema#',
@@ -206,20 +232,36 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         await this.executeCommands(parsedResult.commands || []);
     }
 
-    async delay(ms) {
-        return new Promise(resolve => setTimeout(resolve, ms));
+    extractGeneratedText(generationData) {
+        // Try to extract the generated text from various possible locations
+        if (generationData?.mes) {
+            return generationData.mes; // Most likely location
+        }
+        if (generationData?.text) {
+            return generationData.text;
+        }
+        if (generationData?.result?.text) {
+            return generationData.result.text;
+        }
+        if (generationData?.response) {
+            return generationData.response;
+        }
+        
+        // Fallback: check the chat for the latest AI message
+        const context = getContext();
+        const chat = context.chat || [];
+        if (chat.length > 0) {
+            const latestMessage = chat[chat.length - 1];
+            if (!latestMessage.is_user) {
+                return latestMessage.mes;
+            }
+        }
+        
+        return '';
     }
 
-    getLastCompletedMessages(count = 3) {
-        const { chat } = getContext();
-        if (!chat || chat.length === 0) return '';
-        
-        // Filter out any messages that might be in progress
-        // We'll assume all messages in the chat array are completed
-        const completedMessages = chat.slice(-count);
-        return completedMessages.map(msg => 
-            `${msg.is_user ? 'User' : 'AI'}: ${msg.mes}`
-        ).join('\n');
+    async delay(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
     }
 
     parseResult(result) {
@@ -239,7 +281,7 @@ Important: Always use the exact slot names listed above. Never invent new slot n
 
     async executeCommands(commands) {
         if (!commands || commands.length === 0) {
-            this.showPopup('No outfit changes detected in completed messages.', 'info');
+            this.showPopup('No outfit commands found in AI response.', 'info');
             return;
         }
         
@@ -261,7 +303,7 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         if (executedCount > 0 && extension_settings.outfit_tracker?.enableSysMessages) {
             // Only send actual outfit changes as system messages
             this.sendSystemMessage(`[Outfit System] Processed ${executedCount} outfit change(s) automatically.`);
-            this.showPopup(`Applied ${executedCount} outfit change(s) from completed messages.`, 'success');
+            this.showPopup(`Applied ${executedCount} outfit change(s) from AI response.`, 'success');
         }
     }
 
@@ -343,7 +385,7 @@ Important: Always use the exact slot names listed above. Never invent new slot n
             consecutiveFailures: this.consecutiveFailures,
             lastProcessTime: this.lastProcessTime ? new Date(this.lastProcessTime).toLocaleTimeString() : 'Never',
             lastProcessAgo: this.lastProcessTime ? this.formatTimeAgo(this.lastProcessTime) : 'Never',
-            lastMessageId: this.lastMessageId
+            lastGenerationId: this.lastGenerationId
         };
     }
 
@@ -368,7 +410,18 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         
         try {
             this.showPopup('Manual outfit check started...', 'info');
-            await this.processOutfitCommands();
+            // For manual trigger, we'll process the last AI message
+            const context = getContext();
+            const chat = context.chat || [];
+            const aiMessages = chat.filter(msg => !msg.is_user);
+            
+            if (aiMessages.length === 0) {
+                this.showPopup('No AI messages found to process.', 'warning');
+                return;
+            }
+            
+            const lastAIMessage = aiMessages[aiMessages.length - 1];
+            await this.processGenerationOutput({ mes: lastAIMessage.mes });
         } catch (error) {
             this.showPopup(`Manual trigger failed: ${error.message}`, 'error');
         }
