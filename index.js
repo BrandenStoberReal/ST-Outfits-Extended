@@ -33,7 +33,26 @@ async function initializeExtension() {
     const { BotOutfitPanel } = await import("./src/BotOutfitPanel.js");
     const { UserOutfitManager } = await import("./src/UserOutfitManager.js");
     const { UserOutfitPanel } = await import("./src/UserOutfitPanel.js");
-    const { AutoOutfitSystem } = await import("./src/AutoOutfitSystem.js");
+    
+    // Import AutoOutfitSystem with error handling
+    let AutoOutfitSystem;
+    try {
+        const autoOutfitModule = await import("./src/AutoOutfitSystem.js");
+        AutoOutfitSystem = autoOutfitModule.AutoOutfitSystem;
+    } catch (error) {
+        console.error("[OutfitTracker] Failed to load AutoOutfitSystem:", error);
+        // Create a dummy class if AutoOutfitSystem fails to load
+        AutoOutfitSystem = class DummyAutoOutfitSystem {
+            constructor() { this.isEnabled = false; }
+            enable() { return '[Outfit System] Auto outfit system not available'; }
+            disable() { return '[Outfit System] Auto outfit system not available'; }
+            setPrompt() { return '[Outfit System] Auto outfit system not available'; }
+            resetToDefaultPrompt() { return '[Outfit System] Auto outfit system not available'; }
+            getStatus() { return { enabled: false, hasPrompt: false }; }
+            manualTrigger() { this.showPopup('Auto outfit system not available', 'error'); }
+            showPopup() {}
+        };
+    }
     
     const botManager = new BotOutfitManager([...CLOTHING_SLOTS, ...ACCESSORY_SLOTS]);
     const userManager = new UserOutfitManager([...CLOTHING_SLOTS, ...ACCESSORY_SLOTS]);
@@ -59,63 +78,65 @@ async function initializeExtension() {
             userPanel.toggle();
         }, [], 'Toggle user outfit tracker', true, true);
         
-        registerSlashCommand('outfit-auto', (...args) => {
-            if (args[0] === 'on') {
-                const message = autoOutfitSystem.enable();
-                if (extension_settings.outfit_tracker?.enableSysMessages) {
-                    botPanel.sendSystemMessage(message);
+        // Only register auto commands if AutoOutfitSystem loaded successfully
+        if (AutoOutfitSystem.name !== 'DummyAutoOutfitSystem') {
+            registerSlashCommand('outfit-auto', (...args) => {
+                if (args[0] === 'on') {
+                    const message = autoOutfitSystem.enable();
+                    if (extension_settings.outfit_tracker?.enableSysMessages) {
+                        botPanel.sendSystemMessage(message);
+                    }
+                } else if (args[0] === 'off') {
+                    const message = autoOutfitSystem.disable();
+                    if (extension_settings.outfit_tracker?.enableSysMessages) {
+                        botPanel.sendSystemMessage(message);
+                    }
+                } else {
+                    const status = autoOutfitSystem.getStatus();
+                    toastr.info(`Auto outfit: ${status.enabled ? 'ON' : 'OFF'}\nPrompt: ${status.hasPrompt ? 'SET' : 'NOT SET'}`);
                 }
-            } else if (args[0] === 'off') {
-                const message = autoOutfitSystem.disable();
-                if (extension_settings.outfit_tracker?.enableSysMessages) {
-                    botPanel.sendSystemMessage(message);
-                }
-            } else {
-                const status = autoOutfitSystem.getStatus();
-                toastr.info(`Auto outfit: ${status.enabled ? 'ON' : 'OFF'}\nPrompt length: ${status.promptLength} chars`);
-            }
-        }, [], 'Toggle auto outfit updates (on/off)', true, true);
-
-        registerSlashCommand('outfit-auto-trigger', async (...args) => {
-            const result = await autoOutfitSystem.manualTrigger();
-            toastr.info(result, 'Manual Outfit Check');
-        }, [], 'Manually trigger auto outfit check', true, true);
-        
-        registerSlashCommand('outfit-prompt', (...args) => {
-            const prompt = args.join(' ');
-            if (prompt) {
-                const message = autoOutfitSystem.setPrompt(prompt);
-                if (extension_settings.outfit_tracker?.enableSysMessages) {
-                    botPanel.sendSystemMessage(message);
-                }
-            } else {
-                const status = autoOutfitSystem.getStatus();
-                toastr.info(`Current prompt length: ${status.promptLength} chars\nUse /outfit-prompt-reset for default`);
-            }
-        }, [], 'Set auto outfit system prompt', true, true);
-        
-        registerSlashCommand('outfit-prompt-reset', (...args) => {
-            const message = autoOutfitSystem.resetToDefaultPrompt();
-            if (extension_settings.outfit_tracker?.enableSysMessages) {
-                botPanel.sendSystemMessage(message);
-            }
-            // Update the textarea in settings
-            $("#outfit-prompt-input").val(autoOutfitSystem.systemPrompt);
-            extension_settings[MODULE_NAME].autoOutfitPrompt = autoOutfitSystem.systemPrompt;
-            saveSettingsDebounced();
-        }, [], 'Reset to default system prompt', true, true);
-        
-        registerSlashCommand('outfit-prompt-view', (...args) => {
-            const status = autoOutfitSystem.getStatus();
-            const preview = autoOutfitSystem.systemPrompt.length > 100 
-                ? autoOutfitSystem.systemPrompt.substring(0, 100) + '...' 
-                : autoOutfitSystem.systemPrompt;
+            }, [], 'Toggle auto outfit updates (on/off)', true, true);
             
-            toastr.info(`Prompt preview: ${preview}\n\nFull length: ${status.promptLength} chars`, 'Current System Prompt', {
-                timeOut: 10000,
-                extendedTimeOut: 20000
-            });
-        }, [], 'View current system prompt', true, true);
+            registerSlashCommand('outfit-prompt', (...args) => {
+                const prompt = args.join(' ');
+                if (prompt) {
+                    const message = autoOutfitSystem.setPrompt(prompt);
+                    if (extension_settings.outfit_tracker?.enableSysMessages) {
+                        botPanel.sendSystemMessage(message);
+                    }
+                } else {
+                    toastr.info('Current prompt length: ' + (autoOutfitSystem.systemPrompt?.length || 0));
+                }
+            }, [], 'Set auto outfit system prompt', true, true);
+            
+            registerSlashCommand('outfit-prompt-reset', (...args) => {
+                const message = autoOutfitSystem.resetToDefaultPrompt();
+                if (extension_settings.outfit_tracker?.enableSysMessages) {
+                    botPanel.sendSystemMessage(message);
+                }
+                // Update the textarea in settings
+                $("#outfit-prompt-input").val(autoOutfitSystem.systemPrompt);
+                extension_settings[MODULE_NAME].autoOutfitPrompt = autoOutfitSystem.systemPrompt;
+                saveSettingsDebounced();
+            }, [], 'Reset to default system prompt', true, true);
+            
+            registerSlashCommand('outfit-prompt-view', (...args) => {
+                const status = autoOutfitSystem.getStatus();
+                const preview = autoOutfitSystem.systemPrompt.length > 100 
+                    ? autoOutfitSystem.systemPrompt.substring(0, 100) + '...' 
+                    : autoOutfitSystem.systemPrompt;
+                
+                toastr.info(`Prompt preview: ${preview}\n\nFull length: ${status.promptLength} chars`, 'Current System Prompt', {
+                    timeOut: 10000,
+                    extendedTimeOut: 20000
+                });
+            }, [], 'View current system prompt', true, true);
+            
+            registerSlashCommand('outfit-auto-trigger', async (...args) => {
+                const result = await autoOutfitSystem.manualTrigger();
+                toastr.info(result, 'Manual Outfit Check');
+            }, [], 'Manually trigger auto outfit check', true, true);
+        }
     }
 
     function updateForCurrentCharacter() {
@@ -140,7 +161,9 @@ async function initializeExtension() {
                 position: 'right',
                 enableSysMessages: true,
                 autoOutfitSystem: false,
-                autoOutfitPrompt: autoOutfitSystem.systemPrompt, // Prefill with default
+                autoOutfitPrompt: AutoOutfitSystem.name !== 'DummyAutoOutfitSystem' 
+                    ? new AutoOutfitSystem(botManager).getDefaultPrompt() 
+                    : '',
                 presets: {
                     bot: {},
                     user: {}
@@ -148,20 +171,43 @@ async function initializeExtension() {
             };
         }
         
-        // Initialize auto outfit system with saved settings
-        if (extension_settings[MODULE_NAME].autoOutfitPrompt) {
-            autoOutfitSystem.setPrompt(extension_settings[MODULE_NAME].autoOutfitPrompt);
-        } else {
-            // Ensure we always have a prompt
-            extension_settings[MODULE_NAME].autoOutfitPrompt = autoOutfitSystem.systemPrompt;
-        }
-        
-        if (extension_settings[MODULE_NAME].autoOutfitSystem) {
-            autoOutfitSystem.enable();
+        // Only initialize auto outfit system if it loaded successfully
+        if (AutoOutfitSystem.name !== 'DummyAutoOutfitSystem') {
+            if (extension_settings[MODULE_NAME].autoOutfitPrompt) {
+                autoOutfitSystem.setPrompt(extension_settings[MODULE_NAME].autoOutfitPrompt);
+            } else {
+                // Ensure we always have a prompt
+                extension_settings[MODULE_NAME].autoOutfitPrompt = autoOutfitSystem.systemPrompt;
+            }
+            
+            if (extension_settings[MODULE_NAME].autoOutfitSystem) {
+                autoOutfitSystem.enable();
+            }
         }
     }
 
     function createSettingsUI() {
+        const hasAutoSystem = AutoOutfitSystem.name !== 'DummyAutoOutfitSystem';
+        const autoSettingsHtml = hasAutoSystem ? `
+            <div class="flex-container">
+                <label for="outfit-auto-system">Enable auto outfit updates</label>
+                <input type="checkbox" id="outfit-auto-system"
+                        ${extension_settings[MODULE_NAME].autoOutfitSystem ? 'checked' : ''}>
+            </div>
+            <div class="flex-container">
+                <label for="outfit-prompt-input">System Prompt:</label>
+                <textarea id="outfit-prompt-input" rows="6" placeholder="Enter system prompt for auto outfit detection">${extension_settings[MODULE_NAME].autoOutfitPrompt || ''}</textarea>
+            </div>
+            <div class="flex-container">
+                <button id="outfit-prompt-reset-btn" class="menu_button">Reset to Default Prompt</button>
+                <button id="outfit-prompt-view-btn" class="menu_button">View Current Prompt</button>
+            </div>
+        ` : `
+            <div class="flex-container">
+                <label>Auto Outfit System: <span style="color: #ff6b6b;">Not Available</span></label>
+            </div>
+        `;
+
         const settingsHtml = `
         <div class="outfit-extension-settings">
             <div class="inline-drawer">
@@ -185,19 +231,7 @@ async function initializeExtension() {
                         <input type="checkbox" id="outfit-auto-user"
                                 ${extension_settings[MODULE_NAME].autoOpenUser ? 'checked' : ''}>
                     </div>
-                    <div class="flex-container">
-                        <label for="outfit-auto-system">Enable auto outfit updates</label>
-                        <input type="checkbox" id="outfit-auto-system"
-                                ${extension_settings[MODULE_NAME].autoOutfitSystem ? 'checked' : ''}>
-                    </div>
-                    <div class="flex-container">
-                        <label for="outfit-prompt-input">System Prompt:</label>
-                        <textarea id="outfit-prompt-input" rows="6" placeholder="Enter system prompt for auto outfit detection">${extension_settings[MODULE_NAME].autoOutfitPrompt || autoOutfitSystem.systemPrompt}</textarea>
-                    </div>
-                    <div class="flex-container">
-                        <button id="outfit-prompt-reset-btn" class="menu_button">Reset to Default Prompt</button>
-                        <button id="outfit-prompt-view-btn" class="menu_button">View Current Prompt</button>
-                    </div>
+                    ${autoSettingsHtml}
                 </div>
             </div>
         </div>
@@ -220,46 +254,49 @@ async function initializeExtension() {
             saveSettingsDebounced();
         });
         
-        $("#outfit-auto-system").on("input", function() {
-            extension_settings[MODULE_NAME].autoOutfitSystem = $(this).prop('checked');
-            if ($(this).prop('checked')) {
-                autoOutfitSystem.enable();
-            } else {
-                autoOutfitSystem.disable();
-            }
-            saveSettingsDebounced();
-        });
-
-        $("#outfit-prompt-input").on("change", function() {
-            extension_settings[MODULE_NAME].autoOutfitPrompt = $(this).val();
-            autoOutfitSystem.setPrompt($(this).val());
-            saveSettingsDebounced();
-        });
-        
-        $("#outfit-prompt-reset-btn").on("click", function() {
-            const message = autoOutfitSystem.resetToDefaultPrompt();
-            $("#outfit-prompt-input").val(autoOutfitSystem.systemPrompt);
-            extension_settings[MODULE_NAME].autoOutfitPrompt = autoOutfitSystem.systemPrompt;
-            saveSettingsDebounced();
-            
-            if (extension_settings.outfit_tracker?.enableSysMessages) {
-                botPanel.sendSystemMessage(message);
-            } else {
-                toastr.info(message);
-            }
-        });
-        
-        $("#outfit-prompt-view-btn").on("click", function() {
-            const status = autoOutfitSystem.getStatus();
-            const preview = autoOutfitSystem.systemPrompt.length > 100 
-                ? autoOutfitSystem.systemPrompt.substring(0, 100) + '...' 
-                : autoOutfitSystem.systemPrompt;
-            
-            toastr.info(`Prompt preview: ${preview}\n\nFull length: ${status.promptLength} characters`, 'Current System Prompt', {
-                timeOut: 15000,
-                extendedTimeOut: 30000
+        // Only add auto system event listeners if it loaded successfully
+        if (hasAutoSystem) {
+            $("#outfit-auto-system").on("input", function() {
+                extension_settings[MODULE_NAME].autoOutfitSystem = $(this).prop('checked');
+                if ($(this).prop('checked')) {
+                    autoOutfitSystem.enable();
+                } else {
+                    autoOutfitSystem.disable();
+                }
+                saveSettingsDebounced();
             });
-        });
+
+            $("#outfit-prompt-input").on("change", function() {
+                extension_settings[MODULE_NAME].autoOutfitPrompt = $(this).val();
+                autoOutfitSystem.setPrompt($(this).val());
+                saveSettingsDebounced();
+            });
+            
+            $("#outfit-prompt-reset-btn").on("click", function() {
+                const message = autoOutfitSystem.resetToDefaultPrompt();
+                $("#outfit-prompt-input").val(autoOutfitSystem.systemPrompt);
+                extension_settings[MODULE_NAME].autoOutfitPrompt = autoOutfitSystem.systemPrompt;
+                saveSettingsDebounced();
+                
+                if (extension_settings.outfit_tracker?.enableSysMessages) {
+                    botPanel.sendSystemMessage(message);
+                } else {
+                    toastr.info(message);
+                }
+            });
+            
+            $("#outfit-prompt-view-btn").on("click", function() {
+                const status = autoOutfitSystem.getStatus();
+                const preview = autoOutfitSystem.systemPrompt.length > 100 
+                    ? autoOutfitSystem.systemPrompt.substring(0, 100) + '...' 
+                    : autoOutfitSystem.systemPrompt;
+                
+                toastr.info(`Prompt preview: ${preview}\n\nFull length: ${status.promptLength} characters`, 'Current System Prompt', {
+                    timeOut: 15000,
+                    extendedTimeOut: 30000
+                });
+            });
+        }
     }
 
     initSettings();
