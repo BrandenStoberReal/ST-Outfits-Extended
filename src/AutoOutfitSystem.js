@@ -63,15 +63,38 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         const { eventSource, event_types } = getContext();
         this.removeEventListener();
         
-        // Listen for completed AI messages - use MESSAGE_RECEIVED instead
-        this.messageHandler = this.handleMessageReceived.bind(this);
-        eventSource.on(event_types.MESSAGE_RECEIVED, this.messageHandler);
+        // Listen when generation finishes
+        this.messageHandler = this.handleGenerationEnded.bind(this);
+        eventSource.on(event_types.GENERATION_ENDED, this.messageHandler);
+    }
+
+    handleGenerationEnded(data) {
+        // Only run if generation was successful and outfit system is enabled
+        if (!this.isEnabled || this.isProcessing || !data?.success) return;
+        if (!this.lastMessageWasAI()) return;
+
+        // Process after a short delay to ensure UI updates
+        setTimeout(() => {
+            this.processOutfitCommands().catch(error => {
+                console.error('Auto outfit processing failed:', error);
+                this.consecutiveFailures++;
+            });
+        }, 1000);
+    }
+
+    lastMessageWasAI() {
+        const { chat, characterId } = getContext();
+        if (!chat || chat.length === 0) return false;
+        
+        const lastMessage = chat[chat.length - 1];
+        return !lastMessage.is_user && 
+               !lastMessage.is_system;
     }
 
     removeEventListener() {
         const { eventSource, event_types } = getContext();
         if (this.messageHandler) {
-            eventSource.off(event_types.MESSAGE_RECEIVED, this.messageHandler);
+            eventSource.off(event_types.GENERATION_ENDED, this.messageHandler);
         }
         if (this.generationTimeout) {
             clearTimeout(this.generationTimeout);
@@ -79,42 +102,23 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         }
     }
 
-    handleMessageReceived() {
-        if (!this.isEnabled || this.isProcessing) return;
-        
-        // Wait a moment before processing to ensure message is settled
-        this.generationTimeout = setTimeout(() => {
-            this.processOutfitCommands().catch(error => {
-                console.error('Auto outfit processing failed:', error);
-            });
-        }, 1500);
-    }
-
     async processOutfitCommands() {
-        if (this.isProcessing) {
-            this.showPopup('Auto outfit check already in progress.', 'warning');
-            return;
-        }
-
         if (this.consecutiveFailures >= this.maxConsecutiveFailures) {
             this.disable();
             this.showPopup('Auto outfit updates disabled due to repeated failures.', 'error');
             return;
         }
 
-        // Check if generation is currently active
-        if (this.isGenerationActive()) {
-            this.showPopup('Cannot process outfit commands while generation is active.', 'warning');
-            return;
-        }
-
+        // Wait until any generation locks are cleared
+        await this.waitForIdleGeneration();
+        if (this.isProcessing) return;
+        
         this.isProcessing = true;
         
         try {
-            this.showPopup('Starting outfit command generation...', 'info');
+            this.showPopup('Generating outfit commands...', 'info');
             await this.executeGenCommand();
             this.consecutiveFailures = 0;
-            this.showPopup('Outfit check completed successfully.', 'success');
         } catch (error) {
             console.error('Outfit command processing failed:', error);
             this.consecutiveFailures++;
@@ -126,16 +130,26 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         }
     }
 
+    // Wait until SillyTavern is ready to accept new commands
+    waitForIdleGeneration() {
+        return new Promise((resolve) => {
+            const checkIdle = () => {
+                if (this.isGenerationActive()) {
+                    setTimeout(checkIdle, 500);
+                } else {
+                    resolve();
+                }
+            };
+            checkIdle();
+        });
+    }
+
     isGenerationActive() {
-        // Check various indicators that generation might be active
-        const sendButton = document.querySelector('#send_but');
-        const stopButton = document.querySelector('#stop_generation');
-        
-        return (
-            (sendButton && sendButton.disabled) ||
-            (stopButton && stopButton.style.display !== 'none') ||
-            document.body.classList.contains('generating')
-        );
+        // Robust check for any ongoing generation
+        return document.querySelector('#stop_generation:not([style*="none"])') || 
+               document.querySelector('#send_but[disabled]') ||
+               document.querySelector('.generating') ||
+               document.querySelector('.msg_in_progress');
     }
 
     async executeGenCommand() {
@@ -147,17 +161,15 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         // Clean up any previous temp variable
         this.cleanupTempVar();
         
-        // Construct the /gen command with pipe to temporary variable
+        // Construct the /gen command
         const promptText = `${this.systemPrompt}\n\nRecent Messages:\n${recentMessages}`;
         const genCommand = `/gen as=system lock=on ${this.escapePrompt(promptText)} | /setvar key=${this.tempVarName} {{pipe}}`;
         
         console.log('Executing outfit command:', genCommand);
-        
-        // Execute the command using chat input method
         await this.sendViaChatInput(genCommand);
         
-        // Wait for generation to complete and check for results
-        const generatedText = await this.waitForGenerationResult(25000);
+        // Wait for generation result
+        const generatedText = await this.waitForGenerationResult(30000);
         
         if (!generatedText) {
             throw new Error('No output generated from /gen command');
@@ -171,19 +183,19 @@ Important: Always use the exact slot names listed above. Never invent new slot n
     }
 
     escapePrompt(text) {
-        // Escape special characters for command input
+        // Escape double quotes and preserve newlines
         return text.replace(/"/g, '\\"').replace(/\n/g, '\\n');
     }
 
     async sendViaChatInput(command) {
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve) => {
+            // Use the chat input bypass method
             const chatInput = document.getElementById('send_textarea');
             if (!chatInput) {
-                reject(new Error('Chat input not found'));
-                return;
+                throw new Error('Chat input not found');
             }
             
-            // Clear any existing content
+            // Clear any existing content immediately
             chatInput.value = '';
             chatInput.dispatchEvent(new Event('input', { bubbles: true }));
             
@@ -194,36 +206,32 @@ Important: Always use the exact slot names listed above. Never invent new slot n
                 
                 // Wait a moment for the input to be processed
                 setTimeout(() => {
-                    // Find and click the send button
-                    const sendButton = document.querySelector('#send_but');
-                    if (sendButton && !sendButton.disabled) {
-                        sendButton.click();
-                        resolve();
-                    } else {
-                        // Fallback: simulate Enter key press
-                        const event = new KeyboardEvent('keydown', {
-                            key: 'Enter',
-                            code: 'Enter',
-                            keyCode: 13,
-                            which: 13,
-                            bubbles: true,
-                            cancelable: true
-                        });
-                        chatInput.dispatchEvent(event);
-                        resolve();
-                    }
+                    // Trigger send via keyboard event
+                    const enterEvent = new KeyboardEvent('keydown', {
+                        key: 'Enter',
+                        code: 'Enter',
+                        keyCode: 13,
+                        which: 13,
+                        bubbles: true,
+                        cancelable: true
+                    });
+                    chatInput.dispatchEvent(enterEvent);
+                    resolve();
                 }, 300);
             }, 300);
         });
     }
 
-    async waitForGenerationResult(timeoutMs = 25000) {
+    async waitForGenerationResult(timeoutMs = 30000) {
         const startTime = Date.now();
+        const isGenerationComplete = () => {
+            return !this.isGenerationActive() || 
+                   document.querySelector('.swipe_right')?.style.display === 'block';
+        };
         
         while (Date.now() - startTime < timeoutMs) {
-            // Check if generation is still active
-            if (this.isGenerationActive()) {
-                await this.delay(1000);
+            if (!isGenerationComplete()) {
+                await this.delay(500);
                 continue;
             }
             
@@ -231,7 +239,7 @@ Important: Always use the exact slot names listed above. Never invent new slot n
             if (result && result.trim()) {
                 return result;
             }
-            await this.delay(1000);
+            await this.delay(500);
         }
         
         return null;
@@ -274,10 +282,7 @@ Important: Always use the exact slot names listed above. Never invent new slot n
     }
 
     async executeCommands(commands) {
-        if (!commands || commands.length === 0) {
-            this.showPopup('No outfit commands found in generated output.', 'info');
-            return;
-        }
+        if (!commands || commands.length === 0) return;
         
         let executedCount = 0;
         for (const command of commands) {
@@ -290,13 +295,11 @@ Important: Always use the exact slot names listed above. Never invent new slot n
                 }
             } catch (error) {
                 console.error(`Error executing command "${command}":`, error);
-                this.showPopup(`Failed to execute outfit command: ${command}`, 'error');
             }
         }
         
         if (executedCount > 0 && extension_settings.outfit_tracker?.enableSysMessages) {
             this.sendSystemMessage(`[Outfit System] Processed ${executedCount} outfit change(s) automatically.`);
-            this.showPopup(`Applied ${executedCount} outfit change(s).`, 'success');
         }
     }
 
@@ -332,7 +335,7 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         
         const recentMessages = chat.slice(-count);
         return recentMessages.map(msg => 
-            `${msg.is_user ? 'User' : 'AI'}: ${msg.mes}`
+            `${msg.is_user ? 'User' : msg.name}: ${msg.mes}`
         ).join('\n');
     }
 
@@ -372,10 +375,12 @@ Important: Always use the exact slot names listed above. Never invent new slot n
             chatInput.dispatchEvent(new Event('input', { bubbles: true }));
             
             setTimeout(() => {
-                const sendButton = document.querySelector('#send_but');
-                if (sendButton) {
-                    sendButton.click();
-                }
+                const event = new KeyboardEvent('keydown', {
+                    key: 'Enter',
+                    code: 'Enter',
+                    bubbles: true
+                });
+                chatInput.dispatchEvent(event);
             }, 100);
         } catch (error) {
             console.error('Failed to send system message:', error);
@@ -396,13 +401,7 @@ Important: Always use the exact slot names listed above. Never invent new slot n
 
     async manualTrigger() {
         if (!this.isEnabled) {
-            this.showPopup('Auto updates are disabled. Enable first with /outfit-auto on', 'warning');
-            return;
-        }
-        
-        // Check if generation is currently active
-        if (this.isGenerationActive()) {
-            this.showPopup('Cannot trigger outfit check while generation is active.', 'warning');
+            this.showPopup('Enable auto updates first with /outfit-auto on', 'warning');
             return;
         }
         
