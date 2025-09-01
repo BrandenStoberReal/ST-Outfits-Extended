@@ -259,3 +259,61 @@
 .outfit-slot:hover, .outfit-preset:hover {
     background: rgba(255,255,255,0.15);
 }
+
+/* Minimized state styles */
+.outfit-panel.minimized .outfit-content,
+.outfit-panel.minimized .outfit-tabs {
+    display: none !important;
+}
+
+.outfit-panel.minimized {
+    height: auto !important;
+    min-height: auto !important;
+}
+
+/* Ensure outfits page has proper scroll */
+#bot-outfit-tab-content,
+#user-outfit-tab-content {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 4px;
+    min-height: 0;
+    max-height: 300px; /* Limit height for scroll */
+}
+
+/* Outfits list styling */
+.outfit-presets-list {
+    max-height: 250px;
+    overflow-y: auto;
+}
+
+/* Minimize button styling */
+#bot-outfit-minimize,
+#user-outfit-minimize {
+    font-weight: bold;
+    font-size: 1.2em;
+}
+
+/* Ensure proper spacing in header */
+.outfit-actions span {
+    margin: 0 2px;
+}
+
+/* Better scrollbar for outfits */
+.outfit-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.outfit-content::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 3px;
+}
+
+.outfit-content::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.2);
+    border-radius: 3px;
+}
+
+.outfit-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(255,255,255,0.3);
+}
