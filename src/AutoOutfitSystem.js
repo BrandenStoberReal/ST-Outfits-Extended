@@ -8,6 +8,13 @@ export class AutoOutfitSystem {
         this.systemPrompt = this.getDefaultPrompt();
         this.commandPattern = /outfit-system_(\w+)_(\w+)\(([^)]*)\)/g;
         this.messageHandler = null;
+        this.retryCount = 0;
+        this.maxRetries = 3;
+        this.retryDelay = 2000; // 2 seconds between retries
+        this.isProcessing = false;
+        this.lastProcessTime = null;
+        this.consecutiveFailures = 0;
+        this.maxConsecutiveFailures = 5;
     }
 
     getDefaultPrompt() {
@@ -30,6 +37,7 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         if (this.isEnabled) return '[Outfit System] Auto outfit updates already enabled.';
         
         this.isEnabled = true;
+        this.consecutiveFailures = 0; // Reset failure counter when enabling
         this.setupEventListener();
         return '[Outfit System] Auto outfit updates enabled.';
     }
@@ -66,7 +74,7 @@ Important: Always use the exact slot names listed above. Never invent new slot n
     }
 
     async handleMessage(data) {
-        if (!this.isEnabled || !this.systemPrompt) return;
+        if (!this.isEnabled || !this.systemPrompt || this.isProcessing) return;
 
         try {
             // Wait a moment before processing to ensure UI is updated
@@ -79,47 +87,101 @@ Important: Always use the exact slot names listed above. Never invent new slot n
     }
 
     async processOutfitCommands() {
-        const { generateRaw } = getContext();
-        
-        if (!generateRaw) {
-            console.error('generateRaw function not available');
+        if (this.isProcessing) {
+            console.log('[OutfitSystem] Already processing, skipping duplicate request');
             return;
         }
 
-        try {
-            const result = await generateRaw({
-                systemPrompt: 'You are an outfit command parser. Extract valid outfit commands from the text.',
-                prompt: `${this.systemPrompt}\n\nLast 3 messages:\n${this.getLastMessages(3)}`,
-                jsonSchema: {
-                    name: 'OutfitCommands',
-                    description: 'Extracted outfit commands from text',
-                    strict: true,
-                    value: {
-                        '$schema': 'http://json-schema.org/draft-04/schema#',
-                        'type': 'object',
-                        'properties': {
-                            'commands': {
-                                'type': 'array',
-                                'items': {
-                                    'type': 'string'
-                                }
-                            }
-                        },
-                        'required': ['commands']
-                    }
-                }
-            });
-
-            const parsedResult = this.parseResult(result);
-            await this.executeCommands(parsedResult.commands || []);
-
-        } catch (error) {
-            console.error('Outfit command generation failed:', error);
+        if (this.consecutiveFailures >= this.maxConsecutiveFailures) {
+            console.warn('[OutfitSystem] Too many consecutive failures, auto-disabling');
+            this.disable();
+            this.sendSystemMessage('[Outfit System] Auto outfit updates disabled due to repeated failures.');
+            return;
         }
+
+        this.isProcessing = true;
+        this.retryCount = 0;
+        
+        try {
+            await this.executeWithRetry();
+        } catch (error) {
+            console.error('[OutfitSystem] Final processing failure:', error);
+            this.consecutiveFailures++;
+            this.sendSystemMessage('[Outfit System] Auto outfit check failed. Will retry later.');
+        } finally {
+            this.isProcessing = false;
+            this.lastProcessTime = Date.now();
+        }
+    }
+
+    async executeWithRetry() {
+        while (this.retryCount < this.maxRetries) {
+            try {
+                await this.executeSingleAttempt();
+                this.consecutiveFailures = 0; // Reset on success
+                return; // Success, exit retry loop
+            } catch (error) {
+                this.retryCount++;
+                
+                if (this.retryCount < this.maxRetries) {
+                    console.warn(`[OutfitSystem] Attempt ${this.retryCount} failed, retrying in ${this.retryDelay}ms:`, error.message);
+                    await this.delay(this.retryDelay);
+                } else {
+                    console.error('[OutfitSystem] All retry attempts failed:', error);
+                    throw error; // Re-throw after final retry
+                }
+            }
+        }
+    }
+
+    async executeSingleAttempt() {
+        const { generateRaw } = getContext();
+        
+        if (!generateRaw) {
+            throw new Error('generateRaw function not available');
+        }
+
+        // Check if we have recent messages to process
+        const recentMessages = this.getLastMessages(3);
+        if (!recentMessages.trim()) {
+            throw new Error('No recent messages to process');
+        }
+
+        const result = await generateRaw({
+            systemPrompt: 'You are an outfit command parser. Extract valid outfit commands from the text.',
+            prompt: `${this.systemPrompt}\n\nLast 3 messages:\n${recentMessages}`,
+            jsonSchema: {
+                name: 'OutfitCommands',
+                description: 'Extracted outfit commands from text',
+                strict: true,
+                value: {
+                    '$schema': 'http://json-schema.org/draft-04/schema#',
+                    'type': 'object',
+                    'properties': {
+                        'commands': {
+                            'type': 'array',
+                            'items': {
+                                'type': 'string'
+                            }
+                        }
+                    },
+                    'required': ['commands']
+                }
+            }
+        });
+
+        const parsedResult = this.parseResult(result);
+        await this.executeCommands(parsedResult.commands || []);
+    }
+
+    async delay(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
     }
 
     getLastMessages(count = 3) {
         const { chat } = getContext();
+        if (!chat || chat.length === 0) return '';
+        
         const recentMessages = chat.slice(-count);
         return recentMessages.map(msg => 
             `${msg.is_user ? 'User' : 'AI'}: ${msg.mes}`
@@ -130,21 +192,36 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         try {
             if (typeof result === 'string' && result.trim()) {
                 const parsed = JSON.parse(result);
-                return Array.isArray(parsed.commands) ? { commands: parsed.commands } : { commands: [] };
+                if (parsed && Array.isArray(parsed.commands)) {
+                    return { commands: parsed.commands };
+                }
             }
         } catch (error) {
             console.error('Failed to parse outfit commands:', error);
+            throw new Error('Invalid JSON response from AI');
         }
         return { commands: [] };
     }
 
     async executeCommands(commands) {
+        if (!commands || commands.length === 0) return;
+        
+        let executedCount = 0;
         for (const command of commands) {
-            const match = command.match(/outfit-system_(\w+)_(\w+)\(([^)]*)\)/);
-            if (match) {
-                const [, action, slot, value] = match;
-                await this.executeCommand(action, slot, value.replace(/"/g, ''));
+            try {
+                const match = command.match(/outfit-system_(\w+)_(\w+)\(([^)]*)\)/);
+                if (match) {
+                    const [, action, slot, value] = match;
+                    await this.executeCommand(action, slot, value.replace(/"/g, ''));
+                    executedCount++;
+                }
+            } catch (error) {
+                console.error(`Error executing command "${command}":`, error);
             }
+        }
+        
+        if (executedCount > 0 && extension_settings.outfit_tracker?.enableSysMessages) {
+            this.sendSystemMessage(`[Outfit System] Processed ${executedCount} outfit change(s) automatically.`);
         }
     }
 
@@ -152,26 +229,40 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         const validSlots = [...this.outfitManager.slots];
         
         if (!validSlots.includes(slot)) {
-            console.warn(`Invalid slot: ${slot}`);
-            return;
+            throw new Error(`Invalid slot: ${slot}`);
         }
 
+        switch(action) {
+            case 'wear':
+                await this.outfitManager.setOutfitItem(slot, value);
+                break;
+            case 'remove':
+                await this.outfitManager.setOutfitItem(slot, 'None');
+                break;
+            case 'change':
+                await this.outfitManager.setOutfitItem(slot, value);
+                break;
+            default:
+                throw new Error(`Unknown action: ${action}`);
+        }
+    }
+
+    sendSystemMessage(message) {
         try {
-            switch(action) {
-                case 'wear':
-                    await this.outfitManager.setOutfitItem(slot, value);
-                    break;
-                case 'remove':
-                    await this.outfitManager.setOutfitItem(slot, 'None');
-                    break;
-                case 'change':
-                    await this.outfitManager.setOutfitItem(slot, value);
-                    break;
-                default:
-                    console.warn(`Unknown action: ${action}`);
-            }
+            const chatInput = document.getElementById('send_textarea');
+            if (!chatInput) return;
+            
+            chatInput.value = `/sys compact=true ${message}`;
+            chatInput.dispatchEvent(new Event('input', { bubbles: true }));
+            
+            setTimeout(() => {
+                const sendButton = document.querySelector('#send_but');
+                if (sendButton) {
+                    sendButton.click();
+                }
+            }, 100);
         } catch (error) {
-            console.error(`Error executing outfit command ${action}_${slot}:`, error);
+            console.error('Failed to send system message:', error);
         }
     }
 
@@ -180,7 +271,37 @@ Important: Always use the exact slot names listed above. Never invent new slot n
             enabled: this.isEnabled,
             hasPrompt: !!this.systemPrompt,
             promptLength: this.systemPrompt?.length || 0,
-            lastProcessed: new Date().toLocaleTimeString()
+            isProcessing: this.isProcessing,
+            retryCount: this.retryCount,
+            consecutiveFailures: this.consecutiveFailures,
+            lastProcessTime: this.lastProcessTime ? new Date(this.lastProcessTime).toLocaleTimeString() : 'Never',
+            lastProcessAgo: this.lastProcessTime ? this.formatTimeAgo(this.lastProcessTime) : 'Never'
         };
+    }
+
+    formatTimeAgo(timestamp) {
+        const now = Date.now();
+        const diff = now - timestamp;
+        const seconds = Math.floor(diff / 1000);
+        
+        if (seconds < 60) return `${seconds}s ago`;
+        const minutes = Math.floor(seconds / 60);
+        if (minutes < 60) return `${minutes}m ago`;
+        const hours = Math.floor(minutes / 60);
+        return `${hours}h ago`;
+    }
+
+    // Manual trigger for testing/debugging
+    async manualTrigger() {
+        if (!this.isEnabled) {
+            return '[Outfit System] Auto updates are disabled. Enable first with /outfit-auto on';
+        }
+        
+        try {
+            await this.processOutfitCommands();
+            return '[Outfit System] Manual trigger completed successfully.';
+        } catch (error) {
+            return `[Outfit System] Manual trigger failed: ${error.message}`;
+        }
     }
 }
