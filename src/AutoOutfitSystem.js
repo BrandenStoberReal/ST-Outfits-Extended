@@ -108,7 +108,7 @@ Important: Always use the exact slot names listed above. Never invent new slot n
     async executeGenCommand() {
         const recentMessages = this.getLastMessages(3);
         if (!recentMessages.trim()) {
-            throw new Error('No recent messages to process');
+            throw new Error('No valid messages to process');
         }
 
         // Use generateRaw instead of generateQuietPrompt for more reliable generation
@@ -217,7 +217,7 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         if (executedCount > 0 && extension_settings.outfit_tracker?.enableSysMessages) {
             console.log(`[AutoOutfitSystem] Sending ${executedCount} system messages`);
             for (const message of individualMessages) {
-                await this.sendSystemMessage(message);
+                await this.sendSystemMessageSafe(message);
                 await this.delay(500); // Small delay between messages
             }
             
@@ -254,19 +254,37 @@ Important: Always use the exact slot names listed above. Never invent new slot n
     getLastMessages(count = 3) {
         try {
             const { chat } = getContext();
-            if (!chat || chat.length === 0) return '';
             
-            const recentMessages = chat.slice(-count);
+            // SAFETY CHECK: Ensure chat exists and has valid messages
+            if (!chat || !Array.isArray(chat) || chat.length === 0) {
+                console.log('[AutoOutfitSystem] No chat or empty chat array');
+                return '';
+            }
+            
+            // Filter out any undefined or invalid messages
+            const validMessages = chat.filter(msg => 
+                msg && typeof msg === 'object' && 
+                typeof msg.mes === 'string' && 
+                typeof msg.is_user === 'boolean'
+            );
+            
+            if (validMessages.length === 0) {
+                console.log('[AutoOutfitSystem] No valid messages found');
+                return '';
+            }
+            
+            const recentMessages = validMessages.slice(-count);
             return recentMessages.map(msg => 
                 `${msg.is_user ? 'User' : (msg.name || 'AI')}: ${msg.mes}`
             ).join('\n');
+            
         } catch (error) {
             console.error('Error getting last messages:', error);
             return '';
         }
     }
 
-    async sendSystemMessage(message) {
+    async sendSystemMessageSafe(message) {
         try {
             const { sendSystemMessage } = getContext();
             
@@ -281,17 +299,18 @@ Important: Always use the exact slot names listed above. Never invent new slot n
             await this.sendSystemMessageFallback(message);
             
         } catch (error) {
-            console.error('Failed to send system message:', error);
-            throw error;
+            console.error('Failed to send system message safely:', error);
+            // Don't throw error here - just log and continue
         }
     }
 
     async sendSystemMessageFallback(message) {
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve) => {
             try {
                 const chatInput = document.getElementById('send_textarea');
                 if (!chatInput) {
-                    reject(new Error('Chat input not found'));
+                    console.error('Chat input not found for fallback');
+                    resolve();
                     return;
                 }
                 
@@ -313,13 +332,17 @@ Important: Always use the exact slot names listed above. Never invent new slot n
                             chatInput.dispatchEvent(new Event('input', { bubbles: true }));
                             resolve();
                         }, 100);
-                        return;
+                    } else {
+                        console.error('Send button not available for fallback');
+                        // Restore original value
+                        chatInput.value = originalValue;
+                        chatInput.dispatchEvent(new Event('input', { bubbles: true }));
+                        resolve();
                     }
-                    
-                    reject(new Error('Send button not available'));
                 }, 100);
             } catch (error) {
-                reject(error);
+                console.error('Fallback system message failed:', error);
+                resolve(); // Don't reject, just continue
             }
         });
     }
