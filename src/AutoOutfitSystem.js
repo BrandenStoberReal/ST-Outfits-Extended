@@ -213,11 +213,11 @@ Important: Always use the exact slot names listed above. Never invent new slot n
             }
         }
         
-        // Send individual outfit change messages using proper SillyTavern API
+        // Send individual outfit change messages
         if (executedCount > 0 && extension_settings.outfit_tracker?.enableSysMessages) {
             console.log(`[AutoOutfitSystem] Sending ${executedCount} system messages`);
             for (const message of individualMessages) {
-                await this.sendSystemMessageSafe(message);
+                await this.sendSystemMessageDirect(message);
                 await this.delay(500); // Small delay between messages
             }
             
@@ -284,32 +284,30 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         }
     }
 
-    async sendSystemMessageSafe(message) {
+    async sendSystemMessageDirect(message) {
         try {
-            const { sendSystemMessage } = getContext();
-            
-            if (sendSystemMessage) {
-                // Use the proper SillyTavern system message function
-                sendSystemMessage(message);
-                console.log('[AutoOutfitSystem] System message sent:', message);
+            // Use the direct system message approach that works with the existing panels
+            if (window.botOutfitPanel && typeof window.botOutfitPanel.sendSystemMessage === 'function') {
+                window.botOutfitPanel.sendSystemMessage(message);
+                console.log('[AutoOutfitSystem] System message sent via bot panel:', message);
                 return;
             }
             
-            // Fallback: Use the chat input method
-            await this.sendSystemMessageFallback(message);
+            // Fallback: Use the manual slash command approach
+            await this.sendSystemMessageManual(message);
             
         } catch (error) {
-            console.error('Failed to send system message safely:', error);
+            console.error('Failed to send system message directly:', error);
             // Don't throw error here - just log and continue
         }
     }
 
-    async sendSystemMessageFallback(message) {
+    async sendSystemMessageManual(message) {
         return new Promise((resolve) => {
             try {
                 const chatInput = document.getElementById('send_textarea');
                 if (!chatInput) {
-                    console.error('Chat input not found for fallback');
+                    console.error('Chat input not found for manual system message');
                     resolve();
                     return;
                 }
@@ -317,8 +315,9 @@ Important: Always use the exact slot names listed above. Never invent new slot n
                 // Store current value
                 const originalValue = chatInput.value;
                 
-                // Set the system message
-                chatInput.value = `/sys ${message}`;
+                // Set the system message with proper formatting
+                const formattedMessage = `/sys compact=true ${message}`;
+                chatInput.value = formattedMessage;
                 chatInput.dispatchEvent(new Event('input', { bubbles: true }));
                 
                 setTimeout(() => {
@@ -326,22 +325,31 @@ Important: Always use the exact slot names listed above. Never invent new slot n
                     const sendButton = document.querySelector('#send_but');
                     if (sendButton && !sendButton.disabled) {
                         sendButton.click();
-                        setTimeout(() => {
-                            // Restore original value
-                            chatInput.value = originalValue;
-                            chatInput.dispatchEvent(new Event('input', { bubbles: true }));
-                            resolve();
-                        }, 100);
+                        console.log('[AutoOutfitSystem] Manual system message sent:', message);
                     } else {
-                        console.error('Send button not available for fallback');
+                        // Try keyboard event as fallback
+                        const event = new KeyboardEvent('keydown', {
+                            key: 'Enter',
+                            code: 'Enter',
+                            keyCode: 13,
+                            which: 13,
+                            bubbles: true,
+                            cancelable: true
+                        });
+                        chatInput.dispatchEvent(event);
+                        console.log('[AutoOutfitSystem] Manual system message sent via keyboard:', message);
+                    }
+                    
+                    setTimeout(() => {
                         // Restore original value
                         chatInput.value = originalValue;
                         chatInput.dispatchEvent(new Event('input', { bubbles: true }));
                         resolve();
-                    }
+                    }, 100);
+                    
                 }, 100);
             } catch (error) {
-                console.error('Fallback system message failed:', error);
+                console.error('Manual system message failed:', error);
                 resolve(); // Don't reject, just continue
             }
         });
