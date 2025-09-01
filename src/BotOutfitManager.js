@@ -117,8 +117,7 @@ export class BotOutfitManager {
         return '';
     }
     
-    // Register preset loading function
-   async loadPreset(presetName) {
+    async loadPreset(presetName) {
         if (!extension_settings.outfit_tracker.presets?.bot?.[this.character]?.[presetName]) {
             return `[Outfit System] Preset "${presetName}" not found.`;
         }
