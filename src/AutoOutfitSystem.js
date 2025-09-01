@@ -251,7 +251,7 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         // Send individual outfit change messages
         if (executedCount > 0 && extension_settings.outfit_tracker?.enableSysMessages) {
             for (const message of individualMessages) {
-                await this.addSystemMessage(message);
+                await this.sendSystemMessage(message);
                 await this.delay(500);
             }
             
@@ -327,36 +327,76 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         }
     }
 
-    async addSystemMessage(message) {
+    async sendSystemMessage(message) {
         return new Promise((resolve) => {
             try {
-                const { addOneMessage, chat } = getContext();
+                const { sendSystemMessage } = getContext();
                 
-                if (addOneMessage && chat) {
-                    // Add the system message directly to chat
-                    addOneMessage({
-                        is_system: true,
-                        is_user: false,
-                        mes: message,
-                        name: 'System',
-                        send_date: Date.now(),
-                        mes_id: 'sys_' + Date.now() + Math.random().toString(36).substr(2, 9)
-                    });
-                    
-                    // Save the chat to persist the message
-                    const { saveChatConditional } = getContext();
-                    if (saveChatConditional) {
-                        saveChatConditional();
-                    }
-                    
+                if (sendSystemMessage) {
+                    // Use the proper system message function
+                    sendSystemMessage(message);
+                    console.log('System message sent via sendSystemMessage:', message);
                     resolve();
-                } else {
-                    console.error('addOneMessage not available');
-                    resolve();
+                    return;
                 }
+                
+                // Fallback: Use the chat input method but with better handling
+                this.sendSystemMessageFallback(message).then(resolve).catch(error => {
+                    console.error('Failed to send system message:', error);
+                    resolve();
+                });
+                
             } catch (error) {
-                console.error('Failed to add system message:', error);
+                console.error('Failed to send system message:', error);
                 resolve();
+            }
+        });
+    }
+
+    async sendSystemMessageFallback(message) {
+        return new Promise((resolve, reject) => {
+            try {
+                const chatInput = document.getElementById('send_textarea');
+                if (!chatInput) {
+                    reject(new Error('Chat input not found'));
+                    return;
+                }
+                
+                // Clear any existing content first
+                chatInput.value = '';
+                chatInput.dispatchEvent(new Event('input', { bubbles: true }));
+                
+                setTimeout(() => {
+                    // Set the system message with proper formatting
+                    const formattedMessage = `/sys ${message}`;
+                    chatInput.value = formattedMessage;
+                    chatInput.dispatchEvent(new Event('input', { bubbles: true }));
+                    
+                    setTimeout(() => {
+                        // Try to find and click the send button directly
+                        const sendButton = document.querySelector('#send_but');
+                        if (sendButton && !sendButton.disabled) {
+                            sendButton.click();
+                            resolve();
+                            return;
+                        }
+                        
+                        // If send button not available, try keyboard event
+                        const event = new KeyboardEvent('keydown', {
+                            key: 'Enter',
+                            code: 'Enter',
+                            keyCode: 13,
+                            which: 13,
+                            bubbles: true,
+                            cancelable: true
+                        });
+                        
+                        chatInput.dispatchEvent(event);
+                        resolve();
+                    }, 100);
+                }, 100);
+            } catch (error) {
+                reject(error);
             }
         });
     }
