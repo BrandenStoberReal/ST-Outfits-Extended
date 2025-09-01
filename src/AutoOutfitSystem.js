@@ -16,7 +16,6 @@ export class AutoOutfitSystem {
         this.consecutiveFailures = 0;
         this.maxConsecutiveFailures = 5;
         this.lastMessageId = null;
-        this.tempVarName = 'outfitsystem_charmes'; // Temporary variable name
     }
 
     getDefaultPrompt() {
@@ -139,7 +138,6 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         } finally {
             this.isProcessing = false;
             this.lastProcessTime = Date.now();
-            this.cleanupTempVar(); // Clean up temporary variable
         }
     }
 
@@ -173,122 +171,77 @@ Important: Always use the exact slot names listed above. Never invent new slot n
             throw new Error('No recent messages to process');
         }
 
-        this.showPopup('Generating outfit commands using /gen command...', 'info');
+        this.showPopup('Generating outfit commands...', 'info');
 
-        // Use /gen as=system command with pipe to temporary variable
-        await this.executeGenCommand(recentMessages);
+        // Use generateRaw() to generate outfit commands in the background
+        // This is equivalent to /gen as=system but doesn't interfere with chat
+        const generatedCommands = await this.generateOutfitCommands(recentMessages);
         
-        // Wait a moment for the command to complete
-        await this.delay(1000);
-        
-        // Check the temporary variable for generated commands
-        const generatedOutput = this.getTempVarValue();
-        if (!generatedOutput) {
-            throw new Error('No output generated from /gen command');
-        }
-        
-        // Parse the generated output for commands
-        const commands = this.parseGeneratedOutput(generatedOutput);
-        await this.executeCommands(commands);
+        await this.executeCommands(generatedCommands);
     }
 
-    async executeGenCommand(recentMessages) {
-        try {
-            const chatInput = document.getElementById('send_textarea');
-            if (!chatInput) {
-                throw new Error('Chat input not found');
-            }
-            
-            // Construct the /gen command with pipe to temporary variable
-            const genCommand = `/gen as=system lock=on ${this.systemPrompt}\n\nRecent Messages:\n${recentMessages} | /setvar key=${this.tempVarName} {{pipe}}`;
-            
-            chatInput.value = genCommand;
-            chatInput.dispatchEvent(new Event('input', { bubbles: true }));
-            
-            // Send the command
-            setTimeout(() => {
-                const sendButton = document.querySelector('#send_but');
-                if (sendButton) {
-                    sendButton.click();
-                } else {
-                    const event = new KeyboardEvent('keydown', {
-                        key: 'Enter',
-                        code: 'Enter',
-                        bubbles: true
-                    });
-                    chatInput.dispatchEvent(event);
+    async generateOutfitCommands(recentMessages) {
+        const { generateRaw } = getContext();
+        
+        if (!generateRaw) {
+            throw new Error('generateRaw function not available');
+        }
+
+        // Use generateRaw to simulate /gen as=system behavior without chat interference
+        const result = await generateRaw({
+            systemPrompt: 'You are an outfit command parser. Extract valid outfit commands from the text.',
+            prompt: `${this.systemPrompt}\n\nRecent Messages:\n${recentMessages}\n\nIMPORTANT: Output ONLY valid outfit commands in the specified format.`,
+            jsonSchema: {
+                name: 'OutfitCommands',
+                description: 'Extracted outfit commands from text',
+                strict: true,
+                value: {
+                    '$schema': 'http://json-schema.org/draft-04/schema#',
+                    'type': 'object',
+                    'properties': {
+                        'commands': {
+                            'type': 'array',
+                            'items': {
+                                'type': 'string'
+                            }
+                        }
+                    },
+                    'required': ['commands']
                 }
-            }, 100);
-            
-            // Wait for command to complete
-            await this.delay(3000);
-            
-        } catch (error) {
-            console.error('Failed to execute /gen command:', error);
-            throw new Error('Failed to execute outfit command generation');
-        }
-    }
-
-    getTempVarValue() {
-        try {
-            // Check both extension settings and window global variables
-            const globalVars = extension_settings.variables?.global || {};
-            return globalVars[this.tempVarName] || window[this.tempVarName] || '';
-        } catch (error) {
-            console.error('Failed to get temporary variable value:', error);
-            return '';
-        }
-    }
-
-    cleanupTempVar() {
-        try {
-            // Clean up the temporary variable
-            if (extension_settings.variables?.global?.[this.tempVarName]) {
-                delete extension_settings.variables.global[this.tempVarName];
             }
-            if (window[this.tempVarName]) {
-                delete window[this.tempVarName];
-            }
-        } catch (error) {
-            console.error('Failed to cleanup temporary variable:', error);
-        }
+        });
+
+        return this.parseGeneratedResult(result);
     }
 
-    parseGeneratedOutput(output) {
-        if (!output) return [];
-        
+    parseGeneratedResult(result) {
         try {
-            // First try to parse as JSON (if the AI followed structured output)
-            if (output.trim().startsWith('{') || output.trim().startsWith('[')) {
-                const parsed = JSON.parse(output);
+            if (typeof result === 'string' && result.trim()) {
+                const parsed = JSON.parse(result);
                 if (parsed && Array.isArray(parsed.commands)) {
                     return parsed.commands;
                 }
             }
-            
-            // Otherwise, extract commands using regex pattern matching
-            const commands = [];
-            const matches = output.matchAll(this.commandPattern);
-            
-            for (const match of matches) {
-                commands.push(match[0]);
-            }
-            
-            return commands;
-            
         } catch (error) {
-            console.error('Failed to parse generated output:', error);
+            console.error('Failed to parse generated commands:', error);
             
-            // Fallback: try regex extraction even if JSON parsing failed
-            const commands = [];
-            const matches = output.matchAll(this.commandPattern);
-            
-            for (const match of matches) {
-                commands.push(match[0]);
+            // Fallback: try to extract commands using regex from the raw text
+            if (typeof result === 'string') {
+                const commands = [];
+                const matches = result.matchAll(this.commandPattern);
+                
+                for (const match of matches) {
+                    commands.push(match[0]);
+                }
+                
+                if (commands.length > 0) {
+                    return commands;
+                }
             }
             
-            return commands;
+            throw new Error('No valid outfit commands found in generated output');
         }
+        return [];
     }
 
     async delay(ms) {
@@ -307,7 +260,7 @@ Important: Always use the exact slot names listed above. Never invent new slot n
 
     async executeCommands(commands) {
         if (!commands || commands.length === 0) {
-            this.showPopup('No outfit commands found in generated output.', 'info');
+            this.showPopup('No outfit commands generated from recent messages.', 'info');
             return;
         }
         
@@ -411,8 +364,7 @@ Important: Always use the exact slot names listed above. Never invent new slot n
             consecutiveFailures: this.consecutiveFailures,
             lastProcessTime: this.lastProcessTime ? new Date(this.lastProcessTime).toLocaleTimeString() : 'Never',
             lastProcessAgo: this.lastProcessTime ? this.formatTimeAgo(this.lastProcessTime) : 'Never',
-            lastMessageId: this.lastMessageId,
-            tempVarValue: this.getTempVarValue() || 'Empty'
+            lastMessageId: this.lastMessageId
         };
     }
 
