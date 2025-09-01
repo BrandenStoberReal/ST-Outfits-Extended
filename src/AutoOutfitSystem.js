@@ -77,25 +77,30 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         if (!this.isEnabled || !this.systemPrompt || this.isProcessing) return;
 
         try {
+            // Show starting message as popup
+            this.showPopup('Auto outfit check started, please wait...', 'info');
+            
             // Wait a moment before processing to ensure UI is updated
             setTimeout(async () => {
                 await this.processOutfitCommands();
             }, 1000);
         } catch (error) {
             console.error('Auto outfit processing error:', error);
+            this.showPopup('Auto outfit check failed to start.', 'error');
         }
     }
 
     async processOutfitCommands() {
         if (this.isProcessing) {
             console.log('[OutfitSystem] Already processing, skipping duplicate request');
+            this.showPopup('Auto outfit check already in progress.', 'warning');
             return;
         }
 
         if (this.consecutiveFailures >= this.maxConsecutiveFailures) {
             console.warn('[OutfitSystem] Too many consecutive failures, auto-disabling');
             this.disable();
-            this.sendSystemMessage('[Outfit System] Auto outfit updates disabled due to repeated failures.');
+            this.showPopup('Auto outfit updates disabled due to repeated failures.', 'error');
             return;
         }
 
@@ -107,7 +112,7 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         } catch (error) {
             console.error('[OutfitSystem] Final processing failure:', error);
             this.consecutiveFailures++;
-            this.sendSystemMessage('[Outfit System] Auto outfit check failed. Will retry later.');
+            this.showPopup(`Auto outfit check failed ${this.consecutiveFailures} time(s).`, 'error');
         } finally {
             this.isProcessing = false;
             this.lastProcessTime = Date.now();
@@ -119,15 +124,18 @@ Important: Always use the exact slot names listed above. Never invent new slot n
             try {
                 await this.executeSingleAttempt();
                 this.consecutiveFailures = 0; // Reset on success
+                this.showPopup('Auto outfit check completed successfully.', 'success');
                 return; // Success, exit retry loop
             } catch (error) {
                 this.retryCount++;
                 
                 if (this.retryCount < this.maxRetries) {
                     console.warn(`[OutfitSystem] Attempt ${this.retryCount} failed, retrying in ${this.retryDelay}ms:`, error.message);
+                    this.showPopup(`Auto outfit check failed (attempt ${this.retryCount}), retrying...`, 'warning');
                     await this.delay(this.retryDelay);
                 } else {
                     console.error('[OutfitSystem] All retry attempts failed:', error);
+                    this.showPopup('Auto outfit check failed 3 times.', 'error');
                     throw error; // Re-throw after final retry
                 }
             }
@@ -204,7 +212,10 @@ Important: Always use the exact slot names listed above. Never invent new slot n
     }
 
     async executeCommands(commands) {
-        if (!commands || commands.length === 0) return;
+        if (!commands || commands.length === 0) {
+            this.showPopup('No outfit changes detected in recent messages.', 'info');
+            return;
+        }
         
         let executedCount = 0;
         for (const command of commands) {
@@ -221,6 +232,7 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         }
         
         if (executedCount > 0 && extension_settings.outfit_tracker?.enableSysMessages) {
+            // Only send actual outfit changes as system messages
             this.sendSystemMessage(`[Outfit System] Processed ${executedCount} outfit change(s) automatically.`);
         }
     }
@@ -244,6 +256,33 @@ Important: Always use the exact slot names listed above. Never invent new slot n
                 break;
             default:
                 throw new Error(`Unknown action: ${action}`);
+        }
+    }
+
+    showPopup(message, type = 'info') {
+        try {
+            if (typeof toastr !== 'undefined') {
+                const options = {
+                    timeOut: type === 'error' ? 5000 : 3000,
+                    extendedTimeOut: type === 'error' ? 10000 : 5000
+                };
+                
+                switch(type) {
+                    case 'error':
+                        toastr.error(message, 'Outfit System', options);
+                        break;
+                    case 'warning':
+                        toastr.warning(message, 'Outfit System', options);
+                        break;
+                    case 'success':
+                        toastr.success(message, 'Outfit System', options);
+                        break;
+                    default:
+                        toastr.info(message, 'Outfit System', options);
+                }
+            }
+        } catch (error) {
+            console.error('Failed to show popup:', error);
         }
     }
 
@@ -294,14 +333,15 @@ Important: Always use the exact slot names listed above. Never invent new slot n
     // Manual trigger for testing/debugging
     async manualTrigger() {
         if (!this.isEnabled) {
-            return '[Outfit System] Auto updates are disabled. Enable first with /outfit-auto on';
+            this.showPopup('Auto updates are disabled. Enable first with /outfit-auto on', 'warning');
+            return;
         }
         
         try {
+            this.showPopup('Manual outfit check started...', 'info');
             await this.processOutfitCommands();
-            return '[Outfit System] Manual trigger completed successfully.';
         } catch (error) {
-            return `[Outfit System] Manual trigger failed: ${error.message}`;
+            this.showPopup(`Manual trigger failed: ${error.message}`, 'error');
         }
     }
 }
