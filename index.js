@@ -17,6 +17,7 @@ async function initializeExtension() {
     
     const ACCESSORY_SLOTS = [
         'head-accessory',
+        'ears-accessory',
         'eyes-accessory',
         'mouth-accessory',
         'neck-accessory',
