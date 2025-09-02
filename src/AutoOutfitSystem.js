@@ -274,7 +274,7 @@ Important: Always use the exact slot names listed above. Never invent new slot n
 
     async processSingleCommand(command) {
         try {
-            const match = command.match(/outfit-system_(\w+)_(\w+)\(([^)]*)\)/);
+            const match = text.matchAll(/outfit-system_(\w+)_([\w-]+)\(([^)]*)\)/g);
             if (!match) {
                 throw new Error(`Invalid command format: ${command}`);
             }
