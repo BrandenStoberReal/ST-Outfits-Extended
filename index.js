@@ -71,11 +71,13 @@ async function initializeExtension() {
         registerSlashCommand('outfit-bot', (...args) => {
             console.log("Bot Outfit command triggered");
             botPanel.toggle();
+            toastr.info('Toggled character outfit panel', 'Outfit System');
         }, [], 'Toggle character outfit tracker', true, true);
             
         registerSlashCommand('outfit-user', (...args) => {
             console.log("User Outfit command triggered");
             userPanel.toggle();
+            toastr.info('Toggled user outfit panel', 'Outfit System');
         }, [], 'Toggle user outfit tracker', true, true);
         
         // Only register auto commands if AutoOutfitSystem loaded successfully
@@ -83,14 +85,10 @@ async function initializeExtension() {
             registerSlashCommand('outfit-auto', (...args) => {
                 if (args[0] === 'on') {
                     const message = autoOutfitSystem.enable();
-                    if (extension_settings.outfit_tracker?.enableSysMessages) {
-                        botPanel.sendSystemMessage(message);
-                    }
+                    toastr.info(message, 'Outfit System');
                 } else if (args[0] === 'off') {
                     const message = autoOutfitSystem.disable();
-                    if (extension_settings.outfit_tracker?.enableSysMessages) {
-                        botPanel.sendSystemMessage(message);
-                    }
+                    toastr.info(message, 'Outfit System');
                 } else {
                     const status = autoOutfitSystem.getStatus();
                     toastr.info(`Auto outfit: ${status.enabled ? 'ON' : 'OFF'}\nPrompt: ${status.hasPrompt ? 'SET' : 'NOT SET'}`);
