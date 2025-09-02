@@ -11,6 +11,11 @@ export class AutoOutfitSystem {
         this.consecutiveFailures = 0;
         this.maxConsecutiveFailures = 5;
         this.eventHandler = null;
+        this.maxRetries = 3;
+        this.retryDelay = 2000; // 2 seconds between retries
+        this.currentRetryCount = 0;
+        this.commandQueue = [];
+        this.isProcessingQueue = false;
     }
 
     getDefaultPrompt() {
@@ -34,6 +39,7 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         
         this.isEnabled = true;
         this.consecutiveFailures = 0;
+        this.currentRetryCount = 0;
         this.setupEventListeners();
         return '[Outfit System] Auto outfit updates enabled.';
     }
@@ -43,6 +49,7 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         
         this.isEnabled = false;
         this.removeEventListeners();
+        this.commandQueue = [];
         return '[Outfit System] Auto outfit updates disabled.';
     }
 
@@ -90,18 +97,40 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         }
         
         this.isProcessing = true;
+        this.currentRetryCount = 0;
         
         try {
-            this.showPopup('Checking for outfit changes...', 'info');
-            await this.executeGenCommand();
-            this.consecutiveFailures = 0;
-            this.showPopup('Outfit check completed.', 'success');
+            await this.processWithRetry();
         } catch (error) {
-            console.error('Outfit command processing failed:', error);
+            console.error('Outfit command processing failed after retries:', error);
             this.consecutiveFailures++;
             this.showPopup(`Outfit check failed ${this.consecutiveFailures} time(s).`, 'error');
         } finally {
             this.isProcessing = false;
+        }
+    }
+
+    async processWithRetry() {
+        while (this.currentRetryCount < this.maxRetries) {
+            try {
+                this.showPopup(`Checking for outfit changes... (Attempt ${this.currentRetryCount + 1}/${this.maxRetries})`, 'info');
+                
+                await this.executeGenCommand();
+                
+                this.consecutiveFailures = 0;
+                this.showPopup('Outfit check completed.', 'success');
+                return; // Success!
+                
+            } catch (error) {
+                this.currentRetryCount++;
+                
+                if (this.currentRetryCount < this.maxRetries) {
+                    console.log(`[AutoOutfitSystem] Attempt ${this.currentRetryCount} failed, retrying in ${this.retryDelay}ms...`, error);
+                    await this.delay(this.retryDelay);
+                } else {
+                    throw error; // All retries exhausted
+                }
+            }
         }
     }
 
@@ -111,7 +140,7 @@ Important: Always use the exact slot names listed above. Never invent new slot n
             throw new Error('No valid messages to process');
         }
 
-        // Use generateRaw instead of generateQuietPrompt for more reliable generation
+        // Use generateRaw for more reliable generation
         const { generateRaw } = getContext();
         
         const promptText = `${this.systemPrompt}\n\nRecent Messages:\n${recentMessages}\n\nOutput:`;
@@ -132,7 +161,13 @@ Important: Always use the exact slot names listed above. Never invent new slot n
             
             // Parse and execute commands
             const commands = this.parseGeneratedText(result);
-            await this.executeCommands(commands);
+            
+            if (commands.length > 0) {
+                console.log(`[AutoOutfitSystem] Found ${commands.length} commands, processing...`);
+                await this.processCommandBatch(commands);
+            } else {
+                console.log('[AutoOutfitSystem] No outfit commands found in response');
+            }
             
         } catch (error) {
             console.error('[AutoOutfitSystem] Generation failed:', error);
@@ -162,11 +197,110 @@ Important: Always use the exact slot names listed above. Never invent new slot n
             console.log('[AutoOutfitSystem] Fallback result:', result);
             
             const commands = this.parseGeneratedText(result);
-            await this.executeCommands(commands);
+            
+            if (commands.length > 0) {
+                await this.processCommandBatch(commands);
+            }
             
         } catch (fallbackError) {
             console.error('[AutoOutfitSystem] Fallback generation also failed:', fallbackError);
             throw new Error(`Both generation methods failed: ${fallbackError.message}`);
+        }
+    }
+
+    async processCommandBatch(commands) {
+        if (!commands || commands.length === 0) {
+            console.log('[AutoOutfitSystem] No commands to process');
+            return;
+        }
+
+        console.log(`[AutoOutfitSystem] Processing batch of ${commands.length} commands`);
+        
+        const successfulCommands = [];
+        const failedCommands = [];
+        
+        // Process all commands in sequence
+        for (const command of commands) {
+            try {
+                const result = await this.processSingleCommand(command);
+                if (result.success) {
+                    successfulCommands.push(result);
+                } else {
+                    failedCommands.push({ command, error: result.error });
+                }
+            } catch (error) {
+                failedCommands.push({ command, error: error.message });
+                console.error(`Error processing command "${command}":`, error);
+            }
+        }
+        
+        // Send system messages for successful commands
+        if (successfulCommands.length > 0 && extension_settings.outfit_tracker?.enableSysMessages) {
+            console.log(`[AutoOutfitSystem] Sending ${successfulCommands.length} system messages`);
+            
+            // Group messages by character for better formatting
+            const messagesByCharacter = {};
+            successfulCommands.forEach(({ message }) => {
+                const charName = message.match(/\[Outfit System\] (\w+)/)?.[1] || 'Character';
+                if (!messagesByCharacter[charName]) {
+                    messagesByCharacter[charName] = [];
+                }
+                messagesByCharacter[charName].push(message);
+            });
+            
+            // Send grouped messages
+            for (const [charName, messages] of Object.entries(messagesByCharacter)) {
+                if (messages.length === 1) {
+                    await this.sendSystemMessageDirect(messages[0]);
+                } else {
+                    const combinedMessage = `[Outfit System] ${charName} made multiple outfit changes.`;
+                    await this.sendSystemMessageDirect(combinedMessage);
+                    // Individual changes will still be reflected in the panel
+                }
+                await this.delay(300);
+            }
+            
+            // Update the outfit panel to reflect changes
+            this.updateOutfitPanel();
+        }
+        
+        // Log failures
+        if (failedCommands.length > 0) {
+            console.warn(`[AutoOutfitSystem] ${failedCommands.length} commands failed:`, failedCommands);
+        }
+        
+        console.log(`[AutoOutfitSystem] Batch completed: ${successfulCommands.length} successful, ${failedCommands.length} failed`);
+    }
+
+    async processSingleCommand(command) {
+        try {
+            const match = command.match(/outfit-system_(\w+)_(\w+)\(([^)]*)\)/);
+            if (!match) {
+                throw new Error(`Invalid command format: ${command}`);
+            }
+            
+            const [, action, slot, value] = match;
+            const cleanValue = value.replace(/"/g, '').trim();
+            
+            console.log(`[AutoOutfitSystem] Processing: ${action} ${slot} "${cleanValue}"`);
+            
+            const message = await this.executeCommand(action, slot, cleanValue);
+            
+            return {
+                success: true,
+                command,
+                message,
+                action,
+                slot,
+                value: cleanValue
+            };
+            
+        } catch (error) {
+            return {
+                success: false,
+                command,
+                error: error.message
+            };
         }
     }
 
@@ -184,53 +318,15 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         return commands;
     }
 
-    async executeCommands(commands) {
-        if (!commands || commands.length === 0) {
-            console.log('[AutoOutfitSystem] No outfit commands found');
-            return;
-        }
-        
-        let executedCount = 0;
-        const individualMessages = [];
-        
-        for (const command of commands) {
-            try {
-                const match = command.match(/outfit-system_(\w+)_(\w+)\(([^)]*)\)/);
-                if (match) {
-                    const [, action, slot, value] = match;
-                    const cleanValue = value.replace(/"/g, '').trim();
-                    
-                    console.log(`[AutoOutfitSystem] Executing: ${action} ${slot} "${cleanValue}"`);
-                    const message = await this.executeCommand(action, slot, cleanValue);
-                    executedCount++;
-                    
-                    if (message) {
-                        individualMessages.push(message);
-                    }
-                }
-            } catch (error) {
-                console.error(`Error executing command "${command}":`, error);
-            }
-        }
-        
-        // Send individual outfit change messages
-        if (executedCount > 0 && extension_settings.outfit_tracker?.enableSysMessages) {
-            console.log(`[AutoOutfitSystem] Sending ${executedCount} system messages`);
-            for (const message of individualMessages) {
-                await this.sendSystemMessageDirect(message);
-                await this.delay(500); // Small delay between messages
-            }
-            
-            // Update the outfit panel to reflect changes
-            this.updateOutfitPanel();
-        }
-    }
-
     async executeCommand(action, slot, value) {
         const validSlots = [...this.outfitManager.slots];
         
         if (!validSlots.includes(slot)) {
-            throw new Error(`Invalid slot: ${slot}`);
+            throw new Error(`Invalid slot: ${slot}. Valid slots: ${validSlots.join(', ')}`);
+        }
+
+        if (!['wear', 'remove', 'change'].includes(action)) {
+            throw new Error(`Invalid action: ${action}. Valid actions: wear, remove, change`);
         }
 
         // Use the outfitManager's setOutfitItem which returns the proper message
@@ -244,10 +340,11 @@ Important: Always use the exact slot names listed above. Never invent new slot n
                 try {
                     window.botOutfitPanel.outfitManager.loadOutfit();
                     window.botOutfitPanel.renderContent();
+                    console.log('[AutoOutfitSystem] Outfit panel updated');
                 } catch (error) {
                     console.error('Failed to update outfit panel:', error);
                 }
-            }, 300);
+            }, 500);
         }
     }
 
@@ -392,7 +489,9 @@ Important: Always use the exact slot names listed above. Never invent new slot n
             hasPrompt: !!this.systemPrompt,
             promptLength: this.systemPrompt?.length || 0,
             isProcessing: this.isProcessing,
-            consecutiveFailures: this.consecutiveFailures
+            consecutiveFailures: this.consecutiveFailures,
+            currentRetryCount: this.currentRetryCount,
+            maxRetries: this.maxRetries
         };
     }
 
