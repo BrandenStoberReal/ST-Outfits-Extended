@@ -208,6 +208,21 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         }
     }
 
+    parseGeneratedText(text) {
+        if (!text) return [];
+        
+        const commands = [];
+        // Use the fixed regex pattern that handles hyphens in slot names
+        const matches = text.matchAll(/outfit-system_(\w+)_([\w-]+)\(([^)]*)\)/g);
+        
+        for (const match of matches) {
+            commands.push(match[0]);
+        }
+        
+        console.log(`[AutoOutfitSystem] Found ${commands.length} commands:`, commands);
+        return commands;
+    }
+
     async processCommandBatch(commands) {
         if (!commands || commands.length === 0) {
             console.log('[AutoOutfitSystem] No commands to process');
@@ -274,7 +289,8 @@ Important: Always use the exact slot names listed above. Never invent new slot n
 
     async processSingleCommand(command) {
         try {
-            const match = text.matchAll(/outfit-system_(\w+)_([\w-]+)\(([^)]*)\)/g);
+            // Use the fixed regex pattern that handles hyphens in slot names
+            const match = command.match(/outfit-system_(\w+)_([\w-]+)\(([^)]*)\)/);
             if (!match) {
                 throw new Error(`Invalid command format: ${command}`);
             }
@@ -302,20 +318,6 @@ Important: Always use the exact slot names listed above. Never invent new slot n
                 error: error.message
             };
         }
-    }
-
-    parseGeneratedText(text) {
-        if (!text) return [];
-        
-        const commands = [];
-        const matches = text.matchAll(this.commandPattern);
-        
-        for (const match of matches) {
-            commands.push(match[0]);
-        }
-        
-        console.log(`[AutoOutfitSystem] Found ${commands.length} commands:`, commands);
-        return commands;
     }
 
     async executeCommand(action, slot, value) {
