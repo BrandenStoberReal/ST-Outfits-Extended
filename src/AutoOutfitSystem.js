@@ -6,7 +6,7 @@ export class AutoOutfitSystem {
         this.outfitManager = outfitManager;
         this.isEnabled = false;
         this.systemPrompt = this.getDefaultPrompt();
-        this.commandPattern = /outfit-system_(\w+)_(\w+)\(([^)]*)\)/g;
+        this.commandPattern = /outfit-system_(\w+)_([\w-]+)\(([^)]*)\)/g;
         this.isProcessing = false;
         this.consecutiveFailures = 0;
         this.maxConsecutiveFailures = 5;
