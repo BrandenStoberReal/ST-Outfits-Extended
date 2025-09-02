@@ -135,10 +135,9 @@ export class BotOutfitManager {
         }
         
         if (changed) {
-            return `[Outfit System] ${this.character} changed into the "${presetName}" outfit.`;
+            return `${this.character} changed into the "${presetName}" outfit.`;
         }
-        
-        return `[Outfit System] ${this.character} was already wearing the "${presetName}" outfit.`;
+        return `${this.character} was already wearing the "${presetName}" outfit.`;
     }
     
     deletePreset(presetName) {
@@ -154,7 +153,7 @@ export class BotOutfitManager {
         }
         
         if (extension_settings.outfit_tracker.enableSysMessages) {
-            return `[Outfit System] Deleted "${presetName}" outfit.`;
+            return `Deleted "${presetName}" outfit.`;
         }
         return '';
     }
