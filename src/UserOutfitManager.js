@@ -102,7 +102,7 @@ export class UserOutfitManager {
         extension_settings.outfit_tracker.presets.user[presetName] = presetData;
         
         if (extension_settings.outfit_tracker.enableSysMessages) {
-            return `Saved "${presetName}" outfit for ${this.character}.`;
+            return `Saved "${presetName}" outfit for user character.`;
         }
         return '';
     }
@@ -125,9 +125,9 @@ export class UserOutfitManager {
         }
         
         if (changed) {
-            return `${this.character} changed into the "${presetName}" outfit.`;
+            return `You changed into the "${presetName}" outfit.`;
         }
-        return `${this.character} was already wearing the "${presetName}" outfit.`;
+        return `You are already wearing the "${presetName}" outfit.`;
     }
     
     deletePreset(presetName) {
@@ -138,7 +138,7 @@ export class UserOutfitManager {
         delete extension_settings.outfit_tracker.presets.user[presetName];
         
         if (extension_settings.outfit_tracker.enableSysMessages) {
-            return `Deleted "${presetName}" outfit.`;
+            return `Deleted your "${presetName}" outfit.`;
         }
         return '';
     }
