@@ -34,6 +34,7 @@ Here is what character is currently wearing:
 
 **<BOT>'s Accessories**
 Head Accessory: {{getglobalvar::<BOT>_head-accessory}}
+Ears Accessory: {{getglobalvar::<BOT>_ears-accessory}}
 Eyes Accessory: {{getglobalvar::<BOT>_eyes-accessory}}
 Mouth Accessory: {{getglobalvar::<BOT>_mouth-accessory}}
 Neck Accessory: {{getglobalvar::<BOT>_neck-accessory}}
@@ -52,7 +53,8 @@ outfit-system_remove_topwear()
 Do NOT output JSON arrays or any other format.
 
 Available actions: wear, remove, change
-Available slots: headwear, topwear, topunderwear, bottomwear, bottomunderwear, footwear, footunderwear, head-accessory, eyes-accessory, mouth-accessory, neck-accessory, body-accessory, arms-accessory, hands-accessory, waist-accessory, bottom-accessory, legs-accessory, foot-accessory
+Available clothing slots: headwear, topwear, topunderwear, bottomwear, bottomunderwear, footwear, footunderwear
+Available accessory slots: head-accessory, ears_accessory, eyes-accessory, mouth-accessory, neck-accessory, body-accessory, arms-accessory, hands-accessory, waist-accessory, bottom-accessory, legs-accessory, foot-accessory
 
 Example commands:
 - outfit-system_wear_headwear("Red Baseball Cap")
