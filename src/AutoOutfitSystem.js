@@ -249,30 +249,28 @@ Important: Always use the exact slot names listed above. Never invent new slot n
             }
         }
         
-        // Send system messages for successful commands
+        // Send popup messages for successful commands
         if (successfulCommands.length > 0 && extension_settings.outfit_tracker?.enableSysMessages) {
-            console.log(`[AutoOutfitSystem] Sending ${successfulCommands.length} system messages`);
+            console.log(`[AutoOutfitSystem] Showing ${successfulCommands.length} popup messages`);
             
             // Group messages by character for better formatting
             const messagesByCharacter = {};
             successfulCommands.forEach(({ message }) => {
-                const charName = message.match(/\[Outfit System\] (\w+)/)?.[1] || 'Character';
+                const charName = message.match(/(\w+) put on|removed|changed/)?.[1] || 'Character';
                 if (!messagesByCharacter[charName]) {
                     messagesByCharacter[charName] = [];
                 }
                 messagesByCharacter[charName].push(message);
             });
             
-            // Send grouped messages
+            // Show grouped popups
             for (const [charName, messages] of Object.entries(messagesByCharacter)) {
                 if (messages.length === 1) {
-                    await this.sendSystemMessageDirect(messages[0]);
+                    this.showPopup(messages[0], 'info');
                 } else {
-                    const combinedMessage = `[Outfit System] ${charName} made multiple outfit changes.`;
-                    await this.sendSystemMessageDirect(combinedMessage);
-                    // Individual changes will still be reflected in the panel
+                    this.showPopup(`${charName} made multiple outfit changes.`, 'info');
                 }
-                await this.delay(300);
+                await this.delay(1000); // Short delay between popups
             }
             
             // Update the outfit panel to reflect changes
