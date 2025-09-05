@@ -12,10 +12,14 @@ export class AutoOutfitSystem {
         this.maxConsecutiveFailures = 5;
         this.eventHandler = null;
         this.maxRetries = 3;
-        this.retryDelay = 2000; // 2 seconds between retries
+        this.retryDelay = 2000;
         this.currentRetryCount = 0;
         this.commandQueue = [];
         this.isProcessingQueue = false;
+        
+        // Track the last processed message to avoid processing old messages
+        this.lastProcessedMessageId = null;
+        this.appInitialized = false;
     }
 
     getDefaultPrompt() {
@@ -92,14 +96,21 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         
         // Listen for when AI messages are fully rendered (after generation completes)
         this.eventHandler = (data) => {
-            if (this.isEnabled && !this.isProcessing) {
-                console.log('[AutoOutfitSystem] AI message rendered, processing...');
-                setTimeout(() => {
-                    this.processOutfitCommands().catch(error => {
-                        console.error('Auto outfit processing failed:', error);
-                        this.consecutiveFailures++;
-                    });
-                }, 2000); // Wait a bit for message to be fully processed
+            if (this.isEnabled && !this.isProcessing && this.appInitialized) {
+                // Only process if this is a new AI message (not from app load)
+                const currentChat = getContext().chat;
+                if (currentChat && currentChat.length > 0) {
+                    const latestMessage = currentChat[currentChat.length - 1];
+                    if (latestMessage && latestMessage.mes_id !== this.lastProcessedMessageId) {
+                        console.log('[AutoOutfitSystem] New AI message detected, processing...');
+                        setTimeout(() => {
+                            this.processOutfitCommands().catch(error => {
+                                console.error('Auto outfit processing failed:', error);
+                                this.consecutiveFailures++;
+                            });
+                        }, 2000);
+                    }
+                }
             }
         };
         
@@ -107,12 +118,20 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         console.log('[AutoOutfitSystem] Event listener registered');
     }
 
-    removeEventListeners() {
-        if (this.eventHandler) {
-            const { eventSource, event_types } = getContext();
-            eventSource.off(event_types.CHARACTER_MESSAGE_RENDERED, this.eventHandler);
-            this.eventHandler = null;
-            console.log('[AutoOutfitSystem] Event listener removed');
+    // Add a method to mark app as initialized after first load
+    markAppInitialized() {
+        if (!this.appInitialized) {
+            this.appInitialized = true;
+            console.log('[AutoOutfitSystem] App marked as initialized');
+            
+            // Set the last processed message ID to the latest message
+            const currentChat = getContext().chat;
+            if (currentChat && currentChat.length > 0) {
+                const latestMessage = currentChat[currentChat.length - 1];
+                if (latestMessage && latestMessage.mes_id) {
+                    this.lastProcessedMessageId = latestMessage.mes_id;
+                }
+            }
         }
     }
 
@@ -133,6 +152,16 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         
         try {
             await this.processWithRetry();
+            
+            // Update last processed message ID after successful processing
+            const currentChat = getContext().chat;
+            if (currentChat && currentChat.length > 0) {
+                const latestMessage = currentChat[currentChat.length - 1];
+                if (latestMessage && latestMessage.mes_id) {
+                    this.lastProcessedMessageId = latestMessage.mes_id;
+                }
+            }
+            
         } catch (error) {
             console.error('Outfit command processing failed after retries:', error);
             this.consecutiveFailures++;
