@@ -148,6 +148,13 @@ async function initializeExtension() {
     function setupEventListeners() {
         const context = getContext();
         const { eventSource, event_types } = context;
+        
+        // Listen for app ready event to mark initialization
+        eventSource.on(event_types.APP_READY, () => {
+            console.log("[OutfitTracker] App ready, marking auto outfit system as initialized");
+            autoOutfitSystem.markAppInitialized();
+        });
+        
         eventSource.on(event_types.CHAT_CHANGED, updateForCurrentCharacter);
         eventSource.on(event_types.CHARACTER_CHANGED, updateForCurrentCharacter);
     }
