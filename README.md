@@ -59,12 +59,29 @@ If you want to remove a clothing, enter "remove" or "None" as clothing name.
 - This is the main outfit page.
 
 **Accessories**
-- This page has head-accessory, eyes-accessory, mouth-accessory, neck-accessory, body-accessory, arms-accessory, hands-accessory, waist-accessory, bottom-accessory, legs-accessory and foot-accessory slots.
+- This page has head-accessory, ears-accessory, eyes-accessory, mouth-accessory, neck-accessory, body-accessory, arms-accessory, hands-accessory, waist-accessory, bottom-accessory, legs-accessory and foot-accessory slots.
 - You can use these for things like glasses on "eyes-accessory" or backpack on "body-accessory".
 - You can also use these for bondage such as "blindfold" on "eyes-accessory" or "black cuffs (chained together)" on "hands-accessory" etc.
 
 **Outfits**
 - Here you can *Save Current Outfit*, *Wear a Saved Outfit* or *Delete a Saved Outfit*
+
+## Auto Outfit Updates
+<img width="766" height="789" alt="Image" src="https://github.com/user-attachments/assets/322f485e-75bf-494c-ae71-f5201d16c1b0" />
+
+Auto Outfit Updates is an optional feature that you can enable from Extension Settings.
+
+When enabled, after every character response, system will perform a check and automatically wear, remove or change item slots based on what happened in last messages.
+
+Keep in mind that the results of this feature completely depends on how smart the AI you are using is. If you are using an old, small, less smart model, AI may make mistakes and wear/remove things when it shouldn't.
+
+Also since it performs a check after every message, you should have a decent generation speed if you don't want to wait too much between messages.
+
+**Make sure you wait for the check to finish before you say something to AI.**
+
+**AI can wear/remove/change multiple items in one turn.**
+
+**In Extension Settings window you can see the prompt system uses for performing self-check. If you don't know what you are doing, please don't change this.**
 
 ## List of Variables
 If you take a look at the example prompt I shared above, you can see that it uses global variables such as `{{getglobalvar::<BOT>_headwear}}`. You can inject any variable stored in outfit slots anywhere you want using that macro. Write `<BOT>` for character's outfit. Write "User" for user outfit. Instead of `<BOT>` you can also write a character's own name such as `{{getglobalvar::Emma_headwear}}`. If you set Emma's headwear as "Red Baseball Hat" then if you write `{{getglobalvar::Emma_headwear}}` to somewhere, it will appear as "Red Baseball Hat". You can simply write `<BOT>` instead of "Emma" and it'll automatically replace `<BOT>` with name of current active character. These variable macros works just like how `{{user}}` or `{{char}}` macros work. Anywhere you can use those macros, you should be able to use the outfit system's macros as well. Just make sure that variable exists, or it will appear blank in the context.
@@ -85,6 +102,7 @@ Foot Underwear: {{getglobalvar::<BOT>_footunderwear}}
 
 Character Accessories:
 Head Accessory: {{getglobalvar::<BOT>_head-accessory}}
+Eyes Accessory: {{getglobalvar::<BOT>_ears-accessory}}
 Eyes Accessory: {{getglobalvar::<BOT>_eyes-accessory}}
 Mouth Accessory: {{getglobalvar::<BOT>_mouth-accessory}}
 Neck Accessory: {{getglobalvar::<BOT>_neck-accessory}}
@@ -107,6 +125,7 @@ Foot Underwear: {{getglobalvar::User_footunderwear}}
 
 User Accessories:
 Head Accessory: {{getglobalvar::User_head-accessory}}
+Eyes Accessory: {{getglobalvar::User_ears-accessory}}
 Eyes Accessory: {{getglobalvar::User_eyes-accessory}}
 Mouth Accessory: {{getglobalvar::User_mouth-accessory}}
 Neck Accessory: {{getglobalvar::User_neck-accessory}}
