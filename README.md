@@ -48,7 +48,7 @@ Add a prompt like this into your Character Description or Author's Notes or Worl
 
 *Note: This prompt doesn't include accessory slots. If you want to use accessory slots as well, please add them using the variables I've shared below.*
 
-**Keep in mind, you don't have to use every variable or slot exists.** For example if you don't care what kind of underwear or socks you or your character wears, you can just use "Headwear", "Topwear", "Bottomwear" and "Footwear" to keep things simple. You can make your outfit prompt as complex or simple as you want. You should only use the slots you want to use. However AI can only see the things you show it in the prompt. The prompt piece I shared above is just a guideline. You can get creative and use the variables this system creates however you find useful and personalize your outfit prompt as you like.
+💡 **Keep in mind, you don't have to use every variable or slot exists.** For example if you don't care what kind of underwear or socks you or your character wears, you can just use "Headwear", "Topwear", "Bottomwear" and "Footwear" to keep things simple. You can make your outfit prompt as complex or simple as you want. You should only use the slots you want to use. However AI can only see the things you show it in the prompt. The prompt piece I shared above is just a guideline. You can get creative and use the variables this system creates however you find useful and personalize your outfit prompt as you like.
 
 If you want system messages to appear after changing clothes, enable system messages option under "Extensions -> Outfit Tracker Settings". There are also settings to automatically open windows when you start SillyTavern if you don't want to use commands every time.
 
@@ -77,16 +77,16 @@ Keep in mind that the results of this feature completely depends on how smart th
 
 Also since it performs a check after every message, you should have a decent generation speed if you don't want to wait too much between messages.
 
-**Make sure you wait for the check to finish before you say something to AI.**
+💡 **Make sure you wait for the check to finish before you say something to AI.**
 
-**AI can wear/remove/change multiple items in one turn.**
+💡 **AI can wear/remove/change multiple items in one turn.**
 
-**In Extension Settings window you can see the prompt system uses for performing self-check. If you don't know what you are doing, please don't change this.**
+💡 **In Extension Settings window you can see the prompt system uses for performing self-check. If you don't know what you are doing, please don't change this.**
 
 ## List of Variables
 If you take a look at the example prompt I shared above, you can see that it uses global variables such as `{{getglobalvar::<BOT>_headwear}}`. You can inject any variable stored in outfit slots anywhere you want using that macro. Write `<BOT>` for character's outfit. Write "User" for user outfit. Instead of `<BOT>` you can also write a character's own name such as `{{getglobalvar::Emma_headwear}}`. If you set Emma's headwear as "Red Baseball Hat" then if you write `{{getglobalvar::Emma_headwear}}` to somewhere, it will appear as "Red Baseball Hat". You can simply write `<BOT>` instead of "Emma" and it'll automatically replace `<BOT>` with name of current active character. These variable macros works just like how `{{user}}` or `{{char}}` macros work. Anywhere you can use those macros, you should be able to use the outfit system's macros as well. Just make sure that variable exists, or it will appear blank in the context.
 
-**User's variable names are always same. They always use "User_" regardless of your persona name.**
+💡 **User's variable names are always same. They always use "User_" regardless of your persona name.**
 
 Here are the full list of variables you can use:
 
