@@ -22,17 +22,51 @@ export class AutoOutfitSystem {
     }
 
     getDefaultPrompt() {
-        return `Analyze the character's actions in the recent messages. If the character puts on, wears, removes, or changes any clothing items, output the appropriate outfit commands. Use the format: outfit-system_[action]_[slot]("[item name]").
+        return `Analyze the character's actions in the recent messages. If the character puts on, wears, removes, or changes any clothing items, output the appropriate outfit commands.
+
+Here is what character is currently wearing:
+
+**<BOT>'s Current Outfit**
+Headwear: {{getglobalvar::<BOT>_headwear}}
+Topwear: {{getglobalvar::<BOT>_topwear}}
+Top Underwear: {{getglobalvar::<BOT>_topunderwear}}
+Bottomwear: {{getglobalvar::<BOT>_bottomwear}}
+Bottom Underwear: {{getglobalvar::<BOT>_bottomunderwear}}
+Footwear: {{getglobalvar::<BOT>_footwear}}
+Foot Underwear: {{getglobalvar::<BOT>_footunderwear}}
+
+**<BOT>'s Accessories**
+Head Accessory: {{getglobalvar::<BOT>_head-accessory}}
+Ears Accessory: {{getglobalvar::<BOT>_ears-accessory}}
+Eyes Accessory: {{getglobalvar::<BOT>_eyes-accessory}}
+Mouth Accessory: {{getglobalvar::<BOT>_mouth-accessory}}
+Neck Accessory: {{getglobalvar::<BOT>_neck-accessory}}
+Body Accessory: {{getglobalvar::<BOT>_body-accessory}}
+Arms Accessory: {{getglobalvar::<BOT>_arms-accessory}}
+Hands Accessory: {{getglobalvar::<BOT>_hands-accessory}}
+Waist Accessory: {{getglobalvar::<BOT>_waist-accessory}}
+Bottom Accessory: {{getglobalvar::<BOT>_bottom-accessory}}
+Legs Accessory: {{getglobalvar::<BOT>_legs-accessory}}
+Foot Accessory: {{getglobalvar::<BOT>_foot-accessory}}
+
+IMPORTANT: Output commands as plain text, NOT as JSON. Use this format:
+outfit-system_wear_headwear("Red Baseball Cap")
+outfit-system_remove_topwear()
+
+Do NOT output JSON arrays or any other format.
 
 Available actions: wear, remove, change
-Available slots: headwear, topwear, topunderwear, bottomwear, bottomunderwear, footwear, footunderwear, head-accessory, eyes-accessory, mouth-accessory, neck-accessory, body-accessory, arms-accessory, hands-accessory, waist-accessory, bottom-accessory, legs-accessory, foot-accessory
+Available clothing slots: headwear, topwear, topunderwear, bottomwear, bottomunderwear, footwear, footunderwear
+Available accessory slots: head-accessory, ears_accessory, eyes-accessory, mouth-accessory, neck-accessory, body-accessory, arms-accessory, hands-accessory, waist-accessory, bottom-accessory, legs-accessory, foot-accessory
 
 Example commands:
 - outfit-system_wear_headwear("Red Baseball Cap")
 - outfit-system_remove_topwear()
 - outfit-system_change_bottomwear("Blue Jeans")
 
-Only output commands if clothing changes are explicitly mentioned. If no changes, output empty array.
+Only output commands if clothing changes are explicitly mentioned. If no changes, output [none].
+
+You can use "change" to change an already worn item with another item. You can also use "change to change state of the same item you are wearing. For example if you are wearing "White Button Blouse" and in story you unbuttoned the front, you can change it into "White Button Blouse (unbuttoned front)"
 
 Important: Always use the exact slot names listed above. Never invent new slot names.`;
     }
