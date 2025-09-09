@@ -167,34 +167,13 @@ export class BotOutfitPanel {
     }
 
     sendSystemMessage(message) {
-        setTimeout(() => {
-            try {
-                const chatInput = document.getElementById('send_textarea');
-                if (!chatInput) {
-                    console.error('Chat input not found');
-                    return;
-                }
-                
-                chatInput.value = `/sys compact=true ${message}`;
-                chatInput.dispatchEvent(new Event('input', { bubbles: true }));
-                
-                setTimeout(() => {
-                    const sendButton = document.querySelector('#send_but');
-                    if (sendButton) {
-                        sendButton.click();
-                    } else {
-                        const event = new KeyboardEvent('keydown', {
-                            key: 'Enter',
-                            code: 'Enter',
-                            bubbles: true
-                        });
-                        chatInput.dispatchEvent(event);
-                    }
-                }, 100);
-            } catch (error) {
-                console.error("Failed to send system message:", error);
-            }
-        }, 100);
+        // Use toastr popup instead of /sys command
+        if (extension_settings.outfit_tracker?.enableSysMessages) {
+            toastr.info(message, 'Outfit System', {
+                timeOut: 4000,
+                extendedTimeOut: 8000
+            });
+        }
     }
 
     formatSlotName(name) {

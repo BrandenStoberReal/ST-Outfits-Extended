@@ -45,13 +45,13 @@ export class UserOutfitManager {
         const varName = this.getVarName(slot);
         this.setGlobalVariable(varName, value);
         this.currentValues[slot] = value;
-
+    
         if (previousValue === 'None' && value !== 'None') {
-            return `[Outfit System] {{user}} put on ${value}.`;
+            return `You put on ${value}.`;
         } else if (value === 'None') {
-            return `[Outfit System] {{user}} removed ${previousValue}.`;
+            return `You removed ${previousValue}.`;
         } else {
-            return `[Outfit System] {{user}} changed from ${previousValue} to ${value}.`;
+            return `You changed from ${previousValue} to ${value}.`;
         }
     }
 
@@ -102,7 +102,7 @@ export class UserOutfitManager {
         extension_settings.outfit_tracker.presets.user[presetName] = presetData;
         
         if (extension_settings.outfit_tracker.enableSysMessages) {
-            return `[Outfit System] Saved your "${presetName}" outfit.`;
+            return `Saved "${presetName}" outfit for user character.`;
         }
         return '';
     }
@@ -125,10 +125,9 @@ export class UserOutfitManager {
         }
         
         if (changed) {
-            return `[Outfit System] You changed into the "${presetName}" outfit.`;
+            return `You changed into the "${presetName}" outfit.`;
         }
-        
-        return `[Outfit System] You were already wearing the "${presetName}" outfit.`;
+        return `You are already wearing the "${presetName}" outfit.`;
     }
     
     deletePreset(presetName) {
@@ -139,7 +138,7 @@ export class UserOutfitManager {
         delete extension_settings.outfit_tracker.presets.user[presetName];
         
         if (extension_settings.outfit_tracker.enableSysMessages) {
-            return `[Outfit System] Deleted your "${presetName}" outfit.`;
+            return `Deleted your "${presetName}" outfit.`;
         }
         return '';
     }

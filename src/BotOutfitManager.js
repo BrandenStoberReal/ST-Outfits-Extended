@@ -51,13 +51,13 @@ export class BotOutfitManager {
         const varName = this.getVarName(slot);
         this.setGlobalVariable(varName, value);
         this.currentValues[slot] = value;
-
+    
         if (previousValue === 'None' && value !== 'None') {
-            return `[Outfit System] ${this.character} put on ${value}.`;
+            return `${this.character} put on ${value}.`;
         } else if (value === 'None') {
-            return `[Outfit System] ${this.character} removed ${previousValue}.`;
+            return `${this.character} removed ${previousValue}.`;
         } else {
-            return `[Outfit System] ${this.character} changed from ${previousValue} to ${value}.`;
+            return `${this.character} changed from ${previousValue} to ${value}.`;
         }
     }
 
@@ -112,13 +112,12 @@ export class BotOutfitManager {
         extension_settings.outfit_tracker.presets.bot[this.character][presetName] = presetData;
         
         if (extension_settings.outfit_tracker.enableSysMessages) {
-            return `[Outfit System] Saved "${presetName}" outfit for ${this.character}.`;
+            return `Saved "${presetName}" outfit for ${this.character}.`;
         }
         return '';
     }
     
-    // Register preset loading function
-   async loadPreset(presetName) {
+    async loadPreset(presetName) {
         if (!extension_settings.outfit_tracker.presets?.bot?.[this.character]?.[presetName]) {
             return `[Outfit System] Preset "${presetName}" not found.`;
         }
@@ -136,10 +135,9 @@ export class BotOutfitManager {
         }
         
         if (changed) {
-            return `[Outfit System] ${this.character} changed into the "${presetName}" outfit.`;
+            return `${this.character} changed into the "${presetName}" outfit.`;
         }
-        
-        return `[Outfit System] ${this.character} was already wearing the "${presetName}" outfit.`;
+        return `${this.character} was already wearing the "${presetName}" outfit.`;
     }
     
     deletePreset(presetName) {
@@ -155,7 +153,7 @@ export class BotOutfitManager {
         }
         
         if (extension_settings.outfit_tracker.enableSysMessages) {
-            return `[Outfit System] Deleted "${presetName}" outfit.`;
+            return `Deleted "${presetName}" outfit.`;
         }
         return '';
     }
