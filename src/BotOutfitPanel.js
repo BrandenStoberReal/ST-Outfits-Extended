@@ -1,4 +1,5 @@
 import { dragElement } from './shared.js';
+import { extractCommands } from './StringProcessor.js';
 
 export class BotOutfitPanel {
     constructor(outfitManager, clothingSlots, accessorySlots, saveSettingsDebounced) {
@@ -66,6 +67,7 @@ export class BotOutfitPanel {
         switch(this.currentTab) {
             case 'clothing':
                 this.renderSlots(this.clothingSlots, contentArea);
+                this.renderFillOutfitButton(contentArea);
                 break;
             case 'accessories':
                 this.renderSlots(this.accessorySlots, contentArea);
@@ -273,6 +275,57 @@ export class BotOutfitPanel {
         container.appendChild(saveButton);
     }
 
+    renderFillOutfitButton(container) {
+        const fillOutfitButton = document.createElement('button');
+        fillOutfitButton.className = 'fill-outfit-btn';
+        fillOutfitButton.textContent = 'Fill Outfit with LLM';
+        fillOutfitButton.style.marginTop = '5px';
+        fillOutfitButton.style.marginBottom = '10px';
+        fillOutfitButton.style.width = '100%';
+        
+        fillOutfitButton.addEventListener('click', async () => {
+            await this.generateOutfitFromCharacterInfo();
+        });
+        
+        container.appendChild(fillOutfitButton);
+    }
+
+    async generateOutfitFromCharacterInfo() {
+        try {
+            // Show a notification that the process has started
+            if (window.extension_settings.outfit_tracker?.enableSysMessages) {
+                this.sendSystemMessage('Generating outfit based on character info...');
+            }
+            
+            // Get character data
+            const characterInfo = await this.getCharacterData();
+            
+            if (characterInfo.error) {
+                console.error('Error getting character data:', characterInfo.error);
+                if (window.extension_settings.outfit_tracker?.enableSysMessages) {
+                    this.sendSystemMessage(`Error: ${characterInfo.error}`);
+                }
+                return;
+            }
+            
+            // Generate outfit from LLM
+            const response = await this.generateOutfitFromLLM(characterInfo);
+            
+            // Parse and apply the outfit commands
+            await this.parseAndApplyOutfitCommands(response);
+            
+            // Success message
+            if (window.extension_settings.outfit_tracker?.enableSysMessages) {
+                this.sendSystemMessage('Outfit generated and applied successfully!');
+            }
+        } catch (error) {
+            console.error('Error in generateOutfitFromCharacterInfo:', error);
+            if (window.extension_settings.outfit_tracker?.enableSysMessages) {
+                this.sendSystemMessage(`Error generating outfit: ${error.message}`);
+            }
+        }
+    }
+
     sendSystemMessage(message) {
         // Use toastr popup instead of /sys command
         if (window.extension_settings.outfit_tracker?.enableSysMessages) {
@@ -289,6 +342,224 @@ export class BotOutfitPanel {
             .replace(/^./, str => str.toUpperCase())
             .replace(/-/g, ' ')
             .replace('underwear', 'Underwear');
+    }
+
+    async getCharacterData() {
+        const context = window.getContext();
+        
+        if (!context || !context.characters || context.characterId === undefined || context.characterId === null) {
+            return {
+                error: "No character selected or context not ready"
+            };
+        }
+        
+        const character = context.characters[context.characterId];
+        if (!character) {
+            return {
+                error: "Character not found"
+            };
+        }
+        
+        // Get character information
+        const characterInfo = {
+            name: character.name || 'Unknown',
+            description: character.description || '',
+            personality: character.personality || '',
+            scenario: character.scenario || '',
+            firstMessage: character.first_message || '',
+            characterNotes: character.character_notes || '',
+        };
+        
+        // Get the first message from the current chat if it's different from the character's first_message
+        if (context.chat && context.chat.length > 0) {
+            const firstChatMessage = context.chat.find(msg => !msg.is_user && !msg.is_system);
+            if (firstChatMessage && firstChatMessage.mes) {
+                characterInfo.firstMessage = firstChatMessage.mes;
+            }
+        }
+        
+        return characterInfo;
+    }
+
+    getDefaultOutfitPrompt() {
+        return `Analyze the character's description, personality, scenario, character notes, and first message. Based on these details, determine an appropriate outfit for the character.
+
+Here is the character information:
+Name: <CHARACTER_NAME>
+Description: <CHARACTER_DESCRIPTION>
+Personality: <CHARACTER_PERSONALITY>
+Scenario: <CHARACTER_SCENARIO>
+Character Notes: <CHARACTER_NOTES>
+First Message: <CHARACTER_FIRST_MESSAGE>
+
+Based on the information provided, output outfit commands to set the character's clothing and accessories. Only output commands, nothing else.
+
+The available outfit slots are:
+- Clothing: headwear, topwear, topunderwear, bottomwear, bottomunderwear, footwear, footunderwear
+- Accessories: head-accessory, ears-accessory, eyes-accessory, mouth-accessory, neck-accessory, body-accessory, arms-accessory, hands-accessory, waist-accessory, bottom-accessory, legs-accessory, foot-accessory
+
+Use these command formats:
+- outfit-system_wear_headwear("item name")
+- outfit-system_wear_topwear("item name")
+- outfit-system_wear_topunderwear("item name")
+- outfit-system_wear_bottomwear("item name")
+- outfit-system_wear_bottomunderwear("item name")
+- outfit-system_wear_footwear("item name")
+- outfit-system_wear_footunderwear("item name")
+- outfit-system_wear_head-accessory("item name")
+- outfit-system_wear_ears-accessory("item name")
+- outfit-system_wear_eyes-accessory("item name")
+- outfit-system_wear_mouth-accessory("item name")
+- outfit-system_wear_neck-accessory("item name")
+- outfit-system_wear_body-accessory("item name")
+- outfit-system_wear_arms-accessory("item name")
+- outfit-system_wear_hands-accessory("item name")
+- outfit-system_wear_waist-accessory("item name")
+- outfit-system_wear_bottom-accessory("item name")
+- outfit-system_wear_legs-accessory("item name")
+- outfit-system_wear_foot-accessory("item name")
+
+If an item is not applicable based on the character info, use "None" as the value.
+Only output command lines, nothing else.`;
+    }
+
+    async generateOutfitFromLLM(characterInfo) {
+        try {
+            // Get the current system prompt or use the default
+            let prompt = this.getDefaultOutfitPrompt();
+            
+            // Replace placeholders with actual character info
+            prompt = prompt
+                .replace('<CHARACTER_NAME>', characterInfo.name)
+                .replace('<CHARACTER_DESCRIPTION>', characterInfo.description)
+                .replace('<CHARACTER_PERSONALITY>', characterInfo.personality)
+                .replace('<CHARACTER_SCENARIO>', characterInfo.scenario)
+                .replace('<CHARACTER_NOTES>', characterInfo.characterNotes)
+                .replace('<CHARACTER_FIRST_MESSAGE>', characterInfo.firstMessage);
+            
+            const context = window.getContext();
+            
+            // Use the generateRaw function to send the prompt to the LLM
+            const result = await context.generateRaw({
+                prompt: prompt,
+                systemPrompt: "You are an outfit generation system. Based on the character information provided, output outfit commands to set the character's clothing and accessories."
+            });
+            
+            if (!result) {
+                throw new Error('No output generated from LLM');
+            }
+            
+            return result;
+        } catch (error) {
+            console.error('Error generating outfit from LLM:', error);
+            throw error;
+        }
+    }
+
+    async parseAndApplyOutfitCommands(response) {
+        // Use the imported extractCommands function to extract outfit commands
+        const commands = extractCommands(response);
+        
+        if (!commands || commands.length === 0) {
+            console.log('[BotOutfitPanel] No outfit commands found in response');
+            return;
+        }
+        
+        console.log(`[BotOutfitPanel] Found ${commands.length} commands to process:`, commands);
+        
+        // Process each command
+        for (const command of commands) {
+            try {
+                await this.processSingleCommand(command);
+            } catch (error) {
+                console.error(`Error processing command "${command}":`, error);
+            }
+        }
+        
+        // Update the outfit panel UI
+        this.renderContent();
+        
+        // Save the settings
+        this.saveSettingsDebounced();
+    }
+
+    async processSingleCommand(command) {
+        try {
+            // Non-regex approach to parse command - similar to AutoOutfitSystem
+            if (!command.startsWith('outfit-system_')) {
+                throw new Error(`Invalid command format: ${command}`);
+            }
+            
+            // Extract the action part
+            const actionStart = 'outfit-system_'.length;
+            const actionEnd = command.indexOf('_', actionStart);
+            if (actionEnd === -1) {
+                throw new Error(`Invalid command format: ${command}`);
+            }
+            
+            const action = command.substring(actionStart, actionEnd);
+            if (!['wear', 'remove', 'change'].includes(action)) {
+                throw new Error(`Invalid action: ${action}. Valid actions: wear, remove, change`);
+            }
+            
+            // Extract the slot part
+            const slotStart = actionEnd + 1;
+            const slotEnd = command.indexOf('(', slotStart);
+            if (slotEnd === -1) {
+                throw new Error(`Invalid command format: ${command}`);
+            }
+            
+            const slot = command.substring(slotStart, slotEnd);
+            
+            // Extract the value part
+            const valueStart = slotEnd + 1;
+            let value = '';
+            
+            if (command.charAt(valueStart) === '"') { // If value is quoted
+                const quoteStart = valueStart + 1;
+                let i = quoteStart;
+                let escaped = false;
+                
+                while (i < command.length - 1) {
+                    const char = command.charAt(i);
+                    
+                    if (escaped) {
+                        value += char;
+                        escaped = false;
+                    } else if (char === '\\') {
+                        escaped = true;
+                    } else if (char === '"') {
+                        break; // Found closing quote
+                    } else {
+                        value += char;
+                    }
+                    
+                    i++;
+                }
+            } else {
+                // Value is not quoted, extract until closing parenthesis
+                const closingParen = command.indexOf(')', valueStart);
+                if (closingParen !== -1) {
+                    value = command.substring(valueStart, closingParen);
+                }
+            }
+            
+            const cleanValue = value.replace(/"/g, '').trim();
+            
+            console.log(`[BotOutfitPanel] Processing: ${action} ${slot} "${cleanValue}"`);
+            
+            // Apply the outfit change to the bot manager
+            const message = await this.outfitManager.setOutfitItem(slot, action === 'remove' ? 'None' : cleanValue);
+            
+            // Show system message if enabled
+            if (message && window.extension_settings.outfit_tracker?.enableSysMessages) {
+                this.sendSystemMessage(message);
+            }
+            
+        } catch (error) {
+            console.error('Error processing single command:', error);
+            throw error;
+        }
     }
 
     toggle() {
