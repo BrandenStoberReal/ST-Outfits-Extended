@@ -110,10 +110,13 @@ export class BotOutfitPanel {
     renderPresets(container) {
         const presets = this.outfitManager.getPresets();
         
-        if (presets.length === 0) {
+        // Filter out the 'default' preset from the list of regular presets
+        const regularPresets = presets.filter(preset => preset !== 'default');
+        
+        if (regularPresets.length === 0) {
             container.innerHTML = '<div>No saved outfits for this character.</div>';
         } else {
-            presets.forEach(preset => {
+            regularPresets.forEach(preset => {
                 const presetElement = document.createElement('div');
                 presetElement.className = 'outfit-preset';
                 presetElement.innerHTML = `
@@ -148,18 +151,39 @@ export class BotOutfitPanel {
             });
         }
         
+        // Add default outfit button
+        const defaultOutfitButton = document.createElement('button');
+        defaultOutfitButton.className = 'save-outfit-btn';
+        defaultOutfitButton.textContent = this.outfitManager.hasDefaultOutfit() ? 'Update Default Outfit' : 'Set As Default Outfit';
+        defaultOutfitButton.style.marginTop = '10px';
+        defaultOutfitButton.style.background = this.outfitManager.hasDefaultOutfit() ? 'rgba(255, 165, 0, 0.3)' : 'rgba(255, 215, 0, 0.3)';
+        defaultOutfitButton.addEventListener('click', async () => {
+            const message = await this.outfitManager.setDefaultOutfit();
+            if (message && extension_settings.outfit_tracker?.enableSysMessages) {
+                this.sendSystemMessage(message);
+            }
+            this.saveSettingsDebounced();
+            this.renderContent();
+        });
+        
+        container.appendChild(defaultOutfitButton);
+    
+        // Add save regular outfit button
         const saveButton = document.createElement('button');
         saveButton.className = 'save-outfit-btn';
         saveButton.textContent = 'Save Current Outfit';
+        saveButton.style.marginTop = '5px';
         saveButton.addEventListener('click', async () => {
             const presetName = prompt('Name this outfit:');
-            if (presetName) {
+            if (presetName && presetName.toLowerCase() !== 'default') {
                 const message = await this.outfitManager.savePreset(presetName.trim());
                 if (message && extension_settings.outfit_tracker?.enableSysMessages) {
                     this.sendSystemMessage(message);
                 }
                 this.saveSettingsDebounced();
                 this.renderContent();
+            } else if (presetName && presetName.toLowerCase() === 'default') {
+                alert('Please use the "Set As Default Outfit" button to set the default outfit.');
             }
         });
         

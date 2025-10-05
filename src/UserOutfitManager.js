@@ -149,4 +149,52 @@ export class UserOutfitManager {
         }
         return Object.keys(extension_settings.outfit_tracker.presets.user);
     }
+    
+    setDefaultOutfit() {
+        // Initialize presets if needed
+        if (!extension_settings.outfit_tracker.presets) {
+            extension_settings.outfit_tracker.presets = { bot: {}, user: {} };
+        }
+        
+        // Create preset data for all slots
+        const presetData = {};
+        this.slots.forEach(slot => {
+            presetData[slot] = this.currentValues[slot];
+        });
+        
+        // Save as default preset
+        extension_settings.outfit_tracker.presets.user['default'] = presetData;
+        
+        if (extension_settings.outfit_tracker.enableSysMessages) {
+            return `Set your default outfit.`;
+        }
+        return '';
+    }
+    
+    loadDefaultOutfit() {
+        if (!extension_settings.outfit_tracker.presets?.user?.['default']) {
+            return `[Outfit System] No default outfit set for user.`;
+        }
+        
+        const preset = extension_settings.outfit_tracker.presets.user['default'];
+        let changed = false;
+        
+        for (const [slot, value] of Object.entries(preset)) {
+            if (this.slots.includes(slot) && this.currentValues[slot] !== value) {
+                const varName = this.getVarName(slot);
+                this.setGlobalVariable(varName, value);
+                this.currentValues[slot] = value;
+                changed = true;
+            }
+        }
+        
+        if (changed) {
+            return `You changed into your default outfit.`;
+        }
+        return `You were already wearing your default outfit.`;
+    }
+    
+    hasDefaultOutfit() {
+        return !!extension_settings.outfit_tracker.presets?.user?.['default'];
+    }
 }

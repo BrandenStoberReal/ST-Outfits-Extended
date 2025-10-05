@@ -164,4 +164,56 @@ export class BotOutfitManager {
         }
         return Object.keys(extension_settings.outfit_tracker.presets.bot[this.character]);
     }
+    
+    setDefaultOutfit() {
+        // Initialize presets if needed
+        if (!extension_settings.outfit_tracker.presets) {
+            extension_settings.outfit_tracker.presets = { bot: {}, user: {} };
+        }
+        
+        if (!extension_settings.outfit_tracker.presets.bot[this.character]) {
+            extension_settings.outfit_tracker.presets.bot[this.character] = {};
+        }
+        
+        // Create preset data for all slots
+        const presetData = {};
+        this.slots.forEach(slot => {
+            presetData[slot] = this.currentValues[slot];
+        });
+        
+        // Save as default preset
+        extension_settings.outfit_tracker.presets.bot[this.character]['default'] = presetData;
+        
+        if (extension_settings.outfit_tracker.enableSysMessages) {
+            return `Set default outfit for ${this.character}.`;
+        }
+        return '';
+    }
+    
+    loadDefaultOutfit() {
+        if (!extension_settings.outfit_tracker.presets?.bot?.[this.character]?.['default']) {
+            return `[Outfit System] No default outfit set for ${this.character}.`;
+        }
+        
+        const preset = extension_settings.outfit_tracker.presets.bot[this.character]['default'];
+        let changed = false;
+        
+        for (const [slot, value] of Object.entries(preset)) {
+            if (this.slots.includes(slot) && this.currentValues[slot] !== value) {
+                const varName = this.getVarName(slot);
+                this.setGlobalVariable(varName, value);
+                this.currentValues[slot] = value;
+                changed = true;
+            }
+        }
+        
+        if (changed) {
+            return `${this.character} changed into their default outfit.`;
+        }
+        return `${this.character} was already wearing their default outfit.`;
+    }
+    
+    hasDefaultOutfit() {
+        return !!extension_settings.outfit_tracker.presets?.bot?.[this.character]?.['default'];
+    }
 }
