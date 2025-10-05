@@ -231,6 +231,11 @@ Important: Always use the exact slot names listed above. Never invent new slot n
 
         // Replace all <BOT> instances with the actual character name
         let processedPrompt = replaceAllStr(prompt, '<BOT>', characterName);
+        
+        // Replace {{user}} with the current active persona name
+        const context = window.getContext ? window.getContext() : null;
+        const userName = (context && context.user && context.user.name) ? context.user.name : 'User';
+        processedPrompt = replaceAllStr(processedPrompt, '{{user}}', userName);
 
         // Extract all macros from the prompt
         const macros = extractMacros(processedPrompt);

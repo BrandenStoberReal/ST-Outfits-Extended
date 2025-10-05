@@ -949,6 +949,8 @@ async function initializeExtension() {
             // Get the current bot character name
             const context = getContext();
             let botCharacterName = 'Unknown';
+            // Extract the user's name from context
+            const userName = (context && context.user && context.user.name) ? context.user.name : 'User';
 
             if (context && context.characters && context.characterId !== undefined && context.characterId !== null) {
                 const character = context.characters[context.characterId];
@@ -959,6 +961,8 @@ async function initializeExtension() {
 
             // Replace all <BOT> instances with the actual character name
             processedText = replaceAll(processedText, '<BOT>', botCharacterName);
+            // Replace {{user}} with the current active persona name
+            processedText = replaceAll(processedText, '{{user}}', userName);
 
             // Normalize character name for variable access (replace spaces with underscores)
             const normalizedBotName = botCharacterName.replace(/\s+/g, '_');
