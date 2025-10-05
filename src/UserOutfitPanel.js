@@ -1,5 +1,3 @@
-import { getContext } from "../../../../extensions.js";
-import { extension_settings } from "../../../../extensions.js";
 import { dragElement } from './shared.js';
 
 export class UserOutfitPanel {

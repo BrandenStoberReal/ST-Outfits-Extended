@@ -1,5 +1,4 @@
-import { getContext } from "../../../../extensions.js";
-import { extension_settings } from "../../../../extensions.js";
+
 
 export class AutoOutfitSystem {
     constructor(outfitManager) {
@@ -94,7 +93,7 @@ Important: Always use the exact slot names listed above. Never invent new slot n
     setupEventListeners() {
         this.removeEventListeners();
         
-        const { eventSource, event_types } = getContext();
+        const { eventSource, event_types } = window.getContext();
         
         // Use MESSAGE_RECEIVED instead of CHARACTER_MESSAGE_RENDERED
         // This event fires when new messages are added to chat (before rendering)
@@ -118,7 +117,7 @@ Important: Always use the exact slot names listed above. Never invent new slot n
 
     removeEventListeners() {
         if (this.eventHandler) {
-            const { eventSource, event_types } = getContext();
+            const { eventSource, event_types } = window.getContext();
             eventSource.off(event_types.MESSAGE_RECEIVED, this.eventHandler);
             this.eventHandler = null;
             console.log('[AutoOutfitSystem] Event listener removed');
@@ -189,7 +188,7 @@ Important: Always use the exact slot names listed above. Never invent new slot n
             throw new Error('No valid messages to process');
         }
 
-        const { generateRaw } = getContext();
+        const { generateRaw } = window.getContext();
         
         const promptText = `${this.systemPrompt}\n\nRecent Messages:\n${recentMessages}\n\nOutput:`;
         
@@ -224,21 +223,22 @@ Important: Always use the exact slot names listed above. Never invent new slot n
 
     async tryFallbackGeneration(promptText) {
         try {
-            const context = getContext();
+            const context = window.getContext();
             
             let result;
-            if (this.connectionProfile) {
-                result = await this.generateWithProfile(promptText);
-            } else if (context.generateQuietPrompt) {
+            if (context.generateQuietPrompt) {
                 result = await context.generateQuietPrompt({
                     quietPrompt: promptText
                 });
-            } else {
+            } else if (context.generateRaw) {
                 // Try standard generateRaw as a fallback if generateQuietPrompt is not available
                 result = await context.generateRaw({
                     prompt: promptText,
                     systemPrompt: "You are an outfit change detection system. Analyze the conversation and output outfit commands when clothing changes occur."
                 });
+            } else {
+                // If neither method is available, use the connection profile method
+                result = await this.generateWithProfile(promptText);
             }
 
             if (!result) {
@@ -391,7 +391,7 @@ Important: Always use the exact slot names listed above. Never invent new slot n
 
     getLastMessages(count = 3) {
         try {
-            const { chat } = getContext();
+            const { chat } = window.getContext();
             
             if (!chat || !Array.isArray(chat) || chat.length === 0) {
                 console.log('[AutoOutfitSystem] No chat or empty chat array');
@@ -496,64 +496,7 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         return this.connectionProfile;
     }
     
-    // Use the connection profile for generation if available
-    async executeGenCommand() {
-        const recentMessages = this.getLastMessages(3);
-        if (!recentMessages.trim()) {
-            throw new Error('No valid messages to process');
-        }
 
-        const context = getContext();
-        
-        const promptText = `${this.systemPrompt}\n\nRecent Messages:\n${recentMessages}\n\nOutput:`;
-        
-        console.log('[AutoOutfitSystem] Generating outfit commands...');
-        console.log('[AutoOutfitSystem] Using connection profile:', this.connectionProfile);
-        
-        try {
-            let result;
-            if (this.connectionProfile) {
-                // Use the specified connection profile if available
-                console.log('[AutoOutfitSystem] Using custom connection profile');
-                
-                // Attempt to use the connection profile with standard generation
-                // We'll need to adjust settings temporarily based on the profile
-                result = await this.generateWithProfile(promptText);
-            } else {
-                // Use the default generation method
-                if (context.generateRaw) {
-                    result = await context.generateRaw({
-                        prompt: promptText,
-                        systemPrompt: "You are an outfit change detection system. Analyze the conversation and output outfit commands when clothing changes occur."
-                    });
-                } else {
-                    // Fallback to generateQuietPrompt if generateRaw is not available
-                    result = await context.generateQuietPrompt({
-                        quietPrompt: promptText
-                    });
-                }
-            }
-
-            if (!result) {
-                throw new Error('No output generated from generation');
-            }
-            
-            console.log('[AutoOutfitSystem] Generated result:', result);
-            
-            const commands = this.parseGeneratedText(result);
-            
-            if (commands.length > 0) {
-                console.log(`[AutoOutfitSystem] Found ${commands.length} commands, processing...`);
-                await this.processCommandBatch(commands);
-            } else {
-                console.log('[AutoOutfitSystem] No outfit commands found in response');
-            }
-            
-        } catch (error) {
-            console.error('[AutoOutfitSystem] Generation failed:', error);
-            await this.tryFallbackGeneration(promptText);
-        }
-    }
     
     // Helper method to generate with a specific connection profile
     async generateWithProfile(promptText) {
@@ -561,7 +504,7 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         // the connection profile system. We'll implement a more standard approach
         // that would work with the SillyTavern architecture.
         
-        const context = getContext();
+        const context = window.getContext();
         
         // This is a simplified implementation - in a real system, you would
         // implement actual profile-specific connection logic

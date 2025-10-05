@@ -1,11 +1,59 @@
-import { getContext, extension_settings } from "../../../extensions.js";
-import { saveSettingsDebounced } from "../../../../script.js";
-import { SlashCommandParser, SlashCommand, SlashCommandArgument, SlashCommandNamedArgument } from "../../../../slash-commands.js";
-import { ARGUMENT_TYPE } from "../../../../utils.js";
+// Import modules from SillyTavern core - these are expected to be available when installed correctly
+// Import modules from SillyTavern core - these are expected to be available when installed correctly
+// If imports fail during extension loading, we need to handle the errors properly
+let getContext, extension_settings;
+let saveSettingsDebounced;
+let SlashCommandParser, SlashCommand, SlashCommandArgument, SlashCommandNamedArgument;
+let ARGUMENT_TYPE;
+
+// Function to load modules with error handling
+async function loadModules() {
+    try {
+        // Try direct imports first
+        const extensionsModule = await import("../../../extensions.js");
+        getContext = extensionsModule.getContext;
+        extension_settings = extensionsModule.extension_settings;
+        
+        const scriptModule = await import("../../../../script.js");
+        saveSettingsDebounced = scriptModule.saveSettingsDebounced;
+        
+        const slashCommandModule = await import("../../../../slash-commands.js");
+        SlashCommandParser = slashCommandModule.SlashCommandParser;
+        SlashCommand = slashCommandModule.SlashCommand;
+        SlashCommandArgument = slashCommandModule.SlashCommandArgument;
+        SlashCommandNamedArgument = slashCommandModule.SlashCommandNamedArgument;
+        
+        const utilsModule = await import("../../../../utils.js");
+        ARGUMENT_TYPE = utilsModule.ARGUMENT_TYPE;
+        
+        console.log("[OutfitTracker] Successfully loaded SillyTavern modules");
+        return true;
+    } catch (error) {
+        console.error("[OutfitTracker] Error loading SillyTavern modules:", error);
+        return false;
+    }
+}
 
 console.log("[OutfitTracker] Starting extension loading...");
 
 async function initializeExtension() {
+    // Load SillyTavern modules first
+    const modulesLoaded = await loadModules();
+    if (!modulesLoaded) {
+        console.error("[OutfitTracker] Could not load required SillyTavern modules. Extension cannot initialize.");
+        return;
+    }
+    
+    // Make sure these are available globally for child modules
+    window.getContext = getContext;
+    window.extension_settings = extension_settings;
+    window.saveSettingsDebounced = saveSettingsDebounced;
+    window.SlashCommandParser = SlashCommandParser;
+    window.SlashCommand = SlashCommand;
+    window.SlashCommandArgument = SlashCommandArgument;
+    window.SlashCommandNamedArgument = SlashCommandNamedArgument;
+    window.ARGUMENT_TYPE = ARGUMENT_TYPE;
+    
     const MODULE_NAME = 'outfit_tracker';
     const CLOTHING_SLOTS = [
         'headwear',

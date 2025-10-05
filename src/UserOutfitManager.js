@@ -1,4 +1,4 @@
-import { extension_settings } from "../../../../extensions.js";
+
 
 export class UserOutfitManager {
     constructor(slots) {

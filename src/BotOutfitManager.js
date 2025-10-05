@@ -1,4 +1,4 @@
-import { extension_settings } from "../../../../extensions.js";
+// extension_settings is expected to be available in the global scope once the extension initializes
 
 export class BotOutfitManager {
     constructor(slots) {
@@ -36,14 +36,15 @@ export class BotOutfitManager {
     }
 
     getGlobalVariable(name) {
-        const globalVars = extension_settings.variables?.global || {};
+        // Access extension_settings from the global window object
+        const globalVars = window.extension_settings?.variables?.global || {};
         return globalVars[name] || window[name] || 'None';
     }
 
     setGlobalVariable(name, value) {
         window[name] = value;
-        if (!extension_settings.variables) extension_settings.variables = { global: {} };
-        extension_settings.variables.global[name] = value;
+        if (!window.extension_settings.variables) window.extension_settings.variables = { global: {} };
+        window.extension_settings.variables.global[name] = value;
     }
 
     async setOutfitItem(slot, value) {
