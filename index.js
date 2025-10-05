@@ -498,7 +498,23 @@ async function initializeExtension() {
 
     function updateForCurrentCharacter() {
         const context = getContext();
-        const charName = context.characters[context.characterId]?.name || 'Unknown';
+        
+        // Check if context is ready before trying to access character data
+        if (!context || !context.characters || context.characterId === undefined) {
+            console.log("[OutfitTracker] Context not ready, skipping character update");
+            return;
+        }
+        
+        // Make sure the character exists in the characters array
+        const character = context.characters[context.characterId];
+        if (!character) {
+            console.log("[OutfitTracker] Character not found at index " + context.characterId + ", setting as Unknown");
+            botManager.setCharacter('Unknown');
+            botPanel.updateCharacter('Unknown');
+            return;
+        }
+        
+        const charName = character.name || 'Unknown';
         botManager.setCharacter(charName);
         botPanel.updateCharacter(charName);
     }
@@ -579,6 +595,8 @@ async function initializeExtension() {
         eventSource.on(event_types.APP_READY, () => {
             console.log("[OutfitTracker] App ready, marking auto outfit system as initialized");
             autoOutfitSystem.markAppInitialized();
+            // Update the current character after app is ready to ensure context is properly initialized
+            updateForCurrentCharacter();
         });
         
         eventSource.on(event_types.CHAT_ID_CHANGED, updateForCurrentCharacter); // Use the correct event name
@@ -805,7 +823,6 @@ async function initializeExtension() {
     initSettings();
     registerOutfitCommands();
     setupEventListeners();
-    updateForCurrentCharacter();
     createSettingsUI();
 
     if (extension_settings[MODULE_NAME].autoOpenBot) {
