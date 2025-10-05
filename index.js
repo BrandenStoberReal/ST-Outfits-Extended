@@ -1114,13 +1114,21 @@ async function initializeExtension() {
                 // Replace macros in the outfit info text
                 const processedOutfitInfo = replaceOutfitMacrosInText(outfitInfo);
 
+                // If processed outfit info is empty (all values are 'None' or empty), skip injection
+                // This happens when all macro replacements result in empty content
+                const trimmedProcessedInfo = processedOutfitInfo && processedOutfitInfo.trim();
+                if (!trimmedProcessedInfo) {
+                    // All sections would be removed after macro replacement, so skip injection entirely
+                    return chat;
+                }
+
                 // Create a system message containing the outfit information
                 const outfitMessage = {
                     is_system: true,
                     is_user: false,
                     name: "System",
                     send_date: new Date().toISOString(),
-                    mes: processedOutfitInfo,
+                    mes: trimmedProcessedInfo,
                     extra: { outfit_info: true } // Mark this message as outfit info for identification
                 };
 
