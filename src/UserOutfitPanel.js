@@ -1,4 +1,4 @@
-import { dragElement, resizeElement } from './shared.js';
+import { dragElementWithSave, resizeElement } from './shared.js';
 
 export class UserOutfitPanel {
     constructor(outfitManager, clothingSlots, accessorySlots, saveSettingsDebounced) {
@@ -315,10 +315,10 @@ export class UserOutfitPanel {
         this.isVisible = true;
 
         if (this.domElement) {
-            dragElement($(this.domElement));
+            dragElementWithSave($(this.domElement), 'user-outfit-panel');
             // Initialize resizing with appropriate min/max dimensions
             setTimeout(() => {
-                resizeElement($(this.domElement), {
+                resizeElement($(this.domElement), 'user-outfit-panel', {
                     minWidth: 250,
                     minHeight: 200,
                     maxWidth: 600,

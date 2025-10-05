@@ -28,7 +28,37 @@ export function dragElement(element) {
     }
 }
 
-export function resizeElement(element, options = {}) {
+export function dragElement(element) {
+    let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+    const header = element.find('.outfit-header')[0];
+
+    if (header) header.onmousedown = dragMouseDown;
+
+    function dragMouseDown(e) {
+        e.preventDefault();
+        pos3 = e.clientX;
+        pos4 = e.clientY;
+        document.onmouseup = closeDragElement;
+        document.onmousemove = elementDrag;
+    }
+
+    function elementDrag(e) {
+        e.preventDefault();
+        pos1 = pos3 - e.clientX;
+        pos2 = pos4 - e.clientY;
+        pos3 = e.clientX;
+        pos4 = e.clientY;
+        element[0].style.top = (element[0].offsetTop - pos2) + "px";
+        element[0].style.left = (element[0].offsetLeft - pos1) + "px";
+    }
+
+    function closeDragElement() {
+        document.onmouseup = null;
+        document.onmousemove = null;
+    }
+}
+
+export function resizeElement(element, panelId, options = {}) {
     // Default options
     const opts = {
         resizable: true,
@@ -40,6 +70,19 @@ export function resizeElement(element, options = {}) {
     };
 
     if (!opts.resizable) return;
+
+    // Try to load saved dimensions and position
+    const savedState = loadPanelState(panelId);
+    if (savedState) {
+        if (savedState.width && savedState.height) {
+            element[0].style.width = savedState.width + 'px';
+            element[0].style.height = savedState.height + 'px';
+        }
+        if (savedState.top && savedState.left) {
+            element[0].style.top = savedState.top + 'px';
+            element[0].style.left = savedState.left + 'px';
+        }
+    }
 
     // Add resize handle to the bottom-right corner
     const resizeHandle = document.createElement('div');
@@ -74,9 +117,95 @@ export function resizeElement(element, options = {}) {
     }
 
     function stopResize() {
+        // Save dimensions when resizing stops
+        const currentWidth = parseInt(document.defaultView.getComputedStyle(element[0]).width, 10);
+        const currentHeight = parseInt(document.defaultView.getComputedStyle(element[0]).height, 10);
+        const currentTop = parseInt(element[0].style.top) || null;
+        const currentLeft = parseInt(element[0].style.left) || null;
+        
+        savePanelState(panelId, currentWidth, currentHeight, currentTop, currentLeft);
+        
         document.onmouseup = null;
         document.onmousemove = null;
     }
 
     resizeHandle.addEventListener('mousedown', resizeMouseDown);
+}
+
+export function savePanelState(panelId, width, height, top, left) {
+    if (!window.extension_settings || !window.extension_settings.outfit_tracker) {
+        // Initialize settings if they don't exist
+        if (!window.extension_settings) {
+            window.extension_settings = {};
+        }
+        window.extension_settings.outfit_tracker = {
+            botPanelState: {},
+            userPanelState: {}
+        };
+    }
+    
+    const state = { width, height, top, left };
+    
+    // Determine which panel we're saving for
+    if (panelId.includes('bot')) {
+        window.extension_settings.outfit_tracker.botPanelState = state;
+    } else {
+        window.extension_settings.outfit_tracker.userPanelState = state;
+    }
+}
+
+export function loadPanelState(panelId) {
+    if (!window.extension_settings || !window.extension_settings.outfit_tracker) {
+        return null;
+    }
+    
+    // Determine which panel we're loading for
+    if (panelId.includes('bot')) {
+        return window.extension_settings.outfit_tracker.botPanelState;
+    } else {
+        return window.extension_settings.outfit_tracker.userPanelState;
+    }
+}
+
+// Enhanced dragElement function to save position when dragging stops
+export function dragElementWithSave(element, panelId) {
+    let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+    const header = element.find('.outfit-header')[0];
+
+    if (header) header.onmousedown = dragMouseDown;
+
+    function dragMouseDown(e) {
+        e.preventDefault();
+        pos3 = e.clientX;
+        pos4 = e.clientY;
+        document.onmouseup = closeDragElement;
+        document.onmousemove = elementDrag;
+    }
+
+    function elementDrag(e) {
+        e.preventDefault();
+        pos1 = pos3 - e.clientX;
+        pos2 = pos4 - e.clientY;
+        pos3 = e.clientX;
+        pos4 = e.clientY;
+        element[0].style.top = (element[0].offsetTop - pos2) + "px";
+        element[0].style.left = (element[0].offsetLeft - pos1) + "px";
+    }
+
+    function closeDragElement() {
+        // Save the new position after dragging stops
+        const currentTop = parseInt(element[0].style.top) || null;
+        const currentLeft = parseInt(element[0].style.left) || null;
+        
+        // We need to get current dimensions as well to save the complete state
+        const currentWidth = parseInt(document.defaultView.getComputedStyle(element[0]).width, 10) || null;
+        const currentHeight = parseInt(document.defaultView.getComputedStyle(element[0]).height, 10) || null;
+        
+        if (currentTop !== null && currentLeft !== null) {
+            savePanelState(panelId, currentWidth, currentHeight, currentTop, currentLeft);
+        }
+        
+        document.onmouseup = null;
+        document.onmousemove = null;
+    }
 }

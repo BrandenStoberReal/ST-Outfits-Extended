@@ -1,4 +1,4 @@
-import { dragElement, resizeElement } from './shared.js';
+import { dragElementWithSave, resizeElement } from './shared.js';
 import { extractCommands } from './StringProcessor.js';
 
 export class BotOutfitPanel {
@@ -601,10 +601,10 @@ Only output command lines, nothing else.`;
         this.isVisible = true;
 
         if (this.domElement) {
-            dragElement($(this.domElement));
+            dragElementWithSave($(this.domElement), 'bot-outfit-panel');
             // Initialize resizing with appropriate min/max dimensions
             setTimeout(() => {
-                resizeElement($(this.domElement), {
+                resizeElement($(this.domElement), 'bot-outfit-panel', {
                     minWidth: 250,
                     minHeight: 200,
                     maxWidth: 600,
