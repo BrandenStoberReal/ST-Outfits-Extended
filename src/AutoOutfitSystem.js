@@ -190,7 +190,9 @@ Important: Always use the exact slot names listed above. Never invent new slot n
 
         const { generateRaw } = window.getContext();
         
-        const promptText = `${this.systemPrompt}\n\nRecent Messages:\n${recentMessages}\n\nOutput:`;
+        // Replace macros in the system prompt before sending to the AI
+        const processedSystemPrompt = this.replaceMacrosInPrompt(this.systemPrompt);
+        const promptText = `${processedSystemPrompt}\n\nRecent Messages:\n${recentMessages}\n\nOutput:`;
         
         console.log('[AutoOutfitSystem] Generating outfit commands with generateRaw...');
         
@@ -221,24 +223,122 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         }
     }
 
-    async tryFallbackGeneration(promptText) {
+    replaceMacrosInPrompt(prompt) {
+        // Get current character name from the outfit manager
+        const characterName = this.outfitManager.character || '<BOT>';
+        // Normalize the character name to create the proper variable name format
+        const normalizedCharName = characterName.replace(/\s+/g, '_');
+        
+        // Get available slots from the outfit manager
+        const slots = this.outfitManager.slots || [];
+
+        // Replace all <BOT> instances with the actual character name
+        let processedPrompt = prompt.replace(/<BOT>/g, characterName);
+
+        // Replace all {{getglobalvar::<BOT>_*}} macros with actual values
+        const macroRegex = /{{getglobalvar::[A-Za-z0-9_]+}}/g;
+        let match;
+        
+        while ((match = macroRegex.exec(processedPrompt)) !== null) {
+            const fullMacro = match[0];
+            
+            // Extract the variable name from the macro
+            const varNameMatch = fullMacro.match(/{{getglobalvar::([A-Za-z0-9_]+)}}/);
+            if (varNameMatch) {
+                const varName = varNameMatch[1];
+                
+                // Get the actual value from global variables
+                let value = 'None'; // Default value if not found
+                
+                // Check if it's a character-specific variable or user variable
+                if (varName.startsWith(`${normalizedCharName}_`)) {
+                    // It's a character-specific variable
+                    const slot = varName.substring(normalizedCharName.length + 1);
+                    if (slots.includes(slot) && this.outfitManager.currentValues[slot] !== undefined) {
+                        value = this.outfitManager.currentValues[slot];
+                    }
+                } else if (varName.startsWith('User_')) {
+                    // It's a user variable - we need to access the user outfit manager
+                    try {
+                        const userOutfitManager = window.userOutfitPanel?.outfitManager;
+                        if (userOutfitManager) {
+                            const slot = varName.substring(5); // Remove 'User_' prefix
+                            if (userOutfitManager.slots.includes(slot) && userOutfitManager.currentValues[slot] !== undefined) {
+                                value = userOutfitManager.currentValues[slot];
+                            }
+                        }
+                    } catch (error) {
+                        console.warn('Could not access user outfit manager for macro replacement:', error);
+                    }
+                }
+                
+                // Replace the macro with the actual value
+                processedPrompt = processedPrompt.replace(new RegExp(fullMacro.replace(/[.*+?^${}()|[\]\\]/g, '\\    async executeGenCommand() {
+        const recentMessages = this.getLastMessages(3);
+        if (!recentMessages.trim()) {
+            throw new Error('No valid messages to process');
+        }
+
+        const { generateRaw } = window.getContext();
+        
+        const promptText = `${this.systemPrompt}\n\nRecent Messages:\n${recentMessages}\n\nOutput:`;
+        
+        console.log('[AutoOutfitSystem] Generating outfit commands with generateRaw...');
+        
+        try {
+            const result = await generateRaw({
+                prompt: promptText,
+                systemPrompt: "You are an outfit change detection system. Analyze the conversation and output outfit commands when clothing changes occur."
+            });
+
+            if (!result) {
+                throw new Error('No output generated from generation');
+            }
+            
+            console.log('[AutoOutfitSystem] Generated result:', result);
+            
+            const commands = this.parseGeneratedText(result);
+            
+            if (commands.length > 0) {
+                console.log(`[AutoOutfitSystem] Found ${commands.length} commands, processing...`);
+                await this.processCommandBatch(commands);
+            } else {
+                console.log('[AutoOutfitSystem] No outfit commands found in response');
+            }
+            
+        } catch (error) {
+            console.error('[AutoOutfitSystem] Generation failed:', error);
+            await this.tryFallbackGeneration(promptText);
+        }
+    }'), 'g'), value);
+            }
+        }
+        
+        return processedPrompt;
+    }
+
+    async tryFallbackGeneration(originalPromptText) {
+        // Process the prompt to replace any macros (though they should already be replaced, 
+        // this is a safety measure)
+        const processedPromptText = this.replaceMacrosInPrompt(originalPromptText);
+        
         try {
             const context = window.getContext();
             
             let result;
             if (context.generateQuietPrompt) {
                 result = await context.generateQuietPrompt({
-                    quietPrompt: promptText
+                    quietPrompt: processedPromptText
                 });
             } else if (context.generateRaw) {
                 // Try standard generateRaw as a fallback if generateQuietPrompt is not available
                 result = await context.generateRaw({
-                    prompt: promptText,
+                    prompt: processedPromptText,
                     systemPrompt: "You are an outfit change detection system. Analyze the conversation and output outfit commands when clothing changes occur."
                 });
             } else {
                 // If neither method is available, use the connection profile method
-                result = await this.generateWithProfile(promptText);
+                result = await this.generateWithProfile(processedPromptText);
             }
 
             if (!result) {
@@ -482,6 +582,11 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         return '[Outfit System] System prompt updated.';
     }
 
+    // Method to get the processed system prompt with macros replaced
+    getProcessedSystemPrompt() {
+        return this.replaceMacrosInPrompt(this.systemPrompt);
+    }
+
     resetToDefaultPrompt() {
         this.systemPrompt = this.getDefaultPrompt();
         return '[Outfit System] Reset to default prompt.';
@@ -499,12 +604,16 @@ Important: Always use the exact slot names listed above. Never invent new slot n
 
     
     // Helper method to generate with a specific connection profile
-    async generateWithProfile(promptText) {
+    async generateWithProfile(originalPromptText) {
         // In SillyTavern, different connection profiles are handled through
         // the connection profile system. We'll implement a more standard approach
         // that would work with the SillyTavern architecture.
         
         const context = window.getContext();
+        
+        // Process the prompt to replace any macros (though they should already be replaced, 
+        // this is a safety measure)
+        const processedPromptText = this.replaceMacrosInPrompt(originalPromptText);
         
         // This is a simplified implementation - in a real system, you would
         // implement actual profile-specific connection logic
@@ -520,12 +629,12 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         try {
             if (context.generateRaw) {
                 return await context.generateRaw({
-                    prompt: promptText,
+                    prompt: processedPromptText,
                     systemPrompt: "You are an outfit change detection system. Analyze the conversation and output outfit commands when clothing changes occur."
                 });
             } else if (context.generateQuietPrompt) {
                 return await context.generateQuietPrompt({
-                    quietPrompt: promptText
+                    quietPrompt: processedPromptText
                 });
             } else {
                 // Fallback to standard generation
@@ -536,12 +645,12 @@ Important: Always use the exact slot names listed above. Never invent new slot n
             // Fallback to default generation
             if (context.generateRaw) {
                 return await context.generateRaw({
-                    prompt: promptText,
+                    prompt: processedPromptText,
                     systemPrompt: "You are an outfit change detection system. Analyze the conversation and output outfit commands when clothing changes occur."
                 });
             } else {
                 return await context.generateQuietPrompt({
-                    quietPrompt: promptText
+                    quietPrompt: processedPromptText
                 });
             }
         }
