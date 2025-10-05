@@ -171,6 +171,29 @@ export class UserOutfitManager {
         return '';
     }
     
+    setPresetAsDefault(presetName) {
+        // Initialize presets if needed
+        if (!extension_settings.outfit_tracker.presets) {
+            extension_settings.outfit_tracker.presets = { bot: {}, user: {} };
+        }
+        
+        // Check if the preset exists
+        if (!extension_settings.outfit_tracker.presets.user[presetName]) {
+            return `[Outfit System] Preset "${presetName}" not found.`;
+        }
+        
+        // Get the preset data
+        const presetData = extension_settings.outfit_tracker.presets.user[presetName];
+        
+        // Save as default preset
+        extension_settings.outfit_tracker.presets.user['default'] = presetData;
+        
+        if (extension_settings.outfit_tracker.enableSysMessages) {
+            return `Set "${presetName}" as your default outfit.`;
+        }
+        return '';
+    }
+    
     loadDefaultOutfit() {
         if (!extension_settings.outfit_tracker.presets?.user?.['default']) {
             return `[Outfit System] No default outfit set for user.`;

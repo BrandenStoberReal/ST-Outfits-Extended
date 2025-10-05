@@ -191,6 +191,33 @@ export class BotOutfitManager {
         return '';
     }
     
+    setPresetAsDefault(presetName) {
+        // Initialize presets if needed
+        if (!extension_settings.outfit_tracker.presets) {
+            extension_settings.outfit_tracker.presets = { bot: {}, user: {} };
+        }
+        
+        if (!extension_settings.outfit_tracker.presets.bot[this.character]) {
+            extension_settings.outfit_tracker.presets.bot[this.character] = {};
+        }
+        
+        // Check if the preset exists
+        if (!extension_settings.outfit_tracker.presets.bot[this.character][presetName]) {
+            return `[Outfit System] Preset "${presetName}" not found.`;
+        }
+        
+        // Get the preset data
+        const presetData = extension_settings.outfit_tracker.presets.bot[this.character][presetName];
+        
+        // Save as default preset
+        extension_settings.outfit_tracker.presets.bot[this.character]['default'] = presetData;
+        
+        if (extension_settings.outfit_tracker.enableSysMessages) {
+            return `Set "${presetName}" as default outfit for ${this.character}.`;
+        }
+        return '';
+    }
+    
     loadDefaultOutfit() {
         if (!extension_settings.outfit_tracker.presets?.bot?.[this.character]?.['default']) {
             return `[Outfit System] No default outfit set for ${this.character}.`;

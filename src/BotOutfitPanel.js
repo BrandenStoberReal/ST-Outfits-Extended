@@ -122,12 +122,22 @@ export class BotOutfitPanel {
                     <div class="preset-name">${preset}</div>
                     <div class="preset-actions">
                         <button class="load-preset" data-preset="${preset}">Wear</button>
+                        <button class="set-default-preset" data-preset="${preset}">Default</button>
                         <button class="delete-preset" data-preset="${preset}">×</button>
                     </div>
                 `;
                 
                 presetElement.querySelector('.load-preset').addEventListener('click', async () => {
                     const message = await this.outfitManager.loadPreset(preset);
+                    if (message && extension_settings.outfit_tracker?.enableSysMessages) {
+                        this.sendSystemMessage(message);
+                    }
+                    this.saveSettingsDebounced();
+                    this.renderContent();
+                });
+                
+                presetElement.querySelector('.set-default-preset').addEventListener('click', async () => {
+                    const message = await this.outfitManager.setPresetAsDefault(preset);
                     if (message && extension_settings.outfit_tracker?.enableSysMessages) {
                         this.sendSystemMessage(message);
                     }
@@ -150,22 +160,48 @@ export class BotOutfitPanel {
             });
         }
         
-        // Add default outfit button
-        const defaultOutfitButton = document.createElement('button');
-        defaultOutfitButton.className = 'save-outfit-btn';
-        defaultOutfitButton.textContent = this.outfitManager.hasDefaultOutfit() ? 'Update Default Outfit' : 'Set As Default Outfit';
-        defaultOutfitButton.style.marginTop = '10px';
-        defaultOutfitButton.style.background = this.outfitManager.hasDefaultOutfit() ? 'rgba(255, 165, 0, 0.3)' : 'rgba(255, 215, 0, 0.3)';
-        defaultOutfitButton.addEventListener('click', async () => {
-            const message = await this.outfitManager.setDefaultOutfit();
-            if (message && extension_settings.outfit_tracker?.enableSysMessages) {
-                this.sendSystemMessage(message);
-            }
-            this.saveSettingsDebounced();
-            this.renderContent();
-        });
-        
-        container.appendChild(defaultOutfitButton);
+        // Show current default outfit if it exists
+        if (this.outfitManager.hasDefaultOutfit()) {
+            const defaultPresetElement = document.createElement('div');
+            defaultPresetElement.className = 'outfit-preset default-preset';
+            defaultPresetElement.innerHTML = `
+                <div class="preset-name">Default: Current Setup</div>
+                <div class="preset-actions">
+                    <button class="load-preset" data-preset="default">Wear</button>
+                    <button class="clear-default-preset" data-preset="default">×</button>
+                </div>
+            `;
+            
+            defaultPresetElement.querySelector('.load-preset').addEventListener('click', async () => {
+                const message = await this.outfitManager.loadDefaultOutfit();
+                if (message && extension_settings.outfit_tracker?.enableSysMessages) {
+                    this.sendSystemMessage(message);
+                }
+                this.saveSettingsDebounced();
+                this.renderContent();
+            });
+            
+            defaultPresetElement.querySelector('.clear-default-preset').addEventListener('click', () => {
+                if (confirm('Clear the default outfit?')) {
+                    // Delete the default preset
+                    delete extension_settings.outfit_tracker.presets.bot[this.outfitManager.character]['default'];
+                    
+                    // Cleanup character if no presets left
+                    if (Object.keys(extension_settings.outfit_tracker.presets.bot[this.outfitManager.character]).length === 0) {
+                        delete extension_settings.outfit_tracker.presets.bot[this.outfitManager.character];
+                    }
+                    
+                    const message = 'Default outfit cleared.';
+                    if (extension_settings.outfit_tracker?.enableSysMessages) {
+                        this.sendSystemMessage(message);
+                    }
+                    this.saveSettingsDebounced();
+                    this.renderContent();
+                }
+            });
+            
+            container.appendChild(defaultPresetElement);
+        }
     
         // Add save regular outfit button
         const saveButton = document.createElement('button');
@@ -182,7 +218,7 @@ export class BotOutfitPanel {
                 this.saveSettingsDebounced();
                 this.renderContent();
             } else if (presetName && presetName.toLowerCase() === 'default') {
-                alert('Please use the "Set As Default Outfit" button to set the default outfit.');
+                alert('Please save this outfit with a different name, then use the "Default" button on that outfit.');
             }
         });
         
