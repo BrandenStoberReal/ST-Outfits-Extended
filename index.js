@@ -1,6 +1,7 @@
 import { getContext, extension_settings } from "../../../extensions.js";
 import { saveSettingsDebounced } from "../../../../script.js";
-import { SlashCommandParser, SlashCommand, SlashCommandNamedArgument, SlashCommandArgument } from "../../../../script.js";
+import { SlashCommandParser, SlashCommand, SlashCommandArgument, SlashCommandNamedArgument } from "../../../../slash-commands.js";
+import { ARGUMENT_TYPE } from "../../../../utils.js";
 
 console.log("[OutfitTracker] Starting extension loading...");
 
@@ -71,19 +72,34 @@ async function initializeExtension() {
         // Register basic outfit commands using new SlashCommandParser format
         SlashCommandParser.addCommandObject(SlashCommand.fromProps({ 
             name: 'outfit-bot',
-            callback: () => {
+            callback: async function (args, value) {
                 console.log("Bot Outfit command triggered");
                 botPanel.toggle();
-                toastr.info('Toggled character outfit panel', 'Outfit System');
+                const isQuiet = args?.quiet === true;
+                if (!isQuiet) {
+                    toastr.info('Toggled character outfit panel', 'Outfit System');
+                }
                 return '';
             },
-            aliases: [],
             returns: 'toggles the character outfit panel',
-            namedArgumentList: [],
+            namedArgumentList: [
+                SlashCommandNamedArgument.fromProps({
+                    name: 'quiet',
+                    description: 'Suppress the toast message',
+                    typeList: [ARGUMENT_TYPE.BOOLEAN],
+                    defaultValue: 'false',
+                }),
+            ],
             unnamedArgumentList: [],
             helpString: `
                 <div>
                     Toggles the character outfit tracker panel.
+                </div>
+                <div>
+                    <strong>Options:</strong>
+                    <ul>
+                        <li><code>-quiet</code> - Suppress the toast message</li>
+                    </ul>
                 </div>
                 <div>
                     <strong>Example:</strong>
@@ -92,6 +108,10 @@ async function initializeExtension() {
                             <pre><code class="language-stscript">/outfit-bot</code></pre>
                             Toggles the character outfit panel
                         </li>
+                        <li>
+                            <pre><code class="language-stscript">/outfit-bot -quiet</code></pre>
+                            Toggles the character outfit panel without notification
+                        </li>
                     </ul>
                 </div>
             `,
@@ -99,19 +119,34 @@ async function initializeExtension() {
             
         SlashCommandParser.addCommandObject(SlashCommand.fromProps({ 
             name: 'outfit-user',
-            callback: () => {
+            callback: async function (args, value) {
                 console.log("User Outfit command triggered");
                 userPanel.toggle();
-                toastr.info('Toggled user outfit panel', 'Outfit System');
+                const isQuiet = args?.quiet === true;
+                if (!isQuiet) {
+                    toastr.info('Toggled user outfit panel', 'Outfit System');
+                }
                 return '';
             },
-            aliases: [],
             returns: 'toggles the user outfit panel',
-            namedArgumentList: [],
+            namedArgumentList: [
+                SlashCommandNamedArgument.fromProps({
+                    name: 'quiet',
+                    description: 'Suppress the toast message',
+                    typeList: [ARGUMENT_TYPE.BOOLEAN],
+                    defaultValue: 'false',
+                }),
+            ],
             unnamedArgumentList: [],
             helpString: `
                 <div>
                     Toggles the user outfit tracker panel.
+                </div>
+                <div>
+                    <strong>Options:</strong>
+                    <ul>
+                        <li><code>-quiet</code> - Suppress the toast message</li>
+                    </ul>
                 </div>
                 <div>
                     <strong>Example:</strong>
@@ -119,6 +154,10 @@ async function initializeExtension() {
                         <li>
                             <pre><code class="language-stscript">/outfit-user</code></pre>
                             Toggles the user outfit panel
+                        </li>
+                        <li>
+                            <pre><code class="language-stscript">/outfit-user -quiet</code></pre>
+                            Toggles the user outfit panel without notification
                         </li>
                     </ul>
                 </div>
@@ -129,30 +168,44 @@ async function initializeExtension() {
         if (AutoOutfitSystem.name !== 'DummyAutoOutfitSystem') {
             SlashCommandParser.addCommandObject(SlashCommand.fromProps({ 
                 name: 'outfit-auto',
-                callback: (namedArgs, unnamedArgs) => {
-                    const arg = unnamedArgs.toString().toLowerCase();
+                callback: async function (args, value) {
+                    const arg = value?.toString().toLowerCase() || '';
+                    const isQuiet = args?.quiet === true;
+                    
                     if (arg === 'on') {
                         const message = autoOutfitSystem.enable();
-                        toastr.info(message, 'Outfit System');
+                        if (!isQuiet) {
+                            toastr.info(message, 'Outfit System');
+                        }
                         return message;
                     } else if (arg === 'off') {
                         const message = autoOutfitSystem.disable();
-                        toastr.info(message, 'Outfit System');
+                        if (!isQuiet) {
+                            toastr.info(message, 'Outfit System');
+                        }
                         return message;
                     } else {
                         const status = autoOutfitSystem.getStatus();
                         const statusMessage = `Auto outfit: ${status.enabled ? 'ON' : 'OFF'}\nPrompt: ${status.hasPrompt ? 'SET' : 'NOT SET'}`;
-                        toastr.info(statusMessage);
+                        if (!isQuiet) {
+                            toastr.info(statusMessage);
+                        }
                         return statusMessage;
                     }
                 },
-                aliases: [],
                 returns: 'toggles auto outfit updates',
-                namedArgumentList: [],
+                namedArgumentList: [
+                    SlashCommandNamedArgument.fromProps({
+                        name: 'quiet',
+                        description: 'Suppress the toast message',
+                        typeList: [ARGUMENT_TYPE.BOOLEAN],
+                        defaultValue: 'false',
+                    }),
+                ],
                 unnamedArgumentList: [
                     SlashCommandArgument.fromProps({ 
                         description: 'whether to enable or disable auto outfit updates',
-                        typeList: ['STRING'],
+                        typeList: [ARGUMENT_TYPE.STRING],
                         isRequired: false,
                         enumList: ['on', 'off'],
                     }),
@@ -160,6 +213,12 @@ async function initializeExtension() {
                 helpString: `
                     <div>
                         Toggle auto outfit updates (on/off).
+                    </div>
+                    <div>
+                        <strong>Options:</strong>
+                        <ul>
+                            <li><code>-quiet</code> - Suppress the toast message</li>
+                        </ul>
                     </div>
                     <div>
                         <strong>Example:</strong>
@@ -176,6 +235,10 @@ async function initializeExtension() {
                                 <pre><code class="language-stscript">/outfit-auto</code></pre>
                                 Shows current status
                             </li>
+                            <li>
+                                <pre><code class="language-stscript">/outfit-auto on -quiet</code></pre>
+                                Enables auto outfit updates without notification
+                            </li>
                         </ul>
                     </div>
                 `,
@@ -183,8 +246,8 @@ async function initializeExtension() {
             
             SlashCommandParser.addCommandObject(SlashCommand.fromProps({ 
                 name: 'outfit-prompt',
-                callback: (namedArgs, unnamedArgs) => {
-                    const prompt = unnamedArgs.toString();
+                callback: async function (args, value) {
+                    const prompt = value?.toString() || '';
                     if (prompt) {
                         const message = autoOutfitSystem.setPrompt(prompt);
                         if (extension_settings.outfit_tracker?.enableSysMessages) {
@@ -197,13 +260,12 @@ async function initializeExtension() {
                         return `Current prompt length: ${length}`;
                     }
                 },
-                aliases: [],
                 returns: 'sets or shows the auto outfit system prompt',
                 namedArgumentList: [],
                 unnamedArgumentList: [
                     SlashCommandArgument.fromProps({ 
                         description: 'the new system prompt for auto outfit detection',
-                        typeList: ['STRING'],
+                        typeList: [ARGUMENT_TYPE.STRING],
                         isRequired: false,
                     }),
                 ],
@@ -229,7 +291,7 @@ async function initializeExtension() {
             
             SlashCommandParser.addCommandObject(SlashCommand.fromProps({ 
                 name: 'outfit-prompt-reset',
-                callback: () => {
+                callback: async function (args, value) {
                     const message = autoOutfitSystem.resetToDefaultPrompt();
                     if (extension_settings.outfit_tracker?.enableSysMessages) {
                         botPanel.sendSystemMessage(message);
@@ -240,7 +302,6 @@ async function initializeExtension() {
                     saveSettingsDebounced();
                     return message;
                 },
-                aliases: [],
                 returns: 'resets to default system prompt',
                 namedArgumentList: [],
                 unnamedArgumentList: [],
@@ -262,7 +323,7 @@ async function initializeExtension() {
             
             SlashCommandParser.addCommandObject(SlashCommand.fromProps({ 
                 name: 'outfit-prompt-view',
-                callback: () => {
+                callback: async function (args, value) {
                     const status = autoOutfitSystem.getStatus();
                     const preview = autoOutfitSystem.systemPrompt.length > 100 
                         ? autoOutfitSystem.systemPrompt.substring(0, 100) + '...' 
@@ -275,7 +336,6 @@ async function initializeExtension() {
                     });
                     return message;
                 },
-                aliases: [],
                 returns: 'shows current system prompt',
                 namedArgumentList: [],
                 unnamedArgumentList: [],
@@ -297,12 +357,11 @@ async function initializeExtension() {
             
             SlashCommandParser.addCommandObject(SlashCommand.fromProps({ 
                 name: 'outfit-auto-trigger',
-                callback: async (namedArgs, unnamedArgs) => {
+                callback: async function (args, value) {
                     const result = await autoOutfitSystem.manualTrigger();
                     toastr.info(result, 'Manual Outfit Check');
                     return result;
                 },
-                aliases: [],
                 returns: 'manually trigger auto outfit check',
                 namedArgumentList: [],
                 unnamedArgumentList: [],
@@ -326,12 +385,15 @@ async function initializeExtension() {
         // Register the switch-outfit command
         SlashCommandParser.addCommandObject(SlashCommand.fromProps({ 
             name: 'switch-outfit',
-            callback: async (namedArgs, unnamedArgs) => {
-                const outfitName = unnamedArgs.toString().trim();
+            callback: async function (args, value) {
+                const outfitName = value?.toString().trim() || '';
+                const isQuiet = args?.quiet === true;
                 
                 if (!outfitName) {
                     const warning = 'Please specify an outfit name. Usage: /switch-outfit <outfit-name>';
-                    toastr.warning(warning, 'Outfit System');
+                    if (!isQuiet) {
+                        toastr.warning(warning, 'Outfit System');
+                    }
                     return warning;
                 }
                 
@@ -364,27 +426,39 @@ async function initializeExtension() {
                     
                     if (message.includes('not found') && (userMessage && userMessage.includes('not found'))) {
                         const error = `Outfit "${outfitName}" not found for either character or user.`;
-                        toastr.error(error, 'Outfit System');
+                        if (!isQuiet) {
+                            toastr.error(error, 'Outfit System');
+                        }
                         return error;
                     } else {
                         const success = `Switched to "${outfitName}" outfit.`;
-                        toastr.info(success, 'Outfit System');
+                        if (!isQuiet) {
+                            toastr.info(success, 'Outfit System');
+                        }
                         return success;
                     }
                 } catch (error) {
                     console.error('Error switching outfit:', error);
                     const error_msg = `Error switching to "${outfitName}" outfit.`;
-                    toastr.error(error_msg, 'Outfit System');
+                    if (!isQuiet) {
+                        toastr.error(error_msg, 'Outfit System');
+                    }
                     return error_msg;
                 }
             },
-            aliases: [],
             returns: 'switches to a saved outfit by name',
-            namedArgumentList: [],
+            namedArgumentList: [
+                SlashCommandNamedArgument.fromProps({
+                    name: 'quiet',
+                    description: 'Suppress the toast message',
+                    typeList: [ARGUMENT_TYPE.BOOLEAN],
+                    defaultValue: 'false',
+                }),
+            ],
             unnamedArgumentList: [
                 SlashCommandArgument.fromProps({ 
                     description: 'the name of the outfit to switch to',
-                    typeList: ['STRING'],
+                    typeList: [ARGUMENT_TYPE.STRING],
                     isRequired: true,
                 }),
             ],
