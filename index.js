@@ -517,9 +517,14 @@ async function initializeExtension() {
         }
         
         const charName = character.name || 'Unknown';
-        console.log("[OutfitTracker] Updating character to: " + charName);
+        console.log("[OutfitTracker] Updating character to: " + charName + " (ID: " + context.characterId + ")");
         botManager.setCharacter(charName);
         botPanel.updateCharacter(charName);
+        
+        // Make sure the panel renders the content with the new character name
+        if (botPanel.isVisible && !botPanel.isMinimized) {
+            botPanel.renderContent();
+        }
     }
 
     // Format the outfit info according to the required format
@@ -591,19 +596,15 @@ async function initializeExtension() {
     }
 
     function setupEventListeners() {
+        // Get the context which should have eventSource
         const context = getContext();
         
-        // Check if context has the required properties before setting up event listeners
+        // Verify that context and eventSource are available
         if (!context || !context.eventSource || !context.event_types) {
             console.warn("[OutfitTracker] Context not fully available for event listeners yet, trying again later");
             // Set up a timeout to try again in a bit
             setTimeout(() => {
-                const retryContext = getContext();
-                if (retryContext && retryContext.eventSource && retryContext.event_types) {
-                    setupEventListeners();
-                } else {
-                    console.error("[OutfitTracker] Could not set up event listeners after retry");
-                }
+                setupEventListeners();
             }, 1000);
             return;
         }
@@ -618,9 +619,39 @@ async function initializeExtension() {
             updateForCurrentCharacter();
         });
         
-        eventSource.on(event_types.CHAT_ID_CHANGED, updateForCurrentCharacter); // Use the correct event name
-        eventSource.on(event_types.CHARACTER_CHANGED, updateForCurrentCharacter);
-        eventSource.on(event_types.CHARACTER_PAGE_LOADED, updateForCurrentCharacter); // Also listen for when a character is loaded
+        // Listen for chat-related events since outfit states are tied to chats
+        eventSource.on(event_types.CHAT_ID_CHANGED, () => {
+            console.log("[OutfitTracker] CHAT_ID_CHANGED event fired");
+            updateForCurrentCharacter();
+        });
+        eventSource.on(event_types.CHAT_CHANGED, () => {
+            console.log("[OutfitTracker] CHAT_CHANGED event fired");
+            updateForCurrentCharacter();
+        });
+        eventSource.on(event_types.CHAT_CREATED, async () => {
+            console.log("[OutfitTracker] CHAT_CREATED event fired - resetting to default outfits");
+            // When a new chat is created, reset outfits to default
+            try {
+                const botMessage = await botManager.loadDefaultOutfit();
+                if (botMessage && !botMessage.includes('No default outfit set')) {
+                    if (extension_settings.outfit_tracker?.enableSysMessages) {
+                        botPanel.sendSystemMessage(botMessage);
+                    }
+                    console.log("[OutfitTracker] Character reset to default outfit");
+                }
+
+                const userMessage = await userManager.loadDefaultOutfit();
+                if (userMessage && !userMessage.includes('No default outfit set')) {
+                    if (extension_settings.outfit_tracker?.enableSysMessages) {
+                        userPanel.sendSystemMessage(userMessage);
+                    }
+                    console.log("[OutfitTracker] User reset to default outfit");
+                }
+            } catch (error) {
+                console.error("[OutfitTracker] Error resetting to default outfit on chat creation:", error);
+            }
+            updateForCurrentCharacter(); // Update the character after resetting
+        });
         
         // Hook into the clear chat functionality by overriding the clearChat function
         // This will be called when the user clears the current chat
