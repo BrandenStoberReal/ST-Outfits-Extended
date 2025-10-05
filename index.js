@@ -539,17 +539,25 @@ async function initializeExtension() {
         const botOutfitData = botManager.getOutfitData([...CLOTHING_SLOTS, ...ACCESSORY_SLOTS]);
         const userOutfitData = userManager.getOutfitData([...CLOTHING_SLOTS, ...ACCESSORY_SLOTS]);
 
-        // Format the outfit info according to the required format
-        let outfitInfo = `\n**<BOT>'s Current Outfit**\n`;
+        let outfitInfo = '';
 
-        // Add clothing info
-        CLOTHING_SLOTS.forEach(slot => {
-            const slotData = botOutfitData.find(data => data.name === slot);
-            if (slotData) {
-                const formattedSlotName = slot.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.charAt(0).toUpperCase()).replace('underwear', 'Underwear');
-                outfitInfo += `**${formattedSlotName}:** {{getglobalvar::<BOT>_${slotData.name}}}\n`;
-            }
-        });
+        // Check if bot has any non-empty clothing items before adding the bot clothing section
+        const botHasClothing = botOutfitData.some(data => 
+            CLOTHING_SLOTS.includes(data.name) && data.value !== 'None' && data.value !== ''
+        );
+
+        if (botHasClothing) {
+            outfitInfo += `\n**<BOT>'s Current Outfit**\n`;
+
+            // Add clothing info
+            CLOTHING_SLOTS.forEach(slot => {
+                const slotData = botOutfitData.find(data => data.name === slot);
+                if (slotData) {
+                    const formattedSlotName = slot.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.charAt(0).toUpperCase()).replace('underwear', 'Underwear');
+                    outfitInfo += `**${formattedSlotName}:** {{getglobalvar::<BOT>_${slotData.name}}}\n`;
+                }
+            });
+        }
 
         // Check if bot has any non-empty accessories before adding the accessories section
         const botHasAccessories = botOutfitData.some(data => 
@@ -576,16 +584,23 @@ async function initializeExtension() {
             });
         }
 
-        outfitInfo += `\n**{{user}}'s Current Outfit**\n`;
+        // Check if user has any non-empty clothing items before adding the user clothing section
+        const userHasClothing = userOutfitData.some(data => 
+            CLOTHING_SLOTS.includes(data.name) && data.value !== 'None' && data.value !== ''
+        );
 
-        // Add user clothing info
-        CLOTHING_SLOTS.forEach(slot => {
-            const slotData = userOutfitData.find(data => data.name === slot);
-            if (slotData) {
-                const formattedSlotName = slot.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.charAt(0).toUpperCase()).replace('underwear', 'Underwear');
-                outfitInfo += `**${formattedSlotName}:** {{getglobalvar::User_${slotData.name}}}\n`;
-            }
-        });
+        if (userHasClothing) {
+            outfitInfo += `\n**{{user}}'s Current Outfit**\n`;
+
+            // Add user clothing info
+            CLOTHING_SLOTS.forEach(slot => {
+                const slotData = userOutfitData.find(data => data.name === slot);
+                if (slotData) {
+                    const formattedSlotName = slot.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.charAt(0).toUpperCase()).replace('underwear', 'Underwear');
+                    outfitInfo += `**${formattedSlotName}:** {{getglobalvar::User_${slotData.name}}}\n`;
+                }
+            });
+        }
 
         // Check if user has any non-empty accessories before adding the accessories section
         const userHasAccessories = userOutfitData.some(data => 
