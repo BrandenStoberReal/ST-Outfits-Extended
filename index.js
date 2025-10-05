@@ -500,8 +500,10 @@ async function initializeExtension() {
         const context = getContext();
         
         // Check if context is ready before trying to access character data
-        if (!context || !context.characters || context.characterId === undefined) {
-            console.log("[OutfitTracker] Context not ready, skipping character update");
+        if (!context || !context.characters || context.characterId === undefined || context.characterId === null) {
+            console.log("[OutfitTracker] Context not ready or no character selected, setting as Unknown");
+            botManager.setCharacter('Unknown');
+            botPanel.updateCharacter('Unknown');
             return;
         }
         
@@ -515,6 +517,7 @@ async function initializeExtension() {
         }
         
         const charName = character.name || 'Unknown';
+        console.log("[OutfitTracker] Updating character to: " + charName);
         botManager.setCharacter(charName);
         botPanel.updateCharacter(charName);
     }
@@ -589,6 +592,22 @@ async function initializeExtension() {
 
     function setupEventListeners() {
         const context = getContext();
+        
+        // Check if context has the required properties before setting up event listeners
+        if (!context || !context.eventSource || !context.event_types) {
+            console.warn("[OutfitTracker] Context not fully available for event listeners yet, trying again later");
+            // Set up a timeout to try again in a bit
+            setTimeout(() => {
+                const retryContext = getContext();
+                if (retryContext && retryContext.eventSource && retryContext.event_types) {
+                    setupEventListeners();
+                } else {
+                    console.error("[OutfitTracker] Could not set up event listeners after retry");
+                }
+            }, 1000);
+            return;
+        }
+        
         const { eventSource, event_types } = context;
         
         // Listen for app ready event to mark initialization
@@ -601,6 +620,7 @@ async function initializeExtension() {
         
         eventSource.on(event_types.CHAT_ID_CHANGED, updateForCurrentCharacter); // Use the correct event name
         eventSource.on(event_types.CHARACTER_CHANGED, updateForCurrentCharacter);
+        eventSource.on(event_types.CHARACTER_PAGE_LOADED, updateForCurrentCharacter); // Also listen for when a character is loaded
         
         // Hook into the clear chat functionality by overriding the clearChat function
         // This will be called when the user clears the current chat
