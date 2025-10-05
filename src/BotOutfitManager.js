@@ -127,12 +127,12 @@ export class BotOutfitManager {
 
     savePreset(presetName) {
         // Initialize presets if needed
-        if (!extension_settings.outfit_tracker.presets) {
-            extension_settings.outfit_tracker.presets = { bot: {}, user: {} };
+        if (!window.extension_settings.outfit_tracker.presets) {
+            window.extension_settings.outfit_tracker.presets = { bot: {}, user: {} };
         }
         
-        if (!extension_settings.outfit_tracker.presets.bot[this.character]) {
-            extension_settings.outfit_tracker.presets.bot[this.character] = {};
+        if (!window.extension_settings.outfit_tracker.presets.bot[this.character]) {
+            window.extension_settings.outfit_tracker.presets.bot[this.character] = {};
         }
         
         // Create preset data for all slots
@@ -142,20 +142,20 @@ export class BotOutfitManager {
         });
         
         // Save or update preset
-        extension_settings.outfit_tracker.presets.bot[this.character][presetName] = presetData;
+        window.extension_settings.outfit_tracker.presets.bot[this.character][presetName] = presetData;
         
-        if (extension_settings.outfit_tracker.enableSysMessages) {
+        if (window.extension_settings.outfit_tracker.enableSysMessages) {
             return `Saved "${presetName}" outfit for ${this.character}.`;
         }
         return '';
     }
     
     async loadPreset(presetName) {
-        if (!extension_settings.outfit_tracker.presets?.bot?.[this.character]?.[presetName]) {
+        if (!window.extension_settings.outfit_tracker.presets?.bot?.[this.character]?.[presetName]) {
             return `[Outfit System] Preset "${presetName}" not found.`;
         }
         
-        const preset = extension_settings.outfit_tracker.presets.bot[this.character][presetName];
+        const preset = window.extension_settings.outfit_tracker.presets.bot[this.character][presetName];
         let changed = false;
         
         for (const [slot, value] of Object.entries(preset)) {
@@ -174,38 +174,38 @@ export class BotOutfitManager {
     }
     
     deletePreset(presetName) {
-        if (!extension_settings.outfit_tracker.presets?.bot?.[this.character]?.[presetName]) {
+        if (!window.extension_settings.outfit_tracker.presets?.bot?.[this.character]?.[presetName]) {
             return `[Outfit System] Preset "${presetName}" not found.`;
         }
         
-        delete extension_settings.outfit_tracker.presets.bot[this.character][presetName];
+        delete window.extension_settings.outfit_tracker.presets.bot[this.character][presetName];
         
         // Cleanup character if no presets left
-        if (Object.keys(extension_settings.outfit_tracker.presets.bot[this.character]).length === 0) {
-            delete extension_settings.outfit_tracker.presets.bot[this.character];
+        if (Object.keys(window.extension_settings.outfit_tracker.presets.bot[this.character]).length === 0) {
+            delete window.extension_settings.outfit_tracker.presets.bot[this.character];
         }
         
-        if (extension_settings.outfit_tracker.enableSysMessages) {
+        if (window.extension_settings.outfit_tracker.enableSysMessages) {
             return `Deleted "${presetName}" outfit.`;
         }
         return '';
     }
     
     getPresets() {
-        if (!extension_settings.outfit_tracker.presets?.bot?.[this.character]) {
+        if (!window.extension_settings.outfit_tracker.presets?.bot?.[this.character]) {
             return [];
         }
-        return Object.keys(extension_settings.outfit_tracker.presets.bot[this.character]);
+        return Object.keys(window.extension_settings.outfit_tracker.presets.bot[this.character]);
     }
     
     setDefaultOutfit() {
         // Initialize presets if needed
-        if (!extension_settings.outfit_tracker.presets) {
-            extension_settings.outfit_tracker.presets = { bot: {}, user: {} };
+        if (!window.extension_settings.outfit_tracker.presets) {
+            window.extension_settings.outfit_tracker.presets = { bot: {}, user: {} };
         }
         
-        if (!extension_settings.outfit_tracker.presets.bot[this.character]) {
-            extension_settings.outfit_tracker.presets.bot[this.character] = {};
+        if (!window.extension_settings.outfit_tracker.presets.bot[this.character]) {
+            window.extension_settings.outfit_tracker.presets.bot[this.character] = {};
         }
         
         // Create preset data for all slots
@@ -215,9 +215,9 @@ export class BotOutfitManager {
         });
         
         // Save as default preset
-        extension_settings.outfit_tracker.presets.bot[this.character]['default'] = presetData;
+        window.extension_settings.outfit_tracker.presets.bot[this.character]['default'] = presetData;
         
-        if (extension_settings.outfit_tracker.enableSysMessages) {
+        if (window.extension_settings.outfit_tracker.enableSysMessages) {
             return `Set default outfit for ${this.character}.`;
         }
         return '';
@@ -225,37 +225,37 @@ export class BotOutfitManager {
     
     setPresetAsDefault(presetName) {
         // Initialize presets if needed
-        if (!extension_settings.outfit_tracker.presets) {
-            extension_settings.outfit_tracker.presets = { bot: {}, user: {} };
+        if (!window.extension_settings.outfit_tracker.presets) {
+            window.extension_settings.outfit_tracker.presets = { bot: {}, user: {} };
         }
         
-        if (!extension_settings.outfit_tracker.presets.bot[this.character]) {
-            extension_settings.outfit_tracker.presets.bot[this.character] = {};
+        if (!window.extension_settings.outfit_tracker.presets.bot[this.character]) {
+            window.extension_settings.outfit_tracker.presets.bot[this.character] = {};
         }
         
         // Check if the preset exists
-        if (!extension_settings.outfit_tracker.presets.bot[this.character][presetName]) {
+        if (!window.extension_settings.outfit_tracker.presets.bot[this.character][presetName]) {
             return `[Outfit System] Preset "${presetName}" not found.`;
         }
         
         // Get the preset data
-        const presetData = extension_settings.outfit_tracker.presets.bot[this.character][presetName];
+        const presetData = window.extension_settings.outfit_tracker.presets.bot[this.character][presetName];
         
         // Save as default preset
-        extension_settings.outfit_tracker.presets.bot[this.character]['default'] = presetData;
+        window.extension_settings.outfit_tracker.presets.bot[this.character]['default'] = presetData;
         
-        if (extension_settings.outfit_tracker.enableSysMessages) {
+        if (window.extension_settings.outfit_tracker.enableSysMessages) {
             return `Set "${presetName}" as default outfit for ${this.character}.`;
         }
         return '';
     }
     
     loadDefaultOutfit() {
-        if (!extension_settings.outfit_tracker.presets?.bot?.[this.character]?.['default']) {
+        if (!window.extension_settings.outfit_tracker.presets?.bot?.[this.character]?.['default']) {
             return `[Outfit System] No default outfit set for ${this.character}.`;
         }
         
-        const preset = extension_settings.outfit_tracker.presets.bot[this.character]['default'];
+        const preset = window.extension_settings.outfit_tracker.presets.bot[this.character]['default'];
         let changed = false;
         
         for (const [slot, value] of Object.entries(preset)) {
@@ -283,7 +283,7 @@ export class BotOutfitManager {
     }
     
     hasDefaultOutfit() {
-        return !!extension_settings.outfit_tracker.presets?.bot?.[this.character]?.['default'];
+        return !!window.extension_settings.outfit_tracker.presets?.bot?.[this.character]?.['default'];
     }
     
     // Identify which preset is the default by comparing data
@@ -292,8 +292,8 @@ export class BotOutfitManager {
             return null;
         }
         
-        const defaultPreset = extension_settings.outfit_tracker.presets.bot[this.character]['default'];
-        const presets = extension_settings.outfit_tracker.presets.bot[this.character];
+        const defaultPreset = window.extension_settings.outfit_tracker.presets.bot[this.character]['default'];
+        const presets = window.extension_settings.outfit_tracker.presets.bot[this.character];
         
         // Find which preset matches the default data
         for (const [presetName, presetData] of Object.entries(presets)) {

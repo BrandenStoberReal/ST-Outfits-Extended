@@ -1,5 +1,3 @@
-
-
 export class AutoOutfitSystem {
     constructor(outfitManager) {
         this.outfitManager = outfitManager;
@@ -57,7 +55,7 @@ Do NOT output JSON arrays or any other format.
 
 Available actions: wear, remove, change
 Available clothing slots: headwear, topwear, topunderwear, bottomwear, bottomunderwear, footwear, footunderwear
-Available accessory slots: head-accessory, ears_accessory, eyes-accessory, mouth-accessory, neck-accessory, body-accessory, arms-accessory, hands-accessory, waist-accessory, bottom-accessory, legs-accessory, foot-accessory
+Available accessory slots: head-accessory, ears-accessory, eyes-accessory, mouth-accessory, neck-accessory, body-accessory, arms-accessory, hands-accessory, waist-accessory, bottom-accessory, legs-accessory, foot-accessory
 
 Example commands:
 - outfit-system_wear_headwear("Red Baseball Cap")
@@ -273,44 +271,7 @@ Important: Always use the exact slot names listed above. Never invent new slot n
                 }
                 
                 // Replace the macro with the actual value
-                processedPrompt = processedPrompt.replace(new RegExp(fullMacro.replace(/[.*+?^${}()|[\]\\]/g, '\\    async executeGenCommand() {
-        const recentMessages = this.getLastMessages(3);
-        if (!recentMessages.trim()) {
-            throw new Error('No valid messages to process');
-        }
-
-        const { generateRaw } = window.getContext();
-        
-        const promptText = `${this.systemPrompt}\n\nRecent Messages:\n${recentMessages}\n\nOutput:`;
-        
-        console.log('[AutoOutfitSystem] Generating outfit commands with generateRaw...');
-        
-        try {
-            const result = await generateRaw({
-                prompt: promptText,
-                systemPrompt: "You are an outfit change detection system. Analyze the conversation and output outfit commands when clothing changes occur."
-            });
-
-            if (!result) {
-                throw new Error('No output generated from generation');
-            }
-            
-            console.log('[AutoOutfitSystem] Generated result:', result);
-            
-            const commands = this.parseGeneratedText(result);
-            
-            if (commands.length > 0) {
-                console.log(`[AutoOutfitSystem] Found ${commands.length} commands, processing...`);
-                await this.processCommandBatch(commands);
-            } else {
-                console.log('[AutoOutfitSystem] No outfit commands found in response');
-            }
-            
-        } catch (error) {
-            console.error('[AutoOutfitSystem] Generation failed:', error);
-            await this.tryFallbackGeneration(promptText);
-        }
-    }'), 'g'), value);
+                processedPrompt = processedPrompt.replace(new RegExp(fullMacro.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), value);
             }
         }
         
