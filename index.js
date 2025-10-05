@@ -949,8 +949,8 @@ async function initializeExtension() {
             // Get the current bot character name
             const context = getContext();
             let botCharacterName = 'Unknown';
-            // Extract the user's name from context
-            const userName = (context && context.user && context.user.name) ? context.user.name : 'User';
+            // Extract the user's name from global name1 variable which represents the current persona
+            const userName = typeof name1 !== 'undefined' ? name1 : 'User';
 
             if (context && context.characters && context.characterId !== undefined && context.characterId !== null) {
                 const character = context.characters[context.characterId];
