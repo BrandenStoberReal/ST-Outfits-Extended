@@ -1,10 +1,24 @@
+// Import modules from SillyTavern core - these are expected to be available when installed correctly
 import { getContext, extension_settings } from "../../../extensions.js";
 import { saveSettingsDebounced } from "../../../../script.js";
-import { SlashCommandParser, SlashCommand, SlashCommandNamedArgument, SlashCommandArgument } from "../../../../script.js";
+import { SlashCommandParser } from "../../../slash-commands/SlashCommandParser.js";
+import { SlashCommand } from "../../../slash-commands/SlashCommand.js";
+import { SlashCommandArgument, SlashCommandNamedArgument, ARGUMENT_TYPE } from "../../../slash-commands/SlashCommandArgument.js";
 
 console.log("[OutfitTracker] Starting extension loading...");
 
 async function initializeExtension() {
+    // Make sure these are available globally for child modules
+    // This allows dynamically imported modules to access them
+    window.getContext = getContext;
+    window.extension_settings = extension_settings;
+    window.saveSettingsDebounced = saveSettingsDebounced;
+    window.SlashCommandParser = SlashCommandParser;
+    window.SlashCommand = SlashCommand;
+    window.SlashCommandArgument = SlashCommandArgument;
+    window.SlashCommandNamedArgument = SlashCommandNamedArgument;
+    window.ARGUMENT_TYPE = ARGUMENT_TYPE;
+
     const MODULE_NAME = 'outfit_tracker';
     const CLOTHING_SLOTS = [
         'headwear',
@@ -71,19 +85,34 @@ async function initializeExtension() {
         // Register basic outfit commands using new SlashCommandParser format
         SlashCommandParser.addCommandObject(SlashCommand.fromProps({
             name: 'outfit-bot',
-            callback: () => {
+            callback: async function (args, value) {
                 console.log("Bot Outfit command triggered");
                 botPanel.toggle();
-                toastr.info('Toggled character outfit panel', 'Outfit System');
+                const isQuiet = args?.quiet === true;
+                if (!isQuiet) {
+                    toastr.info('Toggled character outfit panel', 'Outfit System');
+                }
                 return '';
             },
-            aliases: [],
             returns: 'toggles the character outfit panel',
-            namedArgumentList: [],
+            namedArgumentList: [
+                SlashCommandNamedArgument.fromProps({
+                    name: 'quiet',
+                    description: 'Suppress the toast message',
+                    typeList: [ARGUMENT_TYPE.BOOLEAN],
+                    defaultValue: 'false',
+                }),
+            ],
             unnamedArgumentList: [],
             helpString: `
                 <div>
                     Toggles the character outfit tracker panel.
+                </div>
+                <div>
+                    <strong>Options:</strong>
+                    <ul>
+                        <li><code>-quiet</code> - Suppress the toast message</li>
+                    </ul>
                 </div>
                 <div>
                     <strong>Example:</strong>
@@ -92,6 +121,10 @@ async function initializeExtension() {
                             <pre><code class="language-stscript">/outfit-bot</code></pre>
                             Toggles the character outfit panel
                         </li>
+                        <li>
+                            <pre><code class="language-stscript">/outfit-bot -quiet</code></pre>
+                            Toggles the character outfit panel without notification
+                        </li>
                     </ul>
                 </div>
             `,
@@ -99,19 +132,34 @@ async function initializeExtension() {
 
         SlashCommandParser.addCommandObject(SlashCommand.fromProps({
             name: 'outfit-user',
-            callback: () => {
+            callback: async function (args, value) {
                 console.log("User Outfit command triggered");
                 userPanel.toggle();
-                toastr.info('Toggled user outfit panel', 'Outfit System');
+                const isQuiet = args?.quiet === true;
+                if (!isQuiet) {
+                    toastr.info('Toggled user outfit panel', 'Outfit System');
+                }
                 return '';
             },
-            aliases: [],
             returns: 'toggles the user outfit panel',
-            namedArgumentList: [],
+            namedArgumentList: [
+                SlashCommandNamedArgument.fromProps({
+                    name: 'quiet',
+                    description: 'Suppress the toast message',
+                    typeList: [ARGUMENT_TYPE.BOOLEAN],
+                    defaultValue: 'false',
+                }),
+            ],
             unnamedArgumentList: [],
             helpString: `
                 <div>
                     Toggles the user outfit tracker panel.
+                </div>
+                <div>
+                    <strong>Options:</strong>
+                    <ul>
+                        <li><code>-quiet</code> - Suppress the toast message</li>
+                    </ul>
                 </div>
                 <div>
                     <strong>Example:</strong>
@@ -119,6 +167,10 @@ async function initializeExtension() {
                         <li>
                             <pre><code class="language-stscript">/outfit-user</code></pre>
                             Toggles the user outfit panel
+                        </li>
+                        <li>
+                            <pre><code class="language-stscript">/outfit-user -quiet</code></pre>
+                            Toggles the user outfit panel without notification
                         </li>
                     </ul>
                 </div>
@@ -129,30 +181,44 @@ async function initializeExtension() {
         if (AutoOutfitSystem.name !== 'DummyAutoOutfitSystem') {
             SlashCommandParser.addCommandObject(SlashCommand.fromProps({
                 name: 'outfit-auto',
-                callback: (namedArgs, unnamedArgs) => {
-                    const arg = unnamedArgs.toString().toLowerCase();
+                callback: async function (args, value) {
+                    const arg = value?.toString().toLowerCase() || '';
+                    const isQuiet = args?.quiet === true;
+
                     if (arg === 'on') {
                         const message = autoOutfitSystem.enable();
-                        toastr.info(message, 'Outfit System');
+                        if (!isQuiet) {
+                            toastr.info(message, 'Outfit System');
+                        }
                         return message;
                     } else if (arg === 'off') {
                         const message = autoOutfitSystem.disable();
-                        toastr.info(message, 'Outfit System');
+                        if (!isQuiet) {
+                            toastr.info(message, 'Outfit System');
+                        }
                         return message;
                     } else {
                         const status = autoOutfitSystem.getStatus();
                         const statusMessage = `Auto outfit: ${status.enabled ? 'ON' : 'OFF'}\nPrompt: ${status.hasPrompt ? 'SET' : 'NOT SET'}`;
-                        toastr.info(statusMessage);
+                        if (!isQuiet) {
+                            toastr.info(statusMessage);
+                        }
                         return statusMessage;
                     }
                 },
-                aliases: [],
                 returns: 'toggles auto outfit updates',
-                namedArgumentList: [],
+                namedArgumentList: [
+                    SlashCommandNamedArgument.fromProps({
+                        name: 'quiet',
+                        description: 'Suppress the toast message',
+                        typeList: [ARGUMENT_TYPE.BOOLEAN],
+                        defaultValue: 'false',
+                    }),
+                ],
                 unnamedArgumentList: [
                     SlashCommandArgument.fromProps({
                         description: 'whether to enable or disable auto outfit updates',
-                        typeList: ['STRING'],
+                        typeList: [ARGUMENT_TYPE.STRING],
                         isRequired: false,
                         enumList: ['on', 'off'],
                     }),
@@ -160,6 +226,12 @@ async function initializeExtension() {
                 helpString: `
                     <div>
                         Toggle auto outfit updates (on/off).
+                    </div>
+                    <div>
+                        <strong>Options:</strong>
+                        <ul>
+                            <li><code>-quiet</code> - Suppress the toast message</li>
+                        </ul>
                     </div>
                     <div>
                         <strong>Example:</strong>
@@ -176,6 +248,10 @@ async function initializeExtension() {
                                 <pre><code class="language-stscript">/outfit-auto</code></pre>
                                 Shows current status
                             </li>
+                            <li>
+                                <pre><code class="language-stscript">/outfit-auto on -quiet</code></pre>
+                                Enables auto outfit updates without notification
+                            </li>
                         </ul>
                     </div>
                 `,
@@ -183,8 +259,8 @@ async function initializeExtension() {
 
             SlashCommandParser.addCommandObject(SlashCommand.fromProps({
                 name: 'outfit-prompt',
-                callback: (namedArgs, unnamedArgs) => {
-                    const prompt = unnamedArgs.toString();
+                callback: async function (args, value) {
+                    const prompt = value?.toString() || '';
                     if (prompt) {
                         const message = autoOutfitSystem.setPrompt(prompt);
                         if (extension_settings.outfit_tracker?.enableSysMessages) {
@@ -197,13 +273,12 @@ async function initializeExtension() {
                         return `Current prompt length: ${length}`;
                     }
                 },
-                aliases: [],
                 returns: 'sets or shows the auto outfit system prompt',
                 namedArgumentList: [],
                 unnamedArgumentList: [
                     SlashCommandArgument.fromProps({
                         description: 'the new system prompt for auto outfit detection',
-                        typeList: ['STRING'],
+                        typeList: [ARGUMENT_TYPE.STRING],
                         isRequired: false,
                     }),
                 ],
@@ -229,7 +304,7 @@ async function initializeExtension() {
 
             SlashCommandParser.addCommandObject(SlashCommand.fromProps({
                 name: 'outfit-prompt-reset',
-                callback: () => {
+                callback: async function (args, value) {
                     const message = autoOutfitSystem.resetToDefaultPrompt();
                     if (extension_settings.outfit_tracker?.enableSysMessages) {
                         botPanel.sendSystemMessage(message);
@@ -240,7 +315,6 @@ async function initializeExtension() {
                     saveSettingsDebounced();
                     return message;
                 },
-                aliases: [],
                 returns: 'resets to default system prompt',
                 namedArgumentList: [],
                 unnamedArgumentList: [],
@@ -262,7 +336,7 @@ async function initializeExtension() {
 
             SlashCommandParser.addCommandObject(SlashCommand.fromProps({
                 name: 'outfit-prompt-view',
-                callback: () => {
+                callback: async function (args, value) {
                     const status = autoOutfitSystem.getStatus();
                     const preview = autoOutfitSystem.systemPrompt.length > 100
                         ? autoOutfitSystem.systemPrompt.substring(0, 100) + '...'
@@ -275,7 +349,6 @@ async function initializeExtension() {
                     });
                     return message;
                 },
-                aliases: [],
                 returns: 'shows current system prompt',
                 namedArgumentList: [],
                 unnamedArgumentList: [],
@@ -297,12 +370,11 @@ async function initializeExtension() {
 
             SlashCommandParser.addCommandObject(SlashCommand.fromProps({
                 name: 'outfit-auto-trigger',
-                callback: async (namedArgs, unnamedArgs) => {
+                callback: async function (args, value) {
                     const result = await autoOutfitSystem.manualTrigger();
                     toastr.info(result, 'Manual Outfit Check');
                     return result;
                 },
-                aliases: [],
                 returns: 'manually trigger auto outfit check',
                 namedArgumentList: [],
                 unnamedArgumentList: [],
@@ -326,12 +398,15 @@ async function initializeExtension() {
         // Register the switch-outfit command
         SlashCommandParser.addCommandObject(SlashCommand.fromProps({
             name: 'switch-outfit',
-            callback: async (namedArgs, unnamedArgs) => {
-                const outfitName = unnamedArgs.toString().trim();
+            callback: async function (args, value) {
+                const outfitName = value?.toString().trim() || '';
+                const isQuiet = args?.quiet === true;
 
                 if (!outfitName) {
                     const warning = 'Please specify an outfit name. Usage: /switch-outfit <outfit-name>';
-                    toastr.warning(warning, 'Outfit System');
+                    if (!isQuiet) {
+                        toastr.warning(warning, 'Outfit System');
+                    }
                     return warning;
                 }
 
@@ -364,27 +439,39 @@ async function initializeExtension() {
 
                     if (message.includes('not found') && (userMessage && userMessage.includes('not found'))) {
                         const error = `Outfit "${outfitName}" not found for either character or user.`;
-                        toastr.error(error, 'Outfit System');
+                        if (!isQuiet) {
+                            toastr.error(error, 'Outfit System');
+                        }
                         return error;
                     } else {
                         const success = `Switched to "${outfitName}" outfit.`;
-                        toastr.info(success, 'Outfit System');
+                        if (!isQuiet) {
+                            toastr.info(success, 'Outfit System');
+                        }
                         return success;
                     }
                 } catch (error) {
                     console.error('Error switching outfit:', error);
                     const error_msg = `Error switching to "${outfitName}" outfit.`;
-                    toastr.error(error_msg, 'Outfit System');
+                    if (!isQuiet) {
+                        toastr.error(error_msg, 'Outfit System');
+                    }
                     return error_msg;
                 }
             },
-            aliases: [],
             returns: 'switches to a saved outfit by name',
-            namedArgumentList: [],
+            namedArgumentList: [
+                SlashCommandNamedArgument.fromProps({
+                    name: 'quiet',
+                    description: 'Suppress the toast message',
+                    typeList: [ARGUMENT_TYPE.BOOLEAN],
+                    defaultValue: 'false',
+                }),
+            ],
             unnamedArgumentList: [
                 SlashCommandArgument.fromProps({
                     description: 'the name of the outfit to switch to',
-                    typeList: ['STRING'],
+                    typeList: [ARGUMENT_TYPE.STRING],
                     isRequired: true,
                 }),
             ],
@@ -411,9 +498,33 @@ async function initializeExtension() {
 
     function updateForCurrentCharacter() {
         const context = getContext();
-        const charName = context.characters[context.characterId]?.name || 'Unknown';
+
+        // Check if context is ready before trying to access character data
+        if (!context || !context.characters || context.characterId === undefined || context.characterId === null) {
+            console.log("[OutfitTracker] Context not ready or no character selected, setting as Unknown");
+            botManager.setCharacter('Unknown');
+            botPanel.updateCharacter('Unknown');
+            return;
+        }
+
+        // Make sure the character exists in the characters array
+        const character = context.characters[context.characterId];
+        if (!character) {
+            console.log("[OutfitTracker] Character not found at index " + context.characterId + ", setting as Unknown");
+            botManager.setCharacter('Unknown');
+            botPanel.updateCharacter('Unknown');
+            return;
+        }
+
+        const charName = character.name || 'Unknown';
+        console.log("[OutfitTracker] Updating character to: " + charName + " (ID: " + context.characterId + ")");
         botManager.setCharacter(charName);
         botPanel.updateCharacter(charName);
+
+        // Make sure the panel renders the content with the new character name
+        if (botPanel.isVisible && !botPanel.isMinimized) {
+            botPanel.renderContent();
+        }
     }
 
     // Format the outfit info according to the required format
@@ -484,18 +595,84 @@ async function initializeExtension() {
         return outfitInfo;
     }
 
+    // Helper function to initialize all outfit slots to "None" when no default exists
+    async function initializeOutfitSlotsToNone(outfitManager, outfitPanel) {
+        const allSlots = [...CLOTHING_SLOTS, ...ACCESSORY_SLOTS];
+
+        for (const slot of allSlots) {
+            // Check if the current value is not already "None" or empty
+            if (outfitManager.currentValues[slot] !== 'None' && outfitManager.currentValues[slot] !== '') {
+                // Set the slot to "None" using the manager's method
+                await outfitManager.setOutfitItem(slot, 'None');
+            }
+        }
+
+        console.log("[OutfitTracker] All outfit slots initialized to 'None'");
+    }
+
     function setupEventListeners() {
+        // Get the context which should have eventSource
         const context = getContext();
+
+        // Verify that context and eventSource are available
+        if (!context || !context.eventSource || !context.event_types) {
+            console.warn("[OutfitTracker] Context not fully available for event listeners yet, trying again later");
+            // Set up a timeout to try again in a bit
+            setTimeout(() => {
+                setupEventListeners();
+            }, 1000);
+            return;
+        }
+
         const { eventSource, event_types } = context;
 
         // Listen for app ready event to mark initialization
         eventSource.on(event_types.APP_READY, () => {
             console.log("[OutfitTracker] App ready, marking auto outfit system as initialized");
             autoOutfitSystem.markAppInitialized();
+            // Update the current character after app is ready to ensure context is properly initialized
+            updateForCurrentCharacter();
         });
 
-        eventSource.on(event_types.CHAT_ID_CHANGED, updateForCurrentCharacter); // Use the correct event name
-        eventSource.on(event_types.CHARACTER_CHANGED, updateForCurrentCharacter);
+        // Listen for chat-related events since outfit states are tied to chats
+        eventSource.on(event_types.CHAT_ID_CHANGED, () => {
+            console.log("[OutfitTracker] CHAT_ID_CHANGED event fired");
+            updateForCurrentCharacter();
+        });
+        eventSource.on(event_types.CHAT_CHANGED, () => {
+            console.log("[OutfitTracker] CHAT_CHANGED event fired");
+            updateForCurrentCharacter();
+        });
+        eventSource.on(event_types.CHAT_CREATED, async () => {
+            console.log("[OutfitTracker] CHAT_CREATED event fired - resetting to default outfits");
+            // When a new chat is created, reset outfits to default or initialize with None values
+            try {
+                const botMessage = await botManager.loadDefaultOutfit();
+                if (botMessage && !botMessage.includes('No default outfit set')) {
+                    if (extension_settings.outfit_tracker?.enableSysMessages) {
+                        botPanel.sendSystemMessage(botMessage);
+                    }
+                    console.log("[OutfitTracker] Character reset to default outfit");
+                } else {
+                    // If no default outfit exists, initialize all slots to "None"
+                    await initializeOutfitSlotsToNone(botManager, botPanel);
+                }
+
+                const userMessage = await userManager.loadDefaultOutfit();
+                if (userMessage && !userMessage.includes('No default outfit set')) {
+                    if (extension_settings.outfit_tracker?.enableSysMessages) {
+                        userPanel.sendSystemMessage(userMessage);
+                    }
+                    console.log("[OutfitTracker] User reset to default outfit");
+                } else {
+                    // If no default outfit exists, initialize all slots to "None"
+                    await initializeOutfitSlotsToNone(userManager, userPanel);
+                }
+            } catch (error) {
+                console.error("[OutfitTracker] Error resetting to default outfit on chat creation:", error);
+            }
+            updateForCurrentCharacter(); // Update the character after resetting
+        });
 
         // Hook into the clear chat functionality by overriding the clearChat function
         // This will be called when the user clears the current chat
@@ -527,6 +704,9 @@ async function initializeExtension() {
                             botPanel.sendSystemMessage(botMessage);
                         }
                         console.log("[OutfitTracker] Character reset to default outfit");
+                    } else {
+                        // If no default outfit exists, initialize all slots to "None"
+                        await initializeOutfitSlotsToNone(botManager, botPanel);
                     }
 
                     // Reset user outfit to default if available
@@ -536,6 +716,9 @@ async function initializeExtension() {
                             userPanel.sendSystemMessage(userMessage);
                         }
                         console.log("[OutfitTracker] User reset to default outfit");
+                    } else {
+                        // If no default outfit exists, initialize all slots to "None"
+                        await initializeOutfitSlotsToNone(userManager, userPanel);
                     }
                 } catch (error) {
                     console.error("[OutfitTracker] Error resetting to default outfit:", error);
@@ -563,6 +746,14 @@ async function initializeExtension() {
             };
         }
 
+        // Ensure variables.global exists for storing outfit data
+        if (!extension_settings.variables) {
+            extension_settings.variables = {};
+        }
+        if (!extension_settings.variables.global) {
+            extension_settings.variables.global = {};
+        }
+
         // Only initialize auto outfit system if it loaded successfully
         if (AutoOutfitSystem.name !== 'DummyAutoOutfitSystem') {
             if (extension_settings[MODULE_NAME].autoOutfitPrompt) {
@@ -581,6 +772,21 @@ async function initializeExtension() {
                 autoOutfitSystem.enable();
             }
         }
+    }
+
+    // Helper function to initialize all outfit slots to "None" when no default exists
+    async function initializeOutfitSlotsToNone(outfitManager, outfitPanel) {
+        const allSlots = [...CLOTHING_SLOTS, ...ACCESSORY_SLOTS];
+
+        for (const slot of allSlots) {
+            // Check if the current value is not already "None" or empty
+            if (outfitManager.currentValues[slot] !== 'None' && outfitManager.currentValues[slot] !== '') {
+                // Set the slot to "None" using the manager's method
+                await outfitManager.setOutfitItem(slot, 'None');
+            }
+        }
+
+        console.log("[OutfitTracker] All outfit slots initialized to 'None'");
     }
 
     function createSettingsUI() {
@@ -718,7 +924,6 @@ async function initializeExtension() {
     initSettings();
     registerOutfitCommands();
     setupEventListeners();
-    updateForCurrentCharacter();
     createSettingsUI();
 
     if (extension_settings[MODULE_NAME].autoOpenBot) {
@@ -729,7 +934,7 @@ async function initializeExtension() {
         setTimeout(() => userPanel.show(), 1000);
     }
 
-    // Function to replace outfit macros in text without using regex
+    // Define a function to replace outfit-related macros in text without using regex
     function replaceOutfitMacrosInText(text) {
         if (!text || typeof text !== 'string') {
             return text;
@@ -749,14 +954,82 @@ async function initializeExtension() {
                 }
             }
 
+            // Replace all <BOT> instances with the actual character name
+            processedText = replaceAll(processedText, '<BOT>', botCharacterName);
+
             // Normalize character name for variable access (replace spaces with underscores)
             const normalizedBotName = botCharacterName.replace(/\s+/g, '_');
 
-            // Replace all <BOT> instances with the actual character name
-            processedText = replaceAllWithoutRegex(processedText, '<BOT>', botCharacterName);
+            // Find all {{getglobalvar::...}} macros and replace them with actual values
+            let startIndex = 0;
+            while (startIndex < processedText.length) {
+                const macroStart = processedText.indexOf('{{getglobalvar::', startIndex);
+                if (macroStart === -1) {
+                    // No more macros found
+                    break;
+                }
 
-            // Process all macros in the text without using regex
-            processedText = processMacrosWithoutRegex(processedText, normalizedBotName);
+                const macroEnd = processedText.indexOf('}}', macroStart);
+                if (macroEnd === -1) {
+                    // No closing tag found, invalid macro format
+                    startIndex = macroStart + 1;
+                    continue;
+                }
+
+                // Extract the full macro including content
+                const fullMacro = processedText.substring(macroStart, macroEnd + 2);
+                const varNameWithBraces = processedText.substring(macroStart + 14, macroEnd); // 14 is length of "{{getglobalvar::"
+                const varName = varNameWithBraces.trim();
+
+                let value = 'None'; // Default value if not found
+
+                // Check if it's a character-specific variable (checking multiple possible formats)
+                if (varName.startsWith(`${botCharacterName}_`) || varName.startsWith(`${normalizedBotName}_`)) {
+                    // Extract slot name after the character name prefix
+                    let slot;
+                    if (varName.startsWith(`${botCharacterName}_`)) {
+                        slot = varName.substring(botCharacterName.length + 1);
+                    } else if (varName.startsWith(`${normalizedBotName}_`)) {
+                        slot = varName.substring(normalizedBotName.length + 1);
+                    }
+                    
+                    // Try to get the value using both formats to ensure compatibility
+                    const originalFormatVarName = `${botCharacterName}_${slot}`;
+                    const normalizedFormatVarName = `${normalizedBotName}_${slot}`;
+                    
+                    // Check both possible formats in global variables
+                    if (window.extension_settings.variables.global && 
+                        window.extension_settings.variables.global[originalFormatVarName] !== undefined) {
+                        value = window.extension_settings.variables.global[originalFormatVarName];
+                    } else if (window.extension_settings.variables.global && 
+                               window.extension_settings.variables.global[normalizedFormatVarName] !== undefined) {
+                        value = window.extension_settings.variables.global[normalizedFormatVarName];
+                    }
+                }
+                // Check if it's a user variable
+                else if (varName.startsWith('User_')) {
+                    try {
+                        if (window.extension_settings.variables.global && 
+                            window.extension_settings.variables.global[`${varName}`] !== undefined) {
+                            value = window.extension_settings.variables.global[`${varName}`];
+                        }
+                    } catch (error) {
+                        console.warn('Could not access user outfit manager for macro replacement:', error);
+                    }
+                }
+
+                // Replace the macro with the actual value
+                processedText = replaceAll(processedText, fullMacro, value);
+
+                // Update start index to continue searching after the replacement
+                // Only advance by the length of the macro if the replacement value is shorter
+                const newMacroStart = processedText.indexOf('{{getglobalvar::', startIndex);
+                if (newMacroStart === -1) {
+                    // No more macros found
+                    break;
+                }
+                startIndex = newMacroStart + 1;
+            }
         } catch (error) {
             console.error('Error replacing outfit macros in text:', error);
         }
@@ -764,81 +1037,23 @@ async function initializeExtension() {
         return processedText;
     }
 
-    // Helper function to replace all occurrences without using regex
-    function replaceAllWithoutRegex(str, searchStr, replacementStr) {
-        if (!searchStr) return str;
+    // Helper function to replace all occurrences of a substring without using regex
+    function replaceAll(str, searchValue, replaceValue) {
+        if (!searchValue) return str;
         
-        let result = '';
-        let startPos = 0;
-        let foundAt = str.indexOf(searchStr, startPos);
-
-        while (foundAt !== -1) {
-            result += str.substring(startPos, foundAt) + replacementStr;
-            startPos = foundAt + searchStr.length;
-            foundAt = str.indexOf(searchStr, startPos);
+        // Prevent infinite loops when the replacement value contains the search value
+        if (searchValue === replaceValue) return str;
+        
+        let result = str;
+        let index = result.indexOf(searchValue);
+        
+        while (index !== -1) {
+            result = result.substring(0, index) + replaceValue + result.substring(index + searchValue.length);
+            // Move past the replacement value to prevent infinite loops
+            index = result.indexOf(searchValue, index + replaceValue.length);
         }
         
-        result += str.substring(startPos);
         return result;
-    }
-
-    // Process outfit macros without using regex
-    function processMacrosWithoutRegex(text, normalizedBotName) {
-        let processedText = text;
-        const macroStart = '{{getglobalvar::';
-        const macroEnd = '}}';
-
-        let startPos = 0;
-        let macroStartPos = processedText.indexOf(macroStart, startPos);
-
-        while (macroStartPos !== -1) {
-            // Find the end of this macro
-            const macroValuePos = macroStartPos + macroStart.length;
-            const macroValueEndPos = processedText.indexOf(macroEnd, macroValuePos);
-
-            if (macroValueEndPos === -1) {
-                // No closing tag found, break to avoid infinite loop
-                break;
-            }
-
-            // Extract the variable name
-            const varName = processedText.substring(macroValuePos, macroValueEndPos);
-            
-            // Get the replacement value
-            let value = 'None'; // Default value if not found
-
-            // Check if it's a character-specific variable (either using actual character name or normalized)
-            if (varName.startsWith(normalizedBotName + '_')) {
-                // It's a character-specific variable
-                const slot = varName.substring(normalizedBotName.length + 1);
-                if (extension_settings.variables.global && extension_settings.variables.global[`${normalizedBotName}_${slot}`] !== undefined) {
-                    value = extension_settings.variables.global[`${normalizedBotName}_${slot}`];
-                }
-            }
-            // Check if it's a user variable
-            else if (varName.startsWith('User_')) {
-                try {
-                    const slot = varName.substring(5); // Remove 'User_' prefix
-                    if (extension_settings.variables.global && extension_settings.variables.global[`User_${slot}`] !== undefined) {
-                        value = extension_settings.variables.global[`User_${slot}`];
-                    }
-                } catch (error) {
-                    console.warn('Could not access user outfit manager for macro replacement:', error);
-                }
-            }
-
-            // Replace the macro with the actual value
-            const macroText = macroStart + varName + macroEnd;
-            processedText = replaceAllWithoutRegex(processedText, macroText, value);
-
-            // Update start position to continue looking for more macros
-            // Since we replaced a macro, we need to search again from the beginning to handle any new macros
-            // that might have been formed by the replacement
-            startPos = 0;
-            macroStartPos = processedText.indexOf(macroStart, startPos);
-        }
-
-        return processedText;
     }
 
     // Define the global interceptor function for outfit information injection
@@ -848,7 +1063,7 @@ async function initializeExtension() {
             const outfitInfo = getOutfitInfoString();
 
             if (outfitInfo && outfitInfo.trim()) {
-                // Replace macros in the outfit info before inserting
+                // Replace macros in the outfit info text
                 const processedOutfitInfo = replaceOutfitMacrosInText(outfitInfo);
 
                 // Create a system message containing the outfit information
@@ -900,7 +1115,7 @@ async function initializeExtension() {
         return chat;
     };
 
-    // Add the macro replacement function to global scope for external use
+    // Make the macro replacement function available globally
     globalThis.replaceOutfitMacrosInText = replaceOutfitMacrosInText;
 }
 

@@ -1,10 +1,12 @@
+import { replaceAll as replaceAllStr, extractCommands, extractMacros } from './StringProcessor.js';
+
 export class AutoOutfitSystem {
     constructor(outfitManager) {
         this.outfitManager = outfitManager;
         this.isEnabled = false;
         this.systemPrompt = this.getDefaultPrompt();
         this.connectionProfile = null; // Store connection profile for alternative LLM
-        this.commandPattern = /outfit-system_(\w+)_([\w-]+)\(([^)]*)\)/g;
+        // Removed regex commandPattern - now using extractCommands function
         this.isProcessing = false;
         this.consecutiveFailures = 0;
         this.maxConsecutiveFailures = 5;
@@ -225,54 +227,46 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         // Get current character name from the outfit manager
         const characterName = this.outfitManager.character || '<BOT>';
         // Normalize the character name to create the proper variable name format
-        const normalizedCharName = characterName.replace(/\s+/g, '_');
+        const normalizedCharName = characterName.replace(/\s+/g, '_'); // This one is ok to keep as it's just for normalization
         
         // Get available slots from the outfit manager
         const slots = this.outfitManager.slots || [];
 
         // Replace all <BOT> instances with the actual character name
-        let processedPrompt = prompt.replace(/<BOT>/g, characterName);
+        let processedPrompt = replaceAllStr(prompt, '<BOT>', characterName);
 
-        // Replace all {{getglobalvar::<BOT>_*}} macros with actual values
-        const macroRegex = /{{getglobalvar::[A-Za-z0-9_]+}}/g;
-        let match;
+        // Extract all macros from the prompt
+        const macros = extractMacros(processedPrompt);
         
-        while ((match = macroRegex.exec(processedPrompt)) !== null) {
-            const fullMacro = match[0];
+        // Process each macro and replace with actual values
+        for (const { fullMacro, varName } of macros) {
+            // Get the actual value from global variables
+            let value = 'None'; // Default value if not found
             
-            // Extract the variable name from the macro
-            const varNameMatch = fullMacro.match(/{{getglobalvar::([A-Za-z0-9_]+)}}/);
-            if (varNameMatch) {
-                const varName = varNameMatch[1];
-                
-                // Get the actual value from global variables
-                let value = 'None'; // Default value if not found
-                
-                // Check if it's a character-specific variable or user variable
-                if (varName.startsWith(`${normalizedCharName}_`)) {
-                    // It's a character-specific variable
-                    const slot = varName.substring(normalizedCharName.length + 1);
-                    if (slots.includes(slot) && this.outfitManager.currentValues[slot] !== undefined) {
-                        value = this.outfitManager.currentValues[slot];
-                    }
-                } else if (varName.startsWith('User_')) {
-                    // It's a user variable - we need to access the user outfit manager
-                    try {
-                        const userOutfitManager = window.userOutfitPanel?.outfitManager;
-                        if (userOutfitManager) {
-                            const slot = varName.substring(5); // Remove 'User_' prefix
-                            if (userOutfitManager.slots.includes(slot) && userOutfitManager.currentValues[slot] !== undefined) {
-                                value = userOutfitManager.currentValues[slot];
-                            }
-                        }
-                    } catch (error) {
-                        console.warn('Could not access user outfit manager for macro replacement:', error);
-                    }
+            // Check if it's a character-specific variable or user variable
+            if (varName.startsWith(`${normalizedCharName}_`)) {
+                // It's a character-specific variable
+                const slot = varName.substring(normalizedCharName.length + 1);
+                if (slots.includes(slot) && this.outfitManager.currentValues[slot] !== undefined) {
+                    value = this.outfitManager.currentValues[slot];
                 }
-                
-                // Replace the macro with the actual value
-                processedPrompt = processedPrompt.replace(new RegExp(fullMacro.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), value);
+            } else if (varName.startsWith('User_')) {
+                // It's a user variable - we need to access the user outfit manager
+                try {
+                    const userOutfitManager = window.userOutfitPanel?.outfitManager;
+                    if (userOutfitManager) {
+                        const slot = varName.substring(5); // Remove 'User_' prefix
+                        if (userOutfitManager.slots.includes(slot) && userOutfitManager.currentValues[slot] !== undefined) {
+                            value = userOutfitManager.currentValues[slot];
+                        }
+                    }
+                } catch (error) {
+                    console.warn('Could not access user outfit manager for macro replacement:', error);
+                }
             }
+            
+            // Replace the macro with the actual value
+            processedPrompt = replaceAllStr(processedPrompt, fullMacro, value);
         }
         
         return processedPrompt;
@@ -323,12 +317,8 @@ Important: Always use the exact slot names listed above. Never invent new slot n
     parseGeneratedText(text) {
         if (!text) return [];
         
-        const commands = [];
-        const matches = text.matchAll(/outfit-system_(\w+)_([\w-]+)\(([^)]*)\)/g);
-        
-        for (const match of matches) {
-            commands.push(match[0]);
-        }
+        // Use the non-regex function to extract commands
+        const commands = extractCommands(text);
         
         console.log(`[AutoOutfitSystem] Found ${commands.length} commands:`, commands);
         return commands;
@@ -392,12 +382,65 @@ Important: Always use the exact slot names listed above. Never invent new slot n
 
     async processSingleCommand(command) {
         try {
-            const match = command.match(/outfit-system_(\w+)_([\w-]+)\(([^)]*)\)/);
-            if (!match) {
+            // Non-regex approach to parse command
+            if (!command.startsWith('outfit-system_')) {
                 throw new Error(`Invalid command format: ${command}`);
             }
             
-            const [, action, slot, value] = match;
+            // Extract the action part
+            const actionStart = 'outfit-system_'.length;
+            const actionEnd = command.indexOf('_', actionStart);
+            if (actionEnd === -1) {
+                throw new Error(`Invalid command format: ${command}`);
+            }
+            
+            const action = command.substring(actionStart, actionEnd);
+            if (!['wear', 'remove', 'change'].includes(action)) {
+                throw new Error(`Invalid action: ${action}. Valid actions: wear, remove, change`);
+            }
+            
+            // Extract the slot part
+            const slotStart = actionEnd + 1;
+            const slotEnd = command.indexOf('(', slotStart);
+            if (slotEnd === -1) {
+                throw new Error(`Invalid command format: ${command}`);
+            }
+            
+            const slot = command.substring(slotStart, slotEnd);
+            
+            // Extract the value part
+            const valueStart = slotEnd + 1;
+            let value = '';
+            
+            if (command.charAt(valueStart) === '"') { // If value is quoted
+                const quoteStart = valueStart + 1;
+                let i = quoteStart;
+                let escaped = false;
+                
+                while (i < command.length - 1) {
+                    const char = command.charAt(i);
+                    
+                    if (escaped) {
+                        value += char;
+                        escaped = false;
+                    } else if (char === '\\') {
+                        escaped = true;
+                    } else if (char === '"') {
+                        break; // Found closing quote
+                    } else {
+                        value += char;
+                    }
+                    
+                    i++;
+                }
+            } else {
+                // Value is not quoted, extract until closing parenthesis
+                const closingParen = command.indexOf(')', valueStart);
+                if (closingParen !== -1) {
+                    value = command.substring(valueStart, closingParen);
+                }
+            }
+            
             const cleanValue = value.replace(/"/g, '').trim();
             
             console.log(`[AutoOutfitSystem] Processing: ${action} ${slot} "${cleanValue}"`);
@@ -615,5 +658,24 @@ Important: Always use the exact slot names listed above. Never invent new slot n
                 });
             }
         }
+    }
+
+    // Helper function to replace all occurrences of a substring without using regex
+    replaceAll(str, searchValue, replaceValue) {
+        if (!searchValue) return str;
+        
+        // Prevent infinite loops when the replacement value contains the search value
+        if (searchValue === replaceValue) return str;
+        
+        let result = str;
+        let index = result.indexOf(searchValue);
+        
+        while (index !== -1) {
+            result = result.substring(0, index) + replaceValue + result.substring(index + searchValue.length);
+            // Move past the replacement value to prevent infinite loops
+            index = result.indexOf(searchValue, index + replaceValue.length);
+        }
+        
+        return result;
     }
 }
