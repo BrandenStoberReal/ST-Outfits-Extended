@@ -982,20 +982,53 @@ async function initializeExtension() {
             const context = getContext();
             let botCharacterName = 'Unknown';
             
-            // Get the user's persona name using the SillyTavern personas system
+            // Get the user's persona name using the current chat personas
             let userName = 'User'; // Default fallback
             
-            // According to SillyTavern's implementation, use the personas mapping system
-            if (typeof power_user !== 'undefined' && power_user && power_user.personas && typeof user_avatar !== 'undefined' && user_avatar) {
-                // Get the name from the mapping of avatar to name
-                const personaName = power_user.personas[user_avatar];
+            // Get the current persona name from the active chat
+            if (context && context.chat) {
+                // Filter messages that are from the user to get their avatars
+                const userMessages = context.chat.filter(message => message.is_user);
                 
-                // If we found the persona in the mapping, use it; otherwise fall back to name1 or 'User'
-                userName = personaName || (typeof name1 !== 'undefined' ? name1 : 'User');
+                if (userMessages.length > 0) {
+                    // Get the most recent user message to determine current persona
+                    const mostRecentUserMessage = userMessages[userMessages.length - 1];
+                    
+                    // If the message has a force_avatar property (used for personas), extract the name
+                    if (mostRecentUserMessage.force_avatar) {
+                        // Extract the persona name from the avatar path
+                        const USER_AVATAR_PATH = 'useravatars/';
+                        if (typeof mostRecentUserMessage.force_avatar === 'string' && 
+                            mostRecentUserMessage.force_avatar.startsWith(USER_AVATAR_PATH)) {
+                            userName = mostRecentUserMessage.force_avatar.replace(USER_AVATAR_PATH, '');
+                            
+                            // Remove file extension if present
+                            const lastDotIndex = userName.lastIndexOf('.');
+                            if (lastDotIndex > 0) {
+                                userName = userName.substring(0, lastDotIndex);
+                            }
+                        }
+                    }
+                    // If force_avatar doesn't exist, try to get name from the message itself
+                    else if (mostRecentUserMessage.name) {
+                        userName = mostRecentUserMessage.name;
+                    }
+                }
             }
-            // Fallback to name1 if the above method doesn't work
-            else if (typeof name1 !== 'undefined' && name1) {
-                userName = name1;
+            
+            // Fallback: try the old power_user method if we still don't have a name
+            if (userName === 'User') {
+                if (typeof power_user !== 'undefined' && power_user && power_user.personas && typeof user_avatar !== 'undefined' && user_avatar) {
+                    // Get the name from the mapping of avatar to name
+                    const personaName = power_user.personas[user_avatar];
+                    
+                    // If we found the persona in the mapping, use it; otherwise fall back to name1 or 'User'
+                    userName = personaName || (typeof name1 !== 'undefined' ? name1 : 'User');
+                }
+                // Fallback to name1 if the above method doesn't work
+                else if (typeof name1 !== 'undefined' && name1) {
+                    userName = name1;
+                }
             }
 
             if (context && context.characters && context.characterId !== undefined && context.characterId !== null) {
