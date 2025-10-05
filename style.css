@@ -15,7 +15,8 @@
     flex-direction: column; /* Now we only have one display property */
     min-width: 250px;
     min-height: 200px;
-    max-height: 80vh; /* Keep the max-height to prevent going off-screen */
+    max-height: 90vh; /* Increase max-height to allow more space */
+    height: auto; /* Allow flexible height */
     overflow: hidden; /* Ensure content doesn't overflow the panel */
 }
 
