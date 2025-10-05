@@ -112,9 +112,54 @@ export class BotOutfitPanel {
         // Filter out the 'default' preset from the list of regular presets
         const regularPresets = presets.filter(preset => preset !== 'default');
         
-        if (regularPresets.length === 0) {
+        if (regularPresets.length === 0 && !this.outfitManager.hasDefaultOutfit()) {
             container.innerHTML = '<div>No saved outfits for this character.</div>';
         } else {
+            // First, render the default preset if it exists
+            if (this.outfitManager.hasDefaultOutfit()) {
+                const defaultPresetElement = document.createElement('div');
+                defaultPresetElement.className = 'outfit-preset default-preset';
+                defaultPresetElement.innerHTML = `
+                    <div class="preset-name">Default: Current Setup</div>
+                    <div class="preset-actions">
+                        <button class="load-preset" data-preset="default">Wear</button>
+                        <button class="set-default-preset" data-preset="default" style="display:none;">Default</button>
+                        <button class="clear-default-preset" data-preset="default">×</button>
+                    </div>
+                `;
+                
+                defaultPresetElement.querySelector('.load-preset').addEventListener('click', async () => {
+                    const message = await this.outfitManager.loadDefaultOutfit();
+                    if (message && extension_settings.outfit_tracker?.enableSysMessages) {
+                        this.sendSystemMessage(message);
+                    }
+                    this.saveSettingsDebounced();
+                    this.renderContent();
+                });
+                
+                defaultPresetElement.querySelector('.clear-default-preset').addEventListener('click', () => {
+                    if (confirm('Clear the default outfit?')) {
+                        // Delete the default preset
+                        delete extension_settings.outfit_tracker.presets.bot[this.outfitManager.character]['default'];
+                        
+                        // Cleanup character if no presets left
+                        if (Object.keys(extension_settings.outfit_tracker.presets.bot[this.outfitManager.character]).length === 0) {
+                            delete extension_settings.outfit_tracker.presets.bot[this.outfitManager.character];
+                        }
+                        
+                        const message = 'Default outfit cleared.';
+                        if (extension_settings.outfit_tracker?.enableSysMessages) {
+                            this.sendSystemMessage(message);
+                        }
+                        this.saveSettingsDebounced();
+                        this.renderContent();
+                    }
+                });
+                
+                container.appendChild(defaultPresetElement);
+            }
+            
+            // Then render all other presets
             regularPresets.forEach(preset => {
                 const presetElement = document.createElement('div');
                 presetElement.className = 'outfit-preset';
@@ -158,49 +203,6 @@ export class BotOutfitPanel {
                 
                 container.appendChild(presetElement);
             });
-        }
-        
-        // Show current default outfit if it exists
-        if (this.outfitManager.hasDefaultOutfit()) {
-            const defaultPresetElement = document.createElement('div');
-            defaultPresetElement.className = 'outfit-preset default-preset';
-            defaultPresetElement.innerHTML = `
-                <div class="preset-name">Default: Current Setup</div>
-                <div class="preset-actions">
-                    <button class="load-preset" data-preset="default">Wear</button>
-                    <button class="clear-default-preset" data-preset="default">×</button>
-                </div>
-            `;
-            
-            defaultPresetElement.querySelector('.load-preset').addEventListener('click', async () => {
-                const message = await this.outfitManager.loadDefaultOutfit();
-                if (message && extension_settings.outfit_tracker?.enableSysMessages) {
-                    this.sendSystemMessage(message);
-                }
-                this.saveSettingsDebounced();
-                this.renderContent();
-            });
-            
-            defaultPresetElement.querySelector('.clear-default-preset').addEventListener('click', () => {
-                if (confirm('Clear the default outfit?')) {
-                    // Delete the default preset
-                    delete extension_settings.outfit_tracker.presets.bot[this.outfitManager.character]['default'];
-                    
-                    // Cleanup character if no presets left
-                    if (Object.keys(extension_settings.outfit_tracker.presets.bot[this.outfitManager.character]).length === 0) {
-                        delete extension_settings.outfit_tracker.presets.bot[this.outfitManager.character];
-                    }
-                    
-                    const message = 'Default outfit cleared.';
-                    if (extension_settings.outfit_tracker?.enableSysMessages) {
-                        this.sendSystemMessage(message);
-                    }
-                    this.saveSettingsDebounced();
-                    this.renderContent();
-                }
-            });
-            
-            container.appendChild(defaultPresetElement);
         }
     
         // Add save regular outfit button
