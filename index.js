@@ -5,6 +5,9 @@ import { SlashCommandParser } from "../../../slash-commands/SlashCommandParser.j
 import { SlashCommand } from "../../../slash-commands/SlashCommand.js";
 import { SlashCommandArgument, SlashCommandNamedArgument, ARGUMENT_TYPE } from "../../../slash-commands/SlashCommandArgument.js";
 
+// Import the extractMacros and replaceAll functions from StringProcessor
+import { extractMacros, replaceAll } from "./src/StringProcessor.js";
+
 console.log("[OutfitTracker] Starting extension loading...");
 
 async function initializeExtension() {
@@ -960,27 +963,14 @@ async function initializeExtension() {
             // Normalize character name for variable access (replace spaces with underscores)
             const normalizedBotName = botCharacterName.replace(/\s+/g, '_');
 
-            // Find all {{getglobalvar::...}} macros and replace them with actual values
-            let startIndex = 0;
-            while (startIndex < processedText.length) {
-                const macroStart = processedText.indexOf('{{getglobalvar::', startIndex);
-                if (macroStart === -1) {
-                    // No more macros found
-                    break;
-                }
-
-                const macroEnd = processedText.indexOf('}}', macroStart);
-                if (macroEnd === -1) {
-                    // No closing tag found, invalid macro format
-                    startIndex = macroStart + 1;
-                    continue;
-                }
-
-                // Extract the full macro including content
-                const fullMacro = processedText.substring(macroStart, macroEnd + 2);
-                const varNameWithBraces = processedText.substring(macroStart + 14, macroEnd); // 14 is length of "{{getglobalvar::"
-                const varName = varNameWithBraces.trim();
-
+            // Extract all macros from the text using the same function as in AutoOutfitSystem
+            const macros = extractMacros(processedText);
+            
+            // Process each macro and replace with actual values in reverse order
+            // to prevent index shifting issues when replacing
+            for (let i = macros.length - 1; i >= 0; i--) {
+                const { fullMacro, varName } = macros[i];
+                
                 let value = 'None'; // Default value if not found
 
                 // Check if it's a character-specific variable (checking multiple possible formats)
@@ -1020,15 +1010,6 @@ async function initializeExtension() {
 
                 // Replace the macro with the actual value
                 processedText = replaceAll(processedText, fullMacro, value);
-
-                // Update start index to continue searching after the replacement
-                // Only advance by the length of the macro if the replacement value is shorter
-                const newMacroStart = processedText.indexOf('{{getglobalvar::', startIndex);
-                if (newMacroStart === -1) {
-                    // No more macros found
-                    break;
-                }
-                startIndex = newMacroStart + 1;
             }
         } catch (error) {
             console.error('Error replacing outfit macros in text:', error);
@@ -1038,23 +1019,7 @@ async function initializeExtension() {
     }
 
     // Helper function to replace all occurrences of a substring without using regex
-    function replaceAll(str, searchValue, replaceValue) {
-        if (!searchValue) return str;
-        
-        // Prevent infinite loops when the replacement value contains the search value
-        if (searchValue === replaceValue) return str;
-        
-        let result = str;
-        let index = result.indexOf(searchValue);
-        
-        while (index !== -1) {
-            result = result.substring(0, index) + replaceValue + result.substring(index + searchValue.length);
-            // Move past the replacement value to prevent infinite loops
-            index = result.indexOf(searchValue, index + replaceValue.length);
-        }
-        
-        return result;
-    }
+    // We'll import this from StringProcessor to ensure consistency
 
     // Define the global interceptor function for outfit information injection
     globalThis.outfitTrackerInterceptor = async function(chat, contextSize, abort, type) {

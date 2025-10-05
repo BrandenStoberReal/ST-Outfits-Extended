@@ -228,9 +228,6 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         const characterName = this.outfitManager.character || '<BOT>';
         // Normalize the character name to create the proper variable name format
         const normalizedCharName = characterName.replace(/\s+/g, '_'); // This one is ok to keep as it's just for normalization
-        
-        // Get available slots from the outfit manager
-        const slots = this.outfitManager.slots || [];
 
         // Replace all <BOT> instances with the actual character name
         let processedPrompt = replaceAllStr(prompt, '<BOT>', characterName);
@@ -240,28 +237,40 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         
         // Process each macro and replace with actual values
         for (const { fullMacro, varName } of macros) {
-            // Get the actual value from global variables
             let value = 'None'; // Default value if not found
-            
-            // Check if it's a character-specific variable or user variable
-            if (varName.startsWith(`${normalizedCharName}_`)) {
-                // It's a character-specific variable
-                const slot = varName.substring(normalizedCharName.length + 1);
-                if (slots.includes(slot) && this.outfitManager.currentValues[slot] !== undefined) {
-                    value = this.outfitManager.currentValues[slot];
+
+            // Check if it's a character-specific variable (checking multiple possible formats)
+            if (varName.startsWith(`${characterName}_`) || varName.startsWith(`${normalizedCharName}_`)) {
+                // Extract slot name after the character name prefix
+                let slot;
+                if (varName.startsWith(`${characterName}_`)) {
+                    slot = varName.substring(characterName.length + 1);
+                } else if (varName.startsWith(`${normalizedCharName}_`)) {
+                    slot = varName.substring(normalizedCharName.length + 1);
                 }
-            } else if (varName.startsWith('User_')) {
-                // It's a user variable - we need to access the user outfit manager
+                
+                // Try to get the value using both formats to ensure compatibility
+                const originalFormatVarName = `${characterName}_${slot}`;
+                const normalizedFormatVarName = `${normalizedCharName}_${slot}`;
+                
+                // Check both possible formats in global variables
+                if (window.extension_settings.variables.global && 
+                    window.extension_settings.variables.global[originalFormatVarName] !== undefined) {
+                    value = window.extension_settings.variables.global[originalFormatVarName];
+                } else if (window.extension_settings.variables.global && 
+                           window.extension_settings.variables.global[normalizedFormatVarName] !== undefined) {
+                    value = window.extension_settings.variables.global[normalizedFormatVarName];
+                }
+            }
+            // Check if it's a user variable
+            else if (varName.startsWith('User_')) {
                 try {
-                    const userOutfitManager = window.userOutfitPanel?.outfitManager;
-                    if (userOutfitManager) {
-                        const slot = varName.substring(5); // Remove 'User_' prefix
-                        if (userOutfitManager.slots.includes(slot) && userOutfitManager.currentValues[slot] !== undefined) {
-                            value = userOutfitManager.currentValues[slot];
-                        }
+                    if (window.extension_settings.variables.global && 
+                        window.extension_settings.variables.global[`${varName}`] !== undefined) {
+                        value = window.extension_settings.variables.global[`${varName}`];
                     }
                 } catch (error) {
-                    console.warn('Could not access user outfit manager for macro replacement:', error);
+                    console.warn('Could not access global variables for macro replacement:', error);
                 }
             }
             
@@ -660,22 +669,5 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         }
     }
 
-    // Helper function to replace all occurrences of a substring without using regex
-    replaceAll(str, searchValue, replaceValue) {
-        if (!searchValue) return str;
-        
-        // Prevent infinite loops when the replacement value contains the search value
-        if (searchValue === replaceValue) return str;
-        
-        let result = str;
-        let index = result.indexOf(searchValue);
-        
-        while (index !== -1) {
-            result = result.substring(0, index) + replaceValue + result.substring(index + searchValue.length);
-            // Move past the replacement value to prevent infinite loops
-            index = result.indexOf(searchValue, index + replaceValue.length);
-        }
-        
-        return result;
-    }
+
 }
