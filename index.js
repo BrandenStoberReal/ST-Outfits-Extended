@@ -500,7 +500,303 @@ async function initializeExtension() {
                 </div>
             `,
         }));
+
+        // Register the import-outfit command
+        SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+            name: 'import-outfit',
+            callback: async function (args, value) {
+                const isQuiet = args?.quiet === true;
+                
+                try {
+                    const result = await importOutfitFromCharacterCard();
+                    
+                    if (!isQuiet) {
+                        toastr.info(result.message, 'Outfit Import');
+                    }
+                    return result.message;
+                } catch (error) {
+                    console.error('Error importing outfit from character card:', error);
+                    const errorMessage = `Error importing outfit: ${error.message}`;
+                    if (!isQuiet) {
+                        toastr.error(errorMessage, 'Outfit Import');
+                    }
+                    return errorMessage;
+                }
+            },
+            returns: 'imports outfit from character card and updates character description',
+            namedArgumentList: [
+                SlashCommandNamedArgument.fromProps({
+                    name: 'quiet',
+                    description: 'Suppress the toast message',
+                    typeList: [ARGUMENT_TYPE.BOOLEAN],
+                    defaultValue: 'false',
+                }),
+            ],
+            unnamedArgumentList: [],
+            helpString: `
+                <div>
+                    Imports outfit information from the character card and updates both the outfit tracker and character description.
+                    This command will:
+                    1. Extract clothing items from character description, personality, scenario, and character notes
+                    2. Populate the outfit tracker with these items
+                    3. Remove clothing references from the character card
+                    4. Fix grammar/spelling outside quotes while preserving quoted text
+                </div>
+                <div>
+                    <strong>Options:</strong>
+                    <ul>
+                        <li><code>-quiet</code> - Suppress the toast message</li>
+                    </ul>
+                </div>
+                <div>
+                    <strong>Example:</strong>
+                    <ul>
+                        <li>
+                            <pre><code class="language-stscript">/import-outfit</code></pre>
+                            Imports outfit from character card
+                        </li>
+                        <li>
+                            <pre><code class="language-stscript">/import-outfit -quiet</code></pre>
+                            Imports outfit from character card without notification
+                        </li>
+                    </ul>
+                </div>
+            `,
+        }));
     }
+
+    // Function to import outfit from character card
+    async function importOutfitFromCharacterCard() {
+        const context = getContext();
+
+        if (!context || !context.characters || context.characterId === undefined || context.characterId === null) {
+            throw new Error("No character selected or context not ready");
+        }
+
+        const character = context.characters[context.characterId];
+        if (!character) {
+            throw new Error("Character not found");
+        }
+
+        // Get the character card data
+        const characterInfo = {
+            name: character.name || 'Unknown',
+            description: character.description || '',
+            personality: character.personality || '',
+            scenario: character.scenario || '',
+            firstMessage: character.first_message || '',
+            characterNotes: character.character_notes || '',
+        };
+
+        // Extract outfit information from character card
+        const outfitData = extractOutfitFromCharacterInfo(characterInfo);
+
+        // Apply outfit to the bot manager
+        for (const [slot, item] of Object.entries(outfitData)) {
+            if (item && item !== 'None') {
+                await botManager.setOutfitItem(slot, item);
+            }
+        }
+
+        // Use LLM to intelligently remove clothing references and fix grammar
+        const updatedCharacterInfo = await removeClothingReferencesWithLLM(characterInfo);
+
+        // Update the character card in the current context
+        character.description = updatedCharacterInfo.description;
+        character.personality = updatedCharacterInfo.personality;
+        character.scenario = updatedCharacterInfo.scenario;
+        character.character_notes = updatedCharacterInfo.characterNotes;
+
+        // Update the UI to reflect changes
+        if (typeof updateCharacterInChat === 'function') {
+            updateCharacterInChat();
+        }
+        
+        // Update the character in the characters array (if context allows)
+        context.characters[context.characterId] = character;
+
+        // Return success message
+        const itemsCount = Object.values(outfitData).filter(item => item && item !== 'None').length;
+        return {
+            message: `Successfully imported ${itemsCount} outfit items from character card and updated character description.`
+        };
+    }
+
+    // Function to use LLM for intelligent removal of clothing references
+    async function removeClothingReferencesWithLLM(characterInfo) {
+        try {
+            const prompt = `You are an assistant that helps clean up character descriptions for a role-playing application. Your task is to:
+
+1. Remove clothing and accessory descriptions from character information
+2. Fix spelling and grammar errors in the remaining text
+3. Preserve quoted speech and quoted actions exactly as they are (do not modify content within quotes)
+4. Keep all other character information intact
+5. Especially preserve examples of character speech and behavior (like "*She walked to the store*" or "She said: 'Hello there!'")
+
+Here is the character information:
+
+Name: ${characterInfo.name || 'Unknown'}
+Description: ${characterInfo.description}
+Personality: ${characterInfo.personality}
+Scenario: ${characterInfo.scenario}
+Character Notes: ${characterInfo.characterNotes}
+First Message: ${characterInfo.firstMessage}
+
+For each field, please return an improved version that:
+- Removes all clothing and accessory descriptions
+- Fixes spelling and grammar errors outside of quotes and speech examples
+- Preserves all quoted content exactly as written
+- Preserves examples of character speech and behavior exactly as written
+- Maintains the character's personality and other descriptive information
+
+Return your response in this exact JSON format:
+{
+  "description": "...",
+  "personality": "...",
+  "scenario": "...",
+  "characterNotes": "..."
+}
+
+Only return the JSON object with no additional text.`;
+
+            const context = getContext();
+            
+            // Use the generateRaw function to send the prompt to the LLM
+            const result = await context.generateRaw({
+                prompt: prompt,
+                systemPrompt: "You are an assistant that helps clean up character descriptions by removing clothing references while preserving other content and fixing grammar."
+            });
+
+            if (!result) {
+                console.warn("LLM did not return a valid response, returning original character info");
+                return characterInfo;
+            }
+            
+            // Try to parse the JSON response
+            let cleanedInfo;
+            try {
+                // Extract JSON from the response (in case it includes other text)
+                const jsonMatch = result.match(/\{[\s\S]*\}/);
+                if (jsonMatch) {
+                    cleanedInfo = JSON.parse(jsonMatch[0]);
+                } else {
+                    throw new Error("No valid JSON found in response");
+                }
+            } catch (parseError) {
+                console.warn("Could not parse LLM response as JSON, using original character info:", parseError);
+                return characterInfo;
+            }
+
+            // Return the cleaned character info, using original values if not provided
+            return {
+                name: characterInfo.name,
+                description: cleanedInfo.description || characterInfo.description,
+                personality: cleanedInfo.personality || characterInfo.personality,
+                scenario: cleanedInfo.scenario || characterInfo.scenario,
+                firstMessage: characterInfo.firstMessage, // Don't modify first message
+                characterNotes: cleanedInfo.characterNotes || characterInfo.characterNotes,
+            };
+        } catch (error) {
+            console.error("Error using LLM to clean character info:", error);
+            // If LLM processing fails, return the original character info
+            return characterInfo;
+        }
+    }
+
+    // Function to extract outfit information from character card
+    function extractOutfitFromCharacterInfo(characterInfo) {
+        const outfitData = {};
+        
+        // Define clothing keywords for different slots
+        const slotKeywords = {
+            headwear: [
+                'hat', 'cap', 'hood', 'beanie', 'beret', 'crown', 'tiara', 'visor', 'bonnet',
+                'headband', 'head dress', 'helmet', 'visor', 'head accessory', 'head piece'
+            ],
+            topwear: [
+                'shirt', 'blouse', 'top', 't-shirt', 'tank top', 'sweater', 'jacket', 'coat',
+                'hoodie', 'vest', 'bra', 'camisole', 'crop top', 'tunic', 'cardigan', 'blazer',
+                'sweater vest', 'overalls', 'jumpsuit', 'bodysuit', 'bralette'
+            ],
+            bottomwear: [
+                'pants', 'jeans', 'trousers', 'skirt', 'shorts', 'leggings', 'slacks', 'capris',
+                'culottes', 'palazzo', 'panties', 'briefs', 'boxers', 'bikini bottom', 'skorts'
+            ],
+            footwear: [
+                'shoes', 'sneakers', 'boots', 'sandals', 'heels', 'flats', 'loafers', 'slippers',
+                'oxfords', 'moccasins', 'stilettos', 'mary janes', 'wedges', 'clogs', 'ankle boots',
+                'knee high boots', 'heels', 'pumps', 'espadrilles', 'flip-flops', 'sneakers'
+            ],
+            'head-accessory': [
+                'hair bow', 'hair clip', 'hair pin', 'hair accessory', 'tiara', 'headpiece', 'hair tie',
+                'bandana', 'head scarf', 'kerchief', 'hair decoration', 'flower hair accessory'
+            ],
+            'neck-accessory': [
+                'necklace', 'collar', 'choker', 'pendant', 'scarf', 'tie', 'bow tie', 'ascot',
+                'chain', 'bandana', 'neck accessory', 'neck warmer', 'stole', 'cravat'
+            ],
+            'ears-accessory': [
+                'earrings', 'ear piercing', 'ear accessory', 'earrings', 'ear cuffs', 'ear climbers',
+                'ear pins', 'huggie earrings', 'dangle earrings', 'stud earrings', 'ear thread'
+            ]
+        };
+
+        // Combine all character info strings to search
+        const fullText = Object.values(characterInfo).join(' | ');
+
+        // Process each slot
+        for (const [slot, keywords] of Object.entries(slotKeywords)) {
+            // Look for items in the text
+            let foundItem = null;
+            
+            for (const keyword of keywords) {
+                const regex = new RegExp(`\\b(${keyword})[^\\s.,;!?]*\\s+([^\\s.,;!]*)`, 'gi');
+                let match;
+                
+                while ((match = regex.exec(fullText)) !== null) {
+                    const fullMatch = match[0].trim();
+                    // Extract the specific clothing item
+                    if (fullMatch) {
+                        foundItem = fullMatch;
+                        break;
+                    }
+                }
+                
+                if (foundItem) break;
+            }
+            
+            // If no specific item found but keyword is mentioned, set to generic form
+            if (!foundItem) {
+                for (const keyword of keywords) {
+                    if (new RegExp(`\\b${keyword}\\b`, 'gi').test(fullText)) {
+                        foundItem = keyword;
+                        break;
+                    }
+                }
+            }
+            
+            outfitData[slot] = foundItem || 'None';
+        }
+
+        // Add some special cases for more complex descriptions
+        const specialPatterns = [
+            { slot: 'topwear', pattern: /wears? a?n? ([^.,;!?]*?top|[^.,;!?]*?shirt|[^.,;!?]*?blouse)/i, extract: 1 },
+            { slot: 'bottomwear', pattern: /wears? a?n? ([^.,;!?]*?pants|[^.,;!?]*?skirt|[^.,;!?]*?shorts)/i, extract: 1 },
+            { slot: 'headwear', pattern: /wears? a?n? ([^.,;!?]*?hat|[^.,;!?]*?cap|[^.,;!?]*?hood)/i, extract: 1 },
+            { slot: 'footwear', pattern: /wears? a?n? ([^.,;!?]*?shoes|[^.,;!?]*?boots|[^.,;!?]*?sandals)/i, extract: 1 },
+        ];
+
+        for (const pattern of specialPatterns) {
+            const match = fullText.match(pattern.pattern);
+            if (match && match[pattern.extract]) {
+                outfitData[pattern.slot] = match[pattern.extract].trim();
+            }
+        }
+
+        return outfitData;
+    }
+
+
 
     function updateForCurrentCharacter() {
         const context = getContext();
