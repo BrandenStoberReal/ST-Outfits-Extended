@@ -2,7 +2,7 @@
 import { getContext, extension_settings } from "../../../extensions.js";
 import { saveSettingsDebounced } from "../../../../script.js";
 import { SlashCommandParser, SlashCommand, SlashCommandArgument, SlashCommandNamedArgument } from "../../../slash-commands.js";
-import { ARGUMENT_TYPE } from "../../../utils.js";
+import { ARGUMENT_TYPE } from "../../../slash-commands/SlashCommandArgument.js";
 
 console.log("[OutfitTracker] Starting extension loading...");
 
