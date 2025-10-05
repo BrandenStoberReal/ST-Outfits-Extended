@@ -595,6 +595,21 @@ async function initializeExtension() {
         return outfitInfo;
     }
 
+    // Helper function to initialize all outfit slots to "None" when no default exists
+    async function initializeOutfitSlotsToNone(outfitManager, outfitPanel) {
+        const allSlots = [...CLOTHING_SLOTS, ...ACCESSORY_SLOTS];
+        
+        for (const slot of allSlots) {
+            // Check if the current value is not already "None" or empty
+            if (outfitManager.currentValues[slot] !== 'None' && outfitManager.currentValues[slot] !== '') {
+                // Set the slot to "None" using the manager's method
+                await outfitManager.setOutfitItem(slot, 'None');
+            }
+        }
+        
+        console.log("[OutfitTracker] All outfit slots initialized to 'None'");
+    }
+
     function setupEventListeners() {
         // Get the context which should have eventSource
         const context = getContext();
@@ -630,7 +645,7 @@ async function initializeExtension() {
         });
         eventSource.on(event_types.CHAT_CREATED, async () => {
             console.log("[OutfitTracker] CHAT_CREATED event fired - resetting to default outfits");
-            // When a new chat is created, reset outfits to default
+            // When a new chat is created, reset outfits to default or initialize with None values
             try {
                 const botMessage = await botManager.loadDefaultOutfit();
                 if (botMessage && !botMessage.includes('No default outfit set')) {
@@ -638,6 +653,9 @@ async function initializeExtension() {
                         botPanel.sendSystemMessage(botMessage);
                     }
                     console.log("[OutfitTracker] Character reset to default outfit");
+                } else {
+                    // If no default outfit exists, initialize all slots to "None"
+                    await initializeOutfitSlotsToNone(botManager, botPanel);
                 }
 
                 const userMessage = await userManager.loadDefaultOutfit();
@@ -646,6 +664,9 @@ async function initializeExtension() {
                         userPanel.sendSystemMessage(userMessage);
                     }
                     console.log("[OutfitTracker] User reset to default outfit");
+                } else {
+                    // If no default outfit exists, initialize all slots to "None"
+                    await initializeOutfitSlotsToNone(userManager, userPanel);
                 }
             } catch (error) {
                 console.error("[OutfitTracker] Error resetting to default outfit on chat creation:", error);
@@ -683,6 +704,9 @@ async function initializeExtension() {
                             botPanel.sendSystemMessage(botMessage);
                         }
                         console.log("[OutfitTracker] Character reset to default outfit");
+                    } else {
+                        // If no default outfit exists, initialize all slots to "None"
+                        await initializeOutfitSlotsToNone(botManager, botPanel);
                     }
                     
                     // Reset user outfit to default if available
@@ -692,6 +716,9 @@ async function initializeExtension() {
                             userPanel.sendSystemMessage(userMessage);
                         }
                         console.log("[OutfitTracker] User reset to default outfit");
+                    } else {
+                        // If no default outfit exists, initialize all slots to "None"
+                        await initializeOutfitSlotsToNone(userManager, userPanel);
                     }
                 } catch (error) {
                     console.error("[OutfitTracker] Error resetting to default outfit:", error);
@@ -737,6 +764,21 @@ async function initializeExtension() {
                 autoOutfitSystem.enable();
             }
         }
+    }
+
+    // Helper function to initialize all outfit slots to "None" when no default exists
+    async function initializeOutfitSlotsToNone(outfitManager, outfitPanel) {
+        const allSlots = [...CLOTHING_SLOTS, ...ACCESSORY_SLOTS];
+        
+        for (const slot of allSlots) {
+            // Check if the current value is not already "None" or empty
+            if (outfitManager.currentValues[slot] !== 'None' && outfitManager.currentValues[slot] !== '') {
+                // Set the slot to "None" using the manager's method
+                await outfitManager.setOutfitItem(slot, 'None');
+            }
+        }
+        
+        console.log("[OutfitTracker] All outfit slots initialized to 'None'");
     }
 
     function createSettingsUI() {

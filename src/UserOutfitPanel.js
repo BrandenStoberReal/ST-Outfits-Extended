@@ -111,18 +111,21 @@ export class UserOutfitPanel {
         // Filter out the 'default' preset from the list of regular presets
         const regularPresets = presets.filter(preset => preset !== 'default');
         
+        // Get the name of the preset that is currently set as default
+        const defaultPresetName = this.outfitManager.getDefaultPresetName();
+        
         if (regularPresets.length === 0 && !this.outfitManager.hasDefaultOutfit()) {
             container.innerHTML = '<div>No saved outfits.</div>';
         } else {
-            // First, render the default preset if it exists
-            if (this.outfitManager.hasDefaultOutfit()) {
+            // Check if we have a default that doesn't match any saved preset (like 'default' preset)
+            if (defaultPresetName === 'default') {
+                // Create a special entry for the unmatched default
                 const defaultPresetElement = document.createElement('div');
                 defaultPresetElement.className = 'outfit-preset default-preset';
                 defaultPresetElement.innerHTML = `
                     <div class="preset-name">Default: Current Setup</div>
                     <div class="preset-actions">
                         <button class="load-preset" data-preset="default">Wear</button>
-                        <button class="set-default-preset" data-preset="default" style="display:none;">Default</button>
                         <button class="clear-default-preset" data-preset="default">×</button>
                     </div>
                 `;
@@ -151,52 +154,86 @@ export class UserOutfitPanel {
                 });
                 
                 container.appendChild(defaultPresetElement);
-            }
-            
-            // Then render all other presets
-            regularPresets.forEach(preset => {
-                const presetElement = document.createElement('div');
-                presetElement.className = 'outfit-preset';
-                presetElement.innerHTML = `
-                    <div class="preset-name">${preset}</div>
-                    <div class="preset-actions">
-                        <button class="load-preset" data-preset="${preset}">Wear</button>
-                        <button class="set-default-preset" data-preset="${preset}">Default</button>
-                        <button class="delete-preset" data-preset="${preset}">×</button>
-                    </div>
-                `;
-                
-                presetElement.querySelector('.load-preset').addEventListener('click', async () => {
-                    const message = await this.outfitManager.loadPreset(preset);
-                    if (message && extension_settings.outfit_tracker?.enableSysMessages) {
-                        this.sendSystemMessage(message);
-                    }
-                    this.saveSettingsDebounced();
-                    this.renderContent();
-                });
-                
-                presetElement.querySelector('.set-default-preset').addEventListener('click', async () => {
-                    const message = await this.outfitManager.setPresetAsDefault(preset);
-                    if (message && extension_settings.outfit_tracker?.enableSysMessages) {
-                        this.sendSystemMessage(message);
-                    }
-                    this.saveSettingsDebounced();
-                    this.renderContent();
-                });
-                
-                presetElement.querySelector('.delete-preset').addEventListener('click', () => {
-                    if (confirm(`Delete "${preset}" outfit?`)) {
-                        const message = this.outfitManager.deletePreset(preset);
+            } else {
+                // Render all presets, highlighting the default one
+                regularPresets.forEach(preset => {
+                    const isDefault = (defaultPresetName === preset);
+                    const presetElement = document.createElement('div');
+                    presetElement.className = `outfit-preset ${isDefault ? 'default-preset' : ''}`;
+                    presetElement.innerHTML = `
+                        <div class="preset-name">${preset}${isDefault ? '' : ''}</div>
+                        <div class="preset-actions">
+                            <button class="load-preset" data-preset="${preset}">Wear</button>
+                            <button class="set-default-preset" data-preset="${preset}" ${isDefault ? 'style="display:none;"' : ''}>Default</button>
+                            <button class="clear-default-preset" data-preset="${preset}" ${!isDefault ? 'style="display:none;"' : ''}>×</button>
+                            <button class="delete-preset" data-preset="${preset}">${isDefault ? '' : '×'}</button>
+                        </div>
+                    `;
+                    
+                    presetElement.querySelector('.load-preset').addEventListener('click', async () => {
+                        const message = await this.outfitManager.loadPreset(preset);
                         if (message && extension_settings.outfit_tracker?.enableSysMessages) {
                             this.sendSystemMessage(message);
                         }
                         this.saveSettingsDebounced();
                         this.renderContent();
-                    }
+                    });
+                    
+                    presetElement.querySelector('.set-default-preset').addEventListener('click', async () => {
+                        const message = await this.outfitManager.setPresetAsDefault(preset);
+                        if (message && extension_settings.outfit_tracker?.enableSysMessages) {
+                            this.sendSystemMessage(message);
+                        }
+                        this.saveSettingsDebounced();
+                        this.renderContent();
+                    });
+                    
+                    // Add event listener for clearing default
+                    presetElement.querySelector('.clear-default-preset').addEventListener('click', () => {
+                        if (confirm('Clear the default outfit?')) {
+                            // Delete the default preset
+                            delete extension_settings.outfit_tracker.presets.user['default'];
+                            
+                            const message = 'Default outfit cleared.';
+                            if (extension_settings.outfit_tracker?.enableSysMessages) {
+                                this.sendSystemMessage(message);
+                            }
+                            this.saveSettingsDebounced();
+                            this.renderContent();
+                        }
+                    });
+                    
+                    presetElement.querySelector('.delete-preset').addEventListener('click', () => {
+                        if (defaultPresetName !== preset) {
+                            // If it's not the default preset, just delete normally
+                            if (confirm(`Delete "${preset}" outfit?`)) {
+                                const message = this.outfitManager.deletePreset(preset);
+                                if (message && extension_settings.outfit_tracker?.enableSysMessages) {
+                                    this.sendSystemMessage(message);
+                                }
+                                this.saveSettingsDebounced();
+                                this.renderContent();
+                            }
+                        } else {
+                            // If trying to delete the default preset, warn user that it will also clear the default
+                            if (confirm(`Delete "${preset}"? This will also clear it as the default outfit.`)) {
+                                // Delete the preset
+                                const message = this.outfitManager.deletePreset(preset);
+                                // Also clear the default
+                                delete extension_settings.outfit_tracker.presets.user['default'];
+                                
+                                if (extension_settings.outfit_tracker?.enableSysMessages) {
+                                    this.sendSystemMessage(message + ' Default outfit cleared.');
+                                }
+                                this.saveSettingsDebounced();
+                                this.renderContent();
+                            }
+                        }
+                    });
+                    
+                    container.appendChild(presetElement);
                 });
-                
-                container.appendChild(presetElement);
-            });
+            }
         }
     
         // Add save regular outfit button
