@@ -32,10 +32,10 @@ export function resizeElement(element, options = {}) {
     // Default options
     const opts = {
         resizable: true,
-        minWidth: 200,
-        minHeight: 150,
-        maxWidth: 800,
-        maxHeight: 600,
+        minWidth: 250,
+        minHeight: 200,
+        maxWidth: 600,
+        maxHeight: 800,
         ...options
     };
 
@@ -55,8 +55,8 @@ export function resizeElement(element, options = {}) {
         
         startX = e.clientX;
         startY = e.clientY;
-        startWidth = parseInt(document.defaultView.getComputedStyle(element[0]).width, 10);
-        startHeight = parseInt(document.defaultView.getComputedStyle(element[0]).height, 10);
+        startWidth = parseInt(document.defaultView.getComputedStyle(element[0]).width, 10) || 300;
+        startHeight = parseInt(document.defaultView.getComputedStyle(element[0]).height, 10) || 200;
         
         document.onmousemove = doResize;
         document.onmouseup = stopResize;
@@ -74,8 +74,8 @@ export function resizeElement(element, options = {}) {
     }
 
     function stopResize() {
-        document.onmousemove = null;
         document.onmouseup = null;
+        document.onmousemove = null;
     }
 
     resizeHandle.addEventListener('mousedown', resizeMouseDown);

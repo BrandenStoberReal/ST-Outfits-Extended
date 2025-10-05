@@ -603,12 +603,14 @@ Only output command lines, nothing else.`;
         if (this.domElement) {
             dragElement($(this.domElement));
             // Initialize resizing with appropriate min/max dimensions
-            resizeElement($(this.domElement), {
-                minWidth: 250,
-                minHeight: 200,
-                maxWidth: 600,
-                maxHeight: 800
-            });
+            setTimeout(() => {
+                resizeElement($(this.domElement), {
+                    minWidth: 250,
+                    minHeight: 200,
+                    maxWidth: 600,
+                    maxHeight: 800
+                });
+            }, 10); // Small delay to ensure panel is rendered first
             
             this.domElement.querySelector('#bot-outfit-minimize')?.addEventListener('click', () => {
                 this.toggleMinimize();
