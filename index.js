@@ -1,8 +1,9 @@
 // Import modules from SillyTavern core - these are expected to be available when installed correctly
 import { getContext, extension_settings } from "../../../extensions.js";
 import { saveSettingsDebounced } from "../../../../script.js";
-import { SlashCommandParser, SlashCommand, SlashCommandArgument, SlashCommandNamedArgument } from "../../../slash-commands.js";
-import { ARGUMENT_TYPE } from "../../../slash-commands/SlashCommandArgument.js";
+import { SlashCommandParser } from "../../../slash-commands/SlashCommandParser.js";
+import { SlashCommand } from "../../../slash-commands/SlashCommand.js";
+import { SlashCommandArgument, SlashCommandNamedArgument, ARGUMENT_TYPE } from "../../../slash-commands/SlashCommandArgument.js";
 
 console.log("[OutfitTracker] Starting extension loading...");
 
