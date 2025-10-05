@@ -215,6 +215,8 @@ Important: Always use the exact slot names listed above. Never invent new slot n
                 await this.processCommandBatch(commands);
             } else {
                 console.log('[AutoOutfitSystem] No outfit commands found in response');
+                // Alert the user if the LLM couldn't parse any clothing data
+                this.showPopup('LLM could not parse any clothing data from the character.', 'warning');
             }
             
         } catch (error) {
