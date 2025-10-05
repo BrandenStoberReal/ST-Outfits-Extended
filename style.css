@@ -4,6 +4,8 @@
     top: 100px;
     right: 20px;
     width: 300px;
+    height: auto; /* Set flexible height */
+    max-height: 600px; /* Set a fixed max-height that's reasonable for most screens */
     border-radius: 10px;
     box-shadow: 0 4px 20px rgba(0,0,0,0.3);
     padding: 12px;
@@ -15,8 +17,6 @@
     flex-direction: column; /* Now we only have one display property */
     min-width: 250px;
     min-height: 200px;
-    max-height: 90vh; /* Increase max-height to allow more space */
-    height: auto; /* Allow flexible height */
     overflow: hidden; /* Ensure content doesn't overflow the panel */
 }
 
