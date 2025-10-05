@@ -981,6 +981,89 @@ async function initializeExtension() {
         // Return the original chat if no modifications were made
         return chat;
     };
+    
+    // Function to replace outfit macros in any given text
+    function replaceOutfitMacrosInText(text) {
+        if (!text || typeof text !== 'string') {
+            return text;
+        }
+        
+        let processedText = text;
+        
+        try {
+            // Get the current bot character name
+            const context = getContext();
+            let botCharacterName = 'Unknown';
+            
+            if (context && context.characters && context.characterId !== undefined && context.characterId !== null) {
+                const character = context.characters[context.characterId];
+                if (character && character.name) {
+                    botCharacterName = character.name;
+                }
+            }
+            
+            // Normalize character name for variable access (replace spaces with underscores)
+            const normalizedBotName = botCharacterName.replace(/\s+/g, '_');
+            
+            // Replace all <BOT> instances with the actual character name
+            processedText = processedText.replace(/<BOT>/g, botCharacterName);
+            
+            // Replace all {{getglobalvar::<BOT>_*}} and {{getglobalvar::<CharacterName>_*}} macros with actual values
+            const macroRegex = /{{getglobalvar::([A-Za-z0-9_]+)}}/g;
+            let match;
+            
+            while ((match = macroRegex.exec(processedText)) !== null) {
+                const fullMacro = match[0];
+                const varName = match[1];
+                
+                let value = 'None'; // Default value if not found
+                
+                // Check if it's a character-specific variable
+                if (varName.startsWith(`${normalizedBotName}_`)) {
+                    // It's a character-specific variable
+                    const slot = varName.substring(normalizedBotName.length + 1);
+                    if (botManager && botManager.currentValues && botManager.currentValues[slot] !== undefined) {
+                        value = botManager.currentValues[slot];
+                    }
+                } 
+                // Check if it's a user variable
+                else if (varName.startsWith('User_')) {
+                    try {
+                        if (userManager && userManager.currentValues) {
+                            const slot = varName.substring(5); // Remove 'User_' prefix
+                            if (userManager.currentValues[slot] !== undefined) {
+                                value = userManager.currentValues[slot];
+                            }
+                        }
+                    } catch (error) {
+                        console.warn('Could not access user outfit manager for macro replacement:', error);
+                    }
+                }
+                
+                // Replace the macro with the actual value
+                processedText = processedText.replace(new RegExp(fullMacro.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\        // Return the original chat if no modifications were made
+        return chat;
+    };
+}
+
+$(async () => {
+    try {
+        await initializeExtension();
+        console.log("[OutfitTracker] Extension loaded successfully");
+    } catch (error) {
+        console.error("[OutfitTracker] Initialization failed", error);
+    }
+});'), 'g'), value);
+            }
+        } catch (error) {
+            console.error('Error replacing outfit macros in text:', error);
+        }
+        
+        return processedText;
+    }
+    
+    // Also expose the macro replacement function globally so other parts of the system can use it
+    globalThis.replaceOutfitMacrosInText = replaceOutfitMacrosInText;
 }
 
 $(async () => {
