@@ -233,8 +233,22 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         let processedPrompt = replaceAllStr(prompt, '<BOT>', characterName);
         
         // Replace {{user}} with the current active persona name
-        // Access the global name1 variable which represents the current user persona
-        const userName = typeof window.name1 !== 'undefined' ? window.name1 : 'User';
+        // Get the current persona name from power_user.personas[user_avatar] - correct method per personas.js
+        let userName = 'User'; // Default fallback
+        
+        if (typeof window.power_user !== 'undefined' && window.power_user && window.power_user.personas && 
+            typeof window.user_avatar !== 'undefined' && window.user_avatar) {
+            // Get the name from the mapping of avatar to name
+            const personaName = window.power_user.personas[window.user_avatar];
+            
+            // If we found the persona in the mapping, use it; otherwise fall back to name1 or 'User'
+            userName = personaName || (typeof window.name1 !== 'undefined' ? window.name1 : 'User');
+        }
+        // Fallback to window.name1 if the above method doesn't work
+        else if (typeof window.name1 !== 'undefined' && window.name1) {
+            userName = window.name1;
+        }
+        
         processedPrompt = replaceAllStr(processedPrompt, '{{user}}', userName);
 
         // Extract all macros from the prompt

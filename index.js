@@ -8,6 +8,9 @@ import { SlashCommandArgument, SlashCommandNamedArgument, ARGUMENT_TYPE } from "
 // Import the extractMacros and replaceAll functions from StringProcessor
 import { extractMacros, replaceAll } from "./src/StringProcessor.js";
 
+// Define global variables that might not be imported directly
+// power_user and user_avatar are typically available globally in SillyTavern
+
 console.log("[OutfitTracker] Starting extension loading...");
 
 async function initializeExtension() {
@@ -548,23 +551,30 @@ async function initializeExtension() {
             }
         });
 
-        outfitInfo += `\n**<BOT>'s Current Accessories**\n`;
+        // Check if bot has any non-empty accessories before adding the accessories section
+        const botHasAccessories = botOutfitData.some(data => 
+            ACCESSORY_SLOTS.includes(data.name) && data.value !== 'None' && data.value !== ''
+        );
+        
+        if (botHasAccessories) {
+            outfitInfo += `\n**<BOT>'s Current Accessories**\n`;
 
-        // Add accessory info - only include those that are specifically defined (not "None" or empty)
-        ACCESSORY_SLOTS.forEach(slot => {
-            const slotData = botOutfitData.find(data => data.name === slot);
-            if (slotData && slotData.value !== 'None' && slotData.value !== '') {
-                // Fix the eyes accessory typo mentioned in the requirements
-                let formattedSlotName = slot.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.charAt(0).toUpperCase())
-                    .replace(/-/g, ' ')
-                    .replace('accessory', 'Accessory');
-                // Fix the typo: "Eyes Accessory" should come from "ears-accessory" according to the requirement example
-                if (slot === 'ears-accessory') {
-                    formattedSlotName = 'Eyes Accessory';
+            // Add accessory info - only include those that are specifically defined (not "None" or empty)
+            ACCESSORY_SLOTS.forEach(slot => {
+                const slotData = botOutfitData.find(data => data.name === slot);
+                if (slotData && slotData.value !== 'None' && slotData.value !== '') {
+                    // Fix the eyes accessory typo mentioned in the requirements
+                    let formattedSlotName = slot.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.charAt(0).toUpperCase())
+                        .replace(/-/g, ' ')
+                        .replace('accessory', 'Accessory');
+                    // Fix the typo: "Eyes Accessory" should come from "ears-accessory" according to the requirement example
+                    if (slot === 'ears-accessory') {
+                        formattedSlotName = 'Eyes Accessory';
+                    }
+                    outfitInfo += `**${formattedSlotName}:** {{getglobalvar::<BOT>_${slotData.name}}}\n`;
                 }
-                outfitInfo += `**${formattedSlotName}:** {{getglobalvar::<BOT>_${slotData.name}}}\n`;
-            }
-        });
+            });
+        }
 
         outfitInfo += `\n**{{user}}'s Current Outfit**\n`;
 
@@ -577,23 +587,30 @@ async function initializeExtension() {
             }
         });
 
-        outfitInfo += `\n**{{user}}'s Current Accessories**\n`;
+        // Check if user has any non-empty accessories before adding the accessories section
+        const userHasAccessories = userOutfitData.some(data => 
+            ACCESSORY_SLOTS.includes(data.name) && data.value !== 'None' && data.value !== ''
+        );
+        
+        if (userHasAccessories) {
+            outfitInfo += `\n**{{user}}'s Current Accessories**\n`;
 
-        // Add user accessory info - only include those that are specifically defined (not "None" or empty)
-        ACCESSORY_SLOTS.forEach(slot => {
-            const slotData = userOutfitData.find(data => data.name === slot);
-            if (slotData && slotData.value !== 'None' && slotData.value !== '') {
-                // Fix the eyes accessory typo mentioned in the requirements
-                let formattedSlotName = slot.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.charAt(0).toUpperCase())
-                    .replace(/-/g, ' ')
-                    .replace('accessory', 'Accessory');
-                // Fix the typo: "Eyes Accessory" should come from "ears-accessory" according to the requirement example
-                if (slot === 'ears-accessory') {
-                    formattedSlotName = 'Eyes Accessory';
+            // Add user accessory info - only include those that are specifically defined (not "None" or empty)
+            ACCESSORY_SLOTS.forEach(slot => {
+                const slotData = userOutfitData.find(data => data.name === slot);
+                if (slotData && slotData.value !== 'None' && slotData.value !== '') {
+                    // Fix the eyes accessory typo mentioned in the requirements
+                    let formattedSlotName = slot.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.charAt(0).toUpperCase())
+                        .replace(/-/g, ' ')
+                        .replace('accessory', 'Accessory');
+                    // Fix the typo: "Eyes Accessory" should come from "ears-accessory" according to the requirement example
+                    if (slot === 'ears-accessory') {
+                        formattedSlotName = 'Eyes Accessory';
+                    }
+                    outfitInfo += `**${formattedSlotName}:** {{getglobalvar::User_${slotData.name}}}\n`;
                 }
-                outfitInfo += `**${formattedSlotName}:** {{getglobalvar::User_${slotData.name}}}\n`;
-            }
-        });
+            });
+        }
 
         return outfitInfo;
     }
@@ -949,8 +966,22 @@ async function initializeExtension() {
             // Get the current bot character name
             const context = getContext();
             let botCharacterName = 'Unknown';
-            // Extract the user's name from global name1 variable which represents the current persona
-            const userName = typeof name1 !== 'undefined' ? name1 : 'User';
+            
+            // Get the user's persona name using the SillyTavern personas system
+            let userName = 'User'; // Default fallback
+            
+            // According to SillyTavern's implementation, use the personas mapping system
+            if (typeof power_user !== 'undefined' && power_user && power_user.personas && typeof user_avatar !== 'undefined' && user_avatar) {
+                // Get the name from the mapping of avatar to name
+                const personaName = power_user.personas[user_avatar];
+                
+                // If we found the persona in the mapping, use it; otherwise fall back to name1 or 'User'
+                userName = personaName || (typeof name1 !== 'undefined' ? name1 : 'User');
+            }
+            // Fallback to name1 if the above method doesn't work
+            else if (typeof name1 !== 'undefined' && name1) {
+                userName = name1;
+            }
 
             if (context && context.characters && context.characterId !== undefined && context.characterId !== null) {
                 const character = context.characters[context.characterId];
