@@ -1,4 +1,4 @@
-import { dragElement } from './shared.js';
+import { dragElement, resizeElement } from './shared.js';
 
 export class UserOutfitPanel {
     constructor(outfitManager, clothingSlots, accessorySlots, saveSettingsDebounced) {
@@ -316,6 +316,13 @@ export class UserOutfitPanel {
 
         if (this.domElement) {
             dragElement($(this.domElement));
+            // Initialize resizing with appropriate min/max dimensions
+            resizeElement($(this.domElement), {
+                minWidth: 250,
+                minHeight: 200,
+                maxWidth: 600,
+                maxHeight: 800
+            });
             
             this.domElement.querySelector('#user-outfit-minimize')?.addEventListener('click', () => {
                 this.toggleMinimize();

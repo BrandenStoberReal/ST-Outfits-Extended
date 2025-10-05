@@ -1,4 +1,4 @@
-import { dragElement } from './shared.js';
+import { dragElement, resizeElement } from './shared.js';
 import { extractCommands } from './StringProcessor.js';
 
 export class BotOutfitPanel {
@@ -602,6 +602,13 @@ Only output command lines, nothing else.`;
 
         if (this.domElement) {
             dragElement($(this.domElement));
+            // Initialize resizing with appropriate min/max dimensions
+            resizeElement($(this.domElement), {
+                minWidth: 250,
+                minHeight: 200,
+                maxWidth: 600,
+                maxHeight: 800
+            });
             
             this.domElement.querySelector('#bot-outfit-minimize')?.addEventListener('click', () => {
                 this.toggleMinimize();

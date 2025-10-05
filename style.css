@@ -14,6 +14,21 @@
     font-size: 0.9em;
     max-height: 80vh; /* Constrain height */
     flex-direction: column; /* Now we only have one display property */
+    overflow: hidden; /* Ensure content doesn't overflow the panel */
+    min-height: 150px; /* Minimum height to ensure usability */
+}
+
+/* Needed for proper positioning of resize handle */
+#bot-outfit-panel,
+#user-outfit-panel {
+    position: relative !important;
+}
+
+/* Minimum dimensions for the panels */
+#bot-outfit-panel,
+#user-outfit-panel {
+    min-width: 250px;
+    min-height: 200px;
 }
 
 #bot-outfit-panel {
@@ -333,6 +348,28 @@
 /* Ensure proper spacing in header */
 .outfit-actions span {
     margin: 0 2px;
+}
+
+/* Resize handle styling */
+.resize-handle {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 16px;
+    height: 16px;
+    background: rgba(255, 255, 255, 0.2);
+    cursor: nw-resize; /* Resize from bottom-right corner */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 8px;
+    color: rgba(255, 255, 255, 0.7);
+    border-radius: 0 0 8px 0;
+    user-select: none;
+}
+
+.resize-handle:hover {
+    background: rgba(255, 255, 255, 0.3);
 }
 
 /* Better scrollbar for outfits */
