@@ -1,7 +1,6 @@
 import { getContext, extension_settings } from "../../../extensions.js";
 import { saveSettingsDebounced } from "../../../../script.js";
 import { SlashCommandParser, SlashCommand, SlashCommandNamedArgument, SlashCommandArgument } from "../../../../script.js";
-import { ARGUMENT_TYPE } from "../../../../script.js";
 
 console.log("[OutfitTracker] Starting extension loading...");
 
@@ -153,7 +152,7 @@ async function initializeExtension() {
                 unnamedArgumentList: [
                     SlashCommandArgument.fromProps({ 
                         description: 'whether to enable or disable auto outfit updates',
-                        typeList: [ARGUMENT_TYPE.STRING],
+                        typeList: ['STRING'],
                         isRequired: false,
                         enumList: ['on', 'off'],
                     }),
@@ -204,7 +203,7 @@ async function initializeExtension() {
                 unnamedArgumentList: [
                     SlashCommandArgument.fromProps({ 
                         description: 'the new system prompt for auto outfit detection',
-                        typeList: [ARGUMENT_TYPE.STRING],
+                        typeList: ['STRING'],
                         isRequired: false,
                     }),
                 ],
@@ -385,7 +384,7 @@ async function initializeExtension() {
             unnamedArgumentList: [
                 SlashCommandArgument.fromProps({ 
                     description: 'the name of the outfit to switch to',
-                    typeList: [ARGUMENT_TYPE.STRING],
+                    typeList: ['STRING'],
                     isRequired: true,
                 }),
             ],
