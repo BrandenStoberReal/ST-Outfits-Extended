@@ -12,10 +12,10 @@
     color: #ffffff;
     user-select: none;
     font-size: 0.9em;
-    max-height: 80vh; /* Constrain height */
     flex-direction: column; /* Now we only have one display property */
     min-width: 250px;
     min-height: 200px;
+    max-height: 80vh; /* Keep the max-height to prevent going off-screen */
     overflow: hidden; /* Ensure content doesn't overflow the panel */
 }
 
@@ -90,13 +90,15 @@
     overflow-y: auto; /* ACTIVE scrollbar */
     padding-right: 4px;
     min-height: 0;
+    height: auto; /* Allow height to adjust when panel resizes */
 }
 
 /* Slots Styling */
 .outfit-slots {
-    display: grid;
-    grid-template-columns: 1fr;
+    display: flex;
+    flex-direction: column;
     gap: 8px;
+    width: 100%;
 }
 
 .outfit-slot {
@@ -317,7 +319,8 @@
     overflow-y: auto;
     padding-right: 4px;
     min-height: 0;
-    max-height: 300px; /* Limit height for scroll */
+    max-height: none; /* Remove fixed height limit to allow resizing */
+    height: auto; /* Allow height to adjust when panel resizes */
 }
 
 /* Outfits list styling */
