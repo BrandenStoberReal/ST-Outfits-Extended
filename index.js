@@ -550,10 +550,10 @@ async function initializeExtension() {
 
         outfitInfo += `\n**<BOT>'s Current Accessories**\n`;
 
-        // Add accessory info - fix the typo in the original format from the requirement
+        // Add accessory info - only include those that are specifically defined (not "None" or empty)
         ACCESSORY_SLOTS.forEach(slot => {
             const slotData = botOutfitData.find(data => data.name === slot);
-            if (slotData) {
+            if (slotData && slotData.value !== 'None' && slotData.value !== '') {
                 // Fix the eyes accessory typo mentioned in the requirements
                 let formattedSlotName = slot.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.charAt(0).toUpperCase())
                     .replace(/-/g, ' ')
@@ -579,10 +579,10 @@ async function initializeExtension() {
 
         outfitInfo += `\n**{{user}}'s Current Accessories**\n`;
 
-        // Add user accessory info - fix the typo in the original format from the requirement
+        // Add user accessory info - only include those that are specifically defined (not "None" or empty)
         ACCESSORY_SLOTS.forEach(slot => {
             const slotData = userOutfitData.find(data => data.name === slot);
-            if (slotData) {
+            if (slotData && slotData.value !== 'None' && slotData.value !== '') {
                 // Fix the eyes accessory typo mentioned in the requirements
                 let formattedSlotName = slot.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.charAt(0).toUpperCase())
                     .replace(/-/g, ' ')
