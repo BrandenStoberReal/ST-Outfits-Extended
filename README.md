@@ -12,7 +12,7 @@ Open *Extensions*
 
 Click *Install Extension*
 
-Write `https://github.com/lannashelton/ST-Outfits/` into the git url text field
+Write `https://github.com/BrandenStoberReal/ST-Outfits-Extended` into the git url text field
 
 ### Usage
 
@@ -101,50 +101,6 @@ Most commands support the `-quiet` argument to suppress notifications:
 - legs-accessory
 - foot-accessory
 
-### Adding Outfit Information to Prompts
-
-Add a prompt like this into your Character Description or Author's Notes or World Info Entry (depending on how you prefer to prompt AI) to let AI see the current outfit. (*Personally I prefer to add this as Character Notes as System Role and Depth 1. If you inject this at top of the context, each time you change your outfit, AI will have to process whole context. If you are using Api models, you don't have to worry about it, but if you are using local models, you may want to use this trick to keep context cache intact.*)
-
-```
-**<BOT>'s Current Outfit**
-**Headwear:** {{getglobalvar::<BOT>_headwear}}
-**Topwear:** {{getglobalvar::<BOT>_topwear}}
-**Top Underwear:** {{getglobalvar::<BOT>_topunderwear}}
-**Bottomwear:** {{getglobalvar::<BOT>_bottomwear}}
-**Bottom Underwear:** {{getglobalvar::<BOT>_bottomunderwear}}
-**Footwear:** {{getglobalvar::<BOT>_footwear}}
-**Foot Underwear:** {{getglobalvar::<BOT>_footunderwear}}
-
-**{{user}}'s Current Outfit**
-**Headwear:** {{getglobalvar::User_headwear}}
-**Topwear:** {{getglobalvar::User_topwear}}
-**Top Underwear:** {{getglobalvar::User_topunderwear}}
-**Bottomwear:** {{getglobalvar::User_bottomwear}}
-**Bottom Underwear:** {{getglobalvar::User_bottomunderwear}}
-**Footwear:** {{getglobalvar::User_footwear}}
-**Foot Underwear:** {{getglobalvar::User_footunderwear}}
-```
-
-*Note: This prompt doesn't include accessory slots. If you want to use accessory slots as well, please add them using the variables I've shared below.*
-
-💡 **Keep in mind, you don't have to use every variable or slot exists.** For example if you don't care what kind of underwear or socks you or your character wears, you can just use "Headwear", "Topwear", "Bottomwear" and "Footwear" to keep things simple. You can make your outfit prompt as complex or simple as you want. You should only use the slots you want to use. However AI can only see the things you show it in the prompt. The prompt piece I shared above is just a guideline. You can get creative and use the variables this system creates however you find useful and personalize your outfit prompt as you like.
-
-If you want system messages to appear after changing clothes, enable system messages option under "Extensions -> Outfit Tracker Settings". There are also settings to automatically open windows when you start SillyTavern if you don't want to use commands every time.
-
-If you want to remove a clothing, enter "remove" or "None" as clothing name.
-
-**Clothing**
-- This page has Headwear, Topwear, TopUnderwear, Bottomwear, BottomUnderwear, Footwear and FootUnderwear slots.
-- This is the main outfit page.
-
-**Accessories**
-- This page has head-accessory, ears-accessory, eyes-accessory, mouth-accessory, neck-accessory, body-accessory, arms-accessory, hands-accessory, waist-accessory, bottom-accessory, legs-accessory and foot-accessory slots.
-- You can use these for things like glasses on "eyes-accessory" or backpack on "body-accessory".
-- You can also use these for bondage such as "blindfold" on "eyes-accessory" or "black cuffs (chained together)" on "hands-accessory" etc.
-
-**Outfits**
-- Here you can *Save Current Outfit*, *Wear a Saved Outfit* or *Delete a Saved Outfit*
-
 ## Auto Outfit Updates
 <img width="766" height="789" alt="Image" src="https://github.com/user-attachments/assets/322f485e-75bf-494c-ae71-f5201d16c1b0" />
 
@@ -162,7 +118,7 @@ Also since it performs a check after every message, you should have a decent gen
 
 💡 **In Extension Settings window you can see the prompt system uses for performing self-check. If you don't know what you are doing, please don't change this.**
 
-## Import Outfit from Character Card
+## Import Outfit from Character Card (Experimental)
 
 The `/import-outfit` command is a powerful feature that uses LLM analysis to automatically extract outfit information from your character card. This command will:
 
@@ -174,7 +130,7 @@ The `/import-outfit` command is a powerful feature that uses LLM analysis to aut
 
 This is especially useful when importing characters that already have outfit descriptions in their character card.
 
-## Connection Profile Support
+## Connection Profile Support (Experimental)
 
 The auto outfit system now supports using different connection profiles for LLM generation. In the settings, you can specify a connection profile (like OpenRouter, Oobabooga, OpenAI, or Claude) that will be used specifically for auto outfit detection. This allows you to use a different model for outfit detection than for your main conversation if desired.
 
@@ -235,5 +191,4 @@ Foot Accessory: {{getglobalvar::User_foot-accessory}}
 ```
 
 ## License
-
 Creative Commons Zero
