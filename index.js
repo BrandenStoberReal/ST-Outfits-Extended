@@ -605,6 +605,12 @@ async function initializeExtension() {
             for (const command of outfitCommands) {
                 await processSingleOutfitCommand(command, botManager);
             }
+            
+            // Update the outfit panel UI to reflect the new outfit values
+            if (window.botOutfitPanel && window.botOutfitPanel.isVisible) {
+                window.botOutfitPanel.outfitManager.loadOutfit();
+                window.botOutfitPanel.renderContent();
+            }
         }
 
         // Use LLM to intelligently remove clothing references and fix grammar
