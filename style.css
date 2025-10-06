@@ -107,7 +107,7 @@
 .outfit-slots {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
     width: 100%;
 }
 
@@ -123,7 +123,6 @@
 
 .outfit-slot:hover {
     background: rgba(255, 255, 255, 0.15);
-    transform: translateY(-1px);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
@@ -179,7 +178,6 @@
 
 .slot-actions button:hover {
     background: rgba(255, 255, 255, 0.28);
-    transform: translateY(-1px);
     box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
 }
 
@@ -223,7 +221,6 @@
 
 .outfit-preset:hover {
     background: rgba(255, 255, 255, 0.15);
-    transform: translateY(-1px);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
@@ -279,7 +276,6 @@
 
 .preset-actions button:hover {
     background: rgba(255, 255, 255, 0.25);
-    transform: translateY(-1px);
     box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
 }
 
@@ -333,7 +329,6 @@
 
 .save-outfit-btn:hover {
     background: rgba(25, 118, 210, 0.5);
-    transform: translateY(-1px);
     box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
 }
 
@@ -356,7 +351,6 @@
 
 .fill-outfit-btn:hover {
     background: rgba(56, 142, 60, 0.5);
-    transform: translateY(-1px);
     box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
 }
 
