@@ -127,7 +127,6 @@ export class BotOutfitPanel {
                     <div class="preset-name">Default: Current Setup</div>
                     <div class="preset-actions">
                         <button class="load-preset" data-preset="default">Wear</button>
-                        <button class="clear-default-preset" data-preset="default">×</button>
                     </div>
                 `;
                 
@@ -138,25 +137,6 @@ export class BotOutfitPanel {
                     }
                     this.saveSettingsDebounced();
                     this.renderContent();
-                });
-                
-                defaultPresetElement.querySelector('.clear-default-preset').addEventListener('click', () => {
-                    if (confirm('Clear the default outfit?')) {
-                        // Delete the default preset
-                        delete window.extension_settings.outfit_tracker.presets.bot[this.outfitManager.character]['default'];
-                        
-                        // Cleanup character if no presets left
-                        if (Object.keys(window.extension_settings.outfit_tracker.presets.bot[this.outfitManager.character]).length === 0) {
-                            delete window.extension_settings.outfit_tracker.presets.bot[this.outfitManager.character];
-                        }
-                        
-                        const message = 'Default outfit cleared.';
-                        if (window.extension_settings.outfit_tracker?.enableSysMessages) {
-                            this.sendSystemMessage(message);
-                        }
-                        this.saveSettingsDebounced();
-                        this.renderContent();
-                    }
                 });
                 
                 container.appendChild(defaultPresetElement);
@@ -171,7 +151,6 @@ export class BotOutfitPanel {
                         <div class="preset-actions">
                             <button class="load-preset" data-preset="${preset}">Wear</button>
                             <button class="set-default-preset" data-preset="${preset}" ${isDefault ? 'style="display:none;"' : ''}>Default</button>
-                            <button class="clear-default-preset" data-preset="${preset}" ${!isDefault ? 'style="display:none;"' : ''}>×</button>
                             <button class="delete-preset" data-preset="${preset}">${isDefault ? '' : '×'}</button>
                         </div>
                     `;
@@ -192,26 +171,6 @@ export class BotOutfitPanel {
                         }
                         this.saveSettingsDebounced();
                         this.renderContent();
-                    });
-                    
-                    // Add event listener for clearing default
-                    presetElement.querySelector('.clear-default-preset').addEventListener('click', () => {
-                        if (confirm('Clear the default outfit?')) {
-                            // Delete the default preset
-                            delete window.extension_settings.outfit_tracker.presets.bot[this.outfitManager.character]['default'];
-                            
-                            // Cleanup character if no presets left
-                            if (Object.keys(window.extension_settings.outfit_tracker.presets.bot[this.outfitManager.character]).length === 0) {
-                                delete window.extension_settings.outfit_tracker.presets.bot[this.outfitManager.character];
-                            }
-                            
-                            const message = 'Default outfit cleared.';
-                            if (window.extension_settings.outfit_tracker?.enableSysMessages) {
-                                this.sendSystemMessage(message);
-                            }
-                            this.saveSettingsDebounced();
-                            this.renderContent();
-                        }
                     });
                     
                     presetElement.querySelector('.delete-preset').addEventListener('click', () => {
