@@ -1,4 +1,4 @@
-import { dragElementWithSave, resizeElement } from './shared.js';
+import { dragElementWithSave, resizeElement } from '../common/shared.js';
 
 export class UserOutfitPanel {
     constructor(outfitManager, clothingSlots, accessorySlots, saveSettingsDebounced) {

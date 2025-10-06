@@ -1,6 +1,6 @@
-import { dragElementWithSave, resizeElement } from './shared.js';
-import { extractCommands } from './StringProcessor.js';
-import { LLMUtility } from './LLMUtility.js';
+import { dragElementWithSave, resizeElement } from '../common/shared.js';
+import { extractCommands } from '../utils/StringProcessor.js';
+import { LLMUtility } from '../utils/LLMUtility.js';
 
 export class BotOutfitPanel {
     constructor(outfitManager, clothingSlots, accessorySlots, saveSettingsDebounced) {

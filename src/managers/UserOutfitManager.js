@@ -1,52 +1,16 @@
-// extension_settings is expected to be available in the global scope once the extension initializes
-import { safeGet, safeSet } from './StringProcessor.js';
+import { safeGet, safeSet } from '../utils/StringProcessor.js';
 
-export class BotOutfitManager {
+export class UserOutfitManager {
     constructor(slots) {
         this.slots = slots;
-        this.character = 'Unknown';
         this.currentValues = {};
-        this.slots.forEach(slot => this.currentValues[slot] = '');
-    }
-
-    setCharacter(name) {
-        if (name === this.character) return;
-        
-        // Validate the character name
-        if (!name || typeof name !== 'string') {
-            console.warn('[BotOutfitManager] Invalid character name provided, using "Unknown"');
-            name = 'Unknown';
-        }
-        
-        this.character = name;
-        // Ensure all slots have proper values (not empty) when loading
-        this.loadOutfit();
-        // Check if any slots are still empty and initialize them to 'None'
-        for (const slot of this.slots) {
-            const varName = this.getVarName(slot);
-            const value = this.getGlobalVariable(varName);
-            // If the value is empty or undefined, set it to 'None'
-            if (value === undefined || value === null || value === '') {
-                this.setGlobalVariable(varName, 'None');
-                this.currentValues[slot] = 'None';
-            }
-        }
-    }
-
-    initializeOutfit() {
-        this.slots.forEach(slot => {
-            const varName = this.getVarName(slot);
-            if (this.getGlobalVariable(varName) === 'None' || this.getGlobalVariable(varName) === '') {
-                this.setGlobalVariable(varName, 'None');
-            }
-        });
-        this.loadOutfit();
+        // Initialize currentValues to ensure we have all slots defined
+        this.slots.forEach(slot => this.currentValues[slot] = 'None');
+        this.initializeOutfit();
     }
 
     getVarName(slot) {
-        // Ensure the character name is properly formatted for variable names
-        const formattedCharacterName = this.character.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
-        return `${formattedCharacterName}_${slot}`;
+        return `User_${slot}`;
     }
 
     loadOutfit() {
@@ -63,13 +27,22 @@ export class BotOutfitManager {
         });
     }
 
+    initializeOutfit() {
+        this.slots.forEach(slot => {
+            const varName = this.getVarName(slot);
+            if (this.getGlobalVariable(varName) === 'None' || this.getGlobalVariable(varName) === '') {
+                this.setGlobalVariable(varName, 'None');
+            }
+        });
+        this.loadOutfit();
+    }
+
     getGlobalVariable(name) {
         try {
-            // Access extension_settings from the global window object
             const globalVars = safeGet(window, 'extension_settings.variables.global', {});
             return globalVars[name] || window[name] || 'None';
         } catch (error) {
-            console.error('[BotOutfitManager] Error accessing global variable:', name, error);
+            console.error('[UserOutfitManager] Error accessing global variable:', name, error);
             return 'None';
         }
     }
@@ -83,14 +56,14 @@ export class BotOutfitManager {
             }
             window.extension_settings.variables.global[name] = value;
         } catch (error) {
-            console.error('[BotOutfitManager] Error setting global variable:', name, value, error);
+            console.error('[UserOutfitManager] Error setting global variable:', name, value, error);
         }
     }
 
     async setOutfitItem(slot, value) {
         // Validate inputs
         if (!this.slots.includes(slot)) {
-            console.error(`[BotOutfitManager] Invalid slot: ${slot}`);
+            console.error(`[UserOutfitManager] Invalid slot: ${slot}`);
             return null;
         }
         
@@ -108,7 +81,7 @@ export class BotOutfitManager {
         const MAX_VALUE_LENGTH = 1000;
         if (value.length > MAX_VALUE_LENGTH) {
             value = value.substring(0, MAX_VALUE_LENGTH);
-            console.warn(`[BotOutfitManager] Value truncated to ${MAX_VALUE_LENGTH} characters for slot ${slot}`);
+            console.warn(`[UserOutfitManager] Value truncated to ${MAX_VALUE_LENGTH} characters for slot ${slot}`);
         }
         
         const previousValue = this.currentValues[slot];
@@ -117,18 +90,18 @@ export class BotOutfitManager {
         this.currentValues[slot] = value;
     
         if (previousValue === 'None' && value !== 'None') {
-            return `${this.character} put on ${value}.`;
+            return `You put on ${value}.`;
         } else if (value === 'None') {
-            return `${this.character} removed ${previousValue}.`;
+            return `You removed ${previousValue}.`;
         } else {
-            return `${this.character} changed from ${previousValue} to ${value}.`;
+            return `You changed from ${previousValue} to ${value}.`;
         }
     }
 
     async changeOutfitItem(slot) {
         // Validate the slot
         if (!this.slots.includes(slot)) {
-            console.error(`[BotOutfitManager] Invalid slot: ${slot}`);
+            console.error(`[UserOutfitManager] Invalid slot: ${slot}`);
             return null;
         }
         
@@ -136,13 +109,13 @@ export class BotOutfitManager {
         let newValue = currentValue;
 
         if (currentValue === 'None') {
-            newValue = prompt(`What is ${this.character} wearing on their ${slot}?`, "");
+            newValue = prompt(`What are you wearing on your ${slot}?`, "");
             // Handle empty input as 'None'
             if (newValue === null) return null; // User cancelled the prompt
             if (newValue === "") newValue = 'None'; // User entered empty string
         } else {
             const choice = prompt(
-                `${this.character}'s ${slot}: ${currentValue}\n\nEnter 'remove' to remove, or type new item:`,
+                `Your ${slot}: ${currentValue}\n\nEnter 'remove' to remove, or type new item:`,
                 ""
             );
 
@@ -170,22 +143,17 @@ export class BotOutfitManager {
             varName: this.getVarName(slot)
         }));
     }
-
+    
     savePreset(presetName) {
         // Validate the preset name
         if (!presetName || typeof presetName !== 'string' || presetName.trim() === '') {
-            console.error('[BotOutfitManager] Invalid preset name provided');
+            console.error('[UserOutfitManager] Invalid preset name provided');
             return '[Outfit System] Invalid preset name provided.';
         }
         
         // Initialize presets if needed
         if (!safeGet(window, 'extension_settings.outfit_tracker.presets')) {
             safeSet(window, 'extension_settings.outfit_tracker.presets', { bot: {}, user: {} });
-        }
-        
-        // Ensure character presets exist
-        if (!safeGet(window, `extension_settings.outfit_tracker.presets.bot.${this.character}`)) {
-            safeSet(window, `extension_settings.outfit_tracker.presets.bot.${this.character}`, {});
         }
         
         // Create preset data for all slots
@@ -195,10 +163,10 @@ export class BotOutfitManager {
         });
         
         // Save or update preset
-        safeSet(window, `extension_settings.outfit_tracker.presets.bot.${this.character}.${presetName}`, presetData);
+        safeSet(window, `extension_settings.outfit_tracker.presets.user.${presetName}`, presetData);
         
         if (safeGet(window, 'extension_settings.outfit_tracker.enableSysMessages')) {
-            return `Saved "${presetName}" outfit for ${this.character}.`;
+            return `Saved "${presetName}" outfit for user character.`;
         }
         return '';
     }
@@ -209,7 +177,7 @@ export class BotOutfitManager {
             return `[Outfit System] Invalid preset name: ${presetName}`;
         }
         
-        const presets = safeGet(window, `extension_settings.outfit_tracker.presets.bot.${this.character}`);
+        const presets = safeGet(window, `extension_settings.outfit_tracker.presets.user`);
         if (!presets || !presets[presetName]) {
             return `[Outfit System] Preset "${presetName}" not found.`;
         }
@@ -227,9 +195,9 @@ export class BotOutfitManager {
         }
         
         if (changed) {
-            return `${this.character} changed into the "${presetName}" outfit.`;
+            return `You changed into the "${presetName}" outfit.`;
         }
-        return `${this.character} was already wearing the "${presetName}" outfit.`;
+        return `You are already wearing the "${presetName}" outfit.`;
     }
     
     deletePreset(presetName) {
@@ -238,28 +206,21 @@ export class BotOutfitManager {
             return `[Outfit System] Invalid preset name: ${presetName}`;
         }
         
-        const presets = safeGet(window, `extension_settings.outfit_tracker.presets.bot.${this.character}`);
+        const presets = safeGet(window, `extension_settings.outfit_tracker.presets.user`);
         if (!presets || !presets[presetName]) {
             return `[Outfit System] Preset "${presetName}" not found.`;
         }
         
-        // Delete the preset
-        delete safeGet(window, `extension_settings.outfit_tracker.presets.bot.${this.character}`)[presetName];
-        
-        // Cleanup character if no presets left
-        const characterPresets = safeGet(window, `extension_settings.outfit_tracker.presets.bot.${this.character}`, {});
-        if (Object.keys(characterPresets).length === 0) {
-            delete safeGet(window, 'extension_settings.outfit_tracker.presets.bot')[this.character];
-        }
+        delete presets[presetName];
         
         if (safeGet(window, 'extension_settings.outfit_tracker.enableSysMessages')) {
-            return `Deleted "${presetName}" outfit.`;
+            return `Deleted your "${presetName}" outfit.`;
         }
         return '';
     }
     
     getPresets() {
-        const presets = safeGet(window, `extension_settings.outfit_tracker.presets.bot.${this.character}`);
+        const presets = safeGet(window, `extension_settings.outfit_tracker.presets.user`);
         if (!presets) {
             return [];
         }
@@ -272,11 +233,6 @@ export class BotOutfitManager {
             safeSet(window, 'extension_settings.outfit_tracker.presets', { bot: {}, user: {} });
         }
         
-        // Ensure character presets exist
-        if (!safeGet(window, `extension_settings.outfit_tracker.presets.bot.${this.character}`)) {
-            safeSet(window, `extension_settings.outfit_tracker.presets.bot.${this.character}`, {});
-        }
-        
         // Create preset data for all slots
         const presetData = {};
         this.slots.forEach(slot => {
@@ -284,10 +240,10 @@ export class BotOutfitManager {
         });
         
         // Save as default preset
-        safeSet(window, `extension_settings.outfit_tracker.presets.bot.${this.character}.default`, presetData);
+        safeSet(window, 'extension_settings.outfit_tracker.presets.user.default', presetData);
         
         if (safeGet(window, 'extension_settings.outfit_tracker.enableSysMessages')) {
-            return `Set default outfit for ${this.character}.`;
+            return `Set your default outfit.`;
         }
         return '';
     }
@@ -303,12 +259,7 @@ export class BotOutfitManager {
             safeSet(window, 'extension_settings.outfit_tracker.presets', { bot: {}, user: {} });
         }
         
-        // Ensure character presets exist
-        if (!safeGet(window, `extension_settings.outfit_tracker.presets.bot.${this.character}`)) {
-            safeSet(window, `extension_settings.outfit_tracker.presets.bot.${this.character}`, {});
-        }
-        
-        const presets = safeGet(window, `extension_settings.outfit_tracker.presets.bot.${this.character}`);
+        const presets = safeGet(window, `extension_settings.outfit_tracker.presets.user`);
         // Check if the preset exists
         if (!presets || !presets[presetName]) {
             return `[Outfit System] Preset "${presetName}" not found.`;
@@ -318,18 +269,18 @@ export class BotOutfitManager {
         const presetData = presets[presetName];
         
         // Save as default preset
-        safeSet(window, `extension_settings.outfit_tracker.presets.bot.${this.character}.default`, presetData);
+        safeSet(window, 'extension_settings.outfit_tracker.presets.user.default', presetData);
         
         if (safeGet(window, 'extension_settings.outfit_tracker.enableSysMessages')) {
-            return `Set "${presetName}" as default outfit for ${this.character}.`;
+            return `Set "${presetName}" as your default outfit.`;
         }
         return '';
     }
     
     loadDefaultOutfit() {
-        const presets = safeGet(window, `extension_settings.outfit_tracker.presets.bot.${this.character}`);
+        const presets = safeGet(window, `extension_settings.outfit_tracker.presets.user`);
         if (!presets || !presets['default']) {
-            return `[Outfit System] No default outfit set for ${this.character}.`;
+            return `[Outfit System] No default outfit set for user.`;
         }
         
         const preset = presets['default'];
@@ -354,13 +305,13 @@ export class BotOutfitManager {
         }
         
         if (changed) {
-            return `${this.character} changed into their default outfit.`;
+            return `You changed into your default outfit.`;
         }
-        return `${this.character} was already wearing their default outfit.`;
+        return `You were already wearing your default outfit.`;
     }
     
     hasDefaultOutfit() {
-        const presets = safeGet(window, `extension_settings.outfit_tracker.presets.bot.${this.character}`);
+        const presets = safeGet(window, `extension_settings.outfit_tracker.presets.user`);
         return !!(presets && presets['default']);
     }
     
@@ -370,7 +321,7 @@ export class BotOutfitManager {
             return null;
         }
         
-        const presets = safeGet(window, `extension_settings.outfit_tracker.presets.bot.${this.character}`);
+        const presets = safeGet(window, `extension_settings.outfit_tracker.presets.user`);
         if (!presets || !presets['default']) {
             return null;
         }

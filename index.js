@@ -6,8 +6,8 @@ import { SlashCommand } from "../../../slash-commands/SlashCommand.js";
 import { SlashCommandArgument, SlashCommandNamedArgument, ARGUMENT_TYPE } from "../../../slash-commands/SlashCommandArgument.js";
 
 // Import the extractMacros and replaceAll functions from StringProcessor
-import { extractMacros, replaceAll } from "./src/StringProcessor.js";
-import { LLMUtility } from "./src/LLMUtility.js";
+import { extractMacros, replaceAll } from "./src/utils/StringProcessor.js";
+import { LLMUtility } from "./src/utils/LLMUtility.js";
 
 // Define global variables that might not be imported directly
 // power_user and user_avatar are typically available globally in SillyTavern
@@ -52,15 +52,15 @@ async function initializeExtension() {
         'foot-accessory'
     ];
 
-    const { BotOutfitManager } = await import("./src/BotOutfitManager.js");
-    const { BotOutfitPanel } = await import("./src/BotOutfitPanel.js");
-    const { UserOutfitManager } = await import("./src/UserOutfitManager.js");
-    const { UserOutfitPanel } = await import("./src/UserOutfitPanel.js");
+    const { BotOutfitManager } = await import("./src/managers/BotOutfitManager.js");
+    const { BotOutfitPanel } = await import("./src/panels/BotOutfitPanel.js");
+    const { UserOutfitManager } = await import("./src/managers/UserOutfitManager.js");
+    const { UserOutfitPanel } = await import("./src/panels/UserOutfitPanel.js");
 
     // Import AutoOutfitSystem with error handling
     let AutoOutfitSystem;
     try {
-        const autoOutfitModule = await import("./src/AutoOutfitSystem.js");
+        const autoOutfitModule = await import("./src/core/AutoOutfitSystem.js");
         AutoOutfitSystem = autoOutfitModule.AutoOutfitSystem;
     } catch (error) {
         console.error("[OutfitTracker] Failed to load AutoOutfitSystem:", error);
@@ -1617,7 +1617,7 @@ Only return the formatted sections with cleaned content.`;
             const response = await generateOutfitFromLLM(characterInfo);
             
             // Parse the response to get the outfit commands
-            const { extractCommands } = await import("./src/StringProcessor.js");
+            const { extractCommands } = await import("./src/utils/StringProcessor.js");
             const commands = extractCommands(response);
             
             return commands;

@@ -1,5 +1,5 @@
-import { replaceAll as replaceAllStr, extractCommands, extractMacros, safeGet, safeSet } from './StringProcessor.js';
-import { LLMUtility } from './LLMUtility.js';
+import { replaceAll as replaceAllStr, extractCommands, extractMacros, safeGet, safeSet } from '../utils/StringProcessor.js';
+import { LLMUtility } from '../utils/LLMUtility.js';
 
 export class AutoOutfitSystem {
     constructor(outfitManager) {
