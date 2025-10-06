@@ -578,7 +578,7 @@ async function initializeExtension() {
             throw new Error("Character not found");
         }
 
-        // Get the character card data
+        // Get character information similar to how BotOutfitPanel does it
         const characterInfo = {
             name: character.name || 'Unknown',
             description: character.description || '',
@@ -587,6 +587,14 @@ async function initializeExtension() {
             firstMessage: character.first_message || '',
             characterNotes: character.character_notes || '',
         };
+
+        // Get the first message from the current chat if it's different from the character's first_message
+        if (context.chat && context.chat.length > 0) {
+            const firstChatMessage = context.chat.find(msg => !msg.is_user && !msg.is_system);
+            if (firstChatMessage && firstChatMessage.mes) {
+                characterInfo.firstMessage = firstChatMessage.mes;
+            }
+        }
 
         // Use the same LLM logic as the bot panel to generate outfit from character info
         const outfitCommands = await generateOutfitFromCharacterInfoLLM(characterInfo);
@@ -661,11 +669,21 @@ Only return the JSON object with no additional text.`;
 
             const context = getContext();
             
-            // Use the generateRaw function to send the prompt to the LLM
-            const result = await context.generateRaw({
-                prompt: prompt,
-                systemPrompt: "You are an assistant that helps clean up character descriptions by removing clothing references while preserving other content and fixing grammar."
-            });
+            // Try different generation methods in order of preference
+            let result;
+            if (context.generateRaw) {
+                result = await context.generateRaw({
+                    prompt: prompt,
+                    systemPrompt: "You are an assistant that helps clean up character descriptions by removing clothing references while preserving other content and fixing grammar."
+                });
+            } else if (context.generateQuietPrompt) {
+                result = await context.generateQuietPrompt({
+                    quietPrompt: prompt
+                });
+            } else {
+                // Use AutoOutfitSystem's generation method as fallback
+                result = await autoOutfitSystem.generateWithProfile(prompt);
+            }
 
             if (!result) {
                 console.warn("LLM did not return a valid response, returning original character info");
@@ -737,11 +755,21 @@ Only return the JSON object with no additional text.`;
             
             const context = getContext();
             
-            // Use the generateRaw function to send the prompt to the LLM
-            const result = await context.generateRaw({
-                prompt: prompt,
-                systemPrompt: "You are an outfit generation system. Based on the character information provided, output outfit commands to set the character's clothing and accessories."
-            });
+            // Try different generation methods in order of preference
+            let result;
+            if (context.generateRaw) {
+                result = await context.generateRaw({
+                    prompt: prompt,
+                    systemPrompt: "You are an outfit generation system. Based on the character information provided, output outfit commands to set the character's clothing and accessories."
+                });
+            } else if (context.generateQuietPrompt) {
+                result = await context.generateQuietPrompt({
+                    quietPrompt: prompt
+                });
+            } else {
+                // Use AutoOutfitSystem's generation method as fallback
+                result = await autoOutfitSystem.generateWithProfile(prompt);
+            }
             
             if (!result) {
                 throw new Error('No output generated from LLM');
