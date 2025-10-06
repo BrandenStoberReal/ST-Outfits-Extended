@@ -565,7 +565,7 @@ async function initializeExtension() {
         }));
     }
 
-    // Function to import outfit from character card
+    // Function to import outfit from character card using LLM analysis
     async function importOutfitFromCharacterCard() {
         const context = getContext();
 
@@ -588,13 +588,13 @@ async function initializeExtension() {
             characterNotes: character.character_notes || '',
         };
 
-        // Extract outfit information from character card
-        const outfitData = extractOutfitFromCharacterInfo(characterInfo);
+        // Use the same LLM logic as the bot panel to generate outfit from character info
+        const outfitCommands = await generateOutfitFromCharacterInfoLLM(characterInfo);
 
-        // Apply outfit to the bot manager
-        for (const [slot, item] of Object.entries(outfitData)) {
-            if (item && item !== 'None') {
-                await botManager.setOutfitItem(slot, item);
+        // Apply the outfit commands to the bot manager
+        if (outfitCommands && outfitCommands.length > 0) {
+            for (const command of outfitCommands) {
+                await processSingleOutfitCommand(command, botManager);
             }
         }
 
@@ -616,9 +616,9 @@ async function initializeExtension() {
         context.characters[context.characterId] = character;
 
         // Return success message
-        const itemsCount = Object.values(outfitData).filter(item => item && item !== 'None').length;
+        const itemsCount = outfitCommands ? outfitCommands.length : 0;
         return {
-            message: `Successfully imported ${itemsCount} outfit items from character card and updated character description.`
+            message: `Successfully imported outfit with ${itemsCount} items from character card using LLM analysis and updated character description.`
         };
     }
 
@@ -703,97 +703,173 @@ Only return the JSON object with no additional text.`;
         }
     }
 
-    // Function to extract outfit information from character card
-    function extractOutfitFromCharacterInfo(characterInfo) {
-        const outfitData = {};
-        
-        // Define clothing keywords for different slots
-        const slotKeywords = {
-            headwear: [
-                'hat', 'cap', 'hood', 'beanie', 'beret', 'crown', 'tiara', 'visor', 'bonnet',
-                'headband', 'head dress', 'helmet', 'visor', 'head accessory', 'head piece'
-            ],
-            topwear: [
-                'shirt', 'blouse', 'top', 't-shirt', 'tank top', 'sweater', 'jacket', 'coat',
-                'hoodie', 'vest', 'bra', 'camisole', 'crop top', 'tunic', 'cardigan', 'blazer',
-                'sweater vest', 'overalls', 'jumpsuit', 'bodysuit', 'bralette'
-            ],
-            bottomwear: [
-                'pants', 'jeans', 'trousers', 'skirt', 'shorts', 'leggings', 'slacks', 'capris',
-                'culottes', 'palazzo', 'panties', 'briefs', 'boxers', 'bikini bottom', 'skorts'
-            ],
-            footwear: [
-                'shoes', 'sneakers', 'boots', 'sandals', 'heels', 'flats', 'loafers', 'slippers',
-                'oxfords', 'moccasins', 'stilettos', 'mary janes', 'wedges', 'clogs', 'ankle boots',
-                'knee high boots', 'heels', 'pumps', 'espadrilles', 'flip-flops', 'sneakers'
-            ],
-            'head-accessory': [
-                'hair bow', 'hair clip', 'hair pin', 'hair accessory', 'tiara', 'headpiece', 'hair tie',
-                'bandana', 'head scarf', 'kerchief', 'hair decoration', 'flower hair accessory'
-            ],
-            'neck-accessory': [
-                'necklace', 'collar', 'choker', 'pendant', 'scarf', 'tie', 'bow tie', 'ascot',
-                'chain', 'bandana', 'neck accessory', 'neck warmer', 'stole', 'cravat'
-            ],
-            'ears-accessory': [
-                'earrings', 'ear piercing', 'ear accessory', 'earrings', 'ear cuffs', 'ear climbers',
-                'ear pins', 'huggie earrings', 'dangle earrings', 'stud earrings', 'ear thread'
-            ]
-        };
-
-        // Combine all character info strings to search
-        const fullText = Object.values(characterInfo).join(' | ');
-
-        // Process each slot
-        for (const [slot, keywords] of Object.entries(slotKeywords)) {
-            // Look for items in the text
-            let foundItem = null;
+    // Function to generate outfit from character info using LLM (same as bot panel)
+    async function generateOutfitFromCharacterInfoLLM(characterInfo) {
+        try {
+            // Generate outfit from LLM using the same method as the bot panel
+            const response = await generateOutfitFromLLM(characterInfo);
             
-            for (const keyword of keywords) {
-                const regex = new RegExp(`\\b(${keyword})[^\\s.,;!?]*\\s+([^\\s.,;!]*)`, 'gi');
-                let match;
-                
-                while ((match = regex.exec(fullText)) !== null) {
-                    const fullMatch = match[0].trim();
-                    // Extract the specific clothing item
-                    if (fullMatch) {
-                        foundItem = fullMatch;
-                        break;
-                    }
-                }
-                
-                if (foundItem) break;
-            }
+            // Parse the response to get the outfit commands
+            const { extractCommands } = await import("./src/StringProcessor.js");
+            const commands = extractCommands(response);
             
-            // If no specific item found but keyword is mentioned, set to generic form
-            if (!foundItem) {
-                for (const keyword of keywords) {
-                    if (new RegExp(`\\b${keyword}\\b`, 'gi').test(fullText)) {
-                        foundItem = keyword;
-                        break;
-                    }
-                }
-            }
-            
-            outfitData[slot] = foundItem || 'None';
+            return commands;
+        } catch (error) {
+            console.error('Error in generateOutfitFromCharacterInfoLLM:', error);
+            throw error;
         }
+    }
 
-        // Add some special cases for more complex descriptions
-        const specialPatterns = [
-            { slot: 'topwear', pattern: /wears? a?n? ([^.,;!?]*?top|[^.,;!?]*?shirt|[^.,;!?]*?blouse)/i, extract: 1 },
-            { slot: 'bottomwear', pattern: /wears? a?n? ([^.,;!?]*?pants|[^.,;!?]*?skirt|[^.,;!?]*?shorts)/i, extract: 1 },
-            { slot: 'headwear', pattern: /wears? a?n? ([^.,;!?]*?hat|[^.,;!?]*?cap|[^.,;!?]*?hood)/i, extract: 1 },
-            { slot: 'footwear', pattern: /wears? a?n? ([^.,;!?]*?shoes|[^.,;!?]*?boots|[^.,;!?]*?sandals)/i, extract: 1 },
-        ];
-
-        for (const pattern of specialPatterns) {
-            const match = fullText.match(pattern.pattern);
-            if (match && match[pattern.extract]) {
-                outfitData[pattern.slot] = match[pattern.extract].trim();
+    // Function to generate outfit from LLM (same as bot panel)
+    async function generateOutfitFromLLM(characterInfo) {
+        try {
+            // Get the default prompt
+            let prompt = getDefaultOutfitPrompt();
+            
+            // Replace placeholders with actual character info
+            prompt = prompt
+                .replace('<CHARACTER_NAME>', characterInfo.name)
+                .replace('<CHARACTER_DESCRIPTION>', characterInfo.description)
+                .replace('<CHARACTER_PERSONALITY>', characterInfo.personality)
+                .replace('<CHARACTER_SCENARIO>', characterInfo.scenario)
+                .replace('<CHARACTER_NOTES>', characterInfo.characterNotes)
+                .replace('<CHARACTER_FIRST_MESSAGE>', characterInfo.firstMessage);
+            
+            const context = getContext();
+            
+            // Use the generateRaw function to send the prompt to the LLM
+            const result = await context.generateRaw({
+                prompt: prompt,
+                systemPrompt: "You are an outfit generation system. Based on the character information provided, output outfit commands to set the character's clothing and accessories."
+            });
+            
+            if (!result) {
+                throw new Error('No output generated from LLM');
             }
+            
+            return result;
+        } catch (error) {
+            console.error('Error generating outfit from LLM:', error);
+            throw error;
         }
+    }
 
-        return outfitData;
+    // Function to get default outfit prompt (same as bot panel)
+    function getDefaultOutfitPrompt() {
+        return `Analyze the character's description, personality, scenario, character notes, and first message. Based on these details, determine an appropriate outfit for the character.
+
+Here is the character information:
+Name: <CHARACTER_NAME>
+Description: <CHARACTER_DESCRIPTION>
+Personality: <CHARACTER_PERSONALITY>
+Scenario: <CHARACTER_SCENARIO>
+Character Notes: <CHARACTER_NOTES>
+First Message: <CHARACTER_FIRST_MESSAGE>
+
+Based on the information provided, output outfit commands to set the character's clothing and accessories. Only output commands, nothing else.
+
+The available outfit slots are:
+- Clothing: headwear, topwear, topunderwear, bottomwear, bottomunderwear, footwear, footunderwear
+- Accessories: head-accessory, ears-accessory, eyes-accessory, mouth-accessory, neck-accessory, body-accessory, arms-accessory, hands-accessory, waist-accessory, bottom-accessory, legs-accessory, foot-accessory
+
+Use these command formats:
+- outfit-system_wear_headwear("item name")
+- outfit-system_wear_topwear("item name")
+- outfit-system_wear_topunderwear("item name")
+- outfit-system_wear_bottomwear("item name")
+- outfit-system_wear_bottomunderwear("item name")
+- outfit-system_wear_footwear("item name")
+- outfit-system_wear_footunderwear("item name")
+- outfit-system_wear_head-accessory("item name")
+- outfit-system_wear_ears-accessory("item name")
+- outfit-system_wear_eyes-accessory("item name")
+- outfit-system_wear_mouth-accessory("item name")
+- outfit-system_wear_neck-accessory("item name")
+- outfit-system_wear_body-accessory("item name")
+- outfit-system_wear_arms-accessory("item name")
+- outfit-system_wear_hands-accessory("item name")
+- outfit-system_wear_waist-accessory("item name")
+- outfit-system_wear_bottom-accessory("item name")
+- outfit-system_wear_legs-accessory("item name")
+- outfit-system_wear_foot-accessory("item name")
+
+If an item is not applicable based on the character info, use "None" as the value.
+Only output command lines, nothing else.`;
+    }
+
+    // Function to process a single outfit command (same as bot panel)
+    async function processSingleOutfitCommand(command, outfitManager) {
+        try {
+            // Non-regex approach to parse command - similar to AutoOutfitSystem
+            if (!command.startsWith('outfit-system_')) {
+                throw new Error(`Invalid command format: ${command}`);
+            }
+            
+            // Extract the action part
+            const actionStart = 'outfit-system_'.length;
+            const actionEnd = command.indexOf('_', actionStart);
+            if (actionEnd === -1) {
+                throw new Error(`Invalid command format: ${command}`);
+            }
+            
+            const action = command.substring(actionStart, actionEnd);
+            if (!['wear', 'remove', 'change'].includes(action)) {
+                throw new Error(`Invalid action: ${action}. Valid actions: wear, remove, change`);
+            }
+            
+            // Extract the slot part
+            const slotStart = actionEnd + 1;
+            const slotEnd = command.indexOf('(', slotStart);
+            if (slotEnd === -1) {
+                throw new Error(`Invalid command format: ${command}`);
+            }
+            
+            const slot = command.substring(slotStart, slotEnd);
+            
+            // Extract the value part
+            const valueStart = slotEnd + 1;
+            let value = '';
+            
+            if (command.charAt(valueStart) === '"') { // If value is quoted
+                const quoteStart = valueStart + 1;
+                let i = quoteStart;
+                let escaped = false;
+                
+                while (i < command.length - 1) {
+                    const char = command.charAt(i);
+                    
+                    if (escaped) {
+                        value += char;
+                        escaped = false;
+                    } else if (char === '\\') {
+                        escaped = true;
+                    } else if (char === '"') {
+                        break; // Found closing quote
+                    } else {
+                        value += char;
+                    }
+                    
+                    i++;
+                }
+            } else {
+                // Value is not quoted, extract until closing parenthesis
+                const closingParen = command.indexOf(')', valueStart);
+                if (closingParen !== -1) {
+                    value = command.substring(valueStart, closingParen);
+                }
+            }
+            
+            const cleanValue = value.replace(/"/g, '').trim();
+            
+            console.log(`[Import Outfit Command] Processing: ${action} ${slot} "${cleanValue}"`);
+            
+            // Apply the outfit change to the outfit manager
+            await outfitManager.setOutfitItem(slot, action === 'remove' ? 'None' : cleanValue);
+            
+        } catch (error) {
+            console.error('Error processing single command:', error);
+            throw error;
+        }
     }
 
 
