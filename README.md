@@ -134,61 +134,85 @@ This is especially useful when importing characters that already have outfit des
 
 The auto outfit system now supports using different connection profiles for LLM generation. In the settings, you can specify a connection profile (like OpenRouter, Oobabooga, OpenAI, or Claude) that will be used specifically for auto outfit detection. This allows you to use a different model for outfit detection than for your main conversation if desired.
 
-## List of Variables
+## Automatic Outfit Context Injection
 
-If you take a look at the example prompt I shared above, you can see that it uses global variables such as `{{getglobalvar::<BOT>_headwear}}`. You can inject any variable stored in outfit slots anywhere you want using that macro. Write `<BOT>` for character's outfit. Write "User" for user outfit. Instead of `<BOT>` you can also write a character's own name such as `{{getglobalvar::Emma_headwear}}`. If you set Emma's headwear as "Red Baseball Hat" then if you write `{{getglobalvar::Emma_headwear}}` to somewhere, it will appear as "Red Baseball Hat". You can simply write `<BOT>` instead of "Emma" and it'll automatically replace `<BOT>` with name of current active character. These variable macros works just like how `{{user}}` or `{{char}}` macros work. Anywhere you can use those macros, you should be able to use the outfit system's macros as well. Just make sure that variable exists, or it will appear blank in the context.
+The Outfit Tracker automatically injects current outfit information into the conversation context, so you don't need to manually add variables to your character card. The system intelligently includes outfit information only when outfits are actually set (non-empty), automatically removing sections that contain no clothing or accessories.
 
-💡 **User's variable names are always same. They always use "User_" regardless of your persona name.**
+The extension uses SillyTavern's `generate_interceptor` to automatically add outfit information at the appropriate position in the conversation context. When outfits are set, they appear in the context like this:
 
-Here are the full list of variables you can use:
+**<BOT>'s Current Outfit**  
+**Headwear:** Red Baseball Cap  
+**Topwear:** Blue T-Shirt  
+**Bottomwear:** Black Jeans  
 
-```
-Character Clothing:
-Headwear: {{getglobalvar::<BOT>_headwear}}
-Topwear: {{getglobalvar::<BOT>_topwear}}
-Top Underwear: {{getglobalvar::<BOT>_topunderwear}}
-Bottomwear: {{getglobalvar::<BOT>_bottomwear}}
-Bottom Underwear: {{getglobalvar::<BOT>_bottomunderwear}}
-Footwear: {{getglobalvar::<BOT>_footwear}}
-Foot Underwear: {{getglobalvar::<BOT>_footunderwear}}
+**<BOT>'s Current Accessories**  
+**Neck Accessory:** Gold Chain  
+**Hands Accessory:** Leather Gloves  
 
-Character Accessories:
-Head Accessory: {{getglobalvar::<BOT>_head-accessory}}
-Eyes Accessory: {{getglobalvar::<BOT>_ears-accessory}}
-Eyes Accessory: {{getglobalvar::<BOT>_eyes-accessory}}
-Mouth Accessory: {{getglobalvar::<BOT>_mouth-accessory}}
-Neck Accessory: {{getglobalvar::<BOT>_neck-accessory}}
-Body Accessory: {{getglobalvar::<BOT>_body-accessory}}
-Arms Accessory: {{getglobalvar::<BOT>_arms-accessory}}
-Hands Accessory: {{getglobalvar::<BOT>_hands-accessory}}
-Waist Accessory: {{getglobalvar::<BOT>_waist-accessory}}
-Bottom Accessory: {{getglobalvar::<BOT>_bottom-accessory}}
-Legs Accessory: {{getglobalvar::<BOT>_legs-accessory}}
-Foot Accessory: {{getglobalvar::<BOT>_foot-accessory}}
+**{{user}}'s Current Outfit**  
+**Headwear:** White Sun Hat  
+**Topwear:** Summer Dress  
 
-User Clothing:
-Headwear: {{getglobalvar::User_headwear}}
-Topwear: {{getglobalvar::User_topwear}}
-Top Underwear: {{getglobalvar::User_topunderwear}}
-Bottomwear: {{getglobalvar::User_bottomwear}}
-Bottom Underwear: {{getglobalvar::User_bottomunderwear}}
-Footwear: {{getglobalvar::User_footwear}}
-Foot Underwear: {{getglobalvar::User_footunderwear}}
+**{{user}}'s Current Accessories**  
+**Neck Accessory:** Silver Pendant  
 
-User Accessories:
-Head Accessory: {{getglobalvar::User_head-accessory}}
-Eyes Accessory: {{getglobalvar::User_ears-accessory}}
-Eyes Accessory: {{getglobalvar::User_eyes-accessory}}
-Mouth Accessory: {{getglobalvar::User_mouth-accessory}}
-Neck Accessory: {{getglobalvar::User_neck-accessory}}
-Body Accessory: {{getglobalvar::User_body-accessory}}
-Arms Accessory: {{getglobalvar::User_arms-accessory}}
-Hands Accessory: {{getglobalvar::User_hands-accessory}}
-Waist Accessory: {{getglobalvar::User_waist-accessory}}
-Bottom Accessory: {{getglobalvar::User_bottom-accessory}}
-Legs Accessory: {{getglobalvar::User_legs-accessory}}
-Foot Accessory: {{getglobalvar::User_foot-accessory}}
-```
+💡 **This injection happens automatically** - no need to add any variables to your character card unless you want to reference them elsewhere in your prompt.
+
+## Manual Variable Reference (Advanced)
+
+If you need to manually reference outfit variables in your character card or prompts, you can use the global variable macros. The system supports the following format: `{{getglobalvar::<BOT>_slot}}` for character outfits and `{{getglobalvar::User_slot}}` for user outfits.
+
+Write `<BOT>` for character's outfit. Instead of `<BOT>` you can also write a character's own name such as `{{getglobalvar::Emma_headwear}}`. If you set Emma's headwear as "Red Baseball Hat" then if you write `{{getglobalvar::Emma_headwear}}` to somewhere, it will appear as "Red Baseball Hat". You can simply write `<BOT>` instead of "Emma" and it'll automatically replace `<BOT>` with name of current active character. These variable macros work just like how `{{user}}` or `{{char}}` macros work.
+
+💡 **User's variable names are always the same. They always use "User_" regardless of your persona name.**
+
+Here are the full list of available slots:
+
+### Character Clothing Slots:
+- `{{getglobalvar::<BOT>_headwear}}`
+- `{{getglobalvar::<BOT>_topwear}}`
+- `{{getglobalvar::<BOT>_topunderwear}}`
+- `{{getglobalvar::<BOT>_bottomwear}}`
+- `{{getglobalvar::<BOT>_bottomunderwear}}`
+- `{{getglobalvar::<BOT>_footwear}}`
+- `{{getglobalvar::<BOT>_footunderwear}}`
+
+### Character Accessory Slots:
+- `{{getglobalvar::<BOT>_head-accessory}}`
+- `{{getglobalvar::<BOT>_ears-accessory}}`
+- `{{getglobalvar::<BOT>_eyes-accessory}}`
+- `{{getglobalvar::<BOT>_mouth-accessory}}`
+- `{{getglobalvar::<BOT>_neck-accessory}}`
+- `{{getglobalvar::<BOT>_body-accessory}}`
+- `{{getglobalvar::<BOT>_arms-accessory}}`
+- `{{getglobalvar::<BOT>_hands-accessory}}`
+- `{{getglobalvar::<BOT>_waist-accessory}}`
+- `{{getglobalvar::<BOT>_bottom-accessory}}`
+- `{{getglobalvar::<BOT>_legs-accessory}}`
+- `{{getglobalvar::<BOT>_foot-accessory}}`
+
+### User Clothing Slots:
+- `{{getglobalvar::User_headwear}}`
+- `{{getglobalvar::User_topwear}}`
+- `{{getglobalvar::User_topunderwear}}`
+- `{{getglobalvar::User_bottomwear}}`
+- `{{getglobalvar::User_bottomunderwear}}`
+- `{{getglobalvar::User_footwear}}`
+- `{{getglobalvar::User_footunderwear}}`
+
+### User Accessory Slots:
+- `{{getglobalvar::User_head-accessory}}`
+- `{{getglobalvar::User_ears-accessory}}`
+- `{{getglobalvar::User_eyes-accessory}}`
+- `{{getglobalvar::User_mouth-accessory}}`
+- `{{getglobalvar::User_neck-accessory}}`
+- `{{getglobalvar::User_body-accessory}}`
+- `{{getglobalvar::User_arms-accessory}}`
+- `{{getglobalvar::User_hands-accessory}}`
+- `{{getglobalvar::User_waist-accessory}}`
+- `{{getglobalvar::User_bottom-accessory}}`
+- `{{getglobalvar::User_legs-accessory}}`
+- `{{getglobalvar::User_foot-accessory}}`
 
 ## License
 Creative Commons Zero
