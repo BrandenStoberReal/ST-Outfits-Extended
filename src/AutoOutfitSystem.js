@@ -1,4 +1,5 @@
 import { replaceAll as replaceAllStr, extractCommands, extractMacros } from './StringProcessor.js';
+import { LLMUtility } from './LLMUtility.js';
 
 export class AutoOutfitSystem {
     constructor(outfitManager) {
@@ -22,53 +23,28 @@ export class AutoOutfitSystem {
     }
 
     getDefaultPrompt() {
-        return `Analyze the character's actions in the recent messages. If the character puts on, wears, removes, or changes any clothing items, output the appropriate outfit commands.
+        return `Analyze the recent conversation for any mentions of the character putting on, wearing, removing, or changing clothing items or accessories.
+        
+CONTEXT:
+Current outfit for <BOT>:
+{{getglobalvar::<BOT>_headwear}} | {{getglobalvar::<BOT>_topwear}} | {{getglobalvar::<BOT>_topunderwear}} | {{getglobalvar::<BOT>_bottomwear}} | {{getglobalvar::<BOT>_bottomunderwear}} | {{getglobalvar::<BOT>_footwear}} | {{getglobalvar::<BOT>_footunderwear}}
+Accessories: {{getglobalvar::<BOT>_head-accessory}} | {{getglobalvar::<BOT>_ears-accessory}} | {{getglobalvar::<BOT>_eyes-accessory}} | {{getglobalvar::<BOT>_mouth-accessory}} | {{getglobalvar::<BOT>_neck-accessory}} | {{getglobalvar::<BOT>_body-accessory}} | {{getglobalvar::<BOT>_arms-accessory}} | {{getglobalvar::<BOT>_hands-accessory}} | {{getglobalvar::<BOT>_waist-accessory}} | {{getglobalvar::<BOT>_bottom-accessory}} | {{getglobalvar::<BOT>_legs-accessory}} | {{getglobalvar::<BOT>_foot-accessory}}
 
-Here is what character is currently wearing:
-
-**<BOT>'s Current Outfit**
-Headwear: {{getglobalvar::<BOT>_headwear}}
-Topwear: {{getglobalvar::<BOT>_topwear}}
-Top Underwear: {{getglobalvar::<BOT>_topunderwear}}
-Bottomwear: {{getglobalvar::<BOT>_bottomwear}}
-Bottom Underwear: {{getglobalvar::<BOT>_bottomunderwear}}
-Footwear: {{getglobalvar::<BOT>_footwear}}
-Foot Underwear: {{getglobalvar::<BOT>_footunderwear}}
-
-**<BOT>'s Accessories**
-Head Accessory: {{getglobalvar::<BOT>_head-accessory}}
-Ears Accessory: {{getglobalvar::<BOT>_ears-accessory}}
-Eyes Accessory: {{getglobalvar::<BOT>_eyes-accessory}}
-Mouth Accessory: {{getglobalvar::<BOT>_mouth-accessory}}
-Neck Accessory: {{getglobalvar::<BOT>_neck-accessory}}
-Body Accessory: {{getglobalvar::<BOT>_body-accessory}}
-Arms Accessory: {{getglobalvar::<BOT>_arms-accessory}}
-Hands Accessory: {{getglobalvar::<BOT>_hands-accessory}}
-Waist Accessory: {{getglobalvar::<BOT>_waist-accessory}}
-Bottom Accessory: {{getglobalvar::<BOT>_bottom-accessory}}
-Legs Accessory: {{getglobalvar::<BOT>_legs-accessory}}
-Foot Accessory: {{getglobalvar::<BOT>_foot-accessory}}
-
-IMPORTANT: Output commands as plain text, NOT as JSON. Use this format:
-outfit-system_wear_headwear("Red Baseball Cap")
+TASK:
+If clothing/accessory changes occur, output only outfit-system commands (one per line) in this exact format:
+outfit-system_wear_headwear("item name")
 outfit-system_remove_topwear()
+outfit-system_change_bottomwear("new item name")
 
-Do NOT output JSON arrays or any other format.
+SLOTS:
+Clothing: headwear, topwear, topunderwear, bottomwear, bottomunderwear, footwear, footunderwear
+Accessories: head-accessory, ears-accessory, eyes-accessory, mouth-accessory, neck-accessory, body-accessory, arms-accessory, hands-accessory, waist-accessory, bottom-accessory, legs-accessory, foot-accessory
 
-Available actions: wear, remove, change
-Available clothing slots: headwear, topwear, topunderwear, bottomwear, bottomunderwear, footwear, footunderwear
-Available accessory slots: head-accessory, ears-accessory, eyes-accessory, mouth-accessory, neck-accessory, body-accessory, arms-accessory, hands-accessory, waist-accessory, bottom-accessory, legs-accessory, foot-accessory
-
-Example commands:
-- outfit-system_wear_headwear("Red Baseball Cap")
-- outfit-system_remove_topwear()
-- outfit-system_change_bottomwear("Blue Jeans")
-
-Only output commands if clothing changes are explicitly mentioned. If no changes, output [none].
-
-You can use "change" to change an already worn item with another item. You can also use "change to change state of the same item you are wearing. For example if you are wearing "White Button Blouse" and in story you unbuttoned the front, you can change it into "White Button Blouse (unbuttoned front)"
-
-Important: Always use the exact slot names listed above. Never invent new slot names.`;
+NOTES:
+- Only output commands for explicit clothing changes
+- Use "change" to modify existing items ("White Blouse" to "White Blouse (unbuttoned)")
+- If no changes detected, output: [none]
+- Output only commands, no explanations`;
     }
 
     enable() {
@@ -188,23 +164,18 @@ Important: Always use the exact slot names listed above. Never invent new slot n
             throw new Error('No valid messages to process');
         }
 
-        const { generateRaw } = window.getContext();
-        
         // Replace macros in the system prompt before sending to the AI
         const processedSystemPrompt = this.replaceMacrosInPrompt(this.systemPrompt);
         const promptText = `${processedSystemPrompt}\n\nRecent Messages:\n${recentMessages}\n\nOutput:`;
         
-        console.log('[AutoOutfitSystem] Generating outfit commands with generateRaw...');
+        console.log('[AutoOutfitSystem] Generating outfit commands with unified LLM utility...');
         
         try {
-            const result = await generateRaw({
-                prompt: promptText,
-                systemPrompt: "You are an outfit change detection system. Analyze the conversation and output outfit commands when clothing changes occur."
-            });
-
-            if (!result) {
-                throw new Error('No output generated from generation');
-            }
+            const result = await LLMUtility.generateWithRetry(
+                promptText,
+                "You are an outfit change detection system. Analyze the conversation and output outfit commands when clothing changes occur.",
+                window.getContext()
+            );
             
             console.log('[AutoOutfitSystem] Generated result:', result);
             
@@ -215,12 +186,15 @@ Important: Always use the exact slot names listed above. Never invent new slot n
                 await this.processCommandBatch(commands);
             } else {
                 console.log('[AutoOutfitSystem] No outfit commands found in response');
-                // Alert the user if the LLM couldn't parse any clothing data
-                this.showPopup('LLM could not parse any clothing data from the character.', 'warning');
+                // Don't show a warning for empty responses when there are no changes - this is normal
+                if (result.trim() !== '[none]') {
+                    // Only show the warning if the LLM didn't return an explicit "no changes" message
+                    this.showPopup('LLM could not parse any clothing data from the character.', 'warning');
+                }
             }
             
         } catch (error) {
-            console.error('[AutoOutfitSystem] Generation failed:', error);
+            console.error('[AutoOutfitSystem] Generation failed, trying fallback:', error);
             await this.tryFallbackGeneration(promptText);
         }
     }
@@ -344,25 +318,24 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         
         try {
             const context = window.getContext();
-            
             let result;
+            
             if (context.generateQuietPrompt) {
-                result = await context.generateQuietPrompt({
-                    quietPrompt: processedPromptText
-                });
+                result = await LLMUtility.generateWithRetry(
+                    processedPromptText,
+                    "You are an outfit change detection system. Analyze the conversation and output outfit commands when clothing changes occur.",
+                    context
+                );
             } else if (context.generateRaw) {
                 // Try standard generateRaw as a fallback if generateQuietPrompt is not available
-                result = await context.generateRaw({
-                    prompt: processedPromptText,
-                    systemPrompt: "You are an outfit change detection system. Analyze the conversation and output outfit commands when clothing changes occur."
-                });
+                result = await LLMUtility.generateWithRetry(
+                    processedPromptText,
+                    "You are an outfit change detection system. Analyze the conversation and output outfit commands when clothing changes occur.",
+                    context
+                );
             } else {
                 // If neither method is available, use the connection profile method
                 result = await this.generateWithProfile(processedPromptText);
-            }
-
-            if (!result) {
-                throw new Error('No output generated from fallback generation');
             }
             
             console.log('[AutoOutfitSystem] Fallback result:', result);
@@ -371,6 +344,13 @@ Important: Always use the exact slot names listed above. Never invent new slot n
             
             if (commands.length > 0) {
                 await this.processCommandBatch(commands);
+            } else {
+                console.log('[AutoOutfitSystem] No outfit commands found in fallback response');
+                // Don't show a warning for empty responses when there are no changes - this is normal
+                if (result.trim() !== '[none]') {
+                    // Only show the warning if the LLM didn't return an explicit "no changes" message
+                    this.showPopup('LLM could not parse any clothing data from the character.', 'warning');
+                }
             }
             
         } catch (fallbackError) {
@@ -381,6 +361,12 @@ Important: Always use the exact slot names listed above. Never invent new slot n
 
     parseGeneratedText(text) {
         if (!text) return [];
+        
+        // Check if the text is just "[none]" (meaning no changes detected)
+        if (text.trim() === '[none]') {
+            console.log('[AutoOutfitSystem] No outfit changes detected by LLM');
+            return [];
+        }
         
         // Use the non-regex function to extract commands
         const commands = extractCommands(text);
@@ -695,34 +681,148 @@ Important: Always use the exact slot names listed above. Never invent new slot n
         // The actual implementation of using different connection profiles would depend
         // on SillyTavern's internal architecture for switching between different endpoints
         // We'll implement a standard approach here
-        try {
-            if (context.generateRaw) {
-                return await context.generateRaw({
-                    prompt: processedPromptText,
-                    systemPrompt: "You are an outfit change detection system. Analyze the conversation and output outfit commands when clothing changes occur."
-                });
-            } else if (context.generateQuietPrompt) {
-                return await context.generateQuietPrompt({
-                    quietPrompt: processedPromptText
-                });
-            } else {
-                // Fallback to standard generation
-                throw new Error('No generation method available');
-            }
-        } catch (error) {
-            console.error(`[AutoOutfitSystem] Error using profile ${this.connectionProfile}:`, error);
-            // Fallback to default generation
-            if (context.generateRaw) {
-                return await context.generateRaw({
-                    prompt: processedPromptText,
-                    systemPrompt: "You are an outfit change detection system. Analyze the conversation and output outfit commands when clothing changes occur."
-                });
-            } else {
-                return await context.generateQuietPrompt({
-                    quietPrompt: processedPromptText
-                });
+        
+        // Retry algorithm: try up to 3 times if output is empty
+        let attempt = 0;
+        const maxRetries = 3;
+        
+        while (attempt < maxRetries) {
+            try {
+                let result;
+                
+                if (context.generateRaw) {
+                    result = await context.generateRaw({
+                        prompt: processedPromptText,
+                        systemPrompt: "You are an outfit change detection system. Analyze the conversation and output outfit commands when clothing changes occur."
+                    });
+                } else if (context.generateQuietPrompt) {
+                    result = await context.generateQuietPrompt({
+                        quietPrompt: processedPromptText
+                    });
+                } else {
+                    // Fallback to standard generation
+                    throw new Error('No generation method available');
+                }
+
+                if (!result) {
+                    console.warn(`[AutoOutfitSystem] No output generated with profile (attempt ${attempt + 1}/${maxRetries})`);
+                    attempt++;
+                    if (attempt >= maxRetries) {
+                        console.error('[AutoOutfitSystem] Max retries reached with no output using profile');
+                        throw new Error('No output generated with profile after retries');
+                    }
+                    continue; // Retry
+                }
+                
+                // Check if the result is empty or just whitespace
+                if (!result || result.trim() === '') {
+                    console.warn(`[AutoOutfitSystem] Empty response with profile (attempt ${attempt + 1}/${maxRetries})`);
+                    attempt++;
+                    if (attempt >= maxRetries) {
+                        console.error('[AutoOutfitSystem] Max retries reached with empty responses using profile');
+                        throw new Error('Empty response with profile after retries');
+                    }
+                    continue; // Retry
+                }
+                
+                return result; // Success, return the result
+                
+            } catch (error) {
+                console.error(`[AutoOutfitSystem] Error using profile ${this.connectionProfile} (attempt ${attempt + 1}/${maxRetries}):`, error);
+                if (attempt < maxRetries - 1) {
+                    attempt++;
+                    continue; // Retry
+                } else {
+                    // If all retries with the profile fail, try default generation
+                    console.log('[AutoOutfitSystem] Trying default generation after profile failures...');
+                    
+                    // Try fallback to default generation with its own retry logic
+                    if (context.generateRaw) {
+                        let fallbackResult = null;
+                        let fallbackAttempt = 0;
+                        
+                        while (fallbackAttempt < maxRetries) {
+                            try {
+                                fallbackResult = await context.generateRaw({
+                                    prompt: processedPromptText,
+                                    systemPrompt: "You are an outfit change detection system. Analyze the conversation and output outfit commands when clothing changes occur."
+                                });
+                                
+                                if (!fallbackResult || fallbackResult.trim() === '') {
+                                    console.warn(`[AutoOutfitSystem] Empty fallback response (attempt ${fallbackAttempt + 1}/${maxRetries})`);
+                                    fallbackAttempt++;
+                                    if (fallbackAttempt >= maxRetries) {
+                                        throw new Error('Empty response from fallback generation after retries');
+                                    }
+                                    continue; // Retry
+                                }
+                                
+                                return fallbackResult; // Success
+                            } catch (fallbackError) {
+                                console.error('[AutoOutfitSystem] Fallback generation failed:', fallbackError);
+                                if (fallbackAttempt < maxRetries - 1) {
+                                    fallbackAttempt++;
+                                    continue; // Retry
+                                } else {
+                                    throw new Error(`Fallback generation failed after ${maxRetries} attempts: ${fallbackError.message}`);
+                                }
+                            }
+                        }
+                    } else {
+                        let fallbackResult = null;
+                        let fallbackAttempt = 0;
+                        
+                        while (fallbackAttempt < maxRetries) {
+                            try {
+                                fallbackResult = await context.generateQuietPrompt({
+                                    quietPrompt: processedPromptText
+                                });
+                                
+                                if (!fallbackResult || fallbackResult.trim() === '') {
+                                    console.warn(`[AutoOutfitSystem] Empty fallback quiet response (attempt ${fallbackAttempt + 1}/${maxRetries})`);
+                                    fallbackAttempt++;
+                                    if (fallbackAttempt >= maxRetries) {
+                                        throw new Error('Empty response from fallback quiet generation after retries');
+                                    }
+                                    continue; // Retry
+                                }
+                                
+                                return fallbackResult; // Success
+                            } catch (fallbackError) {
+                                console.error('[AutoOutfitSystem] Fallback quiet generation failed:', fallbackError);
+                                if (fallbackAttempt < maxRetries - 1) {
+                                    fallbackAttempt++;
+                                    continue; // Retry
+                                } else {
+                                    throw new Error(`Fallback quiet generation failed after ${maxRetries} attempts: ${fallbackError.message}`);
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
+    }
+
+    // Helper method to generate with a specific connection profile
+    async generateWithProfile(originalPromptText) {
+        // In SillyTavern, different connection profiles are handled through
+        // the connection profile system. We'll implement a more standard approach
+        // that would work with the SillyTavern architecture.
+        
+        const context = window.getContext();
+        
+        // Process the prompt to replace any macros (though they should already be replaced, 
+        // this is a safety measure)
+        const processedPromptText = this.replaceMacrosInPrompt(originalPromptText);
+        
+        // Use the unified LLM utility with profile
+        return await LLMUtility.generateWithProfile(
+            processedPromptText,
+            "You are an outfit change detection system. Analyze the conversation and output outfit commands when clothing changes occur.",
+            context,
+            this.connectionProfile
+        );
     }
 
 

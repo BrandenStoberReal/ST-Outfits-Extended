@@ -1,5 +1,6 @@
 import { dragElementWithSave, resizeElement } from './shared.js';
 import { extractCommands } from './StringProcessor.js';
+import { LLMUtility } from './LLMUtility.js';
 
 export class BotOutfitPanel {
     constructor(outfitManager, clothingSlots, accessorySlots, saveSettingsDebounced) {
@@ -382,60 +383,30 @@ export class BotOutfitPanel {
     }
 
     getDefaultOutfitPrompt() {
-        return `Analyze the character's description, personality, scenario, character notes, and first message. Based on these details, determine an appropriate outfit for the character.
+        return `Based on the character's description, personality, scenario, notes, and first message, generate appropriate outfit commands.
 
-Here is the character information:
+CHARACTER INFO:
 Name: <CHARACTER_NAME>
 Description: <CHARACTER_DESCRIPTION>
 Personality: <CHARACTER_PERSONALITY>
 Scenario: <CHARACTER_SCENARIO>
-Character Notes: <CHARACTER_NOTES>
+Notes: <CHARACTER_NOTES>
 First Message: <CHARACTER_FIRST_MESSAGE>
 
-Based on the information provided, output outfit commands to set the character's clothing and accessories. Only output commands, nothing else.
-
-Use these command formats:
+OUTPUT FORMAT (one command per line):
 outfit-system_wear_headwear("item name")
 outfit-system_wear_topwear("item name")
-outfit-system_wear_topunderwear("item name")
-outfit-system_wear_bottomwear("item name")
-outfit-system_wear_bottomunderwear("item name")
-outfit-system_wear_footwear("item name")
-outfit-system_wear_footunderwear("item name")
-outfit-system_wear_head-accessory("item name")
-outfit-system_wear_ears-accessory("item name")
-outfit-system_wear_eyes-accessory("item name")
-outfit-system_wear_mouth-accessory("item name")
-outfit-system_wear_neck-accessory("item name")
-outfit-system_wear_body-accessory("item name")
-outfit-system_wear_arms-accessory("item name")
-outfit-system_wear_hands-accessory("item name")
-outfit-system_wear_waist-accessory("item name")
-outfit-system_wear_bottom-accessory("item name")
-outfit-system_wear_legs-accessory("item name")
-outfit-system_wear_foot-accessory("item name")
-outfit-system_remove_headwear()
-outfit-system_remove_topwear()
-outfit-system_remove_topunderwear()
-outfit-system_remove_bottomwear()
-outfit-system_remove_bottomunderwear()
-outfit-system_remove_footwear()
-outfit-system_remove_footunderwear()
-outfit-system_remove_head-accessory()
-outfit-system_remove_ears-accessory()
-outfit-system_remove_eyes-accessory()
-outfit-system_remove_mouth-accessory()
-outfit-system_remove_neck-accessory()
-outfit-system_remove_body-accessory()
-outfit-system_remove_arms-accessory()
-outfit-system_remove_hands-accessory()
-outfit-system_remove_waist-accessory()
-outfit-system_remove_bottom-accessory()
-outfit-system_remove_legs-accessory()
-outfit-system_remove_foot-accessory()
+outfit-system_remove_headwear()  // for items not applicable
 
-For each clothing item or accessory you identify for this character, output a corresponding command. If an item is not applicable based on the character info, do not output a command for it.
-Only output command lines, nothing else.`;
+SLOTS:
+Clothing: headwear, topwear, topunderwear, bottomwear, bottomunderwear, footwear, footunderwear
+Accessories: head-accessory, ears-accessory, eyes-accessory, mouth-accessory, neck-accessory, body-accessory, arms-accessory, hands-accessory, waist-accessory, bottom-accessory, legs-accessory, foot-accessory
+
+INSTRUCTIONS:
+- Only output outfit commands based on character details
+- Use "remove" for items that don't fit the character
+- If uncertain about an item, omit the command
+- Output only commands, no explanations`;
     }
 
     async generateOutfitFromLLM(characterInfo) {
@@ -452,19 +423,12 @@ Only output command lines, nothing else.`;
                 .replace('<CHARACTER_NOTES>', characterInfo.characterNotes)
                 .replace('<CHARACTER_FIRST_MESSAGE>', characterInfo.firstMessage);
             
-            const context = window.getContext();
-            
-            // Use the generateRaw function to send the prompt to the LLM
-            const result = await context.generateRaw({
-                prompt: prompt,
-                systemPrompt: "You are an outfit generation system. Based on the character information provided, output outfit commands to set the character's clothing and accessories."
-            });
-            
-            if (!result) {
-                throw new Error('No output generated from LLM');
-            }
-            
-            return result;
+            // Use the unified LLM utility
+            return await LLMUtility.generateWithRetry(
+                prompt,
+                "You are an outfit generation system. Based on the character information provided, output outfit commands to set the character's clothing and accessories.",
+                window.getContext()
+            );
         } catch (error) {
             console.error('Error generating outfit from LLM:', error);
             throw error;

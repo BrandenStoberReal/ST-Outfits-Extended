@@ -7,6 +7,7 @@ import { SlashCommandArgument, SlashCommandNamedArgument, ARGUMENT_TYPE } from "
 
 // Import the extractMacros and replaceAll functions from StringProcessor
 import { extractMacros, replaceAll } from "./src/StringProcessor.js";
+import { LLMUtility } from "./src/LLMUtility.js";
 
 // Define global variables that might not be imported directly
 // power_user and user_avatar are typically available globally in SillyTavern
@@ -633,62 +634,63 @@ async function initializeExtension() {
     // Function to use LLM for intelligent removal of clothing references
     async function removeClothingReferencesWithLLM(characterInfo) {
         try {
-            const prompt = `You are an assistant that helps clean up character descriptions for a role-playing application. Your task is to:
+            const prompt = `Clean up character descriptions by removing clothing/accessory details while preserving all other character information.
 
-1. Remove clothing and accessory descriptions from character information
-2. Fix spelling and grammar errors in the remaining text
-3. Preserve quoted speech and quoted actions exactly as they are (do not modify content within quotes)
-4. Keep all other character information intact
-5. Especially preserve examples of character speech and behavior (like "*She walked to the store*" or "She said: 'Hello there!'")
+TASKS:
+1. Remove clothing and accessory descriptions
+2. Fix spelling/grammar errors in remaining text
+3. Preserve quoted speech/actions exactly
+4. Maintain all other character info
 
-Here is the character information:
-
+CHARACTER DATA:
 Name: ${characterInfo.name || 'Unknown'}
 Description: ${characterInfo.description}
 Personality: ${characterInfo.personality}
 Scenario: ${characterInfo.scenario}
-Character Notes: ${characterInfo.characterNotes}
+Notes: ${characterInfo.characterNotes}
 First Message: ${characterInfo.firstMessage}
 
-Please return the improved versions of each field, clearly labeled:
-
+OUTPUT FORMAT:
 [DESCRIPTION]
-[Return the description with clothing removed and grammar fixed]
+Cleaned description text
 [/DESCRIPTION]
 
 [PERSONALITY]
-[Return the personality with clothing removed and grammar fixed]
+Cleaned personality text
 [/PERSONALITY]
 
 [SCENARIO]
-[Return the scenario with clothing removed and grammar fixed]
+Cleaned scenario text
 [/SCENARIO]
 
 [CHARACTER_NOTES]
-[Return the character notes with clothing removed and grammar fixed]
+Cleaned notes text
 [/CHARACTER_NOTES]
 
-Do not include any other text or explanations in your response.`;
+Only return the formatted sections with cleaned content.`;
 
             const context = getContext();
             
-            // Try different generation methods in order of preference
             let result;
-            if (context.generateRaw) {
-                result = await context.generateRaw({
-                    prompt: prompt,
-                    systemPrompt: "You are an assistant that helps clean up character descriptions by removing clothing references while preserving other content and fixing grammar."
-                });
-            } else if (context.generateQuietPrompt) {
-                result = await context.generateQuietPrompt({
-                    quietPrompt: prompt
-                });
-            } else {
-                // Use AutoOutfitSystem's generation method as fallback
-                result = await autoOutfitSystem.generateWithProfile(prompt);
-            }
-
-            if (!result) {
+            try {
+                // Try different generation methods in order of preference
+                if (context.generateRaw) {
+                    result = await LLMUtility.generateWithRetry(
+                        prompt,
+                        "You are an assistant that helps clean up character descriptions by removing clothing references while preserving other content and fixing grammar.",
+                        context
+                    );
+                } else if (context.generateQuietPrompt) {
+                    result = await LLMUtility.generateWithRetry(
+                        prompt,
+                        "You are an assistant that helps clean up character descriptions by removing clothing references while preserving other content and fixing grammar.",
+                        context
+                    );
+                } else {
+                    // Use AutoOutfitSystem's generation method as fallback
+                    result = await autoOutfitSystem.generateWithProfile(prompt);
+                }
+            } catch (error) {
                 console.warn("LLM did not return a valid response, returning original character info");
                 return characterInfo;
             }
@@ -768,26 +770,22 @@ Do not include any other text or explanations in your response.`;
             const context = getContext();
             
             // Try different generation methods in order of preference
-            let result;
             if (context.generateRaw) {
-                result = await context.generateRaw({
-                    prompt: prompt,
-                    systemPrompt: "You are an outfit generation system. Based on the character information provided, output outfit commands to set the character's clothing and accessories."
-                });
+                return await LLMUtility.generateWithRetry(
+                    prompt,
+                    "You are an outfit generation system. Based on the character information provided, output outfit commands to set the character's clothing and accessories.",
+                    context
+                );
             } else if (context.generateQuietPrompt) {
-                result = await context.generateQuietPrompt({
-                    quietPrompt: prompt
-                });
+                return await LLMUtility.generateWithRetry(
+                    prompt,
+                    "You are an outfit generation system. Based on the character information provided, output outfit commands to set the character's clothing and accessories.",
+                    context
+                );
             } else {
                 // Use AutoOutfitSystem's generation method as fallback
-                result = await autoOutfitSystem.generateWithProfile(prompt);
+                return await autoOutfitSystem.generateWithProfile(prompt);
             }
-            
-            if (!result) {
-                throw new Error('No output generated from LLM');
-            }
-            
-            return result;
         } catch (error) {
             console.error('Error generating outfit from LLM:', error);
             throw error;
