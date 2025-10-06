@@ -94,7 +94,15 @@ async function initializeExtension() {
             name: 'outfit-bot',
             callback: async function (args, value) {
                 console.log("Bot Outfit command triggered");
-                botPanel.toggle();
+                if (window.botOutfitPanel) {
+                    botPanel.toggle();
+                } else {
+                    console.error("[OutfitTracker] Bot outfit panel not available");
+                    if (!args?.quiet) {
+                        toastr.error('Bot outfit panel not available', 'Outfit System');
+                    }
+                    return '[Outfit System] Bot outfit panel not available';
+                }
                 const isQuiet = args?.quiet === true;
                 if (!isQuiet) {
                     toastr.info('Toggled character outfit panel', 'Outfit System');
@@ -141,7 +149,15 @@ async function initializeExtension() {
             name: 'outfit-user',
             callback: async function (args, value) {
                 console.log("User Outfit command triggered");
-                userPanel.toggle();
+                if (window.userOutfitPanel) {
+                    userPanel.toggle();
+                } else {
+                    console.error("[OutfitTracker] User outfit panel not available");
+                    if (!args?.quiet) {
+                        toastr.error('User outfit panel not available', 'Outfit System');
+                    }
+                    return '[Outfit System] User outfit panel not available';
+                }
                 const isQuiet = args?.quiet === true;
                 if (!isQuiet) {
                     toastr.info('Toggled user outfit panel', 'Outfit System');
@@ -192,25 +208,33 @@ async function initializeExtension() {
                     const arg = value?.toString().toLowerCase() || '';
                     const isQuiet = args?.quiet === true;
 
-                    if (arg === 'on') {
-                        const message = autoOutfitSystem.enable();
-                        if (!isQuiet) {
-                            toastr.info(message, 'Outfit System');
+                    if (window.autoOutfitSystem) {
+                        if (arg === 'on') {
+                            const message = autoOutfitSystem.enable();
+                            if (!isQuiet) {
+                                toastr.info(message, 'Outfit System');
+                            }
+                            return message;
+                        } else if (arg === 'off') {
+                            const message = autoOutfitSystem.disable();
+                            if (!isQuiet) {
+                                toastr.info(message, 'Outfit System');
+                            }
+                            return message;
+                        } else {
+                            const status = autoOutfitSystem.getStatus();
+                            const statusMessage = `Auto outfit: ${status.enabled ? 'ON' : 'OFF'}\nPrompt: ${status.hasPrompt ? 'SET' : 'NOT SET'}`;
+                            if (!isQuiet) {
+                                toastr.info(statusMessage);
+                            }
+                            return statusMessage;
                         }
-                        return message;
-                    } else if (arg === 'off') {
-                        const message = autoOutfitSystem.disable();
-                        if (!isQuiet) {
-                            toastr.info(message, 'Outfit System');
-                        }
-                        return message;
                     } else {
-                        const status = autoOutfitSystem.getStatus();
-                        const statusMessage = `Auto outfit: ${status.enabled ? 'ON' : 'OFF'}\nPrompt: ${status.hasPrompt ? 'SET' : 'NOT SET'}`;
+                        const message = 'Auto outfit system not available';
                         if (!isQuiet) {
-                            toastr.info(statusMessage);
+                            toastr.error(message, 'Outfit System');
                         }
-                        return statusMessage;
+                        return message;
                     }
                 },
                 returns: 'toggles auto outfit updates',
@@ -267,17 +291,25 @@ async function initializeExtension() {
             SlashCommandParser.addCommandObject(SlashCommand.fromProps({
                 name: 'outfit-prompt',
                 callback: async function (args, value) {
-                    const prompt = value?.toString() || '';
-                    if (prompt) {
-                        const message = autoOutfitSystem.setPrompt(prompt);
-                        if (extension_settings.outfit_tracker?.enableSysMessages) {
-                            botPanel.sendSystemMessage(message);
+                    if (window.autoOutfitSystem) {
+                        const prompt = value?.toString() || '';
+                        if (prompt) {
+                            const message = autoOutfitSystem.setPrompt(prompt);
+                            if (extension_settings.outfit_tracker?.enableSysMessages) {
+                                botPanel.sendSystemMessage(message);
+                            }
+                            return message;
+                        } else {
+                            const length = autoOutfitSystem.systemPrompt?.length || 0;
+                            toastr.info(`Current prompt length: ${length}`);
+                            return `Current prompt length: ${length}`;
+                        }
+                    } else {
+                        const message = 'Auto outfit system not available';
+                        if (!args?.quiet) {
+                            toastr.error(message, 'Outfit System');
                         }
                         return message;
-                    } else {
-                        const length = autoOutfitSystem.systemPrompt?.length || 0;
-                        toastr.info(`Current prompt length: ${length}`);
-                        return `Current prompt length: ${length}`;
                     }
                 },
                 returns: 'sets or shows the auto outfit system prompt',
@@ -312,15 +344,23 @@ async function initializeExtension() {
             SlashCommandParser.addCommandObject(SlashCommand.fromProps({
                 name: 'outfit-prompt-reset',
                 callback: async function (args, value) {
-                    const message = autoOutfitSystem.resetToDefaultPrompt();
-                    if (extension_settings.outfit_tracker?.enableSysMessages) {
-                        botPanel.sendSystemMessage(message);
+                    if (window.autoOutfitSystem) {
+                        const message = autoOutfitSystem.resetToDefaultPrompt();
+                        if (extension_settings.outfit_tracker?.enableSysMessages) {
+                            botPanel.sendSystemMessage(message);
+                        }
+                        // Update the textarea in settings
+                        $("#outfit-prompt-input").val(autoOutfitSystem.systemPrompt);
+                        extension_settings[MODULE_NAME].autoOutfitPrompt = autoOutfitSystem.systemPrompt;
+                        saveSettingsDebounced();
+                        return message;
+                    } else {
+                        const message = 'Auto outfit system not available';
+                        if (!args?.quiet) {
+                            toastr.error(message, 'Outfit System');
+                        }
+                        return message;
                     }
-                    // Update the textarea in settings
-                    $("#outfit-prompt-input").val(autoOutfitSystem.systemPrompt);
-                    extension_settings[MODULE_NAME].autoOutfitPrompt = autoOutfitSystem.systemPrompt;
-                    saveSettingsDebounced();
-                    return message;
                 },
                 returns: 'resets to default system prompt',
                 namedArgumentList: [],
@@ -344,17 +384,25 @@ async function initializeExtension() {
             SlashCommandParser.addCommandObject(SlashCommand.fromProps({
                 name: 'outfit-prompt-view',
                 callback: async function (args, value) {
-                    const status = autoOutfitSystem.getStatus();
-                    const preview = autoOutfitSystem.systemPrompt.length > 100
-                        ? autoOutfitSystem.systemPrompt.substring(0, 100) + '...'
-                        : autoOutfitSystem.systemPrompt;
+                    if (window.autoOutfitSystem) {
+                        const status = autoOutfitSystem.getStatus();
+                        const preview = autoOutfitSystem.systemPrompt.length > 100
+                            ? autoOutfitSystem.systemPrompt.substring(0, 100) + '...'
+                            : autoOutfitSystem.systemPrompt;
 
-                    const message = `Prompt preview: ${preview}\n\nFull length: ${status.promptLength} chars`;
-                    toastr.info(message, 'Current System Prompt', {
-                        timeOut: 10000,
-                        extendedTimeOut: 20000
-                    });
-                    return message;
+                        const message = `Prompt preview: ${preview}\n\nFull length: ${status.promptLength} chars`;
+                        toastr.info(message, 'Current System Prompt', {
+                            timeOut: 10000,
+                            extendedTimeOut: 20000
+                        });
+                        return message;
+                    } else {
+                        const message = 'Auto outfit system not available';
+                        if (!args?.quiet) {
+                            toastr.error(message, 'Outfit System');
+                        }
+                        return message;
+                    }
                 },
                 returns: 'shows current system prompt',
                 namedArgumentList: [],
@@ -378,9 +426,17 @@ async function initializeExtension() {
             SlashCommandParser.addCommandObject(SlashCommand.fromProps({
                 name: 'outfit-auto-trigger',
                 callback: async function (args, value) {
-                    const result = await autoOutfitSystem.manualTrigger();
-                    toastr.info(result, 'Manual Outfit Check');
-                    return result;
+                    if (window.autoOutfitSystem) {
+                        const result = await autoOutfitSystem.manualTrigger();
+                        toastr.info(result, 'Manual Outfit Check');
+                        return result;
+                    } else {
+                        const message = 'Auto outfit system not available';
+                        if (!args?.quiet) {
+                            toastr.error(message, 'Outfit System');
+                        }
+                        return message;
+                    }
                 },
                 returns: 'manually trigger auto outfit check',
                 namedArgumentList: [],
@@ -950,131 +1006,154 @@ Only output command lines, nothing else.`;
 
 
     function updateForCurrentCharacter() {
-        const context = getContext();
+        try {
+            const context = getContext();
 
-        // Check if context is ready before trying to access character data
-        if (!context || !context.characters || context.characterId === undefined || context.characterId === null) {
-            console.log("[OutfitTracker] Context not ready or no character selected, setting as Unknown");
-            botManager.setCharacter('Unknown');
-            botPanel.updateCharacter('Unknown');
-            return;
-        }
+            // Check if context is ready before trying to access character data
+            if (!context || !context.characters || context.characterId === undefined || context.characterId === null) {
+                console.log("[OutfitTracker] Context not ready or no character selected, setting as Unknown");
+                if (botManager) {
+                    botManager.setCharacter('Unknown');
+                }
+                if (botPanel) {
+                    botPanel.updateCharacter('Unknown');
+                }
+                return;
+            }
 
-        // Make sure the character exists in the characters array
-        const character = context.characters[context.characterId];
-        if (!character) {
-            console.log("[OutfitTracker] Character not found at index " + context.characterId + ", setting as Unknown");
-            botManager.setCharacter('Unknown');
-            botPanel.updateCharacter('Unknown');
-            return;
-        }
+            // Make sure the character exists in the characters array
+            const character = context.characters[context.characterId];
+            if (!character) {
+                console.log("[OutfitTracker] Character not found at index " + context.characterId + ", setting as Unknown");
+                if (botManager) {
+                    botManager.setCharacter('Unknown');
+                }
+                if (botPanel) {
+                    botPanel.updateCharacter('Unknown');
+                }
+                return;
+            }
 
-        const charName = character.name || 'Unknown';
-        console.log("[OutfitTracker] Updating character to: " + charName + " (ID: " + context.characterId + ")");
-        botManager.setCharacter(charName);
-        botPanel.updateCharacter(charName);
+            const charName = character.name || 'Unknown';
+            console.log("[OutfitTracker] Updating character to: " + charName + " (ID: " + context.characterId + ")");
+            if (botManager) {
+                botManager.setCharacter(charName);
+            }
+            if (botPanel) {
+                botPanel.updateCharacter(charName);
+            }
 
-        // Make sure the panel renders the content with the new character name
-        if (botPanel.isVisible && !botPanel.isMinimized) {
-            botPanel.renderContent();
+            // Make sure the panel renders the content with the new character name
+            if (botPanel.isVisible && !botPanel.isMinimized && botPanel.renderContent) {
+                botPanel.renderContent();
+            }
+        } catch (error) {
+            console.error("[OutfitTracker] Error updating for current character:", error);
         }
     }
 
     // Format the outfit info according to the required format
     function getOutfitInfoString() {
-        // Get current outfit data from the bot manager
-        const botOutfitData = botManager.getOutfitData([...CLOTHING_SLOTS, ...ACCESSORY_SLOTS]);
-        const userOutfitData = userManager.getOutfitData([...CLOTHING_SLOTS, ...ACCESSORY_SLOTS]);
+        try {
+            // Get current outfit data from the bot manager
+            const botOutfitData = botManager && botManager.getOutfitData ? 
+                botManager.getOutfitData([...CLOTHING_SLOTS, ...ACCESSORY_SLOTS]) : [];
+            const userOutfitData = userManager && userManager.getOutfitData ? 
+                userManager.getOutfitData([...CLOTHING_SLOTS, ...ACCESSORY_SLOTS]) : [];
 
-        let outfitInfo = '';
+            let outfitInfo = '';
 
-        // Check if bot has any non-empty clothing items before adding the bot clothing section
-        const botHasClothing = botOutfitData.some(data => 
-            CLOTHING_SLOTS.includes(data.name) && data.value !== 'None' && data.value !== ''
-        );
+            // Check if bot has any non-empty clothing items before adding the bot clothing section
+            const botHasClothing = botOutfitData.some(data => 
+                CLOTHING_SLOTS.includes(data.name) && data.value !== 'None' && data.value !== ''
+            );
 
-        if (botHasClothing) {
-            outfitInfo += `\n**<BOT>'s Current Outfit**\n`;
+            if (botHasClothing) {
+                outfitInfo += `\n**<BOT>'s Current Outfit**\n`;
 
-            // Add clothing info
-            CLOTHING_SLOTS.forEach(slot => {
-                const slotData = botOutfitData.find(data => data.name === slot);
-                if (slotData) {
-                    const formattedSlotName = slot.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.charAt(0).toUpperCase()).replace('underwear', 'Underwear');
-                    outfitInfo += `**${formattedSlotName}:** {{getglobalvar::<BOT>_${slotData.name}}}\n`;
-                }
-            });
-        }
-
-        // Check if bot has any non-empty accessories before adding the accessories section
-        const botHasAccessories = botOutfitData.some(data => 
-            ACCESSORY_SLOTS.includes(data.name) && data.value !== 'None' && data.value !== ''
-        );
-        
-        if (botHasAccessories) {
-            outfitInfo += `\n**<BOT>'s Current Accessories**\n`;
-
-            // Add accessory info - only include those that are specifically defined (not "None" or empty)
-            ACCESSORY_SLOTS.forEach(slot => {
-                const slotData = botOutfitData.find(data => data.name === slot);
-                if (slotData && slotData.value !== 'None' && slotData.value !== '') {
-                    // Fix the eyes accessory typo mentioned in the requirements
-                    let formattedSlotName = slot.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.charAt(0).toUpperCase())
-                        .replace(/-/g, ' ')
-                        .replace('accessory', 'Accessory');
-                    // Fix the typo: "Eyes Accessory" should come from "ears-accessory" according to the requirement example
-                    if (slot === 'ears-accessory') {
-                        formattedSlotName = 'Eyes Accessory';
+                // Add clothing info
+                CLOTHING_SLOTS.forEach(slot => {
+                    const slotData = botOutfitData.find(data => data.name === slot);
+                    if (slotData) {
+                        const formattedSlotName = slot.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.charAt(0).toUpperCase()).replace('underwear', 'Underwear');
+                        outfitInfo += `**${formattedSlotName}:** {{getglobalvar::<BOT>_${slotData.name}}}\n`;
                     }
-                    outfitInfo += `**${formattedSlotName}:** {{getglobalvar::<BOT>_${slotData.name}}}\n`;
-                }
-            });
-        }
+                });
+            }
 
-        // Check if user has any non-empty clothing items before adding the user clothing section
-        const userHasClothing = userOutfitData.some(data => 
-            CLOTHING_SLOTS.includes(data.name) && data.value !== 'None' && data.value !== ''
-        );
+            // Check if bot has any non-empty accessories before adding the accessories section
+            const botHasAccessories = botOutfitData.some(data => 
+                ACCESSORY_SLOTS.includes(data.name) && data.value !== 'None' && data.value !== ''
+            );
+            
+            if (botHasAccessories) {
+                outfitInfo += `\n**<BOT>'s Current Accessories**\n`;
 
-        if (userHasClothing) {
-            outfitInfo += `\n**{{user}}'s Current Outfit**\n`;
-
-            // Add user clothing info
-            CLOTHING_SLOTS.forEach(slot => {
-                const slotData = userOutfitData.find(data => data.name === slot);
-                if (slotData) {
-                    const formattedSlotName = slot.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.charAt(0).toUpperCase()).replace('underwear', 'Underwear');
-                    outfitInfo += `**${formattedSlotName}:** {{getglobalvar::User_${slotData.name}}}\n`;
-                }
-            });
-        }
-
-        // Check if user has any non-empty accessories before adding the accessories section
-        const userHasAccessories = userOutfitData.some(data => 
-            ACCESSORY_SLOTS.includes(data.name) && data.value !== 'None' && data.value !== ''
-        );
-        
-        if (userHasAccessories) {
-            outfitInfo += `\n**{{user}}'s Current Accessories**\n`;
-
-            // Add user accessory info - only include those that are specifically defined (not "None" or empty)
-            ACCESSORY_SLOTS.forEach(slot => {
-                const slotData = userOutfitData.find(data => data.name === slot);
-                if (slotData && slotData.value !== 'None' && slotData.value !== '') {
-                    // Fix the eyes accessory typo mentioned in the requirements
-                    let formattedSlotName = slot.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.charAt(0).toUpperCase())
-                        .replace(/-/g, ' ')
-                        .replace('accessory', 'Accessory');
-                    // Fix the typo: "Eyes Accessory" should come from "ears-accessory" according to the requirement example
-                    if (slot === 'ears-accessory') {
-                        formattedSlotName = 'Eyes Accessory';
+                // Add accessory info - only include those that are specifically defined (not "None" or empty)
+                ACCESSORY_SLOTS.forEach(slot => {
+                    const slotData = botOutfitData.find(data => data.name === slot);
+                    if (slotData && slotData.value !== 'None' && slotData.value !== '') {
+                        // Fix the eyes accessory typo mentioned in the requirements
+                        let formattedSlotName = slot.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.charAt(0).toUpperCase())
+                            .replace(/-/g, ' ')
+                            .replace('accessory', 'Accessory');
+                        // Fix the typo: "Eyes Accessory" should come from "ears-accessory" according to the requirement example
+                        if (slot === 'ears-accessory') {
+                            formattedSlotName = 'Eyes Accessory';
+                        }
+                        outfitInfo += `**${formattedSlotName}:** {{getglobalvar::<BOT>_${slotData.name}}}\n`;
                     }
-                    outfitInfo += `**${formattedSlotName}:** {{getglobalvar::User_${slotData.name}}}\n`;
-                }
-            });
-        }
+                });
+            }
 
-        return outfitInfo;
+            // Check if user has any non-empty clothing items before adding the user clothing section
+            const userHasClothing = userOutfitData.some(data => 
+                CLOTHING_SLOTS.includes(data.name) && data.value !== 'None' && data.value !== ''
+            );
+
+            if (userHasClothing) {
+                outfitInfo += `\n**{{user}}'s Current Outfit**\n`;
+
+                // Add user clothing info
+                CLOTHING_SLOTS.forEach(slot => {
+                    const slotData = userOutfitData.find(data => data.name === slot);
+                    if (slotData) {
+                        const formattedSlotName = slot.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.charAt(0).toUpperCase()).replace('underwear', 'Underwear');
+                        outfitInfo += `**${formattedSlotName}:** {{getglobalvar::User_${slotData.name}}}\n`;
+                    }
+                });
+            }
+
+            // Check if user has any non-empty accessories before adding the accessories section
+            const userHasAccessories = userOutfitData.some(data => 
+                ACCESSORY_SLOTS.includes(data.name) && data.value !== 'None' && data.value !== ''
+            );
+            
+            if (userHasAccessories) {
+                outfitInfo += `\n**{{user}}'s Current Accessories**\n`;
+
+                // Add user accessory info - only include those that are specifically defined (not "None" or empty)
+                ACCESSORY_SLOTS.forEach(slot => {
+                    const slotData = userOutfitData.find(data => data.name === slot);
+                    if (slotData && slotData.value !== 'None' && slotData.value !== '') {
+                        // Fix the eyes accessory typo mentioned in the requirements
+                        let formattedSlotName = slot.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.charAt(0).toUpperCase())
+                            .replace(/-/g, ' ')
+                            .replace('accessory', 'Accessory');
+                        // Fix the typo: "Eyes Accessory" should come from "ears-accessory" according to the requirement example
+                        if (slot === 'ears-accessory') {
+                            formattedSlotName = 'Eyes Accessory';
+                        }
+                        outfitInfo += `**${formattedSlotName}:** {{getglobalvar::User_${slotData.name}}}\n`;
+                    }
+                });
+            }
+
+            return outfitInfo;
+        } catch (error) {
+            console.error("[OutfitTracker] Error generating outfit info string:", error);
+            return ''; // Return empty string if there's an error
+        }
     }
 
     // Helper function to initialize all outfit slots to "None" when no default exists
@@ -1111,7 +1190,9 @@ Only output command lines, nothing else.`;
         // Listen for app ready event to mark initialization
         eventSource.on(event_types.APP_READY, () => {
             console.log("[OutfitTracker] App ready, marking auto outfit system as initialized");
-            autoOutfitSystem.markAppInitialized();
+            if (window.autoOutfitSystem) {
+                autoOutfitSystem.markAppInitialized();
+            }
             // Update the current character after app is ready to ensure context is properly initialized
             updateForCurrentCharacter();
         });
@@ -1129,26 +1210,30 @@ Only output command lines, nothing else.`;
             console.log("[OutfitTracker] CHAT_CREATED event fired - resetting to default outfits");
             // When a new chat is created, reset outfits to default or initialize with None values
             try {
-                const botMessage = await botManager.loadDefaultOutfit();
-                if (botMessage && !botMessage.includes('No default outfit set')) {
-                    if (extension_settings.outfit_tracker?.enableSysMessages) {
-                        botPanel.sendSystemMessage(botMessage);
+                if (botManager) {
+                    const botMessage = await botManager.loadDefaultOutfit();
+                    if (botMessage && !botMessage.includes('No default outfit set')) {
+                        if (extension_settings.outfit_tracker?.enableSysMessages) {
+                            botPanel.sendSystemMessage(botMessage);
+                        }
+                        console.log("[OutfitTracker] Character reset to default outfit");
+                    } else {
+                        // If no default outfit exists, initialize all slots to "None"
+                        await initializeOutfitSlotsToNone(botManager, botPanel);
                     }
-                    console.log("[OutfitTracker] Character reset to default outfit");
-                } else {
-                    // If no default outfit exists, initialize all slots to "None"
-                    await initializeOutfitSlotsToNone(botManager, botPanel);
                 }
 
-                const userMessage = await userManager.loadDefaultOutfit();
-                if (userMessage && !userMessage.includes('No default outfit set')) {
-                    if (extension_settings.outfit_tracker?.enableSysMessages) {
-                        userPanel.sendSystemMessage(userMessage);
+                if (userManager) {
+                    const userMessage = await userManager.loadDefaultOutfit();
+                    if (userMessage && !userMessage.includes('No default outfit set')) {
+                        if (extension_settings.outfit_tracker?.enableSysMessages) {
+                            userPanel.sendSystemMessage(userMessage);
+                        }
+                        console.log("[OutfitTracker] User reset to default outfit");
+                    } else {
+                        // If no default outfit exists, initialize all slots to "None"
+                        await initializeOutfitSlotsToNone(userManager, userPanel);
                     }
-                    console.log("[OutfitTracker] User reset to default outfit");
-                } else {
-                    // If no default outfit exists, initialize all slots to "None"
-                    await initializeOutfitSlotsToNone(userManager, userPanel);
                 }
             } catch (error) {
                 console.error("[OutfitTracker] Error resetting to default outfit on chat creation:", error);
@@ -1167,7 +1252,7 @@ Only output command lines, nothing else.`;
                 // If the original function doesn't exist, manually clear the chat
                 // Get the current chat and clear it
                 const context = getContext();
-                if (context.chat && Array.isArray(context.chat)) {
+                if (context && context.chat && Array.isArray(context.chat)) {
                     context.chat = [];
                     // Update the UI to reflect the cleared chat
                     if (typeof updateChatOutput === 'function') {
@@ -1179,28 +1264,32 @@ Only output command lines, nothing else.`;
             // Then reset outfits to default if available
             setTimeout(async () => {
                 try {
-                    // Reset bot outfit to default if available
-                    const botMessage = await botManager.loadDefaultOutfit();
-                    if (botMessage && !botMessage.includes('No default outfit set')) {
-                        if (extension_settings.outfit_tracker?.enableSysMessages) {
-                            botPanel.sendSystemMessage(botMessage);
+                    if (botManager) {
+                        // Reset bot outfit to default if available
+                        const botMessage = await botManager.loadDefaultOutfit();
+                        if (botMessage && !botMessage.includes('No default outfit set')) {
+                            if (extension_settings.outfit_tracker?.enableSysMessages) {
+                                botPanel.sendSystemMessage(botMessage);
+                            }
+                            console.log("[OutfitTracker] Character reset to default outfit");
+                        } else {
+                            // If no default outfit exists, initialize all slots to "None"
+                            await initializeOutfitSlotsToNone(botManager, botPanel);
                         }
-                        console.log("[OutfitTracker] Character reset to default outfit");
-                    } else {
-                        // If no default outfit exists, initialize all slots to "None"
-                        await initializeOutfitSlotsToNone(botManager, botPanel);
                     }
 
-                    // Reset user outfit to default if available
-                    const userMessage = await userManager.loadDefaultOutfit();
-                    if (userMessage && !userMessage.includes('No default outfit set')) {
-                        if (extension_settings.outfit_tracker?.enableSysMessages) {
-                            userPanel.sendSystemMessage(userMessage);
+                    if (userManager) {
+                        // Reset user outfit to default if available
+                        const userMessage = await userManager.loadDefaultOutfit();
+                        if (userMessage && !userMessage.includes('No default outfit set')) {
+                            if (extension_settings.outfit_tracker?.enableSysMessages) {
+                                userPanel.sendSystemMessage(userMessage);
+                            }
+                            console.log("[OutfitTracker] User reset to default outfit");
+                        } else {
+                            // If no default outfit exists, initialize all slots to "None"
+                            await initializeOutfitSlotsToNone(userManager, userPanel);
                         }
-                        console.log("[OutfitTracker] User reset to default outfit");
-                    } else {
-                        // If no default outfit exists, initialize all slots to "None"
-                        await initializeOutfitSlotsToNone(userManager, userPanel);
                     }
                 } catch (error) {
                     console.error("[OutfitTracker] Error resetting to default outfit:", error);

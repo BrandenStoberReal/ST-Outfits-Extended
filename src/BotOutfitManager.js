@@ -1,4 +1,5 @@
 // extension_settings is expected to be available in the global scope once the extension initializes
+import { safeGet, safeSet } from './StringProcessor.js';
 
 export class BotOutfitManager {
     constructor(slots) {
@@ -10,6 +11,13 @@ export class BotOutfitManager {
 
     setCharacter(name) {
         if (name === this.character) return;
+        
+        // Validate the character name
+        if (!name || typeof name !== 'string') {
+            console.warn('[BotOutfitManager] Invalid character name provided, using "Unknown"');
+            name = 'Unknown';
+        }
+        
         this.character = name;
         // Ensure all slots have proper values (not empty) when loading
         this.loadOutfit();
@@ -36,7 +44,9 @@ export class BotOutfitManager {
     }
 
     getVarName(slot) {
-        return `${this.character.replace(/\s+/g, '_')}_${slot}`;
+        // Ensure the character name is properly formatted for variable names
+        const formattedCharacterName = this.character.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+        return `${formattedCharacterName}_${slot}`;
     }
 
     loadOutfit() {
@@ -54,21 +64,51 @@ export class BotOutfitManager {
     }
 
     getGlobalVariable(name) {
-        // Access extension_settings from the global window object
-        const globalVars = window.extension_settings?.variables?.global || {};
-        return globalVars[name] || window[name] || 'None';
+        try {
+            // Access extension_settings from the global window object
+            const globalVars = safeGet(window, 'extension_settings.variables.global', {});
+            return globalVars[name] || window[name] || 'None';
+        } catch (error) {
+            console.error('[BotOutfitManager] Error accessing global variable:', name, error);
+            return 'None';
+        }
     }
 
     setGlobalVariable(name, value) {
-        window[name] = value;
-        if (!window.extension_settings.variables) window.extension_settings.variables = { global: {} };
-        window.extension_settings.variables.global[name] = value;
+        try {
+            window[name] = value;
+            if (!window.extension_settings?.variables) {
+                if (!window.extension_settings) window.extension_settings = {};
+                window.extension_settings.variables = { global: {} };
+            }
+            window.extension_settings.variables.global[name] = value;
+        } catch (error) {
+            console.error('[BotOutfitManager] Error setting global variable:', name, value, error);
+        }
     }
 
     async setOutfitItem(slot, value) {
+        // Validate inputs
+        if (!this.slots.includes(slot)) {
+            console.error(`[BotOutfitManager] Invalid slot: ${slot}`);
+            return null;
+        }
+        
         // Ensure empty values are stored as 'None'
         if (value === undefined || value === null || value === '') {
             value = 'None';
+        }
+        
+        // Ensure the value is a string
+        if (typeof value !== 'string') {
+            value = String(value);
+        }
+        
+        // Limit the length of values to prevent storage issues
+        const MAX_VALUE_LENGTH = 1000;
+        if (value.length > MAX_VALUE_LENGTH) {
+            value = value.substring(0, MAX_VALUE_LENGTH);
+            console.warn(`[BotOutfitManager] Value truncated to ${MAX_VALUE_LENGTH} characters for slot ${slot}`);
         }
         
         const previousValue = this.currentValues[slot];
@@ -86,6 +126,12 @@ export class BotOutfitManager {
     }
 
     async changeOutfitItem(slot) {
+        // Validate the slot
+        if (!this.slots.includes(slot)) {
+            console.error(`[BotOutfitManager] Invalid slot: ${slot}`);
+            return null;
+        }
+        
         const currentValue = this.currentValues[slot];
         let newValue = currentValue;
 
@@ -126,13 +172,20 @@ export class BotOutfitManager {
     }
 
     savePreset(presetName) {
-        // Initialize presets if needed
-        if (!window.extension_settings.outfit_tracker.presets) {
-            window.extension_settings.outfit_tracker.presets = { bot: {}, user: {} };
+        // Validate the preset name
+        if (!presetName || typeof presetName !== 'string' || presetName.trim() === '') {
+            console.error('[BotOutfitManager] Invalid preset name provided');
+            return '[Outfit System] Invalid preset name provided.';
         }
         
-        if (!window.extension_settings.outfit_tracker.presets.bot[this.character]) {
-            window.extension_settings.outfit_tracker.presets.bot[this.character] = {};
+        // Initialize presets if needed
+        if (!safeGet(window, 'extension_settings.outfit_tracker.presets')) {
+            safeSet(window, 'extension_settings.outfit_tracker.presets', { bot: {}, user: {} });
+        }
+        
+        // Ensure character presets exist
+        if (!safeGet(window, `extension_settings.outfit_tracker.presets.bot.${this.character}`)) {
+            safeSet(window, `extension_settings.outfit_tracker.presets.bot.${this.character}`, {});
         }
         
         // Create preset data for all slots
@@ -142,20 +195,26 @@ export class BotOutfitManager {
         });
         
         // Save or update preset
-        window.extension_settings.outfit_tracker.presets.bot[this.character][presetName] = presetData;
+        safeSet(window, `extension_settings.outfit_tracker.presets.bot.${this.character}.${presetName}`, presetData);
         
-        if (window.extension_settings.outfit_tracker.enableSysMessages) {
+        if (safeGet(window, 'extension_settings.outfit_tracker.enableSysMessages')) {
             return `Saved "${presetName}" outfit for ${this.character}.`;
         }
         return '';
     }
     
     async loadPreset(presetName) {
-        if (!window.extension_settings.outfit_tracker.presets?.bot?.[this.character]?.[presetName]) {
+        // Validate the preset name
+        if (!presetName || typeof presetName !== 'string') {
+            return `[Outfit System] Invalid preset name: ${presetName}`;
+        }
+        
+        const presets = safeGet(window, `extension_settings.outfit_tracker.presets.bot.${this.character}`);
+        if (!presets || !presets[presetName]) {
             return `[Outfit System] Preset "${presetName}" not found.`;
         }
         
-        const preset = window.extension_settings.outfit_tracker.presets.bot[this.character][presetName];
+        const preset = presets[presetName];
         let changed = false;
         
         for (const [slot, value] of Object.entries(preset)) {
@@ -174,38 +233,48 @@ export class BotOutfitManager {
     }
     
     deletePreset(presetName) {
-        if (!window.extension_settings.outfit_tracker.presets?.bot?.[this.character]?.[presetName]) {
+        // Validate the preset name
+        if (!presetName || typeof presetName !== 'string') {
+            return `[Outfit System] Invalid preset name: ${presetName}`;
+        }
+        
+        const presets = safeGet(window, `extension_settings.outfit_tracker.presets.bot.${this.character}`);
+        if (!presets || !presets[presetName]) {
             return `[Outfit System] Preset "${presetName}" not found.`;
         }
         
-        delete window.extension_settings.outfit_tracker.presets.bot[this.character][presetName];
+        // Delete the preset
+        delete safeGet(window, `extension_settings.outfit_tracker.presets.bot.${this.character}`)[presetName];
         
         // Cleanup character if no presets left
-        if (Object.keys(window.extension_settings.outfit_tracker.presets.bot[this.character]).length === 0) {
-            delete window.extension_settings.outfit_tracker.presets.bot[this.character];
+        const characterPresets = safeGet(window, `extension_settings.outfit_tracker.presets.bot.${this.character}`, {});
+        if (Object.keys(characterPresets).length === 0) {
+            delete safeGet(window, 'extension_settings.outfit_tracker.presets.bot')[this.character];
         }
         
-        if (window.extension_settings.outfit_tracker.enableSysMessages) {
+        if (safeGet(window, 'extension_settings.outfit_tracker.enableSysMessages')) {
             return `Deleted "${presetName}" outfit.`;
         }
         return '';
     }
     
     getPresets() {
-        if (!window.extension_settings.outfit_tracker.presets?.bot?.[this.character]) {
+        const presets = safeGet(window, `extension_settings.outfit_tracker.presets.bot.${this.character}`);
+        if (!presets) {
             return [];
         }
-        return Object.keys(window.extension_settings.outfit_tracker.presets.bot[this.character]);
+        return Object.keys(presets);
     }
     
     setDefaultOutfit() {
         // Initialize presets if needed
-        if (!window.extension_settings.outfit_tracker.presets) {
-            window.extension_settings.outfit_tracker.presets = { bot: {}, user: {} };
+        if (!safeGet(window, 'extension_settings.outfit_tracker.presets')) {
+            safeSet(window, 'extension_settings.outfit_tracker.presets', { bot: {}, user: {} });
         }
         
-        if (!window.extension_settings.outfit_tracker.presets.bot[this.character]) {
-            window.extension_settings.outfit_tracker.presets.bot[this.character] = {};
+        // Ensure character presets exist
+        if (!safeGet(window, `extension_settings.outfit_tracker.presets.bot.${this.character}`)) {
+            safeSet(window, `extension_settings.outfit_tracker.presets.bot.${this.character}`, {});
         }
         
         // Create preset data for all slots
@@ -215,47 +284,55 @@ export class BotOutfitManager {
         });
         
         // Save as default preset
-        window.extension_settings.outfit_tracker.presets.bot[this.character]['default'] = presetData;
+        safeSet(window, `extension_settings.outfit_tracker.presets.bot.${this.character}.default`, presetData);
         
-        if (window.extension_settings.outfit_tracker.enableSysMessages) {
+        if (safeGet(window, 'extension_settings.outfit_tracker.enableSysMessages')) {
             return `Set default outfit for ${this.character}.`;
         }
         return '';
     }
     
     setPresetAsDefault(presetName) {
+        // Validate the preset name
+        if (!presetName || typeof presetName !== 'string') {
+            return `[Outfit System] Invalid preset name: ${presetName}`;
+        }
+        
         // Initialize presets if needed
-        if (!window.extension_settings.outfit_tracker.presets) {
-            window.extension_settings.outfit_tracker.presets = { bot: {}, user: {} };
+        if (!safeGet(window, 'extension_settings.outfit_tracker.presets')) {
+            safeSet(window, 'extension_settings.outfit_tracker.presets', { bot: {}, user: {} });
         }
         
-        if (!window.extension_settings.outfit_tracker.presets.bot[this.character]) {
-            window.extension_settings.outfit_tracker.presets.bot[this.character] = {};
+        // Ensure character presets exist
+        if (!safeGet(window, `extension_settings.outfit_tracker.presets.bot.${this.character}`)) {
+            safeSet(window, `extension_settings.outfit_tracker.presets.bot.${this.character}`, {});
         }
         
+        const presets = safeGet(window, `extension_settings.outfit_tracker.presets.bot.${this.character}`);
         // Check if the preset exists
-        if (!window.extension_settings.outfit_tracker.presets.bot[this.character][presetName]) {
+        if (!presets || !presets[presetName]) {
             return `[Outfit System] Preset "${presetName}" not found.`;
         }
         
         // Get the preset data
-        const presetData = window.extension_settings.outfit_tracker.presets.bot[this.character][presetName];
+        const presetData = presets[presetName];
         
         // Save as default preset
-        window.extension_settings.outfit_tracker.presets.bot[this.character]['default'] = presetData;
+        safeSet(window, `extension_settings.outfit_tracker.presets.bot.${this.character}.default`, presetData);
         
-        if (window.extension_settings.outfit_tracker.enableSysMessages) {
+        if (safeGet(window, 'extension_settings.outfit_tracker.enableSysMessages')) {
             return `Set "${presetName}" as default outfit for ${this.character}.`;
         }
         return '';
     }
     
     loadDefaultOutfit() {
-        if (!window.extension_settings.outfit_tracker.presets?.bot?.[this.character]?.['default']) {
+        const presets = safeGet(window, `extension_settings.outfit_tracker.presets.bot.${this.character}`);
+        if (!presets || !presets['default']) {
             return `[Outfit System] No default outfit set for ${this.character}.`;
         }
         
-        const preset = window.extension_settings.outfit_tracker.presets.bot[this.character]['default'];
+        const preset = presets['default'];
         let changed = false;
         
         for (const [slot, value] of Object.entries(preset)) {
@@ -283,7 +360,8 @@ export class BotOutfitManager {
     }
     
     hasDefaultOutfit() {
-        return !!window.extension_settings.outfit_tracker.presets?.bot?.[this.character]?.['default'];
+        const presets = safeGet(window, `extension_settings.outfit_tracker.presets.bot.${this.character}`);
+        return !!(presets && presets['default']);
     }
     
     // Identify which preset is the default by comparing data
@@ -292,8 +370,12 @@ export class BotOutfitManager {
             return null;
         }
         
-        const defaultPreset = window.extension_settings.outfit_tracker.presets.bot[this.character]['default'];
-        const presets = window.extension_settings.outfit_tracker.presets.bot[this.character];
+        const presets = safeGet(window, `extension_settings.outfit_tracker.presets.bot.${this.character}`);
+        if (!presets || !presets['default']) {
+            return null;
+        }
+        
+        const defaultPreset = presets['default'];
         
         // Find which preset matches the default data
         for (const [presetName, presetData] of Object.entries(presets)) {

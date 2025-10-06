@@ -1,4 +1,4 @@
-import { replaceAll as replaceAllStr, extractCommands, extractMacros } from './StringProcessor.js';
+import { replaceAll as replaceAllStr, extractCommands, extractMacros, safeGet, safeSet } from './StringProcessor.js';
 import { LLMUtility } from './LLMUtility.js';
 
 export class AutoOutfitSystem {
@@ -17,9 +17,13 @@ export class AutoOutfitSystem {
         this.currentRetryCount = 0;
         this.commandQueue = [];
         this.isProcessingQueue = false;
+        this.processingTimeout = null;
         
         // Track initialization state
         this.appInitialized = false;
+        
+        // Add a timestamp to track when the last successful processing occurred
+        this.lastSuccessfulProcessing = null;
     }
 
     getDefaultPrompt() {
@@ -69,34 +73,61 @@ NOTES:
     setupEventListeners() {
         this.removeEventListeners();
         
-        const { eventSource, event_types } = window.getContext();
-        
-        // Use MESSAGE_RECEIVED instead of CHARACTER_MESSAGE_RENDERED
-        // This event fires when new messages are added to chat (before rendering)
-        this.eventHandler = (data) => {
-            // Only process AI messages (not user messages) and only after app is initialized
-            if (this.isEnabled && !this.isProcessing && this.appInitialized && 
-                data && !data.is_user) {
-                console.log('[AutoOutfitSystem] New AI message received, processing...');
-                setTimeout(() => {
-                    this.processOutfitCommands().catch(error => {
-                        console.error('Auto outfit processing failed:', error);
-                        this.consecutiveFailures++;
-                    });
-                }, 1000); // Shorter delay since we're processing earlier
+        try {
+            const context = window.getContext();
+            if (!context || !context.eventSource || !context.event_types) {
+                console.error('[AutoOutfitSystem] Context not ready for event listeners');
+                return;
             }
-        };
-        
-        eventSource.on(event_types.MESSAGE_RECEIVED, this.eventHandler);
-        console.log('[AutoOutfitSystem] Event listener registered for MESSAGE_RECEIVED');
+            
+            const { eventSource, event_types } = context;
+            
+            // Use MESSAGE_RECEIVED instead of CHARACTER_MESSAGE_RENDERED
+            // This event fires when new messages are added to chat (before rendering)
+            this.eventHandler = (data) => {
+                // Only process AI messages (not user messages) and only after app is initialized
+                if (this.isEnabled && !this.isProcessing && this.appInitialized && 
+                    data && !data.is_user) {
+                    console.log('[AutoOutfitSystem] New AI message received, processing...');
+                    // Clear any existing timeout to prevent multiple simultaneous processing
+                    if (this.processingTimeout) {
+                        clearTimeout(this.processingTimeout);
+                    }
+                    
+                    // Add a delay before processing to ensure message is fully rendered
+                    this.processingTimeout = setTimeout(() => {
+                        this.processOutfitCommands().catch(error => {
+                            console.error('Auto outfit processing failed:', error);
+                            this.consecutiveFailures++;
+                        });
+                    }, 1000); // Shorter delay since we're processing earlier
+                }
+            };
+            
+            eventSource.on(event_types.MESSAGE_RECEIVED, this.eventHandler);
+            console.log('[AutoOutfitSystem] Event listener registered for MESSAGE_RECEIVED');
+        } catch (error) {
+            console.error('[AutoOutfitSystem] Failed to set up event listeners:', error);
+        }
     }
 
     removeEventListeners() {
-        if (this.eventHandler) {
-            const { eventSource, event_types } = window.getContext();
-            eventSource.off(event_types.MESSAGE_RECEIVED, this.eventHandler);
-            this.eventHandler = null;
-            console.log('[AutoOutfitSystem] Event listener removed');
+        try {
+            if (this.eventHandler) {
+                const context = window.getContext();
+                if (context && context.eventSource && context.event_types) {
+                    context.eventSource.off(context.event_types.MESSAGE_RECEIVED, this.eventHandler);
+                }
+                this.eventHandler = null;
+                // Clear any pending timeout
+                if (this.processingTimeout) {
+                    clearTimeout(this.processingTimeout);
+                    this.processingTimeout = null;
+                }
+                console.log('[AutoOutfitSystem] Event listener removed');
+            }
+        } catch (error) {
+            console.error('[AutoOutfitSystem] Failed to remove event listeners:', error);
         }
     }
 
@@ -120,11 +151,19 @@ NOTES:
             return;
         }
         
+        // Check if the outfit manager is properly initialized
+        if (!this.outfitManager || !this.outfitManager.setCharacter) {
+            console.error('[AutoOutfitSystem] Outfit manager not properly initialized');
+            return;
+        }
+        
         this.isProcessing = true;
         this.currentRetryCount = 0;
         
         try {
             await this.processWithRetry();
+            // Record the successful processing time
+            this.lastSuccessfulProcessing = new Date();
         } catch (error) {
             console.error('Outfit command processing failed after retries:', error);
             this.consecutiveFailures++;
@@ -171,10 +210,15 @@ NOTES:
         console.log('[AutoOutfitSystem] Generating outfit commands with unified LLM utility...');
         
         try {
+            const context = window.getContext();
+            if (!context) {
+                throw new Error('Context not available for LLM generation');
+            }
+            
             const result = await LLMUtility.generateWithProfile(
                 promptText,
                 "You are an outfit change detection system. Analyze the conversation and output outfit commands when clothing changes occur.",
-                window.getContext(),
+                context,
                 this.connectionProfile
             );
             
@@ -201,115 +245,121 @@ NOTES:
     }
 
     replaceMacrosInPrompt(prompt) {
-        // Get current character name from the outfit manager
-        const characterName = this.outfitManager.character || '<BOT>';
-        // Normalize the character name to create the proper variable name format
-        const normalizedCharName = characterName.replace(/\s+/g, '_'); // This one is ok to keep as it's just for normalization
+        try {
+            // Get current character name from the outfit manager
+            const characterName = this.outfitManager.character || '<BOT>';
+            // Normalize the character name to create the proper variable name format
+            const normalizedCharName = characterName.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
 
-        // Replace all <BOT> instances with the actual character name
-        let processedPrompt = replaceAllStr(prompt, '<BOT>', characterName);
-        
-        // Replace {{user}} with the current active persona name
-        // Get the current persona name from the active chat
-        let userName = 'User'; // Default fallback
-        
-        // Get the context and try to extract persona from the current chat
-        const context = window.getContext ? window.getContext() : null;
-        if (context && context.chat) {
-            // Filter messages that are from the user to get their avatars
-            const userMessages = context.chat.filter(message => message.is_user);
+            // Replace all <BOT> instances with the actual character name
+            let processedPrompt = replaceAllStr(prompt, '<BOT>', characterName);
             
-            if (userMessages.length > 0) {
-                // Get the most recent user message to determine current persona
-                const mostRecentUserMessage = userMessages[userMessages.length - 1];
+            // Replace {{user}} with the current active persona name
+            // Get the current persona name from the active chat
+            let userName = 'User'; // Default fallback
+            
+            // Get the context and try to extract persona from the current chat
+            const context = window.getContext ? window.getContext() : null;
+            if (context && safeGet(context, 'chat')) {
+                // Filter messages that are from the user to get their avatars
+                const userMessages = safeGet(context, 'chat', []).filter(message => message.is_user);
                 
-                // If the message has a force_avatar property (used for personas), extract the name
-                if (mostRecentUserMessage.force_avatar) {
-                    // Extract the persona name from the avatar path
-                    const USER_AVATAR_PATH = 'useravatars/';
-                    if (typeof mostRecentUserMessage.force_avatar === 'string' && 
-                        mostRecentUserMessage.force_avatar.startsWith(USER_AVATAR_PATH)) {
-                        userName = mostRecentUserMessage.force_avatar.replace(USER_AVATAR_PATH, '');
-                        
-                        // Remove file extension if present
-                        const lastDotIndex = userName.lastIndexOf('.');
-                        if (lastDotIndex > 0) {
-                            userName = userName.substring(0, lastDotIndex);
+                if (userMessages.length > 0) {
+                    // Get the most recent user message to determine current persona
+                    const mostRecentUserMessage = userMessages[userMessages.length - 1];
+                    
+                    // If the message has a force_avatar property (used for personas), extract the name
+                    if (mostRecentUserMessage.force_avatar) {
+                        // Extract the persona name from the avatar path
+                        const USER_AVATAR_PATH = 'useravatars/';
+                        if (typeof mostRecentUserMessage.force_avatar === 'string' && 
+                            mostRecentUserMessage.force_avatar.startsWith(USER_AVATAR_PATH)) {
+                            userName = mostRecentUserMessage.force_avatar.replace(USER_AVATAR_PATH, '');
+                            
+                            // Remove file extension if present
+                            const lastDotIndex = userName.lastIndexOf('.');
+                            if (lastDotIndex > 0) {
+                                userName = userName.substring(0, lastDotIndex);
+                            }
                         }
                     }
-                }
-                // If force_avatar doesn't exist, try to get name from the message itself
-                else if (mostRecentUserMessage.name) {
-                    userName = mostRecentUserMessage.name;
-                }
-            }
-        }
-        
-        // Fallback: try the old power_user method if we still don't have a name
-        if (userName === 'User') {
-            if (typeof window.power_user !== 'undefined' && window.power_user && window.power_user.personas && 
-                typeof window.user_avatar !== 'undefined' && window.user_avatar) {
-                // Get the name from the mapping of avatar to name
-                const personaName = window.power_user.personas[window.user_avatar];
-                
-                // If we found the persona in the mapping, use it; otherwise fall back to name1 or 'User'
-                userName = personaName || (typeof window.name1 !== 'undefined' ? window.name1 : 'User');
-            }
-            // Fallback to window.name1 if the above method doesn't work
-            else if (typeof window.name1 !== 'undefined' && window.name1) {
-                userName = window.name1;
-            }
-        }
-        
-        processedPrompt = replaceAllStr(processedPrompt, '{{user}}', userName);
-
-        // Extract all macros from the prompt
-        const macros = extractMacros(processedPrompt);
-        
-        // Process each macro and replace with actual values
-        for (const { fullMacro, varName } of macros) {
-            let value = 'None'; // Default value if not found
-
-            // Check if it's a character-specific variable (checking multiple possible formats)
-            if (varName.startsWith(`${characterName}_`) || varName.startsWith(`${normalizedCharName}_`)) {
-                // Extract slot name after the character name prefix
-                let slot;
-                if (varName.startsWith(`${characterName}_`)) {
-                    slot = varName.substring(characterName.length + 1);
-                } else if (varName.startsWith(`${normalizedCharName}_`)) {
-                    slot = varName.substring(normalizedCharName.length + 1);
-                }
-                
-                // Try to get the value using both formats to ensure compatibility
-                const originalFormatVarName = `${characterName}_${slot}`;
-                const normalizedFormatVarName = `${normalizedCharName}_${slot}`;
-                
-                // Check both possible formats in global variables
-                if (window.extension_settings.variables.global && 
-                    window.extension_settings.variables.global[originalFormatVarName] !== undefined) {
-                    value = window.extension_settings.variables.global[originalFormatVarName];
-                } else if (window.extension_settings.variables.global && 
-                           window.extension_settings.variables.global[normalizedFormatVarName] !== undefined) {
-                    value = window.extension_settings.variables.global[normalizedFormatVarName];
-                }
-            }
-            // Check if it's a user variable
-            else if (varName.startsWith('User_')) {
-                try {
-                    if (window.extension_settings.variables.global && 
-                        window.extension_settings.variables.global[`${varName}`] !== undefined) {
-                        value = window.extension_settings.variables.global[`${varName}`];
+                    // If force_avatar doesn't exist, try to get name from the message itself
+                    else if (mostRecentUserMessage.name) {
+                        userName = mostRecentUserMessage.name;
                     }
-                } catch (error) {
-                    console.warn('Could not access global variables for macro replacement:', error);
                 }
             }
             
-            // Replace the macro with the actual value
-            processedPrompt = replaceAllStr(processedPrompt, fullMacro, value);
+            // Fallback: try the old power_user method if we still don't have a name
+            if (userName === 'User') {
+                if (typeof window.power_user !== 'undefined' && window.power_user && window.power_user.personas && 
+                    typeof window.user_avatar !== 'undefined' && window.user_avatar) {
+                    // Get the name from the mapping of avatar to name
+                    const personaName = window.power_user.personas[window.user_avatar];
+                    
+                    // If we found the persona in the mapping, use it; otherwise fall back to name1 or 'User'
+                    userName = personaName || (typeof window.name1 !== 'undefined' ? window.name1 : 'User');
+                }
+                // Fallback to window.name1 if the above method doesn't work
+                else if (typeof window.name1 !== 'undefined' && window.name1) {
+                    userName = window.name1;
+                }
+            }
+            
+            processedPrompt = replaceAllStr(processedPrompt, '{{user}}', userName);
+
+            // Extract all macros from the prompt
+            const macros = extractMacros(processedPrompt);
+            
+            // Process each macro and replace with actual values
+            for (const { fullMacro, varName } of macros) {
+                let value = 'None'; // Default value if not found
+
+                // Check if it's a character-specific variable (checking multiple possible formats)
+                if (varName.startsWith(`${characterName}_`) || varName.startsWith(`${normalizedCharName}_`)) {
+                    // Extract slot name after the character name prefix
+                    let slot;
+                    if (varName.startsWith(`${characterName}_`)) {
+                        slot = varName.substring(characterName.length + 1);
+                    } else if (varName.startsWith(`${normalizedCharName}_`)) {
+                        slot = varName.substring(normalizedCharName.length + 1);
+                    }
+                    
+                    // Try to get the value using both formats to ensure compatibility
+                    const originalFormatVarName = `${characterName}_${slot}`;
+                    const normalizedFormatVarName = `${normalizedCharName}_${slot}`;
+                    
+                    // Use safeGet to access global variables
+                    const globalVars = safeGet(window, 'extension_settings.variables.global', {});
+                    
+                    if (globalVars[originalFormatVarName] !== undefined) {
+                        value = globalVars[originalFormatVarName];
+                    } else if (globalVars[normalizedFormatVarName] !== undefined) {
+                        value = globalVars[normalizedFormatVarName];
+                    }
+                }
+                // Check if it's a user variable
+                else if (varName.startsWith('User_')) {
+                    try {
+                        const globalVars = safeGet(window, 'extension_settings.variables.global', {});
+                        if (globalVars[varName] !== undefined) {
+                            value = globalVars[varName];
+                        }
+                    } catch (error) {
+                        console.warn('Could not access global variables for macro replacement:', error);
+                    }
+                }
+                
+                // Replace the macro with the actual value
+                processedPrompt = replaceAllStr(processedPrompt, fullMacro, value);
+            }
+            
+            return processedPrompt;
+        } catch (error) {
+            console.error('[AutoOutfitSystem] Error in replaceMacrosInPrompt:', error);
+            // Return the original prompt if processing fails
+            return prompt;
         }
-        
-        return processedPrompt;
     }
 
     async tryFallbackGeneration(originalPromptText) {
@@ -549,7 +599,8 @@ NOTES:
 
     getLastMessages(count = 3) {
         try {
-            const { chat } = window.getContext();
+            const context = window.getContext();
+            const chat = safeGet(context, 'chat');
             
             if (!chat || !Array.isArray(chat) || chat.length === 0) {
                 console.log('[AutoOutfitSystem] No chat or empty chat array');
@@ -569,7 +620,7 @@ NOTES:
             
             const recentMessages = validMessages.slice(-count);
             return recentMessages.map(msg => 
-                `${msg.is_user ? 'User' : (msg.name || 'AI')}: ${msg.mes}`
+                `${msg.is_user ? 'User' : (safeGet(msg, 'name', 'AI'))}: ${safeGet(msg, 'mes', '')}`
             ).join('\n');
             
         } catch (error) {

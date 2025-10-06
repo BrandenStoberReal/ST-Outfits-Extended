@@ -1,3 +1,5 @@
+import { safeGet, safeSet } from './StringProcessor.js';
+
 export class UserOutfitManager {
     constructor(slots) {
         this.slots = slots;
@@ -36,20 +38,50 @@ export class UserOutfitManager {
     }
 
     getGlobalVariable(name) {
-        const globalVars = window.extension_settings?.variables?.global || {};
-        return globalVars[name] || window[name] || 'None';
+        try {
+            const globalVars = safeGet(window, 'extension_settings.variables.global', {});
+            return globalVars[name] || window[name] || 'None';
+        } catch (error) {
+            console.error('[UserOutfitManager] Error accessing global variable:', name, error);
+            return 'None';
+        }
     }
 
     setGlobalVariable(name, value) {
-        window[name] = value;
-        if (!window.extension_settings.variables) window.extension_settings.variables = { global: {} };
-        window.extension_settings.variables.global[name] = value;
+        try {
+            window[name] = value;
+            if (!window.extension_settings?.variables) {
+                if (!window.extension_settings) window.extension_settings = {};
+                window.extension_settings.variables = { global: {} };
+            }
+            window.extension_settings.variables.global[name] = value;
+        } catch (error) {
+            console.error('[UserOutfitManager] Error setting global variable:', name, value, error);
+        }
     }
 
     async setOutfitItem(slot, value) {
+        // Validate inputs
+        if (!this.slots.includes(slot)) {
+            console.error(`[UserOutfitManager] Invalid slot: ${slot}`);
+            return null;
+        }
+        
         // Ensure empty values are stored as 'None'
         if (value === undefined || value === null || value === '') {
             value = 'None';
+        }
+        
+        // Ensure the value is a string
+        if (typeof value !== 'string') {
+            value = String(value);
+        }
+        
+        // Limit the length of values to prevent storage issues
+        const MAX_VALUE_LENGTH = 1000;
+        if (value.length > MAX_VALUE_LENGTH) {
+            value = value.substring(0, MAX_VALUE_LENGTH);
+            console.warn(`[UserOutfitManager] Value truncated to ${MAX_VALUE_LENGTH} characters for slot ${slot}`);
         }
         
         const previousValue = this.currentValues[slot];
@@ -67,6 +99,12 @@ export class UserOutfitManager {
     }
 
     async changeOutfitItem(slot) {
+        // Validate the slot
+        if (!this.slots.includes(slot)) {
+            console.error(`[UserOutfitManager] Invalid slot: ${slot}`);
+            return null;
+        }
+        
         const currentValue = this.currentValues[slot];
         let newValue = currentValue;
 
@@ -107,9 +145,15 @@ export class UserOutfitManager {
     }
     
     savePreset(presetName) {
+        // Validate the preset name
+        if (!presetName || typeof presetName !== 'string' || presetName.trim() === '') {
+            console.error('[UserOutfitManager] Invalid preset name provided');
+            return '[Outfit System] Invalid preset name provided.';
+        }
+        
         // Initialize presets if needed
-        if (!window.extension_settings.outfit_tracker.presets) {
-            window.extension_settings.outfit_tracker.presets = { bot: {}, user: {} };
+        if (!safeGet(window, 'extension_settings.outfit_tracker.presets')) {
+            safeSet(window, 'extension_settings.outfit_tracker.presets', { bot: {}, user: {} });
         }
         
         // Create preset data for all slots
@@ -119,20 +163,26 @@ export class UserOutfitManager {
         });
         
         // Save or update preset
-        window.extension_settings.outfit_tracker.presets.user[presetName] = presetData;
+        safeSet(window, `extension_settings.outfit_tracker.presets.user.${presetName}`, presetData);
         
-        if (window.extension_settings.outfit_tracker.enableSysMessages) {
+        if (safeGet(window, 'extension_settings.outfit_tracker.enableSysMessages')) {
             return `Saved "${presetName}" outfit for user character.`;
         }
         return '';
     }
     
     async loadPreset(presetName) {
-        if (!window.extension_settings.outfit_tracker.presets?.user?.[presetName]) {
+        // Validate the preset name
+        if (!presetName || typeof presetName !== 'string') {
+            return `[Outfit System] Invalid preset name: ${presetName}`;
+        }
+        
+        const presets = safeGet(window, `extension_settings.outfit_tracker.presets.user`);
+        if (!presets || !presets[presetName]) {
             return `[Outfit System] Preset "${presetName}" not found.`;
         }
         
-        const preset = window.extension_settings.outfit_tracker.presets.user[presetName];
+        const preset = presets[presetName];
         let changed = false;
         
         for (const [slot, value] of Object.entries(preset)) {
@@ -151,29 +201,36 @@ export class UserOutfitManager {
     }
     
     deletePreset(presetName) {
-        if (!window.extension_settings.outfit_tracker.presets?.user?.[presetName]) {
+        // Validate the preset name
+        if (!presetName || typeof presetName !== 'string') {
+            return `[Outfit System] Invalid preset name: ${presetName}`;
+        }
+        
+        const presets = safeGet(window, `extension_settings.outfit_tracker.presets.user`);
+        if (!presets || !presets[presetName]) {
             return `[Outfit System] Preset "${presetName}" not found.`;
         }
         
-        delete window.extension_settings.outfit_tracker.presets.user[presetName];
+        delete presets[presetName];
         
-        if (window.extension_settings.outfit_tracker.enableSysMessages) {
+        if (safeGet(window, 'extension_settings.outfit_tracker.enableSysMessages')) {
             return `Deleted your "${presetName}" outfit.`;
         }
         return '';
     }
     
     getPresets() {
-        if (!window.extension_settings.outfit_tracker.presets?.user) {
+        const presets = safeGet(window, `extension_settings.outfit_tracker.presets.user`);
+        if (!presets) {
             return [];
         }
-        return Object.keys(window.extension_settings.outfit_tracker.presets.user);
+        return Object.keys(presets);
     }
     
     setDefaultOutfit() {
         // Initialize presets if needed
-        if (!window.extension_settings.outfit_tracker.presets) {
-            window.extension_settings.outfit_tracker.presets = { bot: {}, user: {} };
+        if (!safeGet(window, 'extension_settings.outfit_tracker.presets')) {
+            safeSet(window, 'extension_settings.outfit_tracker.presets', { bot: {}, user: {} });
         }
         
         // Create preset data for all slots
@@ -183,43 +240,50 @@ export class UserOutfitManager {
         });
         
         // Save as default preset
-        window.extension_settings.outfit_tracker.presets.user['default'] = presetData;
+        safeSet(window, 'extension_settings.outfit_tracker.presets.user.default', presetData);
         
-        if (window.extension_settings.outfit_tracker.enableSysMessages) {
+        if (safeGet(window, 'extension_settings.outfit_tracker.enableSysMessages')) {
             return `Set your default outfit.`;
         }
         return '';
     }
     
     setPresetAsDefault(presetName) {
-        // Initialize presets if needed
-        if (!window.extension_settings.outfit_tracker.presets) {
-            window.extension_settings.outfit_tracker.presets = { bot: {}, user: {} };
+        // Validate the preset name
+        if (!presetName || typeof presetName !== 'string') {
+            return `[Outfit System] Invalid preset name: ${presetName}`;
         }
         
+        // Initialize presets if needed
+        if (!safeGet(window, 'extension_settings.outfit_tracker.presets')) {
+            safeSet(window, 'extension_settings.outfit_tracker.presets', { bot: {}, user: {} });
+        }
+        
+        const presets = safeGet(window, `extension_settings.outfit_tracker.presets.user`);
         // Check if the preset exists
-        if (!window.extension_settings.outfit_tracker.presets.user[presetName]) {
+        if (!presets || !presets[presetName]) {
             return `[Outfit System] Preset "${presetName}" not found.`;
         }
         
         // Get the preset data
-        const presetData = window.extension_settings.outfit_tracker.presets.user[presetName];
+        const presetData = presets[presetName];
         
         // Save as default preset
-        window.extension_settings.outfit_tracker.presets.user['default'] = presetData;
+        safeSet(window, 'extension_settings.outfit_tracker.presets.user.default', presetData);
         
-        if (window.extension_settings.outfit_tracker.enableSysMessages) {
+        if (safeGet(window, 'extension_settings.outfit_tracker.enableSysMessages')) {
             return `Set "${presetName}" as your default outfit.`;
         }
         return '';
     }
     
     loadDefaultOutfit() {
-        if (!window.extension_settings.outfit_tracker.presets?.user?.['default']) {
+        const presets = safeGet(window, `extension_settings.outfit_tracker.presets.user`);
+        if (!presets || !presets['default']) {
             return `[Outfit System] No default outfit set for user.`;
         }
         
-        const preset = window.extension_settings.outfit_tracker.presets.user['default'];
+        const preset = presets['default'];
         let changed = false;
         
         for (const [slot, value] of Object.entries(preset)) {
@@ -247,7 +311,8 @@ export class UserOutfitManager {
     }
     
     hasDefaultOutfit() {
-        return !!window.extension_settings.outfit_tracker.presets?.user?.['default'];
+        const presets = safeGet(window, `extension_settings.outfit_tracker.presets.user`);
+        return !!(presets && presets['default']);
     }
     
     // Identify which preset is the default by comparing data
@@ -256,8 +321,12 @@ export class UserOutfitManager {
             return null;
         }
         
-        const defaultPreset = window.extension_settings.outfit_tracker.presets.user['default'];
-        const presets = window.extension_settings.outfit_tracker.presets.user;
+        const presets = safeGet(window, `extension_settings.outfit_tracker.presets.user`);
+        if (!presets || !presets['default']) {
+            return null;
+        }
+        
+        const defaultPreset = presets['default'];
         
         // Find which preset matches the default data
         for (const [presetName, presetData] of Object.entries(presets)) {

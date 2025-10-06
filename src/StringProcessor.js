@@ -196,3 +196,38 @@ export function extractValues(text, startMarker, endMarker) {
     
     return values;
 }
+
+// Function to safely access nested properties
+export function safeGet(obj, path, defaultValue = null) {
+    if (!obj || typeof obj !== 'object') return defaultValue;
+    
+    const keys = path.split('.');
+    let current = obj;
+    
+    for (const key of keys) {
+        if (current === null || current === undefined) {
+            return defaultValue;
+        }
+        current = current[key];
+    }
+    
+    return current !== undefined ? current : defaultValue;
+}
+
+// Function to safely set nested properties
+export function safeSet(obj, path, value) {
+    if (!obj || typeof obj !== 'object') return;
+    
+    const keys = path.split('.');
+    const lastKey = keys.pop();
+    let current = obj;
+    
+    for (const key of keys) {
+        if (current[key] === null || current[key] === undefined || typeof current[key] !== 'object') {
+            current[key] = {};
+        }
+        current = current[key];
+    }
+    
+    current[lastKey] = value;
+}
