@@ -1,8 +1,8 @@
 {
-    "display_name": "Outfit System",
-    "author": "Lucanna",
+    "display_name": "SillyTavern Outfit Engine",
+    "author": "Branden (Original by Lucanna)",
     "version": "1.3.6",
-    "homePage": "https://github.com/BrandenStoberReal/ST-Outfits",
+    "homePage": "https://github.com/BrandenStoberReal/ST-Outfits-Extended",
     "js": "index.js",
     "css": "style.css",
     "loading_order": 15,
