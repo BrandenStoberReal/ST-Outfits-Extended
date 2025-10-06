@@ -148,7 +148,7 @@ export class UserOutfitPanel {
                         <div class="preset-actions">
                             <button class="load-preset" data-preset="${preset}">Wear</button>
                             <button class="set-default-preset" data-preset="${preset}" ${isDefault ? 'style="display:none;"' : ''}>Default</button>
-                            <button class="delete-preset" data-preset="${preset}">${isDefault ? '' : '×'}</button>
+                            <button class="delete-preset" data-preset="${preset}">×</button>
                         </div>
                     `;
                     
