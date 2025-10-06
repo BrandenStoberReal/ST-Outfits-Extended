@@ -3,139 +3,160 @@
     position: fixed;
     top: 100px;
     right: 20px;
-    width: 300px;
-    height: auto; /* Set flexible height */
-    max-height: 600px; /* Set a fixed max-height that's reasonable for most screens */
-    border-radius: 10px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-    padding: 12px;
+    width: 350px; /* Increased width for better content display */
+    max-height: 80vh; /* Responsive max height */
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    padding: 16px;
     z-index: 10000;
-    display: none; /* Only one display property */
+    display: none;
     color: #ffffff;
     user-select: none;
     font-size: 0.9em;
-    flex-direction: column; /* Now we only have one display property */
-    min-width: 250px;
-    min-height: 200px;
-    overflow: hidden; /* Ensure content doesn't overflow the panel */
+    flex-direction: column;
+    min-width: 300px;
+    min-height: 250px;
+    overflow: hidden;
+    backdrop-filter: blur(10px); /* Added backdrop filter for better visual effect */
 }
 
 #bot-outfit-panel {
-    background: linear-gradient(135deg, #7a57d1 0%, #6559e0 100%);
-    border: 1px solid #8783e1;
+    background: linear-gradient(135deg, #6a4fc1 0%, #5a49d0 50%, #4a43c0 100%);
+    border: 1px solid #8a7fdb;
+    box-shadow: 0 8px 32px rgba(106, 79, 193, 0.4);
 }
 
 #user-outfit-panel {
-    background: linear-gradient(135deg, #1e88e5 0%, #3d5afe 100%);
-    border: 1px solid #64b5f6;
+    background: linear-gradient(135deg, #1a78d1 0%, #2a68c1 50%, #1a58b1 100%);
+    border: 1px solid #5da6f0;
+    box-shadow: 0 8px 32px rgba(26, 120, 209, 0.4);
 }
 
 /* Header Styles */
 .outfit-header {
     cursor: move;
-    padding-bottom: 8px;
-    margin-bottom: 8px;
+    padding: 8px 0;
+    margin-bottom: 12px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid rgba(255,255,255,0.3);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
     flex-shrink: 0;
 }
 
 .outfit-header h3 {
     margin: 0;
-    font-size: 1.3em;
+    font-size: 1.4em;
     font-weight: 700;
-    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    padding-left: 2px;
 }
 
 /* Tabs Navigation */
 .outfit-tabs {
     display: flex;
     justify-content: space-between;
-    margin-bottom: 8px;
-    background: rgba(0, 0, 0, 0.15);
-    border-radius: 8px;
-    padding: 3px;
+    margin-bottom: 12px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+    padding: 4px;
     flex-shrink: 0;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .outfit-tab {
     flex: 1;
     text-align: center;
-    padding: 6px 4px;
+    padding: 8px 4px;
     border: none;
-    border-radius: 6px;
-    background: none;
-    color: rgba(255,255,255,0.8);
+    border-radius: 8px;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.7);
     cursor: pointer;
     font-weight: 600;
-    font-size: 0.7em;
+    font-size: 0.85em;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    text-shadow: 0 1px 1px rgba(0,0,0,0.1);
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
 }
 
 .outfit-tab:hover {
-    background: rgba(255,255,255,0.15);
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
 }
 
 .outfit-tab.active {
-    background: rgba(255,255,255,0.25) !important;
+    background: rgba(255, 255, 255, 0.25);
     color: #fff;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
 /* Main Content Area - Scrollable */
 .outfit-content {
-    flex: 1;  /* Takes remaining space */
-    overflow-y: auto; /* ACTIVE scrollbar */
-    padding-right: 4px;
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 8px; /* Increased padding for better scrollbar spacing */
     min-height: 0;
-    height: auto; /* Allow height to adjust when panel resizes */
+    height: auto;
+    padding-bottom: 4px; /* Small padding at bottom to ensure content is visible */
 }
 
 /* Slots Styling */
 .outfit-slots {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
     width: 100%;
 }
 
 .outfit-slot {
-    padding: 10px;
-    background: rgba(255,255,255,0.08);
-    border-radius: 8px;
-    backdrop-filter: blur(5px);
-    border: 1px solid rgba(255,255,255,0.1);
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.outfit-slot:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .slot-label {
     font-weight: 600;
     margin-bottom: 6px;
-    font-size: 0.9em;
-    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.95em;
+    color: rgba(255, 255, 255, 0.95);
     display: flex;
     align-items: center;
+    text-transform: capitalize;
 }
 
 .slot-label:before {
     content: "•";
-    margin-right: 5px;
-    font-size: 1.2em;
+    margin-right: 7px;
+    font-size: 1.3em;
+    opacity: 0.7;
 }
 
 .slot-value {
-    min-height: 30px;
-    padding: 6px;
-    border-radius: 5px;
-    background: rgba(0, 0, 0, 0.3);
-    border: 1px solid rgba(255,255,255,0.05);
+    min-height: 32px;
+    padding: 8px;
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     word-wrap: break-word;
     overflow: hidden;
-    font-size: 0.85em;
-    line-height: 1.3;
+    font-size: 0.87em;
+    line-height: 1.4;
     margin-bottom: 8px;
+    color: #e0e0e0;
+    font-style: italic;
 }
 
 .slot-actions {
@@ -144,18 +165,45 @@
 }
 
 .slot-actions button {
-    background: rgba(255,255,255,0.15);
+    background: rgba(255, 255, 255, 0.18);
     color: #fff;
     border: none;
-    border-radius: 5px;
-    padding: 4px 10px;
+    border-radius: 6px;
+    padding: 6px 12px;
     cursor: pointer;
     font-weight: 600;
-    font-size: 0.75em;
+    font-size: 0.8em;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .slot-actions button:hover {
-    background: rgba(255,255,255,0.25);
+    background: rgba(255, 255, 255, 0.28);
+    transform: translateY(-1px);
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
+}
+
+/* Clothing and Accessory Categories */
+.outfit-category {
+    margin-bottom: 16px;
+}
+
+.outfit-category-title {
+    font-size: 1em;
+    font-weight: 600;
+    margin: 16px 0 10px 0;
+    padding: 4px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+    color: #ffffff;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    display: flex;
+    align-items: center;
+}
+
+.outfit-category-title::before {
+    content: "»";
+    margin-right: 8px;
+    opacity: 0.7;
 }
 
 /* Presets Styling */
@@ -163,33 +211,43 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 8px 10px;
-    background: rgba(255,255,255,0.08);
-    border-radius: 6px;
-    margin-bottom: 6px;
-    backdrop-filter: blur(5px);
-    border: 1px solid rgba(255,255,255,0.1);
+    padding: 10px 12px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    margin-bottom: 8px;
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.outfit-preset:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .preset-name {
     font-weight: 500;
-    font-size: 0.85em;
+    font-size: 0.9em;
     text-shadow: 0 1px 1px rgba(0,0,0,0.1);
     flex: 1;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     padding-right: 8px;
+    color: #f0f0f0;
 }
 
 .outfit-preset.default-preset {
-    background: linear-gradient(90deg, rgba(212,175,55,0.15) 0%, rgba(255,215,0,0.15) 100%);
-    border: 1px solid gold;
+    background: linear-gradient(90deg, rgba(212, 175, 55, 0.15) 0%, rgba(255, 215, 0, 0.2) 100%);
+    border: 1px solid rgba(255, 215, 0, 0.4);
     position: relative;
+    box-shadow: 0 2px 6px rgba(212, 175, 55, 0.15);
 }
 
 .outfit-preset.default-preset .preset-name {
-    color: gold;
+    color: #ffd700;
     font-weight: 600;
     text-shadow: 0 0 8px rgba(255, 215, 0, 0.5);
 }
@@ -205,102 +263,137 @@
 }
 
 .preset-actions button {
-    padding: 4px 8px;
+    padding: 5px 10px;
     border: none;
-    border-radius: 5px;
-    background: rgba(255,255,255,0.15);
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.15);
     color: #fff;
     cursor: pointer;
     font-weight: 600;
-    font-size: 0.7em;
+    font-size: 0.75em;
     text-shadow: 0 1px 1px rgba(0,0,0,0.1);
-    min-width: 40px;
+    min-width: 42px;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .preset-actions button:hover {
-    background: rgba(255,255,255,0.25);
+    background: rgba(255, 255, 255, 0.25);
+    transform: translateY(-1px);
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
 }
 
 .load-preset {
-    background: rgba(102, 187, 106, 0.25) !important;
+    background: rgba(46, 125, 50, 0.3) !important;
+}
+
+.load-preset:hover {
+    background: rgba(46, 125, 50, 0.4) !important;
 }
 
 .delete-preset {
-    background: rgba(229, 115, 115, 0.25) !important;
+    background: rgba(211, 47, 47, 0.3) !important;
+}
+
+.delete-preset:hover {
+    background: rgba(211, 47, 47, 0.4) !important;
+}
+
+.set-default-preset {
+    background: rgba(255, 193, 7, 0.3) !important;
+}
+
+.set-default-preset:hover {
+    background: rgba(255, 193, 7, 0.4) !important;
+}
+
+.clear-default-preset {
+    background: rgba(229, 115, 115, 0.3) !important;
+}
+
+.clear-default-preset:hover {
+    background: rgba(229, 115, 115, 0.4) !important;
 }
 
 .save-outfit-btn {
     width: 100%;
-    margin-top: 10px;
-    padding: 8px;
+    margin-top: 12px;
+    padding: 10px;
     border: none;
-    border-radius: 6px;
-    background: rgba(255,255,255,0.1);
+    border-radius: 8px;
+    background: rgba(25, 118, 210, 0.4);
     color: #fff;
     cursor: pointer;
     font-weight: 600;
-    font-size: 0.8em;
+    font-size: 0.85em;
     text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    transition: all 0.3s ease;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
 }
 
 .save-outfit-btn:hover {
-    background: rgba(255,255,255,0.2);
+    background: rgba(25, 118, 210, 0.5);
+    transform: translateY(-1px);
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
 }
 
 .fill-outfit-btn {
     width: 100%;
-    margin-top: 10px;
-    margin-bottom: 10px;
-    padding: 8px;
+    margin-top: 12px;
+    margin-bottom: 12px;
+    padding: 10px;
     border: none;
-    border-radius: 6px;
-    background: rgba(102, 187, 106, 0.35);
+    border-radius: 8px;
+    background: rgba(56, 142, 60, 0.4);
     color: #fff;
     cursor: pointer;
     font-weight: 600;
-    font-size: 0.8em;
+    font-size: 0.85em;
     text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    transition: all 0.3s ease;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
 }
 
 .fill-outfit-btn:hover {
-    background: rgba(102, 187, 106, 0.45);
+    background: rgba(56, 142, 60, 0.5);
+    transform: translateY(-1px);
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
 }
 
 /* Icons styling */
 .outfit-actions span {
     cursor: pointer;
     font-size: 1.1em;
-    padding: 4px 8px;
-    border-radius: 4px;
+    padding: 5px 8px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
 }
 
 .outfit-actions span:hover {
-    background: rgba(255,255,255,0.2);
+    background: rgba(255,255,255,0.25);
+    transform: scale(1.1);
 }
 
 /* Scrollbar styling */
 .outfit-content::-webkit-scrollbar {
-    width: 6px;
+    width: 8px;
 }
 
 .outfit-content::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.1);
-    border-radius: 3px;
+    background: rgba(0, 0, 0, 0.15);
+    border-radius: 4px;
 }
 
 .outfit-content::-webkit-scrollbar-thumb {
-    background: rgba(255,255,255,0.2);
-    border-radius: 3px;
+    background: rgba(255,255,255, 0.25);
+    border-radius: 4px;
 }
 
 .outfit-content::-webkit-scrollbar-thumb:hover {
-    background: rgba(255,255,255,0.3);
+    background: rgba(255,255,255, 0.35);
 }
 
-/* Hover effects */
-.outfit-slot:hover, .outfit-preset:hover {
-    background: rgba(255,255,255,0.15);
-}
+
 
 /* Minimized state styles */
 .outfit-panel.minimized .outfit-content,
@@ -318,15 +411,15 @@
 #user-outfit-tab-content {
     flex: 1;
     overflow-y: auto;
-    padding-right: 4px;
+    padding-right: 8px;
     min-height: 0;
-    max-height: none; /* Remove fixed height limit to allow resizing */
-    height: auto; /* Allow height to adjust when panel resizes */
+    max-height: none;
+    height: auto;
 }
 
 /* Outfits list styling */
 .outfit-presets-list {
-    max-height: 250px;
+    max-height: 300px;
     overflow-y: auto;
 }
 
@@ -334,7 +427,13 @@
 #bot-outfit-minimize,
 #user-outfit-minimize {
     font-weight: bold;
-    font-size: 1.2em;
+    font-size: 1.3em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
 }
 
 /* Ensure proper spacing in header */
@@ -347,43 +446,37 @@
     position: absolute;
     bottom: 0;
     right: 0;
-    width: 16px;
-    height: 16px;
-    background: rgba(255, 255, 255, 0.2);
-    cursor: nwse-resize; /* Resize from bottom-right corner */
+    width: 18px;
+    height: 18px;
+    background: rgba(255, 255, 255, 0.25);
+    cursor: nwse-resize;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 8px;
-    color: rgba(255, 255, 255, 0.7);
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.8);
     border-radius: 0 0 8px 0;
     user-select: none;
     z-index: 10001;
+    transition: all 0.2s ease;
 }
 
 .resize-handle:hover {
-    background: rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.35);
 }
 
 
 
 
 
-/* Better scrollbar for outfits */
-.outfit-content::-webkit-scrollbar {
-    width: 6px;
-}
-
-.outfit-content::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.1);
-    border-radius: 3px;
-}
-
-.outfit-content::-webkit-scrollbar-thumb {
-    background: rgba(255,255,255,0.2);
-    border-radius: 3px;
-}
-
-.outfit-content::-webkit-scrollbar-thumb:hover {
-    background: rgba(255,255,255,0.3);
+/* Responsive design */
+@media (max-width: 768px) {
+    #bot-outfit-panel,
+    #user-outfit-panel {
+        width: 300px;
+        top: 80px;
+        right: 10px;
+        left: 10px;
+        max-width: calc(100% - 20px);
+    }
 }

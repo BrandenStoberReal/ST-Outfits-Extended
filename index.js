@@ -679,18 +679,26 @@ Only return the formatted sections with cleaned content.`;
             
             let result;
             try {
+                // Check if there is a connection profile set for the auto outfit system
+                let connectionProfile = null;
+                if (autoOutfitSystem && typeof autoOutfitSystem.getConnectionProfile === 'function') {
+                    connectionProfile = autoOutfitSystem.getConnectionProfile();
+                }
+                
                 // Try different generation methods in order of preference
                 if (context.generateRaw) {
-                    result = await LLMUtility.generateWithRetry(
+                    result = await LLMUtility.generateWithProfile(
                         prompt,
                         "You are an assistant that helps clean up character descriptions by removing clothing references while preserving other content and fixing grammar.",
-                        context
+                        context,
+                        connectionProfile
                     );
                 } else if (context.generateQuietPrompt) {
-                    result = await LLMUtility.generateWithRetry(
+                    result = await LLMUtility.generateWithProfile(
                         prompt,
                         "You are an assistant that helps clean up character descriptions by removing clothing references while preserving other content and fixing grammar.",
-                        context
+                        context,
+                        connectionProfile
                     );
                 } else {
                     // Use AutoOutfitSystem's generation method as fallback
@@ -775,18 +783,26 @@ Only return the formatted sections with cleaned content.`;
             
             const context = getContext();
             
+            // Check if there is a connection profile set for the auto outfit system
+            let connectionProfile = null;
+            if (autoOutfitSystem && typeof autoOutfitSystem.getConnectionProfile === 'function') {
+                connectionProfile = autoOutfitSystem.getConnectionProfile();
+            }
+            
             // Try different generation methods in order of preference
             if (context.generateRaw) {
-                return await LLMUtility.generateWithRetry(
+                return await LLMUtility.generateWithProfile(
                     prompt,
                     "You are an outfit generation system. Based on the character information provided, output outfit commands to set the character's clothing and accessories.",
-                    context
+                    context,
+                    connectionProfile
                 );
             } else if (context.generateQuietPrompt) {
-                return await LLMUtility.generateWithRetry(
+                return await LLMUtility.generateWithProfile(
                     prompt,
                     "You are an outfit generation system. Based on the character information provided, output outfit commands to set the character's clothing and accessories.",
-                    context
+                    context,
+                    connectionProfile
                 );
             } else {
                 // Use AutoOutfitSystem's generation method as fallback

@@ -171,10 +171,11 @@ NOTES:
         console.log('[AutoOutfitSystem] Generating outfit commands with unified LLM utility...');
         
         try {
-            const result = await LLMUtility.generateWithRetry(
+            const result = await LLMUtility.generateWithProfile(
                 promptText,
                 "You are an outfit change detection system. Analyze the conversation and output outfit commands when clothing changes occur.",
-                window.getContext()
+                window.getContext(),
+                this.connectionProfile
             );
             
             console.log('[AutoOutfitSystem] Generated result:', result);
@@ -321,17 +322,19 @@ NOTES:
             let result;
             
             if (context.generateQuietPrompt) {
-                result = await LLMUtility.generateWithRetry(
+                result = await LLMUtility.generateWithProfile(
                     processedPromptText,
                     "You are an outfit change detection system. Analyze the conversation and output outfit commands when clothing changes occur.",
-                    context
+                    context,
+                    this.connectionProfile
                 );
             } else if (context.generateRaw) {
                 // Try standard generateRaw as a fallback if generateQuietPrompt is not available
-                result = await LLMUtility.generateWithRetry(
+                result = await LLMUtility.generateWithProfile(
                     processedPromptText,
                     "You are an outfit change detection system. Analyze the conversation and output outfit commands when clothing changes occur.",
-                    context
+                    context,
+                    this.connectionProfile
                 );
             } else {
                 // If neither method is available, use the connection profile method
@@ -658,160 +661,10 @@ NOTES:
     
 
     
-    // Helper method to generate with a specific connection profile
-    async generateWithProfile(originalPromptText) {
-        // In SillyTavern, different connection profiles are handled through
-        // the connection profile system. We'll implement a more standard approach
-        // that would work with the SillyTavern architecture.
-        
-        const context = window.getContext();
-        
-        // Process the prompt to replace any macros (though they should already be replaced, 
-        // this is a safety measure)
-        const processedPromptText = this.replaceMacrosInPrompt(originalPromptText);
-        
-        // This is a simplified implementation - in a real system, you would
-        // implement actual profile-specific connection logic
-        console.log(`[AutoOutfitSystem] Generating with profile: ${this.connectionProfile}`);
-        
-        // For now, try to use getContext to determine if we can access different endpoints
-        // Most likely, we'll still use the standard generation methods but this can 
-        // be extended based on the specific connection profile requested
-        
-        // The actual implementation of using different connection profiles would depend
-        // on SillyTavern's internal architecture for switching between different endpoints
-        // We'll implement a standard approach here
-        
-        // Retry algorithm: try up to 3 times if output is empty
-        let attempt = 0;
-        const maxRetries = 3;
-        
-        while (attempt < maxRetries) {
-            try {
-                let result;
-                
-                if (context.generateRaw) {
-                    result = await context.generateRaw({
-                        prompt: processedPromptText,
-                        systemPrompt: "You are an outfit change detection system. Analyze the conversation and output outfit commands when clothing changes occur."
-                    });
-                } else if (context.generateQuietPrompt) {
-                    result = await context.generateQuietPrompt({
-                        quietPrompt: processedPromptText
-                    });
-                } else {
-                    // Fallback to standard generation
-                    throw new Error('No generation method available');
-                }
 
-                if (!result) {
-                    console.warn(`[AutoOutfitSystem] No output generated with profile (attempt ${attempt + 1}/${maxRetries})`);
-                    attempt++;
-                    if (attempt >= maxRetries) {
-                        console.error('[AutoOutfitSystem] Max retries reached with no output using profile');
-                        throw new Error('No output generated with profile after retries');
-                    }
-                    continue; // Retry
-                }
-                
-                // Check if the result is empty or just whitespace
-                if (!result || result.trim() === '') {
-                    console.warn(`[AutoOutfitSystem] Empty response with profile (attempt ${attempt + 1}/${maxRetries})`);
-                    attempt++;
-                    if (attempt >= maxRetries) {
-                        console.error('[AutoOutfitSystem] Max retries reached with empty responses using profile');
-                        throw new Error('Empty response with profile after retries');
-                    }
-                    continue; // Retry
-                }
-                
-                return result; // Success, return the result
-                
-            } catch (error) {
-                console.error(`[AutoOutfitSystem] Error using profile ${this.connectionProfile} (attempt ${attempt + 1}/${maxRetries}):`, error);
-                if (attempt < maxRetries - 1) {
-                    attempt++;
-                    continue; // Retry
-                } else {
-                    // If all retries with the profile fail, try default generation
-                    console.log('[AutoOutfitSystem] Trying default generation after profile failures...');
-                    
-                    // Try fallback to default generation with its own retry logic
-                    if (context.generateRaw) {
-                        let fallbackResult = null;
-                        let fallbackAttempt = 0;
-                        
-                        while (fallbackAttempt < maxRetries) {
-                            try {
-                                fallbackResult = await context.generateRaw({
-                                    prompt: processedPromptText,
-                                    systemPrompt: "You are an outfit change detection system. Analyze the conversation and output outfit commands when clothing changes occur."
-                                });
-                                
-                                if (!fallbackResult || fallbackResult.trim() === '') {
-                                    console.warn(`[AutoOutfitSystem] Empty fallback response (attempt ${fallbackAttempt + 1}/${maxRetries})`);
-                                    fallbackAttempt++;
-                                    if (fallbackAttempt >= maxRetries) {
-                                        throw new Error('Empty response from fallback generation after retries');
-                                    }
-                                    continue; // Retry
-                                }
-                                
-                                return fallbackResult; // Success
-                            } catch (fallbackError) {
-                                console.error('[AutoOutfitSystem] Fallback generation failed:', fallbackError);
-                                if (fallbackAttempt < maxRetries - 1) {
-                                    fallbackAttempt++;
-                                    continue; // Retry
-                                } else {
-                                    throw new Error(`Fallback generation failed after ${maxRetries} attempts: ${fallbackError.message}`);
-                                }
-                            }
-                        }
-                    } else {
-                        let fallbackResult = null;
-                        let fallbackAttempt = 0;
-                        
-                        while (fallbackAttempt < maxRetries) {
-                            try {
-                                fallbackResult = await context.generateQuietPrompt({
-                                    quietPrompt: processedPromptText
-                                });
-                                
-                                if (!fallbackResult || fallbackResult.trim() === '') {
-                                    console.warn(`[AutoOutfitSystem] Empty fallback quiet response (attempt ${fallbackAttempt + 1}/${maxRetries})`);
-                                    fallbackAttempt++;
-                                    if (fallbackAttempt >= maxRetries) {
-                                        throw new Error('Empty response from fallback quiet generation after retries');
-                                    }
-                                    continue; // Retry
-                                }
-                                
-                                return fallbackResult; // Success
-                            } catch (fallbackError) {
-                                console.error('[AutoOutfitSystem] Fallback quiet generation failed:', fallbackError);
-                                if (fallbackAttempt < maxRetries - 1) {
-                                    fallbackAttempt++;
-                                    continue; // Retry
-                                } else {
-                                    throw new Error(`Fallback quiet generation failed after ${maxRetries} attempts: ${fallbackError.message}`);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
 
     // Helper method to generate with a specific connection profile
     async generateWithProfile(originalPromptText) {
-        // In SillyTavern, different connection profiles are handled through
-        // the connection profile system. We'll implement a more standard approach
-        // that would work with the SillyTavern architecture.
-        
-        const context = window.getContext();
-        
         // Process the prompt to replace any macros (though they should already be replaced, 
         // this is a safety measure)
         const processedPromptText = this.replaceMacrosInPrompt(originalPromptText);
@@ -820,7 +673,7 @@ NOTES:
         return await LLMUtility.generateWithProfile(
             processedPromptText,
             "You are an outfit change detection system. Analyze the conversation and output outfit commands when clothing changes occur.",
-            context,
+            window.getContext(),
             this.connectionProfile
         );
     }

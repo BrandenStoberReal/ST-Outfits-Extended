@@ -423,11 +423,18 @@ INSTRUCTIONS:
                 .replace('<CHARACTER_NOTES>', characterInfo.characterNotes)
                 .replace('<CHARACTER_FIRST_MESSAGE>', characterInfo.firstMessage);
             
-            // Use the unified LLM utility
-            return await LLMUtility.generateWithRetry(
+            // Check if there is a connection profile set for the auto outfit system
+            let connectionProfile = null;
+            if (window.autoOutfitSystem && typeof window.autoOutfitSystem.getConnectionProfile === 'function') {
+                connectionProfile = window.autoOutfitSystem.getConnectionProfile();
+            }
+            
+            // Use the unified LLM utility with profile if available
+            return await LLMUtility.generateWithProfile(
                 prompt,
                 "You are an outfit generation system. Based on the character information provided, output outfit commands to set the character's clothing and accessories.",
-                window.getContext()
+                window.getContext(),
+                connectionProfile
             );
         } catch (error) {
             console.error('Error generating outfit from LLM:', error);
