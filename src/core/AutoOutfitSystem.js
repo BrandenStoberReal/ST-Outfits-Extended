@@ -1,4 +1,7 @@
+// Import various string processing utilities
 import { replaceAll as replaceAllStr, extractCommands, extractMacros, safeGet, safeSet } from '../utils/StringProcessor.js';
+
+// Import LLM utility for outfit generation
 import { LLMUtility } from '../utils/LLMUtility.js';
 
 export class AutoOutfitSystem {

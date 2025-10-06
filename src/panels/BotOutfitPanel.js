@@ -1,5 +1,10 @@
+// Import shared UI utilities for drag and resize functionality
 import { dragElementWithSave, resizeElement } from '../common/shared.js';
+
+// Import string processing utilities for command extraction
 import { extractCommands } from '../utils/StringProcessor.js';
+
+// Import LLM utility for outfit generation
 import { LLMUtility } from '../utils/LLMUtility.js';
 
 export class BotOutfitPanel {

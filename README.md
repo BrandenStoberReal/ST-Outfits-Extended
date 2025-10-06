@@ -214,5 +214,22 @@ Here are the full list of available slots:
 - `{{getglobalvar::User_legs-accessory}}`
 - `{{getglobalvar::User_foot-accessory}}`
 
+## Development
+
+### Path Management
+This extension uses a well-organized directory structure to improve maintainability:
+
+```
+src/
+├── common/          # Shared utilities and common functions
+├── core/            # Core business logic modules
+├── managers/        # Outfit management classes
+├── panels/          # UI panel implementations
+├── utils/           # Utility functions
+└── config/          # Configuration modules
+```
+
+A path configuration module (`src/config/paths.js`) centralizes path definitions for improved maintainability.
+
 ## License
 Creative Commons Zero

@@ -1,4 +1,6 @@
 // extension_settings is expected to be available in the global scope once the extension initializes
+
+// Import utility functions for safe object property access
 import { safeGet, safeSet } from '../utils/StringProcessor.js';
 
 export class BotOutfitManager {

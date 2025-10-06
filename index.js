@@ -1,3 +1,6 @@
+// Define base directory for imports
+const BASE_PATH = new URL('.', import.meta.url).pathname;
+
 // Import modules from SillyTavern core - these are expected to be available when installed correctly
 import { getContext, extension_settings } from "../../../extensions.js";
 import { saveSettingsDebounced } from "../../../../script.js";
@@ -8,6 +11,9 @@ import { SlashCommandArgument, SlashCommandNamedArgument, ARGUMENT_TYPE } from "
 // Import the extractMacros and replaceAll functions from StringProcessor
 import { extractMacros, replaceAll } from "./src/utils/StringProcessor.js";
 import { LLMUtility } from "./src/utils/LLMUtility.js";
+
+// Import path configuration
+import * as Paths from "./src/config/paths.js";
 
 // Define global variables that might not be imported directly
 // power_user and user_avatar are typically available globally in SillyTavern

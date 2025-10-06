@@ -1,3 +1,4 @@
+// Import shared UI utilities for drag and resize functionality
 import { dragElementWithSave, resizeElement } from '../common/shared.js';
 
 export class UserOutfitPanel {
