@@ -394,32 +394,47 @@ First Message: <CHARACTER_FIRST_MESSAGE>
 
 Based on the information provided, output outfit commands to set the character's clothing and accessories. Only output commands, nothing else.
 
-The available outfit slots are:
-- Clothing: headwear, topwear, topunderwear, bottomwear, bottomunderwear, footwear, footunderwear
-- Accessories: head-accessory, ears-accessory, eyes-accessory, mouth-accessory, neck-accessory, body-accessory, arms-accessory, hands-accessory, waist-accessory, bottom-accessory, legs-accessory, foot-accessory
-
 Use these command formats:
-- outfit-system_wear_headwear("item name")
-- outfit-system_wear_topwear("item name")
-- outfit-system_wear_topunderwear("item name")
-- outfit-system_wear_bottomwear("item name")
-- outfit-system_wear_bottomunderwear("item name")
-- outfit-system_wear_footwear("item name")
-- outfit-system_wear_footunderwear("item name")
-- outfit-system_wear_head-accessory("item name")
-- outfit-system_wear_ears-accessory("item name")
-- outfit-system_wear_eyes-accessory("item name")
-- outfit-system_wear_mouth-accessory("item name")
-- outfit-system_wear_neck-accessory("item name")
-- outfit-system_wear_body-accessory("item name")
-- outfit-system_wear_arms-accessory("item name")
-- outfit-system_wear_hands-accessory("item name")
-- outfit-system_wear_waist-accessory("item name")
-- outfit-system_wear_bottom-accessory("item name")
-- outfit-system_wear_legs-accessory("item name")
-- outfit-system_wear_foot-accessory("item name")
+outfit-system_wear_headwear("item name")
+outfit-system_wear_topwear("item name")
+outfit-system_wear_topunderwear("item name")
+outfit-system_wear_bottomwear("item name")
+outfit-system_wear_bottomunderwear("item name")
+outfit-system_wear_footwear("item name")
+outfit-system_wear_footunderwear("item name")
+outfit-system_wear_head-accessory("item name")
+outfit-system_wear_ears-accessory("item name")
+outfit-system_wear_eyes-accessory("item name")
+outfit-system_wear_mouth-accessory("item name")
+outfit-system_wear_neck-accessory("item name")
+outfit-system_wear_body-accessory("item name")
+outfit-system_wear_arms-accessory("item name")
+outfit-system_wear_hands-accessory("item name")
+outfit-system_wear_waist-accessory("item name")
+outfit-system_wear_bottom-accessory("item name")
+outfit-system_wear_legs-accessory("item name")
+outfit-system_wear_foot-accessory("item name")
+outfit-system_remove_headwear()
+outfit-system_remove_topwear()
+outfit-system_remove_topunderwear()
+outfit-system_remove_bottomwear()
+outfit-system_remove_bottomunderwear()
+outfit-system_remove_footwear()
+outfit-system_remove_footunderwear()
+outfit-system_remove_head-accessory()
+outfit-system_remove_ears-accessory()
+outfit-system_remove_eyes-accessory()
+outfit-system_remove_mouth-accessory()
+outfit-system_remove_neck-accessory()
+outfit-system_remove_body-accessory()
+outfit-system_remove_arms-accessory()
+outfit-system_remove_hands-accessory()
+outfit-system_remove_waist-accessory()
+outfit-system_remove_bottom-accessory()
+outfit-system_remove_legs-accessory()
+outfit-system_remove_foot-accessory()
 
-If an item is not applicable based on the character info, use "None" as the value.
+For each clothing item or accessory you identify for this character, output a corresponding command. If an item is not applicable based on the character info, do not output a command for it.
 Only output command lines, nothing else.`;
     }
 
