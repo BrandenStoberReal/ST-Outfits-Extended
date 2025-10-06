@@ -24,7 +24,86 @@ Hold click the header part of the window and drag to position the windows as you
 
 **Important** If this is your first time using outfit system for the active character, click the refresh button on top of the outfit window to generate the variables.
 
-Add a prompt like this into your Character Description or Author's Notes or World Info Entry (depending on how you prefer to prompt AI) to let AI see the current outfit. (*Personally I prefer to add this as Character Notes as System Role and Depth 1. If you inject this at top of the context, each time you change your outfit, AI will have to process whole context. If you are using Api models, you don't have to worry about it, but if you are using local models, you may want to use this trick to keep context cache intact.)
+### Slash Commands
+
+The Outfit Tracker extension provides various slash commands for managing outfits:
+
+#### Panel Control Commands
+- `/outfit-bot` - Toggle the AI character's outfit window
+- `/outfit-user` - Toggle the user character's outfit window
+
+#### Auto Outfit Commands
+- `/outfit-auto [on/off]` - Enable/disable auto outfit updates
+- `/outfit-prompt [text]` - Set the auto outfit system prompt
+- `/outfit-prompt-reset` - Reset to default system prompt
+- `/outfit-prompt-view` - View current system prompt
+- `/outfit-auto-trigger` - Manually trigger auto outfit check
+
+#### Outfit Management Commands
+- `/switch-outfit <name>` - Switch to a saved outfit by name
+- `/import-outfit` - Import outfit from character card
+- `/outfit-list` - List all available presets and current outfits
+
+#### Outfit Preset Commands:
+- `/outfit-save <name>` - Saves character outfit as a preset
+  - Example: `/outfit-save casual`
+- `/outfit-delete <name>` - Deletes character outfit preset
+  - Example: `/outfit-delete casual`
+- `/user-outfit-save <name>` - Saves user outfit as a preset
+  - Example: `/user-outfit-save casual`
+- `/user-outfit-delete <name>` - Deletes user outfit preset
+  - Example: `/user-outfit-delete casual`
+
+#### Mobile-Friendly Outfit Commands (for mobile users without access to panels)
+
+##### Character Outfit Commands:
+- `/outfit-wear <slot> <item>` - Sets a character outfit item
+  - Example: `/outfit-wear headwear "Red Baseball Cap"`
+- `/outfit-remove <slot>` - Removes a character outfit item
+  - Example: `/outfit-remove topwear`
+- `/outfit-change <slot> <item>` - Changes a character outfit item
+  - Example: `/outfit-change topwear "Green Shirt"`
+
+##### User Outfit Commands:
+- `/user-outfit-wear <slot> <item>` - Sets a user outfit item
+  - Example: `/user-outfit-wear headwear "Blue Cap"`
+- `/user-outfit-remove <slot>` - Removes a user outfit item
+  - Example: `/user-outfit-remove topwear`
+- `/user-outfit-change <slot> <item>` - Changes a user outfit item
+  - Example: `/user-outfit-change topwear "Green T-Shirt"`
+
+##### Common Arguments
+Most commands support the `-quiet` argument to suppress notifications:
+- Example: `/outfit-wear headwear "Red Hat" -quiet` - Sets the character's headwear without showing a notification
+
+### Outfit Slots
+
+#### Clothing Slots:
+- headwear
+- topwear
+- topunderwear
+- bottomwear
+- bottomunderwear
+- footwear
+- footunderwear
+
+#### Accessory Slots:
+- head-accessory
+- ears-accessory
+- eyes-accessory
+- mouth-accessory
+- neck-accessory
+- body-accessory
+- arms-accessory
+- hands-accessory
+- waist-accessory
+- bottom-accessory
+- legs-accessory
+- foot-accessory
+
+### Adding Outfit Information to Prompts
+
+Add a prompt like this into your Character Description or Author's Notes or World Info Entry (depending on how you prefer to prompt AI) to let AI see the current outfit. (*Personally I prefer to add this as Character Notes as System Role and Depth 1. If you inject this at top of the context, each time you change your outfit, AI will have to process whole context. If you are using Api models, you don't have to worry about it, but if you are using local models, you may want to use this trick to keep context cache intact.*)
 
 ```
 **<BOT>'s Current Outfit**
@@ -83,7 +162,24 @@ Also since it performs a check after every message, you should have a decent gen
 
 💡 **In Extension Settings window you can see the prompt system uses for performing self-check. If you don't know what you are doing, please don't change this.**
 
+## Import Outfit from Character Card
+
+The `/import-outfit` command is a powerful feature that uses LLM analysis to automatically extract outfit information from your character card. This command will:
+
+1. Analyze character description, personality, scenario, and character notes
+2. Identify clothing and accessories mentioned in the text
+3. Populate the outfit tracker with these items using appropriate commands
+4. Clean up the original character card by removing clothing references
+5. Fix spelling and grammar errors during the cleanup process
+
+This is especially useful when importing characters that already have outfit descriptions in their character card.
+
+## Connection Profile Support
+
+The auto outfit system now supports using different connection profiles for LLM generation. In the settings, you can specify a connection profile (like OpenRouter, Oobabooga, OpenAI, or Claude) that will be used specifically for auto outfit detection. This allows you to use a different model for outfit detection than for your main conversation if desired.
+
 ## List of Variables
+
 If you take a look at the example prompt I shared above, you can see that it uses global variables such as `{{getglobalvar::<BOT>_headwear}}`. You can inject any variable stored in outfit slots anywhere you want using that macro. Write `<BOT>` for character's outfit. Write "User" for user outfit. Instead of `<BOT>` you can also write a character's own name such as `{{getglobalvar::Emma_headwear}}`. If you set Emma's headwear as "Red Baseball Hat" then if you write `{{getglobalvar::Emma_headwear}}` to somewhere, it will appear as "Red Baseball Hat". You can simply write `<BOT>` instead of "Emma" and it'll automatically replace `<BOT>` with name of current active character. These variable macros works just like how `{{user}}` or `{{char}}` macros work. Anywhere you can use those macros, you should be able to use the outfit system's macros as well. Just make sure that variable exists, or it will appear blank in the context.
 
 💡 **User's variable names are always same. They always use "User_" regardless of your persona name.**
