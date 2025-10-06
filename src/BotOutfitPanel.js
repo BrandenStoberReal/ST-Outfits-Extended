@@ -336,7 +336,32 @@ export class BotOutfitPanel {
     }
 
     formatSlotName(name) {
-        return name
+        // First do some special replacements for confusing terms
+        let formattedName = name;
+        
+        // Replace confusing slot names with more descriptive equivalents
+        formattedName = formattedName
+            .replace('topunderwear', 'Top Underwear / Inner Top')
+            .replace('bottomunderwear', 'Bottom Underwear / Inner Bottom')
+            .replace('footunderwear', 'Foot Underwear / Socks');
+        
+        // Make accessory labels more descriptive
+        formattedName = formattedName
+            .replace('head-accessory', 'Head Accessory')
+            .replace('ears-accessory', 'Ears Accessory')
+            .replace('eyes-accessory', 'Eyes Accessory')
+            .replace('mouth-accessory', 'Mouth Accessory')
+            .replace('neck-accessory', 'Neck Accessory')
+            .replace('body-accessory', 'Body Accessory')
+            .replace('arms-accessory', 'Arms Accessory')
+            .replace('hands-accessory', 'Hands Accessory')
+            .replace('waist-accessory', 'Waist Accessory')
+            .replace('bottom-accessory', 'Bottom Accessory')
+            .replace('legs-accessory', 'Legs Accessory')
+            .replace('foot-accessory', 'Foot Accessory');
+        
+        // Then apply general formatting
+        return formattedName
             .replace(/([a-z])([A-Z])/g, '$1 $2')
             .replace(/^./, str => str.toUpperCase())
             .replace(/-/g, ' ')
