@@ -6,7 +6,6 @@ export class UserOutfitPanel {
         this.clothingSlots = clothingSlots;
         this.accessorySlots = accessorySlots;
         this.isVisible = false;
-        this.isMinimized = false;
         this.domElement = null;
         this.currentTab = 'clothing';
         this.saveSettingsDebounced = saveSettingsDebounced;
@@ -25,7 +24,6 @@ export class UserOutfitPanel {
             <div class="outfit-header">
                 <h3>Your Outfit</h3>
                 <div class="outfit-actions">
-                    <span class="outfit-action" id="user-outfit-minimize">−</span>
                     <span class="outfit-action" id="user-outfit-refresh">↻</span>
                     <span class="outfit-action" id="user-outfit-close">×</span>
                 </div>
@@ -56,7 +54,7 @@ export class UserOutfitPanel {
     }
 
     renderContent() {
-        if (!this.domElement || this.isMinimized) return;
+        if (!this.domElement) return;
         
         const contentArea = this.domElement.querySelector('.outfit-content');
         if (!contentArea) return;
@@ -280,30 +278,7 @@ export class UserOutfitPanel {
         this.isVisible ? this.hide() : this.show();
     }
 
-    toggleMinimize() {
-        this.isMinimized = !this.isMinimized;
-        this.updateMinimizeState();
-    }
 
-    updateMinimizeState() {
-        if (!this.domElement) return;
-        
-        const contentArea = this.domElement.querySelector('.outfit-content');
-        const tabs = this.domElement.querySelector('.outfit-tabs');
-        const minimizeBtn = this.domElement.querySelector('#user-outfit-minimize');
-        
-        if (this.isMinimized) {
-            contentArea.style.display = 'none';
-            tabs.style.display = 'none';
-            minimizeBtn.textContent = '+';
-            this.domElement.style.height = 'auto';
-        } else {
-            contentArea.style.display = 'block';
-            tabs.style.display = 'flex';
-            minimizeBtn.textContent = '−';
-            this.renderContent();
-        }
-    }
 
     show() {
         if (!this.domElement) {
@@ -326,10 +301,6 @@ export class UserOutfitPanel {
                 });
             }, 10); // Small delay to ensure panel is rendered first
             
-            this.domElement.querySelector('#user-outfit-minimize')?.addEventListener('click', () => {
-                this.toggleMinimize();
-            });
-
             this.domElement.querySelector('#user-outfit-refresh')?.addEventListener('click', () => {
                 this.outfitManager.initializeOutfit();
                 this.renderContent();
@@ -344,6 +315,5 @@ export class UserOutfitPanel {
             this.domElement.style.display = 'none';
         }
         this.isVisible = false;
-        this.isMinimized = false;
     }
 }

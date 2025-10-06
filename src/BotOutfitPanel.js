@@ -8,7 +8,6 @@ export class BotOutfitPanel {
         this.clothingSlots = clothingSlots;
         this.accessorySlots = accessorySlots;
         this.isVisible = false;
-        this.isMinimized = false;
         this.domElement = null;
         this.currentTab = 'clothing';
         this.saveSettingsDebounced = saveSettingsDebounced;
@@ -27,7 +26,6 @@ export class BotOutfitPanel {
             <div class="outfit-header">
                 <h3>${this.outfitManager.character}'s Outfit</h3>
                 <div class="outfit-actions">
-                    <span class="outfit-action" id="bot-outfit-minimize">−</span>
                     <span class="outfit-action" id="bot-outfit-refresh">↻</span>
                     <span class="outfit-action" id="bot-outfit-close">×</span>
                 </div>
@@ -58,7 +56,7 @@ export class BotOutfitPanel {
     }
 
     renderContent() {
-        if (!this.domElement || this.isMinimized) return;
+        if (!this.domElement) return;
         
         const contentArea = this.domElement.querySelector('.outfit-content');
         if (!contentArea) return;
@@ -552,30 +550,7 @@ INSTRUCTIONS:
         this.isVisible ? this.hide() : this.show();
     }
 
-    toggleMinimize() {
-        this.isMinimized = !this.isMinimized;
-        this.updateMinimizeState();
-    }
 
-    updateMinimizeState() {
-        if (!this.domElement) return;
-        
-        const contentArea = this.domElement.querySelector('.outfit-content');
-        const tabs = this.domElement.querySelector('.outfit-tabs');
-        const minimizeBtn = this.domElement.querySelector('#bot-outfit-minimize');
-        
-        if (this.isMinimized) {
-            contentArea.style.display = 'none';
-            tabs.style.display = 'none';
-            minimizeBtn.textContent = '+';
-            this.domElement.style.height = 'auto';
-        } else {
-            contentArea.style.display = 'block';
-            tabs.style.display = 'flex';
-            minimizeBtn.textContent = '−';
-            this.renderContent();
-        }
-    }
 
     show() {
         if (!this.domElement) {
@@ -598,10 +573,6 @@ INSTRUCTIONS:
                 });
             }, 10); // Small delay to ensure panel is rendered first
             
-            this.domElement.querySelector('#bot-outfit-minimize')?.addEventListener('click', () => {
-                this.toggleMinimize();
-            });
-
             this.domElement.querySelector('#bot-outfit-refresh')?.addEventListener('click', () => {
                 this.outfitManager.initializeOutfit();
                 this.renderContent();
@@ -616,7 +587,6 @@ INSTRUCTIONS:
             this.domElement.style.display = 'none';
         }
         this.isVisible = false;
-        this.isMinimized = false;
     }
 
     updateCharacter(name) {

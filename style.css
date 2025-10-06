@@ -395,17 +395,6 @@
 
 
 
-/* Minimized state styles */
-.outfit-panel.minimized .outfit-content,
-.outfit-panel.minimized .outfit-tabs {
-    display: none !important;
-}
-
-.outfit-panel.minimized {
-    height: auto !important;
-    min-height: auto !important;
-}
-
 /* Ensure outfits page has proper scroll */
 #bot-outfit-tab-content,
 #user-outfit-tab-content {
@@ -421,19 +410,6 @@
 .outfit-presets-list {
     max-height: 300px;
     overflow-y: auto;
-}
-
-/* Minimize button styling */
-#bot-outfit-minimize,
-#user-outfit-minimize {
-    font-weight: bold;
-    font-size: 1.3em;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
 }
 
 /* Ensure proper spacing in header */
