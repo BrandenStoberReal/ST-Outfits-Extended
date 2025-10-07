@@ -1431,6 +1431,155 @@ async function initializeExtension() {
                 </div>
             `,
         }));
+
+        // Outfit overwrite commands
+        SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+            name: 'outfit-overwrite',
+            callback: async function (args, value) {
+                const isQuiet = args?.quiet === true;
+                const presetName = value?.toString().trim() || '';
+
+                if (!presetName) {
+                    const error = 'Please specify a preset name. Usage: /outfit-overwrite <name>';
+                    if (!isQuiet) {
+                        toastr.error(error, 'Outfit System');
+                    }
+                    return error;
+                }
+
+                try {
+                    const message = await botManager.overwritePreset(presetName);
+                    if (extension_settings.outfit_tracker?.enableSysMessages) {
+                        botPanel.sendSystemMessage(message);
+                    }
+                    if (!isQuiet) {
+                        toastr.info(message, 'Outfit System');
+                    }
+                    return message;
+                } catch (error) {
+                    console.error('Error overwriting outfit preset:', error);
+                    const error_msg = `Error overwriting outfit preset \"${presetName}\".`;
+                    if (!isQuiet) {
+                        toastr.error(error_msg, 'Outfit System');
+                    }
+                    return error_msg;
+                }
+            },
+            returns: 'overwrites character outfit preset with current outfit',
+            namedArgumentList: [
+                SlashCommandNamedArgument.fromProps({
+                    name: 'quiet',
+                    description: 'Suppress the toast message',
+                    typeList: [ARGUMENT_TYPE.BOOLEAN],
+                    defaultValue: 'false',
+                }),
+            ],
+            unnamedArgumentList: [
+                SlashCommandArgument.fromProps({
+                    description: 'preset name to overwrite',
+                    typeList: [ARGUMENT_TYPE.STRING],
+                    isRequired: true,
+                }),
+            ],
+            helpString: `
+                <div>
+                    Overwrites character outfit preset with current outfit. Usage: /outfit-overwrite <name>
+                </div>
+                <div>
+                    <strong>Options:</strong>
+                    <ul>
+                        <li><code>-quiet</code> - Suppress the toast message</li>
+                    </ul>
+                </div>
+                <div>
+                    <strong>Example:</strong>
+                    <ul>
+                        <li>
+                            <pre><code class="language-stscript">/outfit-overwrite casual</code></pre>
+                            Overwrites the \"casual\" character outfit preset with the current outfit
+                        </li>
+                        <li>
+                            <pre><code class="language-stscript">/outfit-overwrite formal</code></pre>
+                            Overwrites the \"formal\" character outfit preset with the current outfit
+                        </li>
+                    </ul>
+                </div>
+            `,
+        }));
+
+        SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+            name: 'user-outfit-overwrite',
+            callback: async function (args, value) {
+                const isQuiet = args?.quiet === true;
+                const presetName = value?.toString().trim() || '';
+
+                if (!presetName) {
+                    const error = 'Please specify a preset name. Usage: /user-outfit-overwrite <name>';
+                    if (!isQuiet) {
+                        toastr.error(error, 'Outfit System');
+                    }
+                    return error;
+                }
+
+                try {
+                    const message = await userManager.overwritePreset(presetName);
+                    if (extension_settings.outfit_tracker?.enableSysMessages) {
+                        userPanel.sendSystemMessage(message);
+                    }
+                    if (!isQuiet) {
+                        toastr.info(message, 'Outfit System');
+                    }
+                    return message;
+                } catch (error) {
+                    console.error('Error overwriting user outfit preset:', error);
+                    const error_msg = `Error overwriting user outfit preset \"${presetName}\".`;
+                    if (!isQuiet) {
+                        toastr.error(error_msg, 'Outfit System');
+                    }
+                    return error_msg;
+                }
+            },
+            returns: 'overwrites user outfit preset with current outfit',
+            namedArgumentList: [
+                SlashCommandNamedArgument.fromProps({
+                    name: 'quiet',
+                    description: 'Suppress the toast message',
+                    typeList: [ARGUMENT_TYPE.BOOLEAN],
+                    defaultValue: 'false',
+                }),
+            ],
+            unnamedArgumentList: [
+                SlashCommandArgument.fromProps({
+                    description: 'preset name to overwrite',
+                    typeList: [ARGUMENT_TYPE.STRING],
+                    isRequired: true,
+                }),
+            ],
+            helpString: `
+                <div>
+                    Overwrites user outfit preset with current outfit. Usage: /user-outfit-overwrite <name>
+                </div>
+                <div>
+                    <strong>Options:</strong>
+                    <ul>
+                        <li><code>-quiet</code> - Suppress the toast message</li>
+                    </ul>
+                </div>
+                <div>
+                    <strong>Example:</strong>
+                    <ul>
+                        <li>
+                            <pre><code class="language-stscript">/user-outfit-overwrite casual</code></pre>
+                            Overwrites the \"casual\" user outfit preset with the current outfit
+                        </li>
+                        <li>
+                            <pre><code class="language-stscript">/user-outfit-overwrite formal</code></pre>
+                            Overwrites the \"formal\" user outfit preset with the current outfit
+                        </li>
+                    </ul>
+                </div>
+            `,
+        }));
     }
 
     // Function to import outfit from character card using LLM analysis
