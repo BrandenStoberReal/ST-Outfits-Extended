@@ -507,6 +507,10 @@
     padding: 6px 0 !important;
 }
 
+.outfit-extension-settings .flex-container.setting-row select {
+    flex: 2 !important;
+}
+
 .outfit-extension-settings label {
     flex: 1 !important;
     color: #d0d0e0 !important;
@@ -577,16 +581,7 @@
     box-sizing: border-box !important;
 }
 
-.outfit-extension-settings select {
-    flex: 2 !important;
-    padding: 6px 10px !important;
-    background: rgba(30, 30, 50, 0.7) !important;
-    border: 1px solid rgba(100, 100, 150, 0.4) !important;
-    border-radius: 5px !important;
-    color: #e0e0ff !important;
-    font-size: 0.9em !important;
-    cursor: pointer !important;
-}
+
 
 .outfit-extension-settings .color-input-wrapper {
     display: flex !important;

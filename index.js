@@ -2341,7 +2341,7 @@ Only output command lines, nothing else.`;
             </div>
             <div class="flex-container setting-row">
                 <label for="outfit-connection-profile">Connection Profile (Optional):</label>
-                <select id="outfit-connection-profile">
+                <select id="outfit-connection-profile" class="option">
                     <option value="">Default Connection</option>
                     <option value="openrouter" ${extension_settings[MODULE_NAME].autoOutfitConnectionProfile === 'openrouter' ? 'selected' : ''}>OpenRouter</option>
                     <option value="ooba" ${extension_settings[MODULE_NAME].autoOutfitConnectionProfile === 'ooba' ? 'selected' : ''}>Oobabooga</option>
