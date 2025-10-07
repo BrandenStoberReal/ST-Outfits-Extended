@@ -463,21 +463,21 @@
 
 .outfit-extension-settings h4 {
     margin: 0 0 12px 0 !important;
-    color: #000000 !important; font-weight: bold !important; /* Black and white theme */
+    color: #ffffff !important;
     font-size: 1.1em !important;
-    border-bottom: 1px solid #000000 !important;
+    border-bottom: 1px solid #cccccc !important;
     padding-bottom: 5px !important;
-    background: #ffffff !important;
+    background: #333333 !important;
     padding: 8px !important;
     border-radius: 4px !important;
 }
 
 .outfit-extension-settings .setting-group {
     margin-bottom: 18px !important;
-    background: #f5f5f5 !important;
+    background: #222222 !important;
     padding: 15px !important;
     border-radius: 8px !important;
-    border: 1px solid #000000 !important;
+    border: 1px solid #555555 !important;
 }
 
 .outfit-extension-settings .setting-group:last-child {
@@ -499,7 +499,7 @@
     align-items: center !important;
     margin-bottom: 10px !important;
     padding: 6px 0 !important;
-    background: #ffffff !important;
+    background: #2a2a2a !important;
     padding: 8px !important;
     border-radius: 4px !important;
 }
@@ -523,7 +523,7 @@
 
 .outfit-extension-settings label {
     flex: 1 !important;
-    color: #000000 !important; font-weight: bold !important; /* Black and white theme */
+    color: #ffffff !important;
     font-size: 0.95em !important;
     margin: 0 !important;
     min-width: 130px !important;
@@ -534,10 +534,10 @@
 .outfit-extension-settings textarea {
     flex: 2 !important;
     padding: 6px 10px !important;
-    background: #ffffff !important;
-    border: 1px solid #000000 !important;
+    background: #333333 !important;
+    border: 1px solid #555555 !important;
     border-radius: 5px !important;
-    color: #000000 !important; font-weight: bold !important; /* Black and white theme */
+    color: #ffffff !important;
     font-size: 0.9em !important;
 }
 
@@ -545,7 +545,6 @@
     width: 100% !important;
     min-height: 120px !important;
     resize: vertical !important;
-    background: #ffffff !important;
 }
 
 .outfit-extension-settings input[type="checkbox"] {
@@ -553,8 +552,8 @@
     height: 22px !important;
     -webkit-appearance: none !important;
     appearance: none !important;
-    background: #ffffff !important;
-    border: 1px solid #000000 !important;
+    background: #333333 !important;
+    border: 1px solid #555555 !important;
     border-radius: 11px !important;
     position: relative !important;
     cursor: pointer !important;
@@ -570,27 +569,27 @@
     border-radius: 50% !important;
     top: 1px !important;
     left: 1px !important;
-    background: #000000 !important;
+    background: #ffffff !important;
     transition: transform 0.3s !important;
 }
 
 .outfit-extension-settings input[type="checkbox"]:checked {
-    background: #000000 !important;
+    background: #ffffff !important;
 }
 
 .outfit-extension-settings input[type="checkbox"]:checked:before {
     transform: translateX(20px) !important;
-    background: #ffffff !important;
+    background: #333333 !important;
 }
 
 .outfit-extension-settings input[type="color"] {
     width: 44px !important;
     height: 30px !important;
     padding: 2px !important;
-    border: 1px solid #000000 !important;
+    border: 1px solid #555555 !important;
     border-radius: 5px !important;
     cursor: pointer !important;
-    background: #ffffff !important;
+    background: #333333 !important;
     box-sizing: border-box !important;
 }
 
@@ -607,7 +606,7 @@
     align-items: center !important;
     margin-bottom: 10px !important;
     padding: 6px 0 !important;
-    background: #ffffff !important;
+    background: #2a2a2a !important;
     padding: 8px !important;
     border-radius: 4px !important;
 }
@@ -615,7 +614,7 @@
 .outfit-extension-settings .color-label {
     flex: 1 !important;
     min-width: 130px !important;
-    color: #000000 !important; font-weight: bold !important; /* Black and white theme */
+    color: #ffffff !important;
     font-size: 0.95em !important;
     font-weight: bold !important;
 }
@@ -623,16 +622,16 @@
 .outfit-extension-settings .panel-color-section {
     margin-bottom: 15px !important;
     padding: 12px !important;
-    background: #ffffff !important;
+    background: #2a2a2a !important;
     border-radius: 8px !important;
-    border: 1px solid #000000 !important;
+    border: 1px solid #555555 !important;
 }
 
 .outfit-extension-settings .color-section-title {
     margin: 5px 0 12px 0 !important;
-    color: #000000 !important; font-weight: bold !important; /* Black and white theme */
+    color: #ffffff !important;
     font-size: 1.05em !important;
-    border-bottom: 1px solid #000000 !important;
+    border-bottom: 1px solid #cccccc !important;
     padding-bottom: 6px !important;
     font-weight: bold !important;
 }
@@ -656,8 +655,8 @@
     margin-top: 12px !important;
     padding: 10px !important;
     font-size: 1.05em !important;
-    background: #000000 !important;
-    border: 1px solid #000000 !important;
+    background: #444444 !important;
+    border: 1px solid #666666 !important;
     border-radius: 6px !important;
     color: #ffffff !important;
     cursor: pointer !important;
@@ -666,31 +665,33 @@
 }
 
 .outfit-extension-settings #apply-panel-colors:hover {
-    background: #333333 !important;
+    background: #555555 !important;
     color: #ffffff !important;
 }
 
 .outfit-extension-settings .menu_button {
     padding: 8px 15px !important;
     margin: 0 5px !important;
-    background: #ffffff !important;
-    border: 1px solid #000000 !important;
+    background: #333333 !important;
+    border: 1px solid #555555 !important;
     border-radius: 5px !important;
-    color: #000000 !important; font-weight: bold !important; /* Black and white theme */
+    color: #ffffff !important;
     cursor: pointer !important;
     font-size: 0.9em !important;
     transition: all 0.2s ease !important;
 }
 
 .outfit-extension-settings .menu_button:hover {
-    background: #000000 !important;
+    background: #555555 !important;
     color: #ffffff !important;
 }
 
 .outfit-extension-settings .color-input-wrapper input[type="text"] {
     border-radius: 5px 0 0 5px !important;
     margin-left: 8px !important;
-    border: 1px solid #000000 !important;
+    border: 1px solid #555555 !important;
+    background: #333333 !important;
+    color: #ffffff !important;
 }
 
 
