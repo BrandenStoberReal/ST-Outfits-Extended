@@ -2273,6 +2273,17 @@ Only output command lines, nothing else.`;
                 presets: {
                     bot: {},
                     user: {}
+                },
+                // Default color settings
+                botPanelColors: {
+                    primary: 'linear-gradient(135deg, #6a4fc1 0%, #5a49d0 50%, #4a43c0 100%)',
+                    border: '#8a7fdb',
+                    shadow: 'rgba(106, 79, 193, 0.4)'
+                },
+                userPanelColors: {
+                    primary: 'linear-gradient(135deg, #1a78d1 0%, #2a68c1 50%, #1a58b1 100%)',
+                    border: '#5da6f0',
+                    shadow: 'rgba(26, 120, 209, 0.4)'
                 }
             };
         }
@@ -2375,6 +2386,62 @@ Only output command lines, nothing else.`;
                         <input type="checkbox" id="outfit-auto-user"
                                 ${extension_settings[MODULE_NAME].autoOpenUser ? 'checked' : ''}>
                     </div>
+                    
+                    <!-- Panel Colors Customization Section -->
+                    <div class="flex-container" style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #555;">
+                        <div style="width: 100%;">
+                            <h4 style="margin: 0 0 10px 0; color: #ccc;">Panel Colors</h4>
+                            
+                            <!-- Bot Panel Colors -->
+                            <div style="margin-bottom: 15px; padding: 10px; background: rgba(100, 100, 100, 0.2); border-radius: 5px;">
+                                <h5 style="margin: 5px 0; color: #ccc;">Character Panel</h5>
+                                
+                                <div class="flex-container" style="align-items: center;">
+                                    <label for="bot-panel-primary-color" style="flex: 1; min-width: 150px;">Primary Color:</label>
+                                    <input type="color" id="bot-panel-primary-color-picker" value="#6a4fc1" style="width: 40px; height: 28px; padding: 0; border: none; border-radius: 3px; cursor: pointer;">
+                                    <input type="text" id="bot-panel-primary-color" value="${extension_settings[MODULE_NAME].botPanelColors.primary}" style="flex: 2; padding: 4px 8px; margin-left: 8px;">
+                                </div>
+                                
+                                <div class="flex-container" style="align-items: center;">
+                                    <label for="bot-panel-border-color" style="flex: 1; min-width: 150px;">Border Color:</label>
+                                    <input type="color" id="bot-panel-border-color-picker" value="#8a7fdb" style="width: 40px; height: 28px; padding: 0; border: none; border-radius: 3px; cursor: pointer;">
+                                    <input type="text" id="bot-panel-border-color" value="${extension_settings[MODULE_NAME].botPanelColors.border}" style="flex: 2; padding: 4px 8px; margin-left: 8px;">
+                                </div>
+                                
+                                <div class="flex-container" style="align-items: center;">
+                                    <label for="bot-panel-shadow-color" style="flex: 1; min-width: 150px;">Shadow Color:</label>
+                                    <input type="color" id="bot-panel-shadow-color-picker" value="#6a4fc1" style="width: 40px; height: 28px; padding: 0; border: none; border-radius: 3px; cursor: pointer; opacity: 0.4;">
+                                    <input type="text" id="bot-panel-shadow-color" value="${extension_settings[MODULE_NAME].botPanelColors.shadow}" style="flex: 2; padding: 4px 8px; margin-left: 8px;">
+                                </div>
+                            </div>
+                            
+                            <!-- User Panel Colors -->
+                            <div style="margin-bottom: 15px; padding: 10px; background: rgba(100, 100, 100, 0.2); border-radius: 5px;">
+                                <h5 style="margin: 5px 0; color: #ccc;">User Panel</h5>
+                                
+                                <div class="flex-container" style="align-items: center;">
+                                    <label for="user-panel-primary-color" style="flex: 1; min-width: 150px;">Primary Color:</label>
+                                    <input type="color" id="user-panel-primary-color-picker" value="#1a78d1" style="width: 40px; height: 28px; padding: 0; border: none; border-radius: 3px; cursor: pointer;">
+                                    <input type="text" id="user-panel-primary-color" value="${extension_settings[MODULE_NAME].userPanelColors.primary}" style="flex: 2; padding: 4px 8px; margin-left: 8px;">
+                                </div>
+                                
+                                <div class="flex-container" style="align-items: center;">
+                                    <label for="user-panel-border-color" style="flex: 1; min-width: 150px;">Border Color:</label>
+                                    <input type="color" id="user-panel-border-color-picker" value="#5da6f0" style="width: 40px; height: 28px; padding: 0; border: none; border-radius: 3px; cursor: pointer;">
+                                    <input type="text" id="user-panel-border-color" value="${extension_settings[MODULE_NAME].userPanelColors.border}" style="flex: 2; padding: 4px 8px; margin-left: 8px;">
+                                </div>
+                                
+                                <div class="flex-container" style="align-items: center;">
+                                    <label for="user-panel-shadow-color" style="flex: 1; min-width: 150px;">Shadow Color:</label>
+                                    <input type="color" id="user-panel-shadow-color-picker" value="#1a78d1" style="width: 40px; height: 28px; padding: 0; border: none; border-radius: 3px; cursor: pointer; opacity: 0.4;">
+                                    <input type="text" id="user-panel-shadow-color" value="${extension_settings[MODULE_NAME].userPanelColors.shadow}" style="flex: 2; padding: 4px 8px; margin-left: 8px;">
+                                </div>
+                            </div>
+                            
+                            <button id="apply-panel-colors" class="menu_button" style="width: 100%; margin-top: 10px;">Apply Panel Colors</button>
+                        </div>
+                    </div>
+                    
                     ${autoSettingsHtml}
                 </div>
             </div>
@@ -2397,6 +2464,154 @@ Only output command lines, nothing else.`;
             extension_settings[MODULE_NAME].autoOpenUser = $(this).prop('checked');
             saveSettingsDebounced();
         });
+
+        // Update panel colors when settings change
+        $(document).on("input", "#bot-panel-primary-color, #bot-panel-border-color, #bot-panel-shadow-color, #user-panel-primary-color, #user-panel-border-color, #user-panel-shadow-color", function() {
+            updateColorSettingsAndApply();
+        });
+
+        // Color customization event listeners
+        $("#apply-panel-colors").on("click", function() {
+            updateColorSettingsAndApply();
+        });
+        
+        // Update text inputs when color pickers change
+        $("#bot-panel-primary-color-picker").on("input", function() {
+            // Extract hex color from the picker and update the text field
+            const hexColor = $(this).val();
+            $("#bot-panel-primary-color").val(`linear-gradient(135deg, ${hexColor} 0%, #5a49d0 50%, #4a43c0 100%)`);
+        });
+        
+        $("#bot-panel-border-color-picker").on("input", function() {
+            const hexColor = $(this).val();
+            $("#bot-panel-border-color").val(hexColor);
+        });
+        
+        $("#bot-panel-shadow-color-picker").on("input", function() {
+            const hexColor = $(this).val();
+            // Convert hex to rgba for shadow (with opacity)
+            const rgba = hexToRgba(hexColor, 0.4);
+            $("#bot-panel-shadow-color").val(rgba);
+        });
+        
+        $("#user-panel-primary-color-picker").on("input", function() {
+            const hexColor = $(this).val();
+            $("#user-panel-primary-color").val(`linear-gradient(135deg, ${hexColor} 0%, #2a68c1 50%, #1a58b1 100%)`);
+        });
+        
+        $("#user-panel-border-color-picker").on("input", function() {
+            const hexColor = $(this).val();
+            $("#user-panel-border-color").val(hexColor);
+        });
+        
+        $("#user-panel-shadow-color-picker").on("input", function() {
+            const hexColor = $(this).val();
+            // Convert hex to rgba for shadow (with opacity)
+            const rgba = hexToRgba(hexColor, 0.4);
+            $("#user-panel-shadow-color").val(rgba);
+        });
+        
+        // Update color pickers when text inputs change (in case users type in values)
+        $(document).on("input", "#bot-panel-primary-color, #bot-panel-border-color, #bot-panel-shadow-color, #user-panel-primary-color, #user-panel-border-color, #user-panel-shadow-color", function() {
+            updateColorPickersFromText();
+        });
+        
+        // Helper function to convert hex color to rgba
+        function hexToRgba(hex, opacity) {
+            // Expand shorthand form (e.g. "03F") to full form (e.g. "0033FF")
+            var shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
+            hex = hex.replace(shorthandRegex, function(m, r, g, b) {
+                return r + r + g + g + b + b;
+            });
+
+            var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? 
+                `rgba(${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}, ${opacity})` : 
+                'rgba(0, 0, 0, 0.4)'; // default fallback
+        }
+        
+        // Helper function to extract hex color from gradient string
+        function extractHexFromGradient(gradientStr) {
+            // Match hex color in gradient string
+            const match = gradientStr.match(/#([a-fA-F0-9]{6})/);
+            return match ? match[0] : '#6a4fc1'; // Default color if not found
+        }
+        
+        // Function to update the color pickers based on text input values
+        function updateColorPickersFromText() {
+            // Update bot panel color pickers
+            const botPrimaryText = $("#bot-panel-primary-color").val();
+            if (botPrimaryText.startsWith('linear-gradient')) {
+                $("#bot-panel-primary-color-picker").val(extractHexFromGradient(botPrimaryText));
+            } else {
+                $("#bot-panel-primary-color-picker").val(botPrimaryText);
+            }
+            
+            const botBorderText = $("#bot-panel-border-color").val();
+            $("#bot-panel-border-color-picker").val(extractHexFromGradient(botBorderText) || botBorderText);
+            
+            const botShadowText = $("#bot-panel-shadow-color").val();
+            // Extract hex from rgba if possible
+            const rgbaMatch = botShadowText.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*[\d.]+)?\)/);
+            if (rgbaMatch) {
+                const r = parseInt(rgbaMatch[1]).toString(16).padStart(2, '0');
+                const g = parseInt(rgbaMatch[2]).toString(16).padStart(2, '0');
+                const b = parseInt(rgbaMatch[3]).toString(16).padStart(2, '0');
+                $("#bot-panel-shadow-color-picker").val(`#${r}${g}${b}`);
+            } else {
+                $("#bot-panel-shadow-color-picker").val(extractHexFromGradient(botShadowText) || botShadowText);
+            }
+            
+            // Update user panel color pickers
+            const userPrimaryText = $("#user-panel-primary-color").val();
+            if (userPrimaryText.startsWith('linear-gradient')) {
+                $("#user-panel-primary-color-picker").val(extractHexFromGradient(userPrimaryText));
+            } else {
+                $("#user-panel-primary-color-picker").val(userPrimaryText);
+            }
+            
+            const userBorderText = $("#user-panel-border-color").val();
+            $("#user-panel-border-color-picker").val(extractHexFromGradient(userBorderText) || userBorderText);
+            
+            const userShadowText = $("#user-panel-shadow-color").val();
+            // Extract hex from rgba if possible
+            const userRgbaMatch = userShadowText.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*[\d.]+)?\)/);
+            if (userRgbaMatch) {
+                const r = parseInt(userRgbaMatch[1]).toString(16).padStart(2, '0');
+                const g = parseInt(userRgbaMatch[2]).toString(16).padStart(2, '0');
+                const b = parseInt(userRgbaMatch[3]).toString(16).padStart(2, '0');
+                $("#user-panel-shadow-color-picker").val(`#${r}${g}${b}`);
+            } else {
+                $("#user-panel-shadow-color-picker").val(extractHexFromGradient(userShadowText) || userShadowText);
+            }
+        }
+        
+        // Function to update settings and apply colors
+        function updateColorSettingsAndApply() {
+            // Update the extension settings with new color values
+            extension_settings[MODULE_NAME].botPanelColors = {
+                primary: $("#bot-panel-primary-color").val(),
+                border: $("#bot-panel-border-color").val(),
+                shadow: $("#bot-panel-shadow-color").val()
+            };
+            
+            extension_settings[MODULE_NAME].userPanelColors = {
+                primary: $("#user-panel-primary-color").val(),
+                border: $("#user-panel-border-color").val(),
+                shadow: $("#user-panel-shadow-color").val()
+            };
+            
+            saveSettingsDebounced();
+            
+            // Apply the new colors to the panels
+            updatePanelStyles();
+            
+            // Show a confirmation message
+            toastr.success('Panel colors updated successfully!', 'Outfit Colors');
+        }
+        
+        // Initialize color pickers with current values when the settings UI loads
+        setTimeout(updateColorPickersFromText, 100);
 
         // Only add auto system event listeners if it loaded successfully
         if (hasAutoSystem) {
@@ -2465,6 +2680,9 @@ Only output command lines, nothing else.`;
                (navigator.maxTouchPoints > 1); // Has multiple touch points
     }
 
+    // Apply color settings to panels if they are visible
+    updatePanelStyles();
+
     // Auto-open panels only if not on mobile device
     if (extension_settings[MODULE_NAME].autoOpenBot && !isMobileDevice()) {
         setTimeout(() => botPanel.show(), 1000);
@@ -2473,6 +2691,12 @@ Only output command lines, nothing else.`;
     if (extension_settings[MODULE_NAME].autoOpenUser && !isMobileDevice()) {
         setTimeout(() => userPanel.show(), 1000);
     }
+
+    // Also apply colors when panels are created later
+    // This ensures colors are applied even if panels are opened after initial load
+    setTimeout(() => {
+        updatePanelStyles();
+    }, 1500); // Slightly longer than panel show timeout to ensure they're created
 
     // Define a function to replace outfit-related macros in text without using regex
     function replaceOutfitMacrosInText(text) {
@@ -2604,6 +2828,19 @@ Only output command lines, nothing else.`;
         }
 
         return processedText;
+    }
+
+    // Function to update the panel styles with the saved color preferences
+    function updatePanelStyles() {
+        // Update bot panel styles if it exists
+        if (window.botOutfitPanel && window.botOutfitPanel.domElement) {
+            window.botOutfitPanel.applyPanelColors();
+        }
+
+        // Update user panel styles if it exists
+        if (window.userOutfitPanel && window.userOutfitPanel.domElement) {
+            window.userOutfitPanel.applyPanelColors();
+        }
     }
 
     // Helper function to replace all occurrences of a substring without using regex

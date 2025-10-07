@@ -295,6 +295,7 @@ export class UserOutfitPanel {
         
         this.renderContent();
         this.domElement.style.display = 'flex';
+        this.applyPanelColors(); // Apply colors after showing
         this.isVisible = true;
 
         if (this.domElement) {
@@ -315,6 +316,18 @@ export class UserOutfitPanel {
             });
 
             this.domElement.querySelector('#user-outfit-close')?.addEventListener('click', () => this.hide());
+        }
+    }
+
+    // Apply panel colors based on saved preferences
+    applyPanelColors() {
+        if (window.extension_settings && window.extension_settings.outfit_tracker && this.domElement) {
+            const colors = window.extension_settings.outfit_tracker.userPanelColors;
+            if (colors) {
+                this.domElement.style.background = colors.primary;
+                this.domElement.style.border = `1px solid ${colors.border}`;
+                this.domElement.style.boxShadow = `0 8px 32px ${colors.shadow}`;
+            }
         }
     }
 
