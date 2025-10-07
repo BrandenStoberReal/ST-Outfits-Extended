@@ -458,3 +458,235 @@
         max-width: calc(100% - 20px);
     }
 }
+
+/* Extension Settings Panel Standardization */
+.outfit-extension-settings {
+    background: rgba(30, 30, 40, 0.6) !important;
+    border-radius: 8px !important;
+    padding: 15px !important;
+    margin-bottom: 15px !important;
+    border: 1px solid rgba(100, 100, 150, 0.3) !important;
+}
+
+.outfit-extension-settings .inline-drawer-content {
+    background: rgba(30, 30, 40, 0.6) !important;
+    border-radius: 8px !important;
+    margin-top: 10px !important;
+}
+
+.outfit-extension-settings h4 {
+    margin: 0 0 12px 0 !important;
+    color: #e0e0ff !important;
+    font-size: 1.1em !important;
+    border-bottom: 1px solid rgba(100, 100, 150, 0.4) !important;
+    padding-bottom: 5px !important;
+}
+
+.outfit-extension-settings .setting-group {
+    margin-bottom: 18px !important;
+}
+
+.outfit-extension-settings .setting-group:last-child {
+    margin-bottom: 10px !important;
+}
+
+.outfit-extension-settings .setting-row {
+    align-items: center !important;
+    padding: 8px 0 !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+.outfit-extension-settings .setting-row:last-child {
+    border-bottom: none !important;
+}
+
+.outfit-extension-settings .flex-container {
+    display: flex !important;
+    align-items: center !important;
+    margin-bottom: 10px !important;
+    padding: 6px 0 !important;
+}
+
+.outfit-extension-settings label {
+    flex: 1 !important;
+    color: #d0d0e0 !important;
+    font-size: 0.95em !important;
+    margin: 0 !important;
+    min-width: 130px !important;
+}
+
+.outfit-extension-settings input[type="text"],
+.outfit-extension-settings textarea {
+    flex: 2 !important;
+    padding: 6px 10px !important;
+    background: rgba(30, 30, 50, 0.7) !important;
+    border: 1px solid rgba(100, 100, 150, 0.4) !important;
+    border-radius: 5px !important;
+    color: #e0e0ff !important;
+    font-size: 0.9em !important;
+}
+
+.outfit-extension-settings textarea {
+    width: 100% !important;
+    min-height: 120px !important;
+    resize: vertical !important;
+}
+
+.outfit-extension-settings input[type="checkbox"] {
+    width: 42px !important;
+    height: 22px !important;
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    background: #4a4a6a !important;
+    border-radius: 11px !important;
+    position: relative !important;
+    cursor: pointer !important;
+    border: 1px solid rgba(255,255,255,0.2) !important;
+    transition: background 0.3s !important;
+    margin: 0 !important;
+}
+
+.outfit-extension-settings input[type="checkbox"]:before {
+    content: "" !important;
+    position: absolute !important;
+    width: 18px !important;
+    height: 18px !important;
+    border-radius: 50% !important;
+    top: 1px !important;
+    left: 1px !important;
+    background: #fff !important;
+    transition: transform 0.3s !important;
+}
+
+.outfit-extension-settings input[type="checkbox"]:checked {
+    background: #6a5acd !important;
+}
+
+.outfit-extension-settings input[type="checkbox"]:checked:before {
+    transform: translateX(20px) !important;
+}
+
+.outfit-extension-settings input[type="color"] {
+    width: 44px !important;
+    height: 30px !important;
+    padding: 2px !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    border-radius: 5px !important;
+    cursor: pointer !important;
+    background: #333 !important;
+    box-sizing: border-box !important;
+}
+
+.outfit-extension-settings select {
+    flex: 2 !important;
+    padding: 6px 10px !important;
+    background: rgba(30, 30, 50, 0.7) !important;
+    border: 1px solid rgba(100, 100, 150, 0.4) !important;
+    border-radius: 5px !important;
+    color: #e0e0ff !important;
+    font-size: 0.9em !important;
+    cursor: pointer !important;
+}
+
+.outfit-extension-settings .color-input-wrapper {
+    display: flex !important;
+    align-items: center !important;
+    flex: 2 !important;
+}
+
+.outfit-extension-settings .color-setting-row {
+    display: flex !important;
+    align-items: center !important;
+    margin-bottom: 10px !important;
+    padding: 6px 0 !important;
+}
+
+.outfit-extension-settings .color-label {
+    flex: 1 !important;
+    min-width: 130px !important;
+    color: #c0c0e0 !important;
+    font-size: 0.95em !important;
+}
+
+.outfit-extension-settings .panel-color-section {
+    margin-bottom: 15px !important;
+    padding: 12px !important;
+    background: rgba(40, 40, 60, 0.4) !important;
+    border-radius: 8px !important;
+    border: 1px solid rgba(100, 100, 150, 0.3) !important;
+}
+
+.outfit-extension-settings .color-section-title {
+    margin: 5px 0 12px 0 !important;
+    color: #d0d0ff !important;
+    font-size: 1.05em !important;
+    border-bottom: 1px solid rgba(100, 100, 150, 0.3) !important;
+    padding-bottom: 6px !important;
+}
+
+.outfit-extension-settings .color-reset-btn {
+    display: none !important;
+    height: 32px !important;
+    padding: 0 10px !important;
+    margin-left: -1px !important;
+    border: 1px solid rgba(100, 100, 150, 0.4) !important;
+    border-radius: 0 5px 5px 0 !important;
+    background: rgba(180, 60, 80, 0.3) !important;
+    color: #ffb3c3 !important;
+    cursor: pointer !important;
+    font-size: 0.8em !important;
+    transition: all 0.2s ease !important;
+}
+
+.outfit-extension-settings #apply-panel-colors {
+    width: 100% !important;
+    margin-top: 12px !important;
+    padding: 10px !important;
+    font-size: 1.05em !important;
+    background: linear-gradient(135deg, #5a6bc8 0%, #4a5bb8 100%) !important;
+    border: none !important;
+    border-radius: 6px !important;
+    color: white !important;
+    cursor: pointer !important;
+    transition: all 0.3s ease !important;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2) !important;
+}
+
+.outfit-extension-settings .menu_button {
+    padding: 8px 15px !important;
+    margin: 0 5px !important;
+    background: rgba(80, 80, 120, 0.4) !important;
+    border: 1px solid rgba(120, 120, 160, 0.4) !important;
+    border-radius: 5px !important;
+    color: #e0e0ff !important;
+    cursor: pointer !important;
+    font-size: 0.9em !important;
+    transition: all 0.2s ease !important;
+}
+
+.outfit-extension-settings .menu_button:hover {
+    background: rgba(100, 100, 140, 0.6) !important;
+    box-shadow: 0 0 8px rgba(100, 100, 150, 0.3) !important;
+}
+
+.outfit-extension-settings .color-input-wrapper input[type="text"] {
+    border-radius: 5px 0 0 5px !important;
+    margin-left: 8px !important;
+}
+
+/* Consistent section headers */
+.outfit-extension-settings .inline-drawer-header {
+    background: transparent !important;
+    padding: 0 !important;
+    border: none !important;
+}
+
+.outfit-extension-settings .inline-drawer-header b {
+    color: #f0f0ff !important;
+    font-size: 1.2em !important;
+}
+
+/* Error text styling */
+.outfit-extension-settings .error-text {
+    color: #ff6b6b !important;
+}

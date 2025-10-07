@@ -2334,12 +2334,12 @@ Only output command lines, nothing else.`;
     function createSettingsUI() {
         const hasAutoSystem = AutoOutfitSystem.name !== 'DummyAutoOutfitSystem';
         const autoSettingsHtml = hasAutoSystem ? `
-            <div class="flex-container">
+            <div class="flex-container setting-row">
                 <label for="outfit-auto-system">Enable auto outfit updates</label>
                 <input type="checkbox" id="outfit-auto-system"
                         ${extension_settings[MODULE_NAME].autoOutfitSystem ? 'checked' : ''}>
             </div>
-            <div class="flex-container">
+            <div class="flex-container setting-row">
                 <label for="outfit-connection-profile">Connection Profile (Optional):</label>
                 <select id="outfit-connection-profile">
                     <option value="">Default Connection</option>
@@ -2349,17 +2349,17 @@ Only output command lines, nothing else.`;
                     <option value="claude" ${extension_settings[MODULE_NAME].autoOutfitConnectionProfile === 'claude' ? 'selected' : ''}>Claude</option>
                 </select>
             </div>
-            <div class="flex-container">
+            <div class="flex-container setting-row">
                 <label for="outfit-prompt-input">System Prompt:</label>
-                <textarea id="outfit-prompt-input" rows="6" placeholder="Enter system prompt for auto outfit detection">${extension_settings[MODULE_NAME].autoOutfitPrompt || ''}</textarea>
+                <textarea id="outfit-prompt-input" placeholder="Enter system prompt for auto outfit detection">${extension_settings[MODULE_NAME].autoOutfitPrompt || ''}</textarea>
             </div>
             <div class="flex-container">
                 <button id="outfit-prompt-reset-btn" class="menu_button">Reset to Default Prompt</button>
                 <button id="outfit-prompt-view-btn" class="menu_button">View Current Prompt</button>
             </div>
         ` : `
-            <div class="flex-container">
-                <label>Auto Outfit System: <span style="color: #ff6b6b;">Not Available</span></label>
+            <div class="flex-container setting-row">
+                <label>Auto Outfit System: <span class="error-text">Not Available</span></label>
             </div>
         `;
 
@@ -2370,104 +2370,101 @@ Only output command lines, nothing else.`;
                     <b>Outfit Tracker Settings</b>
                     <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
                 </div>
-                <div class="inline-drawer-content" style="padding: 15px; background: rgba(30, 30, 40, 0.6); border-radius: 8px; margin-top: 10px;">
-                    <div class="setting-group" style="margin-bottom: 18px;">
-                        <h4 style="margin: 0 0 12px 0; color: #e0e0ff; font-size: 1.1em; border-bottom: 1px solid rgba(100, 100, 150, 0.4); padding-bottom: 5px;">General Settings</h4>
+                <div class="inline-drawer-content">
+                    <div class="setting-group">
+                        <h4>General Settings</h4>
                         
-                        <div class="flex-container setting-row" style="align-items: center; padding: 8px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.08);">
-                            <label for="outfit-sys-toggle" style="flex: 1; color: #d0d0e0; font-size: 0.95em; margin: 0;">Enable system messages</label>
+                        <div class="flex-container setting-row">
+                            <label for="outfit-sys-toggle">Enable system messages</label>
                             <input type="checkbox" id="outfit-sys-toggle"
-                                   style="width: 42px; height: 22px; -webkit-appearance: none; appearance: none; background: #4a4a6a; border-radius: 11px; position: relative; cursor: pointer; border: 1px solid rgba(255,255,255,0.2);"
                                    ${extension_settings[MODULE_NAME].enableSysMessages ? 'checked' : ''}>
                         </div>
                         
-                        <div class="flex-container setting-row" style="align-items: center; padding: 8px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.08);">
-                            <label for="outfit-auto-bot" style="flex: 1; color: #d0d0e0; font-size: 0.95em; margin: 0;">Auto-open character panel</label>
+                        <div class="flex-container setting-row">
+                            <label for="outfit-auto-bot">Auto-open character panel</label>
                             <input type="checkbox" id="outfit-auto-bot"
-                                   style="width: 42px; height: 22px; -webkit-appearance: none; appearance: none; background: #4a4a6a; border-radius: 11px; position: relative; cursor: pointer; border: 1px solid rgba(255,255,255,0.2);"
                                    ${extension_settings[MODULE_NAME].autoOpenBot ? 'checked' : ''}>
                         </div>
                         
-                        <div class="flex-container setting-row" style="align-items: center; padding: 8px 0;">
-                            <label for="outfit-auto-user" style="flex: 1; color: #d0d0e0; font-size: 0.95em; margin: 0;">Auto-open user panel</label>
+                        <div class="flex-container setting-row">
+                            <label for="outfit-auto-user">Auto-open user panel</label>
                             <input type="checkbox" id="outfit-auto-user"
-                                   style="width: 42px; height: 22px; -webkit-appearance: none; appearance: none; background: #4a4a6a; border-radius: 11px; position: relative; cursor: pointer; border: 1px solid rgba(255,255,255,0.2);"
                                    ${extension_settings[MODULE_NAME].autoOpenUser ? 'checked' : ''}>
                         </div>
                     </div>
                     
                     <!-- Panel Colors Customization Section -->
-                    <div class="setting-group" style="margin-bottom: 18px;">
-                        <h4 style="margin: 0 0 12px 0; color: #e0e0ff; font-size: 1.1em; border-bottom: 1px solid rgba(100, 100, 150, 0.4); padding-bottom: 5px;">Panel Colors</h4>
+                    <div class="setting-group">
+                        <h4>Panel Colors</h4>
                         
                         <!-- Bot Panel Colors -->
-                        <div class="panel-color-section" style="margin-bottom: 15px; padding: 12px; background: rgba(40, 40, 60, 0.4); border-radius: 8px; border: 1px solid rgba(100, 100, 150, 0.3);">
-                            <h5 class="color-section-title" style="margin: 5px 0 12px 0; color: #d0d0ff; font-size: 1.05em; border-bottom: 1px solid rgba(100, 100, 150, 0.3); padding-bottom: 6px;">Character Panel</h5>
+                        <div class="panel-color-section">
+                            <h5 class="color-section-title">Character Panel</h5>
                             
-                            <div class="color-setting-row" style="display: flex; align-items: center; margin-bottom: 10px; padding: 6px 0;">
-                                <label for="bot-panel-primary-color" class="color-label" style="flex: 1; min-width: 130px; color: #c0c0e0; font-size: 0.95em;">Primary Color:</label>
-                                <div class="color-input-wrapper" style="display: flex; align-items: center; flex: 2;">
-                                    <input type="color" id="bot-panel-primary-color-picker" value="#6a4fc1" style="width: 44px; height: 30px; padding: 2px; border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 5px; cursor: pointer; background: #333; box-sizing: border-box;">
-                                    <input type="text" id="bot-panel-primary-color" value="${extension_settings[MODULE_NAME]?.botPanelColors?.primary || 'linear-gradient(135deg, #6a4fc1 0%, #5a49d0 50%, #4a43c0 100%)'}" style="flex: 1; padding: 6px 10px; margin-left: 8px; background: rgba(30, 30, 50, 0.7); border: 1px solid rgba(100, 100, 150, 0.4); border-radius: 5px 0 0 5px; color: #e0e0ff; font-size: 0.9em;">
-                                    <button id="bot-panel-primary-reset" class="color-reset-btn" style="display: none; height: 32px; padding: 0 10px; margin-left: -1px; border: 1px solid rgba(100, 100, 150, 0.4); border-radius: 0 5px 5px 0; background: rgba(180, 60, 80, 0.3); color: #ffb3c3; cursor: pointer; font-size: 0.8em; transition: all 0.2s ease;">Reset</button>
+                            <div class="color-setting-row">
+                                <label for="bot-panel-primary-color" class="color-label">Primary Color:</label>
+                                <div class="color-input-wrapper">
+                                    <input type="color" id="bot-panel-primary-color-picker" value="#6a4fc1">
+                                    <input type="text" id="bot-panel-primary-color" value="${extension_settings[MODULE_NAME]?.botPanelColors?.primary || 'linear-gradient(135deg, #6a4fc1 0%, #5a49d0 50%, #4a43c0 100%)'}">
+                                    <button id="bot-panel-primary-reset" class="color-reset-btn">Reset</button>
                                 </div>
                             </div>
                             
-                            <div class="color-setting-row" style="display: flex; align-items: center; margin-bottom: 10px; padding: 6px 0;">
-                                <label for="bot-panel-border-color" class="color-label" style="flex: 1; min-width: 130px; color: #c0c0e0; font-size: 0.95em;">Border Color:</label>
-                                <div class="color-input-wrapper" style="display: flex; align-items: center; flex: 2;">
-                                    <input type="color" id="bot-panel-border-color-picker" value="${extension_settings[MODULE_NAME]?.botPanelColors?.border || '#8a7fdb'}" style="width: 44px; height: 30px; padding: 2px; border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 5px; cursor: pointer; background: #333; box-sizing: border-box;">
-                                    <input type="text" id="bot-panel-border-color" value="${extension_settings[MODULE_NAME]?.botPanelColors?.border || '#8a7fdb'}" style="flex: 1; padding: 6px 10px; margin-left: 8px; background: rgba(30, 30, 50, 0.7); border: 1px solid rgba(100, 100, 150, 0.4); border-radius: 5px 0 0 5px; color: #e0e0ff; font-size: 0.9em;">
-                                    <button id="bot-panel-border-reset" class="color-reset-btn" style="display: none; height: 32px; padding: 0 10px; margin-left: -1px; border: 1px solid rgba(100, 100, 150, 0.4); border-radius: 0 5px 5px 0; background: rgba(180, 60, 80, 0.3); color: #ffb3c3; cursor: pointer; font-size: 0.8em; transition: all 0.2s ease;">Reset</button>
+                            <div class="color-setting-row">
+                                <label for="bot-panel-border-color" class="color-label">Border Color:</label>
+                                <div class="color-input-wrapper">
+                                    <input type="color" id="bot-panel-border-color-picker" value="${extension_settings[MODULE_NAME]?.botPanelColors?.border || '#8a7fdb'}">
+                                    <input type="text" id="bot-panel-border-color" value="${extension_settings[MODULE_NAME]?.botPanelColors?.border || '#8a7fdb'}">
+                                    <button id="bot-panel-border-reset" class="color-reset-btn">Reset</button>
                                 </div>
                             </div>
                             
-                            <div class="color-setting-row" style="display: flex; align-items: center; margin-bottom: 5px; padding: 6px 0;">
-                                <label for="bot-panel-shadow-color" class="color-label" style="flex: 1; min-width: 130px; color: #c0c0e0; font-size: 0.95em;">Shadow Color:</label>
-                                <div class="color-input-wrapper" style="display: flex; align-items: center; flex: 2;">
-                                    <input type="color" id="bot-panel-shadow-color-picker" value="#6a4fc1" style="width: 44px; height: 30px; padding: 2px; border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 5px; cursor: pointer; background: #333; box-sizing: border-box;">
-                                    <input type="text" id="bot-panel-shadow-color" value="${extension_settings[MODULE_NAME]?.botPanelColors?.shadow || 'rgba(106, 79, 193, 0.4)'}" style="flex: 1; padding: 6px 10px; margin-left: 8px; background: rgba(30, 30, 50, 0.7); border: 1px solid rgba(100, 100, 150, 0.4); border-radius: 5px 0 0 5px; color: #e0e0ff; font-size: 0.9em;">
-                                    <button id="bot-panel-shadow-reset" class="color-reset-btn" style="display: none; height: 32px; padding: 0 10px; margin-left: -1px; border: 1px solid rgba(100, 100, 150, 0.4); border-radius: 0 5px 5px 0; background: rgba(180, 60, 80, 0.3); color: #ffb3c3; cursor: pointer; font-size: 0.8em; transition: all 0.2s ease;">Reset</button>
+                            <div class="color-setting-row">
+                                <label for="bot-panel-shadow-color" class="color-label">Shadow Color:</label>
+                                <div class="color-input-wrapper">
+                                    <input type="color" id="bot-panel-shadow-color-picker" value="#6a4fc1">
+                                    <input type="text" id="bot-panel-shadow-color" value="${extension_settings[MODULE_NAME]?.botPanelColors?.shadow || 'rgba(106, 79, 193, 0.4)'}">
+                                    <button id="bot-panel-shadow-reset" class="color-reset-btn">Reset</button>
                                 </div>
                             </div>
                         </div>
                         
                         <!-- User Panel Colors -->
-                        <div class="panel-color-section" style="margin-bottom: 15px; padding: 12px; background: rgba(40, 40, 60, 0.4); border-radius: 8px; border: 1px solid rgba(100, 100, 150, 0.3);">
-                            <h5 class="color-section-title" style="margin: 5px 0 12px 0; color: #d0d0ff; font-size: 1.05em; border-bottom: 1px solid rgba(100, 100, 150, 0.3); padding-bottom: 6px;">User Panel</h5>
+                        <div class="panel-color-section">
+                            <h5 class="color-section-title">User Panel</h5>
                             
-                            <div class="color-setting-row" style="display: flex; align-items: center; margin-bottom: 10px; padding: 6px 0;">
-                                <label for="user-panel-primary-color" class="color-label" style="flex: 1; min-width: 130px; color: #c0c0e0; font-size: 0.95em;">Primary Color:</label>
-                                <div class="color-input-wrapper" style="display: flex; align-items: center; flex: 2;">
-                                    <input type="color" id="user-panel-primary-color-picker" value="#1a78d1" style="width: 44px; height: 30px; padding: 2px; border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 5px; cursor: pointer; background: #333; box-sizing: border-box;">
-                                    <input type="text" id="user-panel-primary-color" value="${extension_settings[MODULE_NAME]?.userPanelColors?.primary || 'linear-gradient(135deg, #1a78d1 0%, #2a68c1 50%, #1a58b1 100%)'}" style="flex: 1; padding: 6px 10px; margin-left: 8px; background: rgba(30, 30, 50, 0.7); border: 1px solid rgba(100, 100, 150, 0.4); border-radius: 5px 0 0 5px; color: #e0e0ff; font-size: 0.9em;">
-                                    <button id="user-panel-primary-reset" class="color-reset-btn" style="display: none; height: 32px; padding: 0 10px; margin-left: -1px; border: 1px solid rgba(100, 100, 150, 0.4); border-radius: 0 5px 5px 0; background: rgba(180, 60, 80, 0.3); color: #ffb3c3; cursor: pointer; font-size: 0.8em; transition: all 0.2s ease;">Reset</button>
+                            <div class="color-setting-row">
+                                <label for="user-panel-primary-color" class="color-label">Primary Color:</label>
+                                <div class="color-input-wrapper">
+                                    <input type="color" id="user-panel-primary-color-picker" value="#1a78d1">
+                                    <input type="text" id="user-panel-primary-color" value="${extension_settings[MODULE_NAME]?.userPanelColors?.primary || 'linear-gradient(135deg, #1a78d1 0%, #2a68c1 50%, #1a58b1 100%)'}">
+                                    <button id="user-panel-primary-reset" class="color-reset-btn">Reset</button>
                                 </div>
                             </div>
                             
-                            <div class="color-setting-row" style="display: flex; align-items: center; margin-bottom: 10px; padding: 6px 0;">
-                                <label for="user-panel-border-color" class="color-label" style="flex: 1; min-width: 130px; color: #c0c0e0; font-size: 0.95em;">Border Color:</label>
-                                <div class="color-input-wrapper" style="display: flex; align-items: center; flex: 2;">
-                                    <input type="color" id="user-panel-border-color-picker" value="${extension_settings[MODULE_NAME]?.userPanelColors?.border || '#5da6f0'}" style="width: 44px; height: 30px; padding: 2px; border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 5px; cursor: pointer; background: #333; box-sizing: border-box;">
-                                    <input type="text" id="user-panel-border-color" value="${extension_settings[MODULE_NAME]?.userPanelColors?.border || '#5da6f0'}" style="flex: 1; padding: 6px 10px; margin-left: 8px; background: rgba(30, 30, 50, 0.7); border: 1px solid rgba(100, 100, 150, 0.4); border-radius: 5px 0 0 5px; color: #e0e0ff; font-size: 0.9em;">
-                                    <button id="user-panel-border-reset" class="color-reset-btn" style="display: none; height: 32px; padding: 0 10px; margin-left: -1px; border: 1px solid rgba(100, 100, 150, 0.4); border-radius: 0 5px 5px 0; background: rgba(180, 60, 80, 0.3); color: #ffb3c3; cursor: pointer; font-size: 0.8em; transition: all 0.2s ease;">Reset</button>
+                            <div class="color-setting-row">
+                                <label for="user-panel-border-color" class="color-label">Border Color:</label>
+                                <div class="color-input-wrapper">
+                                    <input type="color" id="user-panel-border-color-picker" value="${extension_settings[MODULE_NAME]?.userPanelColors?.border || '#5da6f0'}">
+                                    <input type="text" id="user-panel-border-color" value="${extension_settings[MODULE_NAME]?.userPanelColors?.border || '#5da6f0'}">
+                                    <button id="user-panel-border-reset" class="color-reset-btn">Reset</button>
                                 </div>
                             </div>
                             
-                            <div class="color-setting-row" style="display: flex; align-items: center; margin-bottom: 5px; padding: 6px 0;">
-                                <label for="user-panel-shadow-color" class="color-label" style="flex: 1; min-width: 130px; color: #c0c0e0; font-size: 0.95em;">Shadow Color:</label>
-                                <div class="color-input-wrapper" style="display: flex; align-items: center; flex: 2;">
-                                    <input type="color" id="user-panel-shadow-color-picker" value="#1a78d1" style="width: 44px; height: 30px; padding: 2px; border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 5px; cursor: pointer; background: #333; box-sizing: border-box;">
-                                    <input type="text" id="user-panel-shadow-color" value="${extension_settings[MODULE_NAME]?.userPanelColors?.shadow || 'rgba(26, 120, 209, 0.4)'}" style="flex: 1; padding: 6px 10px; margin-left: 8px; background: rgba(30, 30, 50, 0.7); border: 1px solid rgba(100, 100, 150, 0.4); border-radius: 5px 0 0 5px; color: #e0e0ff; font-size: 0.9em;">
-                                    <button id="user-panel-shadow-reset" class="color-reset-btn" style="display: none; height: 32px; padding: 0 10px; margin-left: -1px; border: 1px solid rgba(100, 100, 150, 0.4); border-radius: 0 5px 5px 0; background: rgba(180, 60, 80, 0.3); color: #ffb3c3; cursor: pointer; font-size: 0.8em; transition: all 0.2s ease;">Reset</button>
+                            <div class="color-setting-row">
+                                <label for="user-panel-shadow-color" class="color-label">Shadow Color:</label>
+                                <div class="color-input-wrapper">
+                                    <input type="color" id="user-panel-shadow-color-picker" value="#1a78d1">
+                                    <input type="text" id="user-panel-shadow-color" value="${extension_settings[MODULE_NAME]?.userPanelColors?.shadow || 'rgba(26, 120, 209, 0.4)'}">
+                                    <button id="user-panel-shadow-reset" class="color-reset-btn">Reset</button>
                                 </div>
                             </div>
                         </div>
                         
-                        <button id="apply-panel-colors" class="menu_button" style="width: 100%; margin-top: 12px; padding: 10px; font-size: 1.05em; background: linear-gradient(135deg, #5a6bc8 0%, #4a5bb8 100%); border: none; border-radius: 6px; color: white; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);">Apply Panel Colors</button>
+                        <button id="apply-panel-colors" class="menu_button">Apply Panel Colors</button>
                     </div>
-                    <div class="setting-group" style="margin-bottom: 10px;">
-                        <h4 style="margin: 0 0 12px 0; color: #e0e0ff; font-size: 1.1em; border-bottom: 1px solid rgba(100, 100, 150, 0.4); padding-bottom: 5px;">${hasAutoSystem ? 'Auto Outfit Settings' : 'Advanced Settings'}</h4>
+                    <div class="setting-group">
+                        <h4>${hasAutoSystem ? 'Auto Outfit Settings' : 'Advanced Settings'}</h4>
                         ${autoSettingsHtml}
                     </div>
                 </div>
