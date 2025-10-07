@@ -2393,52 +2393,64 @@ Only output command lines, nothing else.`;
                             <h4 style="margin: 0 0 10px 0; color: #ccc;">Panel Colors</h4>
                             
                             <!-- Bot Panel Colors -->
-                            <div style="margin-bottom: 15px; padding: 10px; background: rgba(100, 100, 100, 0.2); border-radius: 5px;">
-                                <h5 style="margin: 5px 0; color: #ccc;">Character Panel</h5>
+                            <div class="panel-color-section" style="margin-bottom: 15px; padding: 12px; background: rgba(100, 100, 100, 0.15); border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1);">
+                                <h5 class="color-section-title" style="margin: 5px 0 12px 0; color: #e0e0e0; font-size: 1.1em; border-bottom: 1px solid rgba(255, 255, 255, 0.2); padding-bottom: 6px;">Character Panel</h5>
                                 
-                                <div class="flex-container" style="align-items: center;">
-                                    <label for="bot-panel-primary-color" style="flex: 1; min-width: 150px;">Primary Color:</label>
-                                    <input type="color" id="bot-panel-primary-color-picker" value="#6a4fc1" style="width: 40px; height: 28px; padding: 0; border: none; border-radius: 3px; cursor: pointer;">
-                                    <input type="text" id="bot-panel-primary-color" value="${extension_settings[MODULE_NAME]?.botPanelColors?.primary || 'linear-gradient(135deg, #6a4fc1 0%, #5a49d0 50%, #4a43c0 100%)'}" style="flex: 2; padding: 4px 8px; margin-left: 8px;">
+                                <div class="color-setting-row" style="display: flex; align-items: center; margin-bottom: 10px; padding: 6px 0;">
+                                    <label for="bot-panel-primary-color" class="color-label" style="flex: 1; min-width: 130px; color: #ccc; font-size: 0.95em;">Primary Color:</label>
+                                    <div class="color-input-wrapper" style="display: flex; align-items: center; flex: 2;">
+                                        <input type="color" id="bot-panel-primary-color-picker" value="#6a4fc1" style="width: 44px; height: 30px; padding: 2px; border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 5px; cursor: pointer; background: #333; box-sizing: border-box;">
+                                        <input type="text" id="bot-panel-primary-color" value="${extension_settings[MODULE_NAME]?.botPanelColors?.primary || 'linear-gradient(135deg, #6a4fc1 0%, #5a49d0 50%, #4a43c0 100%)'}" style="flex: 1; padding: 6px 10px; margin-left: 8px; background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 5px; color: #e0e0e0; font-size: 0.9em;">
+                                    </div>
                                 </div>
                                 
-                                <div class="flex-container" style="align-items: center;">
-                                    <label for="bot-panel-border-color" style="flex: 1; min-width: 150px;">Border Color:</label>
-                                    <input type="color" id="bot-panel-border-color-picker" value="${extension_settings[MODULE_NAME]?.botPanelColors?.border || '#8a7fdb'}" style="width: 40px; height: 28px; padding: 0; border: none; border-radius: 3px; cursor: pointer;">
-                                    <input type="text" id="bot-panel-border-color" value="${extension_settings[MODULE_NAME]?.botPanelColors?.border || '#8a7fdb'}" style="flex: 2; padding: 4px 8px; margin-left: 8px;">
+                                <div class="color-setting-row" style="display: flex; align-items: center; margin-bottom: 10px; padding: 6px 0;">
+                                    <label for="bot-panel-border-color" class="color-label" style="flex: 1; min-width: 130px; color: #ccc; font-size: 0.95em;">Border Color:</label>
+                                    <div class="color-input-wrapper" style="display: flex; align-items: center; flex: 2;">
+                                        <input type="color" id="bot-panel-border-color-picker" value="${extension_settings[MODULE_NAME]?.botPanelColors?.border || '#8a7fdb'}" style="width: 44px; height: 30px; padding: 2px; border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 5px; cursor: pointer; background: #333; box-sizing: border-box;">
+                                        <input type="text" id="bot-panel-border-color" value="${extension_settings[MODULE_NAME]?.botPanelColors?.border || '#8a7fdb'}" style="flex: 1; padding: 6px 10px; margin-left: 8px; background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 5px; color: #e0e0e0; font-size: 0.9em;">
+                                    </div>
                                 </div>
                                 
-                                <div class="flex-container" style="align-items: center;">
-                                    <label for="bot-panel-shadow-color" style="flex: 1; min-width: 150px;">Shadow Color:</label>
-                                    <input type="color" id="bot-panel-shadow-color-picker" value="#6a4fc1" style="width: 40px; height: 28px; padding: 0; border: none; border-radius: 3px; cursor: pointer; opacity: 0.4;">
-                                    <input type="text" id="bot-panel-shadow-color" value="${extension_settings[MODULE_NAME]?.botPanelColors?.shadow || 'rgba(106, 79, 193, 0.4)'}" style="flex: 2; padding: 4px 8px; margin-left: 8px;">
+                                <div class="color-setting-row" style="display: flex; align-items: center; margin-bottom: 5px; padding: 6px 0;">
+                                    <label for="bot-panel-shadow-color" class="color-label" style="flex: 1; min-width: 130px; color: #ccc; font-size: 0.95em;">Shadow Color:</label>
+                                    <div class="color-input-wrapper" style="display: flex; align-items: center; flex: 2;">
+                                        <input type="color" id="bot-panel-shadow-color-picker" value="#6a4fc1" style="width: 44px; height: 30px; padding: 2px; border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 5px; cursor: pointer; background: #333; box-sizing: border-box;">
+                                        <input type="text" id="bot-panel-shadow-color" value="${extension_settings[MODULE_NAME]?.botPanelColors?.shadow || 'rgba(106, 79, 193, 0.4)'}" style="flex: 1; padding: 6px 10px; margin-left: 8px; background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 5px; color: #e0e0e0; font-size: 0.9em;">
+                                    </div>
                                 </div>
                             </div>
                             
                             <!-- User Panel Colors -->
-                            <div style="margin-bottom: 15px; padding: 10px; background: rgba(100, 100, 100, 0.2); border-radius: 5px;">
-                                <h5 style="margin: 5px 0; color: #ccc;">User Panel</h5>
+                            <div class="panel-color-section" style="margin-bottom: 15px; padding: 12px; background: rgba(100, 100, 100, 0.15); border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1);">
+                                <h5 class="color-section-title" style="margin: 5px 0 12px 0; color: #e0e0e0; font-size: 1.1em; border-bottom: 1px solid rgba(255, 255, 255, 0.2); padding-bottom: 6px;">User Panel</h5>
                                 
-                                <div class="flex-container" style="align-items: center;">
-                                    <label for="user-panel-primary-color" style="flex: 1; min-width: 150px;">Primary Color:</label>
-                                    <input type="color" id="user-panel-primary-color-picker" value="#1a78d1" style="width: 40px; height: 28px; padding: 0; border: none; border-radius: 3px; cursor: pointer;">
-                                    <input type="text" id="user-panel-primary-color" value="${extension_settings[MODULE_NAME]?.userPanelColors?.primary || 'linear-gradient(135deg, #1a78d1 0%, #2a68c1 50%, #1a58b1 100%)'}" style="flex: 2; padding: 4px 8px; margin-left: 8px;">
+                                <div class="color-setting-row" style="display: flex; align-items: center; margin-bottom: 10px; padding: 6px 0;">
+                                    <label for="user-panel-primary-color" class="color-label" style="flex: 1; min-width: 130px; color: #ccc; font-size: 0.95em;">Primary Color:</label>
+                                    <div class="color-input-wrapper" style="display: flex; align-items: center; flex: 2;">
+                                        <input type="color" id="user-panel-primary-color-picker" value="#1a78d1" style="width: 44px; height: 30px; padding: 2px; border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 5px; cursor: pointer; background: #333; box-sizing: border-box;">
+                                        <input type="text" id="user-panel-primary-color" value="${extension_settings[MODULE_NAME]?.userPanelColors?.primary || 'linear-gradient(135deg, #1a78d1 0%, #2a68c1 50%, #1a58b1 100%)'}" style="flex: 1; padding: 6px 10px; margin-left: 8px; background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 5px; color: #e0e0e0; font-size: 0.9em;">
+                                    </div>
                                 </div>
                                 
-                                <div class="flex-container" style="align-items: center;">
-                                    <label for="user-panel-border-color" style="flex: 1; min-width: 150px;">Border Color:</label>
-                                    <input type="color" id="user-panel-border-color-picker" value="${extension_settings[MODULE_NAME]?.userPanelColors?.border || '#5da6f0'}" style="width: 40px; height: 28px; padding: 0; border: none; border-radius: 3px; cursor: pointer;">
-                                    <input type="text" id="user-panel-border-color" value="${extension_settings[MODULE_NAME]?.userPanelColors?.border || '#5da6f0'}" style="flex: 2; padding: 4px 8px; margin-left: 8px;">
+                                <div class="color-setting-row" style="display: flex; align-items: center; margin-bottom: 10px; padding: 6px 0;">
+                                    <label for="user-panel-border-color" class="color-label" style="flex: 1; min-width: 130px; color: #ccc; font-size: 0.95em;">Border Color:</label>
+                                    <div class="color-input-wrapper" style="display: flex; align-items: center; flex: 2;">
+                                        <input type="color" id="user-panel-border-color-picker" value="${extension_settings[MODULE_NAME]?.userPanelColors?.border || '#5da6f0'}" style="width: 44px; height: 30px; padding: 2px; border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 5px; cursor: pointer; background: #333; box-sizing: border-box;">
+                                        <input type="text" id="user-panel-border-color" value="${extension_settings[MODULE_NAME]?.userPanelColors?.border || '#5da6f0'}" style="flex: 1; padding: 6px 10px; margin-left: 8px; background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 5px; color: #e0e0e0; font-size: 0.9em;">
+                                    </div>
                                 </div>
                                 
-                                <div class="flex-container" style="align-items: center;">
-                                    <label for="user-panel-shadow-color" style="flex: 1; min-width: 150px;">Shadow Color:</label>
-                                    <input type="color" id="user-panel-shadow-color-picker" value="#1a78d1" style="width: 40px; height: 28px; padding: 0; border: none; border-radius: 3px; cursor: pointer; opacity: 0.4;">
-                                    <input type="text" id="user-panel-shadow-color" value="${extension_settings[MODULE_NAME]?.userPanelColors?.shadow || 'rgba(26, 120, 209, 0.4)'}" style="flex: 2; padding: 4px 8px; margin-left: 8px;">
+                                <div class="color-setting-row" style="display: flex; align-items: center; margin-bottom: 5px; padding: 6px 0;">
+                                    <label for="user-panel-shadow-color" class="color-label" style="flex: 1; min-width: 130px; color: #ccc; font-size: 0.95em;">Shadow Color:</label>
+                                    <div class="color-input-wrapper" style="display: flex; align-items: center; flex: 2;">
+                                        <input type="color" id="user-panel-shadow-color-picker" value="#1a78d1" style="width: 44px; height: 30px; padding: 2px; border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 5px; cursor: pointer; background: #333; box-sizing: border-box;">
+                                        <input type="text" id="user-panel-shadow-color" value="${extension_settings[MODULE_NAME]?.userPanelColors?.shadow || 'rgba(26, 120, 209, 0.4)'}" style="flex: 1; padding: 6px 10px; margin-left: 8px; background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 5px; color: #e0e0e0; font-size: 0.9em;">
+                                    </div>
                                 </div>
                             </div>
                             
-                            <button id="apply-panel-colors" class="menu_button" style="width: 100%; margin-top: 10px;">Apply Panel Colors</button>
+                            <button id="apply-panel-colors" class="menu_button" style="width: 100%; margin-top: 12px; padding: 10px; font-size: 1.05em; background: linear-gradient(135deg, #4a5bb8 0%, #3a4ba8 100%); border: none; border-radius: 6px; color: white; cursor: pointer; transition: all 0.3s ease;">Apply Panel Colors</button>
                         </div>
                     </div>
                     
@@ -2473,6 +2485,14 @@ Only output command lines, nothing else.`;
         // Color customization event listeners
         $("#apply-panel-colors").on("click", function() {
             updateColorSettingsAndApply();
+            
+            // Visual feedback for button click
+            const originalText = $(this).text();
+            $(this).text('Applied!').css('background', 'linear-gradient(135deg, #5a8d5a, #4a7d4a)');
+            
+            setTimeout(() => {
+                $(this).text(originalText).css('background', 'linear-gradient(135deg, #4a5bb8 0%, #3a4ba8 100%)');
+            }, 2000);
         });
         
         // Update text inputs when color pickers change
@@ -2515,6 +2535,16 @@ Only output command lines, nothing else.`;
         $(document).on("input", "#bot-panel-primary-color, #bot-panel-border-color, #bot-panel-shadow-color, #user-panel-primary-color, #user-panel-border-color, #user-panel-shadow-color", function() {
             updateColorPickersFromText();
         });
+        
+        // Add hover effects to the apply button
+        $("#apply-panel-colors").hover(
+            function() { // Mouse enter
+                $(this).css('background', 'linear-gradient(135deg, #5a6bc8 0%, #4a5ba8 100%)');
+            }, 
+            function() { // Mouse leave
+                $(this).css('background', 'linear-gradient(135deg, #4a5bb8 0%, #3a4ba8 100%)');
+            }
+        );
         
         // Helper function to convert hex color to rgba
         function hexToRgba(hex, opacity) {
