@@ -2308,11 +2308,20 @@ Only output command lines, nothing else.`;
     setupEventListeners();
     createSettingsUI();
 
-    if (extension_settings[MODULE_NAME].autoOpenBot) {
+    // Function to detect if the user is on a mobile device
+    function isMobileDevice() {
+        return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+               window.innerWidth <= 768 || // Common mobile breakpoint
+               ('ontouchstart' in window) || // Has touch capabilities
+               (navigator.maxTouchPoints > 1); // Has multiple touch points
+    }
+
+    // Auto-open panels only if not on mobile device
+    if (extension_settings[MODULE_NAME].autoOpenBot && !isMobileDevice()) {
         setTimeout(() => botPanel.show(), 1000);
     }
 
-    if (extension_settings[MODULE_NAME].autoOpenUser) {
+    if (extension_settings[MODULE_NAME].autoOpenUser && !isMobileDevice()) {
         setTimeout(() => userPanel.show(), 1000);
     }
 
