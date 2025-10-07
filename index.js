@@ -2399,19 +2399,19 @@ Only output command lines, nothing else.`;
                                 <div class="flex-container" style="align-items: center;">
                                     <label for="bot-panel-primary-color" style="flex: 1; min-width: 150px;">Primary Color:</label>
                                     <input type="color" id="bot-panel-primary-color-picker" value="#6a4fc1" style="width: 40px; height: 28px; padding: 0; border: none; border-radius: 3px; cursor: pointer;">
-                                    <input type="text" id="bot-panel-primary-color" value="${extension_settings[MODULE_NAME].botPanelColors.primary}" style="flex: 2; padding: 4px 8px; margin-left: 8px;">
+                                    <input type="text" id="bot-panel-primary-color" value="${extension_settings[MODULE_NAME]?.botPanelColors?.primary || 'linear-gradient(135deg, #6a4fc1 0%, #5a49d0 50%, #4a43c0 100%)'}" style="flex: 2; padding: 4px 8px; margin-left: 8px;">
                                 </div>
                                 
                                 <div class="flex-container" style="align-items: center;">
                                     <label for="bot-panel-border-color" style="flex: 1; min-width: 150px;">Border Color:</label>
-                                    <input type="color" id="bot-panel-border-color-picker" value="#8a7fdb" style="width: 40px; height: 28px; padding: 0; border: none; border-radius: 3px; cursor: pointer;">
-                                    <input type="text" id="bot-panel-border-color" value="${extension_settings[MODULE_NAME].botPanelColors.border}" style="flex: 2; padding: 4px 8px; margin-left: 8px;">
+                                    <input type="color" id="bot-panel-border-color-picker" value="${extension_settings[MODULE_NAME]?.botPanelColors?.border || '#8a7fdb'}" style="width: 40px; height: 28px; padding: 0; border: none; border-radius: 3px; cursor: pointer;">
+                                    <input type="text" id="bot-panel-border-color" value="${extension_settings[MODULE_NAME]?.botPanelColors?.border || '#8a7fdb'}" style="flex: 2; padding: 4px 8px; margin-left: 8px;">
                                 </div>
                                 
                                 <div class="flex-container" style="align-items: center;">
                                     <label for="bot-panel-shadow-color" style="flex: 1; min-width: 150px;">Shadow Color:</label>
                                     <input type="color" id="bot-panel-shadow-color-picker" value="#6a4fc1" style="width: 40px; height: 28px; padding: 0; border: none; border-radius: 3px; cursor: pointer; opacity: 0.4;">
-                                    <input type="text" id="bot-panel-shadow-color" value="${extension_settings[MODULE_NAME].botPanelColors.shadow}" style="flex: 2; padding: 4px 8px; margin-left: 8px;">
+                                    <input type="text" id="bot-panel-shadow-color" value="${extension_settings[MODULE_NAME]?.botPanelColors?.shadow || 'rgba(106, 79, 193, 0.4)'}" style="flex: 2; padding: 4px 8px; margin-left: 8px;">
                                 </div>
                             </div>
                             
@@ -2422,19 +2422,19 @@ Only output command lines, nothing else.`;
                                 <div class="flex-container" style="align-items: center;">
                                     <label for="user-panel-primary-color" style="flex: 1; min-width: 150px;">Primary Color:</label>
                                     <input type="color" id="user-panel-primary-color-picker" value="#1a78d1" style="width: 40px; height: 28px; padding: 0; border: none; border-radius: 3px; cursor: pointer;">
-                                    <input type="text" id="user-panel-primary-color" value="${extension_settings[MODULE_NAME].userPanelColors.primary}" style="flex: 2; padding: 4px 8px; margin-left: 8px;">
+                                    <input type="text" id="user-panel-primary-color" value="${extension_settings[MODULE_NAME]?.userPanelColors?.primary || 'linear-gradient(135deg, #1a78d1 0%, #2a68c1 50%, #1a58b1 100%)'}" style="flex: 2; padding: 4px 8px; margin-left: 8px;">
                                 </div>
                                 
                                 <div class="flex-container" style="align-items: center;">
                                     <label for="user-panel-border-color" style="flex: 1; min-width: 150px;">Border Color:</label>
-                                    <input type="color" id="user-panel-border-color-picker" value="#5da6f0" style="width: 40px; height: 28px; padding: 0; border: none; border-radius: 3px; cursor: pointer;">
-                                    <input type="text" id="user-panel-border-color" value="${extension_settings[MODULE_NAME].userPanelColors.border}" style="flex: 2; padding: 4px 8px; margin-left: 8px;">
+                                    <input type="color" id="user-panel-border-color-picker" value="${extension_settings[MODULE_NAME]?.userPanelColors?.border || '#5da6f0'}" style="width: 40px; height: 28px; padding: 0; border: none; border-radius: 3px; cursor: pointer;">
+                                    <input type="text" id="user-panel-border-color" value="${extension_settings[MODULE_NAME]?.userPanelColors?.border || '#5da6f0'}" style="flex: 2; padding: 4px 8px; margin-left: 8px;">
                                 </div>
                                 
                                 <div class="flex-container" style="align-items: center;">
                                     <label for="user-panel-shadow-color" style="flex: 1; min-width: 150px;">Shadow Color:</label>
                                     <input type="color" id="user-panel-shadow-color-picker" value="#1a78d1" style="width: 40px; height: 28px; padding: 0; border: none; border-radius: 3px; cursor: pointer; opacity: 0.4;">
-                                    <input type="text" id="user-panel-shadow-color" value="${extension_settings[MODULE_NAME].userPanelColors.shadow}" style="flex: 2; padding: 4px 8px; margin-left: 8px;">
+                                    <input type="text" id="user-panel-shadow-color" value="${extension_settings[MODULE_NAME]?.userPanelColors?.shadow || 'rgba(26, 120, 209, 0.4)'}" style="flex: 2; padding: 4px 8px; margin-left: 8px;">
                                 </div>
                             </div>
                             
