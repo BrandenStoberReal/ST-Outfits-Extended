@@ -459,20 +459,7 @@
     }
 }
 
-/* Extension Settings Panel Standardization */
-.outfit-extension-settings {
-    background: rgba(30, 30, 40, 0.6) !important;
-    border-radius: 8px !important;
-    padding: 15px !important;
-    margin-bottom: 15px !important;
-    border: 1px solid rgba(100, 100, 150, 0.3) !important;
-}
 
-.outfit-extension-settings .inline-drawer-content {
-    background: rgba(30, 30, 40, 0.6) !important;
-    border-radius: 8px !important;
-    margin-top: 10px !important;
-}
 
 .outfit-extension-settings h4 {
     margin: 0 0 12px 0 !important;
@@ -509,6 +496,19 @@
 
 .outfit-extension-settings .flex-container.setting-row select {
     flex: 2 !important;
+}
+
+/* Standardized styling for the connection profile select dropdown */
+.outfit-extension-settings select#outfit-connection-profile {
+    padding: 6px 10px !important;
+    background: rgba(30, 30, 50, 0.7) !important;
+    border: 1px solid rgba(100, 100, 150, 0.4) !important;
+    border-radius: 5px !important;
+    color: #e0e0ff !important;
+    font-size: 0.9em !important;
+    cursor: pointer !important;
+    height: 30px !important;
+    width: 100% !important;
 }
 
 .outfit-extension-settings label {
@@ -669,17 +669,7 @@
     margin-left: 8px !important;
 }
 
-/* Consistent section headers */
-.outfit-extension-settings .inline-drawer-header {
-    background: transparent !important;
-    padding: 0 !important;
-    border: none !important;
-}
 
-.outfit-extension-settings .inline-drawer-header b {
-    color: #f0f0ff !important;
-    font-size: 1.2em !important;
-}
 
 /* Error text styling */
 .outfit-extension-settings .error-text {
