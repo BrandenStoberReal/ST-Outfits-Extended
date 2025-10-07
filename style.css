@@ -311,6 +311,14 @@
     background: rgba(229, 115, 115, 0.4) !important;
 }
 
+.overwrite-preset {
+    background: rgba(56, 142, 60, 0.3) !important;
+}
+
+.overwrite-preset:hover {
+    background: rgba(56, 142, 60, 0.4) !important;
+}
+
 .save-outfit-btn {
     width: 100%;
     margin-top: 12px;

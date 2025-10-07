@@ -172,6 +172,33 @@ export class UserOutfitManager {
         return '';
     }
     
+    overwritePreset(presetName) {
+        // Validate the preset name
+        if (!presetName || typeof presetName !== 'string' || presetName.trim() === '') {
+            console.error('[UserOutfitManager] Invalid preset name provided');
+            return '[Outfit System] Invalid preset name provided.';
+        }
+        
+        // Initialize presets if needed
+        if (!safeGet(window, 'extension_settings.outfit_tracker.presets')) {
+            safeSet(window, 'extension_settings.outfit_tracker.presets', { bot: {}, user: {} });
+        }
+        
+        // Create preset data for all slots
+        const presetData = {};
+        this.slots.forEach(slot => {
+            presetData[slot] = this.currentValues[slot];
+        });
+        
+        // Overwrite the existing preset
+        safeSet(window, `extension_settings.outfit_tracker.presets.user.${presetName}`, presetData);
+        
+        if (safeGet(window, 'extension_settings.outfit_tracker.enableSysMessages')) {
+            return `Overwrote "${presetName}" outfit for user character.`;
+        }
+        return '';
+    }
+    
     async loadPreset(presetName) {
         // Validate the preset name
         if (!presetName || typeof presetName !== 'string') {

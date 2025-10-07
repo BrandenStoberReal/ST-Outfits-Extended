@@ -156,6 +156,7 @@ export class BotOutfitPanel {
                         <div class="preset-actions">
                             <button class="load-preset" data-preset="${preset}">Wear</button>
                             <button class="set-default-preset" data-preset="${preset}" ${isDefault ? 'style="display:none;"' : ''}>Default</button>
+                            <button class="overwrite-preset" data-preset="${preset}">Overwrite</button>
                             <button class="delete-preset" data-preset="${preset}">×</button>
                         </div>
                     `;
@@ -208,6 +209,18 @@ export class BotOutfitPanel {
                                 this.saveSettingsDebounced();
                                 this.renderContent();
                             }
+                        }
+                    });
+                    
+                    presetElement.querySelector('.overwrite-preset').addEventListener('click', () => {
+                        // Confirmation dialog to confirm overwriting the preset
+                        if (confirm(`Overwrite "${preset}" with current outfit?`)) {
+                            const message = this.outfitManager.overwritePreset(preset);
+                            if (message && window.extension_settings.outfit_tracker?.enableSysMessages) {
+                                this.sendSystemMessage(message);
+                            }
+                            this.saveSettingsDebounced();
+                            this.renderContent();
                         }
                     });
                     
