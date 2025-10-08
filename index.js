@@ -2225,11 +2225,13 @@ Only output command lines, nothing else.`;
             try {
                 const context = getContext();
 
+                // Use the same temporary ID for both bot and user to ensure consistency
+                const tempInstanceId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
                 if (botManager) {
                     // Create a new outfit instance for this chat
                     // Initially, we don't know the first message yet, so we'll use a temporary ID
                     // Use a more descriptive temporary ID to avoid conflicts
-                    const tempInstanceId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
                     botManager.setOutfitInstanceId(tempInstanceId);
 
                     // The outfit will be properly initialized when we detect the first message
@@ -2237,8 +2239,7 @@ Only output command lines, nothing else.`;
                 }
 
                 if (userManager) {
-                    // Create a new outfit instance for this chat
-                    const tempInstanceId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                    // Create a new outfit instance for this chat using the same temporary ID
                     userManager.setOutfitInstanceId(tempInstanceId);
 
                     console.log("[OutfitTracker] Created new outfit instance for user:", tempInstanceId);
@@ -2399,17 +2400,16 @@ Only output command lines, nothing else.`;
             // Then update outfits after restoring saved instances
             setTimeout(async () => {
                 try {
-                    // Restore saved outfit data after chat is cleared
+                    // Use the same temporary ID for both bot and user to ensure consistency
+                    const tempInstanceId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                    
+                    // Restore saved outfit data after chat is cleared and before setting temporary instances
                     if (botManager && Object.keys(savedBotOutfits).length > 0) {
                         // Restore all saved bot outfit instances
                         for (const [varName, value] of Object.entries(savedBotOutfits)) {
                             botManager.setGlobalVariable(varName, value);
                         }
                         console.log("[OutfitTracker] Restored bot outfit instances after chat clear");
-
-                        // Now update the bot manager's current values to reflect the restored data
-                        // so that when setOutfitInstanceId is called, it has the correct values
-                        botManager.loadOutfit();
                     }
 
                     if (userManager && Object.keys(savedUserOutfits).length > 0) {
@@ -2418,10 +2418,24 @@ Only output command lines, nothing else.`;
                             userManager.setGlobalVariable(varName, value);
                         }
                         console.log("[OutfitTracker] Restored user outfit instances after chat clear");
+                    }
 
-                        // Now update the user manager's current values to reflect the restored data
-                        // so that when setOutfitInstanceId is called, it has the correct values
+                    // Now create temporary outfit instances and load the outfit data
+                    if (botManager) {
+                        // Set the outfit instance ID for bot with the temporary ID
+                        botManager.setOutfitInstanceId(tempInstanceId);
+                        // Load outfit data for the temporary instance - this will load "None" values if there's nothing for this specific instance
+                        // but the migration logic will still work correctly
+                        botManager.loadOutfit();
+                        console.log("[OutfitTracker] Created new temporary outfit instance for character:", tempInstanceId);
+                    }
+
+                    if (userManager) {
+                        // Set the outfit instance ID for user with the temporary ID
+                        userManager.setOutfitInstanceId(tempInstanceId);
+                        // Load outfit data for the temporary instance - user outfits are consistent across chats
                         userManager.loadOutfit();
+                        console.log("[OutfitTracker] Created new temporary outfit instance for user:", tempInstanceId);
                     }
 
                     // Update the current character which will properly set the instance ID based on first message
