@@ -25,6 +25,8 @@ export class BotOutfitManager {
         
         this.character = name;
         this.characterId = characterId;
+        // NOTE: We still store chatId for compatibility with any existing code that might reference it,
+        // but the variable naming no longer uses chatId to persist across chat resets
         this.chatId = chatId;
         
         // Ensure all slots have proper values (not empty) when loading
@@ -144,8 +146,7 @@ export class BotOutfitManager {
             let value = this.getGlobalVariable(varName);
             
             // Only use a temporary fallback when we're using a temp instance ID and no value exists
-            // But we only want to use a fallback if there's a previous outfit instance for the same character
-            // that matches the same characterId, not just any instance
+            // Look for existing outfit data for this character from previous instances
             if (this.outfitInstanceId && this.outfitInstanceId.startsWith('temp_') && (value === undefined || value === null || value === '')) {
                 // Try to find any previous outfit instance values for this specific character to migrate
                 const allVars = this.getAllVariables();
@@ -167,8 +168,8 @@ export class BotOutfitManager {
                     for (const varName of matchingVars) {
                         // Extract potential timestamp from the instance ID part
                         const parts = varName.split('_');
-                        if (parts.length >= 5) { // OUTFIT_INST_<characterId>_<chatId>_<instanceId>_<slot>
-                            const instanceIdPart = parts[3]; // The instance ID is the 4th part (0-indexed: 3)
+                        if (parts.length >= 4) { // OUTFIT_INST_<characterId>_<instanceId>_<slot>
+                            const instanceIdPart = parts[2]; // The instance ID is the 3rd part (0-indexed: 2)
                             
                             // Attempt to extract a timestamp from the instance ID
                             // Instance IDs may be in formats like: greeting_hello_world_abc123 or scenario_abc123
@@ -193,7 +194,7 @@ export class BotOutfitManager {
                     value = allVars[previousVarName];
                     console.log(`[BotOutfitManager] Migrating ${slot} value from previous instance: ${previousVarName} = ${value}`);
                 } else {
-                    // If no previous instance was found for this character/chat, just set to 'None'
+                    // If no previous instance was found for this character, just set to 'None'
                     value = 'None';
                 }
             }

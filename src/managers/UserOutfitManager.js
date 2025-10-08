@@ -61,6 +61,8 @@ export class UserOutfitManager {
             const varName = this.getVarName(slot);
             let value = this.getGlobalVariable(varName);
             
+
+            
             // Make sure empty strings and other falsy values become 'None'
             this.currentValues[slot] = (value !== undefined && value !== null && value !== '') ? value : 'None';
             // Also ensure the global variable itself is not empty

@@ -2385,6 +2385,7 @@ Only output command lines, nothing else.`;
 
             if (botManager && botManager.characterId) {
                 // Save all outfit instances for this character to preserve across chat resets
+                // Include both old format (with chatId) and new format (without chatId) variables
                 const allVars = botManager.getAllVariables();
                 const pattern = new RegExp(`^OUTFIT_INST_${botManager.characterId}_`);
 
