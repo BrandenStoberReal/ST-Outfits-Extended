@@ -157,20 +157,39 @@ export class BotOutfitManager {
                 );
                 
                 if (matchingVars.length > 0) {
-                    // Use the value from the first matching variable found (most recent)
-                    // Sort by instance ID to get the most recent one if multiple exist
-                    const sortedVars = matchingVars.sort((a, b) => {
-                        // Extract timestamp from instance ID if it's in the format scenario_hash_timestamp
-                        const extractTimestamp = (varKey) => {
-                            const parts = varKey.split('_');
-                            const instanceIdPart = parts.slice(3, -1).join('_'); // Extract the instance ID part
-                            const timestamp = parseInt(instanceIdPart.split('_').pop());
-                            return isNaN(timestamp) ? 0 : timestamp;
-                        };
-                        return extractTimestamp(b) - extractTimestamp(a); // Sort in descending order (most recent first)
-                    });
+                    // Use the value from the most recently used matching variable
+                    // To do this properly, we need to track the actual creation/modification time
+                    // Since we don't have that, we'll try to infer based on the instance ID structure
+                    // If instance IDs contain timestamps, we'll use those; otherwise, we'll take the first one
+                    let previousVarName;
+                    let mostRecentTimestamp = 0;
                     
-                    const previousVarName = sortedVars[0];
+                    for (const varName of matchingVars) {
+                        // Extract potential timestamp from the instance ID part
+                        const parts = varName.split('_');
+                        if (parts.length >= 5) { // OUTFIT_INST_<characterId>_<chatId>_<instanceId>_<slot>
+                            const instanceIdPart = parts[3]; // The instance ID is the 4th part (0-indexed: 3)
+                            
+                            // Attempt to extract a timestamp from the instance ID
+                            // Instance IDs may be in formats like: greeting_hello_world_abc123 or scenario_abc123
+                            // In these cases, a timestamp might be at the end of the instance ID
+                            const idParts = instanceIdPart.split('_');
+                            const lastPart = idParts[idParts.length - 1];
+                            
+                            // Check if the last part looks like a timestamp (numeric)
+                            const potentialTimestamp = parseInt(lastPart);
+                            if (!isNaN(potentialTimestamp) && potentialTimestamp > mostRecentTimestamp) {
+                                mostRecentTimestamp = potentialTimestamp;
+                                previousVarName = varName;
+                            }
+                        }
+                    }
+                    
+                    // If no timestamp was found, just use the first one
+                    if (mostRecentTimestamp === 0) {
+                        previousVarName = matchingVars[0];
+                    }
+                    
                     value = allVars[previousVarName];
                     console.log(`[BotOutfitManager] Migrating ${slot} value from previous instance: ${previousVarName} = ${value}`);
                 } else {
