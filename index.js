@@ -2447,6 +2447,10 @@ Only output command lines, nothing else.`;
                             botManager.setGlobalVariable(varName, value);
                         }
                         console.log("[OutfitTracker] Restored bot outfit instances after chat clear");
+                        
+                        // Now update the bot manager's current values to reflect the restored data
+                        // so that when setOutfitInstanceId is called, it has the correct values
+                        botManager.loadOutfit();
                     }
 
                     if (userManager && Object.keys(savedUserOutfits).length > 0) {
@@ -2455,6 +2459,10 @@ Only output command lines, nothing else.`;
                             userManager.setGlobalVariable(varName, value);
                         }
                         console.log("[OutfitTracker] Restored user outfit instances after chat clear");
+                        
+                        // Now update the user manager's current values to reflect the restored data
+                        // so that when setOutfitInstanceId is called, it has the correct values
+                        userManager.loadOutfit();
                     }
 
                     // Update the current character which will properly set the instance ID based on first message
@@ -2462,16 +2470,6 @@ Only output command lines, nothing else.`;
                     // Add a small delay to ensure context.chat is properly populated before updating
                     setTimeout(() => {
                         updateForCurrentCharacter();
-                        
-                        // After updating for the current character, load the outfits for the new instance
-                        // This will load the appropriate outfit values for the new instance
-                        if (botManager) {
-                            botManager.loadOutfit();
-                        }
-
-                        if (userManager) {
-                            userManager.loadOutfit();
-                        }
                         
                         // Update the panel headers after chat is cleared
                         if (botPanel && botPanel.isVisible) {
