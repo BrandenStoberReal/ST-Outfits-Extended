@@ -21,9 +21,9 @@ export class UserOutfitPanel {
         panel.id = 'user-outfit-panel';
         panel.className = 'outfit-panel';
 
-        // Get the current instance info for display in the header
+        // Get the current instance info for display in the header (use short identifier)
         const instanceInfo = this.outfitManager.getOutfitInstanceId() ? 
-            ` (Instance: ${this.outfitManager.getOutfitInstanceId()})` : '';
+            ` (Context ${this.generateShortId(this.outfitManager.getOutfitInstanceId())})` : '';
         
         panel.innerHTML = `
             <div class="outfit-header">
@@ -338,5 +338,24 @@ export class UserOutfitPanel {
             this.domElement.style.display = 'none';
         }
         this.isVisible = false;
+    }
+
+    // Generate a short identifier from the instance ID
+    generateShortId(instanceId) {
+        if (!instanceId) return '';
+        
+        // If the instance ID is already a short identifier, return it
+        if (instanceId.startsWith('temp_')) return 'temp';
+        
+        // Create a simple short identifier by taking first 8 characters of the instance ID
+        // but only from the actual ID part, not the whole string
+        const parts = instanceId.split('_');
+        if (parts.length >= 4 && parts[3]) {
+            // If it's the OUTFIT_INST format, take the instance part
+            return parts[3].substring(0, 6);
+        }
+        
+        // Otherwise, just take the first 6 characters
+        return instanceId.substring(0, 6);
     }
 }
