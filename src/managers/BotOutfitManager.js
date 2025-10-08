@@ -49,6 +49,15 @@ export class BotOutfitManager {
         if (this.outfitInstanceId !== instanceId) {
             console.log(`[BotOutfitManager] Changing outfit instance from "${this.outfitInstanceId}" to "${instanceId}"`);
             
+            // Before switching to a new instance, ensure current values are saved to current namespace
+            if (oldInstanceId) {
+                // Save current values to the old instance's namespace before switching
+                for (const slot of this.slots) {
+                    const oldVarName = this.getVarNameForInstanceId(oldInstanceId, slot);
+                    this.setGlobalVariable(oldVarName, this.currentValues[slot]);
+                }
+            }
+            
             // Only migrate data if transitioning from a temporary ID to a permanent one
             // Don't migrate when switching between different permanent instance IDs (e.g., different first messages)
             if (oldInstanceId && instanceId && oldInstanceId.startsWith('temp_') && !instanceId.startsWith('temp_')) {
@@ -58,6 +67,24 @@ export class BotOutfitManager {
             this.outfitInstanceId = instanceId;
             // Load outfit data for this specific instance
             this.loadOutfit();
+        }
+    }
+    
+    // Helper method to get variable name for a specific instance ID
+    getVarNameForInstanceId(instanceId, slot) {
+        // Create a unique namespace for the given outfit instance
+        // Format: OUTFIT_INST_<characterId>_<chatId>_<instanceId>_<slot>
+        if (instanceId && !instanceId.startsWith('temp_')) {
+            const instanceNamespace = `OUTFIT_INST_${this.characterId || 'unknown'}_${this.chatId || 'unknown'}_${instanceId}`;
+            return `${instanceNamespace}_${slot}`;
+        } else if (instanceId && instanceId.startsWith('temp_')) {
+            // For temporary IDs, use a format that will be migrated when the real ID is set
+            const instanceNamespace = `OUTFIT_INST_${this.characterId || 'unknown'}_${this.chatId || 'unknown'}_${instanceId}`;
+            return `${instanceNamespace}_${slot}`;
+        } else {
+            // Fallback to original format if no instance ID is set
+            const formattedCharacterName = this.character.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+            return `${formattedCharacterName}_${slot}`;
         }
     }
     
