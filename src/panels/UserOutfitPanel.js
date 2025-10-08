@@ -366,6 +366,11 @@ export class UserOutfitPanel {
     
     // Update the header to reflect changes (like new instance ID)
     updateHeader() {
+        // Create the panel if it doesn't exist yet, so we can update the header
+        if (!this.domElement) {
+            this.createPanel();
+        }
+        
         if (this.domElement) {
             const header = this.domElement.querySelector('.outfit-header h3');
             if (header) {

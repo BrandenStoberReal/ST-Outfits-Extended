@@ -634,6 +634,11 @@ INSTRUCTIONS:
 
     updateCharacter(name) {
         this.outfitManager.setCharacter(name);
+        // Create the panel if it doesn't exist yet, so we can update the header
+        if (!this.domElement) {
+            this.createPanel();
+        }
+        
         if (this.domElement) {
             const header = this.domElement.querySelector('.outfit-header h3');
             if (header) {

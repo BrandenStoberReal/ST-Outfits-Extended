@@ -2245,8 +2245,8 @@ Only output command lines, nothing else.`;
             console.log("[OutfitTracker] CHAT_ID_CHANGED event fired");
             updateForCurrentCharacter();
         });
-        eventSource.on(event_types.CHARACTER_PAGE_LOADED, () => {
-            console.log("[OutfitTracker] CHARACTER_PAGE_LOADED event fired");
+        eventSource.on(event_types.CHAT_CHANGED, () => {
+            console.log("[OutfitTracker] CHAT_CHANGED event fired");
             updateForCurrentCharacter();
         });
         eventSource.on(event_types.CHAT_CREATED, async () => {
