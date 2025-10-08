@@ -347,15 +347,9 @@ export class UserOutfitPanel {
         // If the instance ID is already a short identifier, return it
         if (instanceId.startsWith('temp_')) return 'temp';
         
-        // Create a simple short identifier by taking first 8 characters of the instance ID
-        // but only from the actual ID part, not the whole string
-        const parts = instanceId.split('_');
-        if (parts.length >= 4 && parts[3]) {
-            // If it's the OUTFIT_INST format, take the instance part
-            return parts[3].substring(0, 6);
-        }
-        
-        // Otherwise, just take the first 6 characters
-        return instanceId.substring(0, 6);
+        // Create a simple short identifier by taking up to 6 characters of the instance ID
+        // but only alphanumeric characters for better readability
+        const cleanId = instanceId.replace(/[^a-zA-Z0-9]/g, '');
+        return cleanId.substring(0, 6);
     }
 }

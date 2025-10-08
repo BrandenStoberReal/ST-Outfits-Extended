@@ -2237,6 +2237,10 @@ Only output command lines, nothing else.`;
             console.log("[OutfitTracker] CHAT_CHANGED event fired");
             updateForCurrentCharacter();
         });
+        eventSource.on(event_types.CHARACTER_PAGE_LOADED, () => {
+            console.log("[OutfitTracker] CHARACTER_PAGE_LOADED event fired");
+            updateForCurrentCharacter();
+        });
         eventSource.on(event_types.CHAT_CREATED, async () => {
             console.log("[OutfitTracker] CHAT_CREATED event fired - creating new outfit instance");
             // When a new chat is created, create a new outfit instance for this conversation
@@ -2328,6 +2332,98 @@ Only output command lines, nothing else.`;
                 }
             } catch (error) {
                 console.error("[OutfitTracker] Error handling first message event:", error);
+            }
+        });
+
+        // Listen for message swiped event to handle first message changes
+        eventSource.on(event_types.MESSAGE_SWIPED, async (data) => {
+            console.log("[OutfitTracker] MESSAGE_SWIPED event fired");
+            try {
+                if (data && !data.is_user && !data.is_system) {
+                    const context = getContext();
+                    if (context && context.chat) {
+                        // Check if the swiped message is the first AI message in the chat
+                        const aiMessages = context.chat.filter(msg => !msg.is_user && !msg.is_system);
+                        const firstMessage = aiMessages.length > 0 ? aiMessages[0] : null;
+                        
+                        // Find the swiped message by its original index or swid
+                        let swipedMessage = null;
+                        
+                        // First try to find by swid if available in the data
+                        if (data.swid !== undefined) {
+                            swipedMessage = context.chat.find(msg => msg.swid === data.swid);
+                        }
+                        
+                        // If not found by swid, try to find by comparing content with data.mes
+                        if (!swipedMessage) {
+                            swipedMessage = context.chat.find(msg => 
+                                !msg.is_user && 
+                                !msg.is_system && 
+                                msg.mes === data.mes && 
+                                msg.name === data.name
+                            );
+                        }
+                        
+                        // If still not found, try to match based on index if available
+                        if (!swipedMessage && typeof data.i === 'number') {
+                            swipedMessage = context.chat[data.i];
+                        }
+                        
+                        // If the swiped message exists and it's the first AI message, update outfit instance
+                        if (swipedMessage && firstMessage && 
+                            (swipedMessage.swid === firstMessage.swid || 
+                             (swipedMessage.mes === firstMessage.mes && swipedMessage.name === firstMessage.name))) {
+                            console.log("[OutfitTracker] First message was swiped, updating outfit instance");
+                            
+                            // Create a specific outfit instance based on the new first message content
+                            const firstMessageText = swipedMessage.mes || '';
+                            
+                            // Determine scenario type based on message content
+                            let instanceId = null;
+                            
+                            // Create a more robust and descriptive instance ID
+                            const messagePreview = firstMessageText.substring(0, 20).replace(/[^\w\s]/gi, '').replace(/\s+/g, '_').toLowerCase();
+                            
+                            if (firstMessageText.toLowerCase().includes('hello') || firstMessageText.toLowerCase().includes('hi')) {
+                                instanceId = `greeting_${messagePreview}_${Date.now()}`;
+                            } else if (firstMessageText.toLowerCase().includes('bedroom') || firstMessageText.toLowerCase().includes('bed')) {
+                                instanceId = `bedroom_${messagePreview}_${Date.now()}`;
+                            } else if (firstMessageText.toLowerCase().includes('office') || firstMessageText.toLowerCase().includes('work')) {
+                                instanceId = `office_${messagePreview}_${Date.now()}`;
+                            } else {
+                                // Create a hash-based ID with more information
+                                const textHash = btoa(encodeURIComponent(firstMessageText.substring(0, 50))).replace(/[=]/g, '').substring(0, 12);
+                                instanceId = `scenario_${textHash}_${Date.now()}`;
+                            }
+                            
+                            if (botManager) {
+                                // Set the outfit instance ID based on the first message scenario
+                                botManager.setOutfitInstanceId(instanceId);
+                                console.log(`[OutfitTracker] Set bot outfit instance ID after swipe: ${instanceId}`);
+                            }
+                            
+                            if (userManager) {
+                                // Also set a corresponding instance ID for the user
+                                userManager.setOutfitInstanceId(instanceId);
+                                console.log(`[OutfitTracker] Set user outfit instance ID after swipe: ${instanceId}`);
+                            }
+                            
+                            // Update the panels to reflect the new instance
+                            if (botPanel && botPanel.isVisible) {
+                                botPanel.updateCharacter(botManager.character);
+                                botPanel.renderContent();
+                            }
+                            
+                            if (userPanel && userPanel.isVisible) {
+                                userPanel.renderContent();
+                            }
+                            
+                            console.log(`[OutfitTracker] Created outfit instances after first message swipe: ${instanceId}`);
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error("[OutfitTracker] Error handling message swipe event:", error);
             }
         });
 
