@@ -2389,6 +2389,38 @@ Only output command lines, nothing else.`;
         // This will be called when the user clears the current chat
         const originalClearChat = window.clearChat;
         window.clearChat = async function() {
+            // Before clearing the chat, save all outfit data for current character
+            let savedBotOutfits = {};
+            let savedUserOutfits = {};
+            
+            if (botManager && botManager.characterId) {
+                // Save all outfit instances for this character to preserve across chat resets
+                const allVars = botManager.getAllVariables();
+                const pattern = new RegExp(`^OUTFIT_INST_${botManager.characterId}_${botManager.chatId}_`);
+                
+                for (const varName in allVars) {
+                    if (pattern.test(varName)) {
+                        savedBotOutfits[varName] = allVars[varName];
+                    }
+                }
+                
+                console.log(`[OutfitTracker] Saved ${Object.keys(savedBotOutfits).length} bot outfit instances before chat clear`);
+            }
+            
+            if (userManager) {
+                // Save all user outfit instances to preserve across chat resets
+                const allVars = userManager.getAllVariables();
+                const pattern = /^OUTFIT_INST_USER_/;
+                
+                for (const varName in allVars) {
+                    if (pattern.test(varName)) {
+                        savedUserOutfits[varName] = allVars[varName];
+                    }
+                }
+                
+                console.log(`[OutfitTracker] Saved ${Object.keys(savedUserOutfits).length} user outfit instances before chat clear`);
+            }
+
             // First call the original function to clear the chat
             if (typeof originalClearChat === 'function') {
                 originalClearChat.apply(this, arguments);
@@ -2405,9 +2437,26 @@ Only output command lines, nothing else.`;
                 }
             }
 
-            // Then reset outfits to default if available
+            // Then reset outfits to default if available, but preserve saved instances
             setTimeout(async () => {
                 try {
+                    // Restore saved outfit data after chat is cleared
+                    if (botManager && Object.keys(savedBotOutfits).length > 0) {
+                        // Restore all saved bot outfit instances
+                        for (const [varName, value] of Object.entries(savedBotOutfits)) {
+                            botManager.setGlobalVariable(varName, value);
+                        }
+                        console.log("[OutfitTracker] Restored bot outfit instances after chat clear");
+                    }
+
+                    if (userManager && Object.keys(savedUserOutfits).length > 0) {
+                        // Restore all saved user outfit instances
+                        for (const [varName, value] of Object.entries(savedUserOutfits)) {
+                            userManager.setGlobalVariable(varName, value);
+                        }
+                        console.log("[OutfitTracker] Restored user outfit instances after chat clear");
+                    }
+
                     if (botManager) {
                         // Reset bot outfit to default if available for the current instance
                         const botMessage = await botManager.loadDefaultOutfit();
