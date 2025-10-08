@@ -2016,15 +2016,21 @@ Only output command lines, nothing else.`;
                     const messagePreview = firstMessageText.substring(0, 20).replace(/[^\w\s]/gi, '').replace(/\s+/g, '_').toLowerCase();
                     
                     if (firstMessageText.toLowerCase().includes('hello') || firstMessageText.toLowerCase().includes('hi')) {
-                        instanceId = `greeting_${messagePreview}_${Date.now()}`;
+                        // Create consistent ID based on message content
+                        const textHash = btoa(encodeURIComponent(firstMessageText)).replace(/[=]/g, '').substring(0, 16);
+                        instanceId = `greeting_${messagePreview}_${textHash}`;
                     } else if (firstMessageText.toLowerCase().includes('bedroom') || firstMessageText.toLowerCase().includes('bed')) {
-                        instanceId = `bedroom_${messagePreview}_${Date.now()}`;
+                        // Create consistent ID based on message content
+                        const textHash = btoa(encodeURIComponent(firstMessageText)).replace(/[=]/g, '').substring(0, 16);
+                        instanceId = `bedroom_${messagePreview}_${textHash}`;
                     } else if (firstMessageText.toLowerCase().includes('office') || firstMessageText.toLowerCase().includes('work')) {
-                        instanceId = `office_${messagePreview}_${Date.now()}`;
+                        // Create consistent ID based on message content
+                        const textHash = btoa(encodeURIComponent(firstMessageText)).replace(/[=]/g, '').substring(0, 16);
+                        instanceId = `office_${messagePreview}_${textHash}`;
                     } else {
                         // Create a hash-based ID with more information
-                        const textHash = btoa(encodeURIComponent(firstMessageText.substring(0, 50))).replace(/[=]/g, '').substring(0, 12);
-                        instanceId = `scenario_${textHash}_${Date.now()}`;
+                        const textHash = btoa(encodeURIComponent(firstMessageText)).replace(/[=]/g, '').substring(0, 16);
+                        instanceId = `scenario_${textHash}`;
                     }
                 }
             }
