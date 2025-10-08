@@ -1,6 +1,6 @@
-// Import modules from SillyTavern core using unified pathing system
-import { getContext, extension_settings } from '../../../extensions.js';
-import { saveSettingsDebounced } from '../../../../script.js';
+// Import modules from SillyTavern core - correct path when extension is installed in public/extensions/third-party/[extension-name]/
+import { getContext, extension_settings } from '../../scripts/extensions.js';
+import { saveSettingsDebounced } from '../../script.js';
 
 // Import the extractMacros, replaceAll, safeGet functions from StringProcessor
 import { extractMacros, replaceAll, safeGet } from '../utils/StringProcessor.js';
