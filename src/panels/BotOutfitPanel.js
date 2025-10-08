@@ -27,13 +27,13 @@ export class BotOutfitPanel {
         panel.id = 'bot-outfit-panel';
         panel.className = 'outfit-panel';
 
-        // Get the current instance info for display in the header (use short identifier)
-        const instanceInfo = this.outfitManager.getOutfitInstanceId() ? 
-            ` (Context ${this.generateShortId(this.outfitManager.getOutfitInstanceId())})` : '';
+        // Get the first message hash for display in the header (instance ID)
+        const messageHash = this.generateMessageHash(this.getFirstMessageText() || this.outfitManager.getOutfitInstanceId() || '');
+        const hashDisplay = messageHash ? ` (${messageHash})` : '';
         
         panel.innerHTML = `
             <div class="outfit-header">
-                <h3>${this.outfitManager.character}${instanceInfo}'s Outfit</h3>
+                <h3>{{char}}'s Outfit${hashDisplay}</h3>
                 <div class="outfit-actions">
                     <span class="outfit-action" id="bot-outfit-refresh">↻</span>
                     <span class="outfit-action" id="bot-outfit-close">×</span>
@@ -62,6 +62,31 @@ export class BotOutfitPanel {
         });
 
         return panel;
+    }
+    
+    // Get the first character message text to generate hash from (instance ID)
+    getFirstMessageText() {
+        try {
+            const context = window.getContext();
+            if (context && context.chat && Array.isArray(context.chat)) {
+                // Get the first AI message from the character (instance identifier)
+                const aiMessages = context.chat.filter(msg => 
+                    !msg.is_user && !msg.is_system && 
+                    (msg.name === this.outfitManager.character || 
+                     (context.characters && 
+                      context.characters[context.characterId] && 
+                      msg.name === context.characters[context.characterId].name)));
+                
+                if (aiMessages.length > 0) {
+                    const firstMessage = aiMessages[0];
+                    return firstMessage.mes || '';
+                }
+            }
+            return '';
+        } catch (error) {
+            console.warn('Could not get first message text for hash generation:', error);
+            return '';
+        }
     }
 
     renderContent() {
@@ -606,12 +631,13 @@ INSTRUCTIONS:
         if (this.domElement) {
             const header = this.domElement.querySelector('.outfit-header h3');
             if (header) {
-                // Get the current instance info for display in the header (use short identifier)
-                const instanceInfo = this.outfitManager.getOutfitInstanceId() ? 
-                    ` (Context ${this.generateShortId(this.outfitManager.getOutfitInstanceId())})` : '';
-                // Replace any placeholder "{{char}}" with the actual character name
+                // Get the first message hash for display in the header (instance ID)
+                const messageHash = this.generateMessageHash(this.getFirstMessageText() || this.outfitManager.getOutfitInstanceId() || '');
+                const hashDisplay = messageHash ? ` (${messageHash})` : '';
+                
+                // Replace placeholder "{{char}}" with the actual character name
                 const formattedName = name || 'Unknown';
-                header.textContent = `${formattedName}${instanceInfo}'s Outfit`;
+                header.textContent = `${formattedName}'s Outfit${hashDisplay}`;
             }
         }
         this.renderContent();
@@ -628,5 +654,22 @@ INSTRUCTIONS:
         // but only alphanumeric characters for better readability
         const cleanId = instanceId.replace(/[^a-zA-Z0-9]/g, '');
         return cleanId.substring(0, 6);
+    }
+    
+    // Generate an 8-character hash from a text string
+    generateMessageHash(text) {
+        if (!text) return '';
+        
+        let hash = 0;
+        const str = text.substring(0, 100); // Only use first 100 chars to keep ID manageable
+        
+        for (let i = 0; i < str.length; i++) {
+            const char = str.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash; // Convert to 32-bit integer
+        }
+        
+        // Convert to positive and return 8-character string representation
+        return Math.abs(hash).toString(36).substring(0, 8).padEnd(8, '0');
     }
 }
