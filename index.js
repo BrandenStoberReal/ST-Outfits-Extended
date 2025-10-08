@@ -2437,7 +2437,7 @@ Only output command lines, nothing else.`;
                 }
             }
 
-            // Then reset outfits to default if available, but preserve saved instances
+            // Then update outfits after restoring saved instances
             setTimeout(async () => {
                 try {
                     // Restore saved outfit data after chat is cleared
@@ -2463,14 +2463,14 @@ Only output command lines, nothing else.`;
                     setTimeout(() => {
                         updateForCurrentCharacter();
                         
+                        // After updating for the current character, load the outfits for the new instance
+                        // This will load the appropriate outfit values for the new instance
                         if (botManager) {
-                            // Reset bot outfit to default if available for the current instance
-                            botManager.loadDefaultOutfit();
+                            botManager.loadOutfit();
                         }
 
                         if (userManager) {
-                            // Reset user outfit to default if available for the current instance
-                            userManager.loadDefaultOutfit();
+                            userManager.loadOutfit();
                         }
                         
                         // Update the panel headers after chat is cleared
@@ -2485,9 +2485,9 @@ Only output command lines, nothing else.`;
                         }
                     }, 300); // Increased delay to allow for chat to be fully populated
                 } catch (error) {
-                    console.error("[OutfitTracker] Error resetting to default outfit:", error);
+                    console.error("[OutfitTracker] Error in outfit restoration after chat clear:", error);
                 }
-            }, 100); // Small delay to ensure chat is cleared before resetting
+            }, 100); // Small delay to ensure chat is cleared before restoring
         };
         
         // Function to clean up old temporary outfit instances periodically
