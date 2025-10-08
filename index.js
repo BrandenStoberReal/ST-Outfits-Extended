@@ -3314,13 +3314,13 @@ Only output command lines, nothing else.`;
             toastr.success(`Successfully wiped ${keysToWipe.length} outfit variables and all presets`, 'Outfit Data Wiped');
             
             // If panels exist, refresh them to show the cleared state
-            if (window.botOutfitPanel) {
-                window.botOutfitPanel.loadOutfit();
+            if (window.botOutfitPanel && window.botOutfitPanel.outfitManager) {
+                window.botOutfitPanel.outfitManager.loadOutfit();
                 window.botOutfitPanel.renderContent();
             }
             
-            if (window.userOutfitPanel) {
-                window.userOutfitPanel.loadOutfit();
+            if (window.userOutfitPanel && window.userOutfitPanel.outfitManager) {
+                window.userOutfitPanel.outfitManager.loadOutfit();
                 window.userOutfitPanel.renderContent();
             }
             
