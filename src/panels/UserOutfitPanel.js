@@ -316,6 +316,9 @@ export class UserOutfitPanel {
             this.domElement = this.createPanel();
         }
         
+        // Update the header to ensure it has the latest instance ID
+        this.updateHeader();
+        
         this.renderContent();
         this.domElement.style.display = 'flex';
         this.applyPanelColors(); // Apply colors after showing
