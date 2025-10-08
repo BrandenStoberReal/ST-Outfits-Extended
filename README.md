@@ -166,6 +166,8 @@ Write `<BOT>` for character's outfit. Instead of `<BOT>` you can also write a ch
 
 💡 **User's variable names are always the same. They always use "User_" regardless of your persona name.**
 
+Additionally, the system now features an intelligent macro resolution that automatically maps these familiar variable formats to context-specific outfit instances. This means that when you use `{{getglobalvar::<BOT>_headwear}}` or a character-specific variable like `{{getglobalvar::Emma_headwear}}`, the system automatically resolves it to the appropriate outfit instance for the current conversation context. This ensures that outfits are properly tracked and maintained across different scenarios and conversation threads.
+
 Here are the full list of available slots:
 
 ### Character Clothing Slots:

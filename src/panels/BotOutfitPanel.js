@@ -27,9 +27,13 @@ export class BotOutfitPanel {
         panel.id = 'bot-outfit-panel';
         panel.className = 'outfit-panel';
 
+        // Get the current instance info for display in the header
+        const instanceInfo = this.outfitManager.getOutfitInstanceId() ? 
+            ` (${this.outfitManager.getOutfitInstanceId()})` : '';
+        
         panel.innerHTML = `
             <div class="outfit-header">
-                <h3>${this.outfitManager.character}'s Outfit</h3>
+                <h3>${this.outfitManager.character}${instanceInfo}'s Outfit</h3>
                 <div class="outfit-actions">
                     <span class="outfit-action" id="bot-outfit-refresh">↻</span>
                     <span class="outfit-action" id="bot-outfit-close">×</span>
@@ -121,7 +125,7 @@ export class BotOutfitPanel {
         const defaultPresetName = this.outfitManager.getDefaultPresetName();
         
         if (regularPresets.length === 0 && !this.outfitManager.hasDefaultOutfit()) {
-            container.innerHTML = '<div>No saved outfits for this character.</div>';
+            container.innerHTML = '<div>No saved outfits for this character instance.</div>';
         } else {
             // Check if we have a default that doesn't match any saved preset (like 'default' preset)
             if (defaultPresetName === 'default') {
@@ -195,13 +199,6 @@ export class BotOutfitPanel {
                             if (confirm(`Delete "${preset}"? This will also clear it as the default outfit.`)) {
                                 // Delete the preset
                                 const message = this.outfitManager.deletePreset(preset);
-                                // Also clear the default
-                                delete window.extension_settings.outfit_tracker.presets.bot[this.outfitManager.character]['default'];
-                                
-                                // Cleanup character if no presets left
-                                if (Object.keys(window.extension_settings.outfit_tracker.presets.bot[this.outfitManager.character]).length === 0) {
-                                    delete window.extension_settings.outfit_tracker.presets.bot[this.outfitManager.character];
-                                }
                                 
                                 if (window.extension_settings.outfit_tracker?.enableSysMessages) {
                                     this.sendSystemMessage(message + ' Default outfit cleared.');
@@ -608,7 +605,12 @@ INSTRUCTIONS:
         this.outfitManager.setCharacter(name);
         if (this.domElement) {
             const header = this.domElement.querySelector('.outfit-header h3');
-            if (header) header.textContent = `${name}'s Outfit`;
+            if (header) {
+                // Get the current instance info for display in the header
+                const instanceInfo = this.outfitManager.getOutfitInstanceId() ? 
+                    ` (${this.outfitManager.getOutfitInstanceId()})` : '';
+                header.textContent = `${name}${instanceInfo}'s Outfit`;
+            }
         }
         this.renderContent();
     }

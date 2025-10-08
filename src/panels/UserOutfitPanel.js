@@ -21,9 +21,13 @@ export class UserOutfitPanel {
         panel.id = 'user-outfit-panel';
         panel.className = 'outfit-panel';
 
+        // Get the current instance info for display in the header
+        const instanceInfo = this.outfitManager.getOutfitInstanceId() ? 
+            ` (Instance: ${this.outfitManager.getOutfitInstanceId()})` : '';
+        
         panel.innerHTML = `
             <div class="outfit-header">
-                <h3>Your Outfit</h3>
+                <h3>Your Outfit${instanceInfo}</h3>
                 <div class="outfit-actions">
                     <span class="outfit-action" id="user-outfit-refresh">↻</span>
                     <span class="outfit-action" id="user-outfit-close">×</span>
@@ -114,7 +118,7 @@ export class UserOutfitPanel {
         const defaultPresetName = this.outfitManager.getDefaultPresetName();
         
         if (regularPresets.length === 0 && !this.outfitManager.hasDefaultOutfit()) {
-            container.innerHTML = '<div>No saved outfits.</div>';
+            container.innerHTML = '<div>No saved outfits for this instance.</div>';
         } else {
             // Check if we have a default that doesn't match any saved preset (like 'default' preset)
             if (defaultPresetName === 'default') {
@@ -188,8 +192,6 @@ export class UserOutfitPanel {
                             if (confirm(`Delete "${preset}"? This will also clear it as the default outfit.`)) {
                                 // Delete the preset
                                 const message = this.outfitManager.deletePreset(preset);
-                                // Also clear the default
-                                delete window.extension_settings.outfit_tracker.presets.user['default'];
                                 
                                 if (window.extension_settings.outfit_tracker?.enableSysMessages) {
                                     this.sendSystemMessage(message + ' Default outfit cleared.');

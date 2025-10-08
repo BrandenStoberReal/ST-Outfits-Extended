@@ -1973,7 +1973,7 @@ Only output command lines, nothing else.`;
             if (!context || !context.characters || context.characterId === undefined || context.characterId === null) {
                 console.log("[OutfitTracker] Context not ready or no character selected, setting as Unknown");
                 if (botManager) {
-                    botManager.setCharacter('Unknown');
+                    botManager.setCharacter('Unknown', null, null);
                 }
                 if (botPanel) {
                     botPanel.updateCharacter('Unknown');
@@ -1986,7 +1986,7 @@ Only output command lines, nothing else.`;
             if (!character) {
                 console.log("[OutfitTracker] Character not found at index " + context.characterId + ", setting as Unknown");
                 if (botManager) {
-                    botManager.setCharacter('Unknown');
+                    botManager.setCharacter('Unknown', null, null);
                 }
                 if (botPanel) {
                     botPanel.updateCharacter('Unknown');
@@ -1996,8 +1996,45 @@ Only output command lines, nothing else.`;
 
             const charName = character.name || 'Unknown';
             console.log("[OutfitTracker] Updating character to: " + charName + " (ID: " + context.characterId + ")");
+            
+            // Check if we have a new chat or the same character but different first message
+            const currentChatId = context.chatId;
+            
+            // Create a unique instance ID based on character ID and first message
+            let instanceId = null;
+            if (context.chat && context.chat.length > 0) {
+                // Find all AI messages in the current chat and get the first one
+                const aiMessages = context.chat.filter(msg => !msg.is_user && !msg.is_system);
+                const firstMessage = aiMessages.length > 0 ? aiMessages[0] : null;
+                
+                if (firstMessage) {
+                    // Use the content of the first message to create a unique instance ID
+                    // This means if the first message changes, it's considered a different scenario/instance
+                    const firstMessageText = firstMessage.mes || '';
+                    
+                    // Create a more robust and descriptive instance ID
+                    const messagePreview = firstMessageText.substring(0, 20).replace(/[^\w\s]/gi, '').replace(/\s+/g, '_').toLowerCase();
+                    
+                    if (firstMessageText.toLowerCase().includes('hello') || firstMessageText.toLowerCase().includes('hi')) {
+                        instanceId = `greeting_${messagePreview}_${Date.now()}`;
+                    } else if (firstMessageText.toLowerCase().includes('bedroom') || firstMessageText.toLowerCase().includes('bed')) {
+                        instanceId = `bedroom_${messagePreview}_${Date.now()}`;
+                    } else if (firstMessageText.toLowerCase().includes('office') || firstMessageText.toLowerCase().includes('work')) {
+                        instanceId = `office_${messagePreview}_${Date.now()}`;
+                    } else {
+                        // Create a hash-based ID with more information
+                        const textHash = btoa(encodeURIComponent(firstMessageText.substring(0, 50))).replace(/[=]/g, '').substring(0, 12);
+                        instanceId = `scenario_${textHash}_${Date.now()}`;
+                    }
+                }
+            }
+            
             if (botManager) {
-                botManager.setCharacter(charName);
+                // Update the character with characterId and chatId for proper namespace
+                botManager.setCharacter(charName, context.characterId, currentChatId);
+                
+                // Set the outfit instance ID based on the first message scenario
+                botManager.setOutfitInstanceId(instanceId);
             }
             if (botPanel) {
                 botPanel.updateCharacter(charName);
@@ -2036,7 +2073,16 @@ Only output command lines, nothing else.`;
                     const slotData = botOutfitData.find(data => data.name === slot);
                     if (slotData) {
                         const formattedSlotName = slot.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.charAt(0).toUpperCase()).replace('underwear', 'Underwear');
-                        outfitInfo += `**${formattedSlotName}:** {{getglobalvar::<BOT>_${slotData.name}}}\n`;
+                        // Use the new instance-based variable name if an instance ID is set
+                        let varName;
+                        if (botManager.getOutfitInstanceId() && !botManager.getOutfitInstanceId().startsWith('temp_')) {
+                            varName = `OUTFIT_INST_${botManager.characterId || 'unknown'}_${botManager.chatId || 'unknown'}_${botManager.getOutfitInstanceId()}_${slotData.name}`;
+                        } else {
+                            // If using temporary ID or no ID, fall back to character-based naming
+                            const formattedCharacterName = (botManager.character || 'Unknown').replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+                            varName = `${formattedCharacterName}_${slotData.name}`;
+                        }
+                        outfitInfo += `**${formattedSlotName}:** {{getglobalvar::${varName}}}\n`;
                     }
                 });
             }
@@ -2061,7 +2107,16 @@ Only output command lines, nothing else.`;
                         if (slot === 'ears-accessory') {
                             formattedSlotName = 'Eyes Accessory';
                         }
-                        outfitInfo += `**${formattedSlotName}:** {{getglobalvar::<BOT>_${slotData.name}}}\n`;
+                        // Use the new instance-based variable name if an instance ID is set
+                        let varName;
+                        if (botManager.getOutfitInstanceId() && !botManager.getOutfitInstanceId().startsWith('temp_')) {
+                            varName = `OUTFIT_INST_${botManager.characterId || 'unknown'}_${botManager.chatId || 'unknown'}_${botManager.getOutfitInstanceId()}_${slotData.name}`;
+                        } else {
+                            // If using temporary ID or no ID, fall back to character-based naming
+                            const formattedCharacterName = (botManager.character || 'Unknown').replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+                            varName = `${formattedCharacterName}_${slotData.name}`;
+                        }
+                        outfitInfo += `**${formattedSlotName}:** {{getglobalvar::${varName}}}\n`;
                     }
                 });
             }
@@ -2079,7 +2134,15 @@ Only output command lines, nothing else.`;
                     const slotData = userOutfitData.find(data => data.name === slot);
                     if (slotData) {
                         const formattedSlotName = slot.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.charAt(0).toUpperCase()).replace('underwear', 'Underwear');
-                        outfitInfo += `**${formattedSlotName}:** {{getglobalvar::User_${slotData.name}}}\n`;
+                        // Use the new instance-based variable name if an instance ID is set for user
+                        let varName;
+                        if (userManager.getOutfitInstanceId() && !userManager.getOutfitInstanceId().startsWith('temp_')) {
+                            varName = `OUTFIT_INST_USER_${userManager.getOutfitInstanceId()}_${slotData.name}`;
+                        } else {
+                            // If using temporary ID or no ID, fall back to standard naming
+                            varName = `User_${slotData.name}`;
+                        }
+                        outfitInfo += `**${formattedSlotName}:** {{getglobalvar::${varName}}}\n`;
                     }
                 });
             }
@@ -2104,7 +2167,15 @@ Only output command lines, nothing else.`;
                         if (slot === 'ears-accessory') {
                             formattedSlotName = 'Eyes Accessory';
                         }
-                        outfitInfo += `**${formattedSlotName}:** {{getglobalvar::User_${slotData.name}}}\n`;
+                        // Use the new instance-based variable name if an instance ID is set for user
+                        let varName;
+                        if (userManager.getOutfitInstanceId() && !userManager.getOutfitInstanceId().startsWith('temp_')) {
+                            varName = `OUTFIT_INST_USER_${userManager.getOutfitInstanceId()}_${slotData.name}`;
+                        } else {
+                            // If using temporary ID or no ID, fall back to standard naming
+                            varName = `User_${slotData.name}`;
+                        }
+                        outfitInfo += `**${formattedSlotName}:** {{getglobalvar::${varName}}}\n`;
                     }
                 });
             }
@@ -2167,38 +2238,97 @@ Only output command lines, nothing else.`;
             updateForCurrentCharacter();
         });
         eventSource.on(event_types.CHAT_CREATED, async () => {
-            console.log("[OutfitTracker] CHAT_CREATED event fired - resetting to default outfits");
-            // When a new chat is created, reset outfits to default or initialize with None values
+            console.log("[OutfitTracker] CHAT_CREATED event fired - creating new outfit instance");
+            // When a new chat is created, create a new outfit instance for this conversation
             try {
+                const context = getContext();
+                
                 if (botManager) {
-                    const botMessage = await botManager.loadDefaultOutfit();
-                    if (botMessage && !botMessage.includes('No default outfit set')) {
-                        if (extension_settings.outfit_tracker?.enableSysMessages) {
-                            botPanel.sendSystemMessage(botMessage);
-                        }
-                        console.log("[OutfitTracker] Character reset to default outfit");
-                    } else {
-                        // If no default outfit exists, initialize all slots to "None"
-                        await initializeOutfitSlotsToNone(botManager, botPanel);
-                    }
+                    // Create a new outfit instance for this chat
+                    // Initially, we don't know the first message yet, so we'll use a temporary ID
+                    // Use a more descriptive temporary ID to avoid conflicts
+                    const tempInstanceId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                    botManager.setOutfitInstanceId(tempInstanceId);
+                    
+                    // The outfit will be properly initialized when we detect the first message
+                    console.log("[OutfitTracker] Created new outfit instance for character:", tempInstanceId);
                 }
 
                 if (userManager) {
-                    const userMessage = await userManager.loadDefaultOutfit();
-                    if (userMessage && !userMessage.includes('No default outfit set')) {
-                        if (extension_settings.outfit_tracker?.enableSysMessages) {
-                            userPanel.sendSystemMessage(userMessage);
+                    // Create a new outfit instance for this chat
+                    const tempInstanceId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                    userManager.setOutfitInstanceId(tempInstanceId);
+                    
+                    console.log("[OutfitTracker] Created new outfit instance for user:", tempInstanceId);
+                }
+            } catch (error) {
+                console.error("[OutfitTracker] Error creating new outfit instance on chat creation:", error);
+            }
+            updateForCurrentCharacter(); // Update the character after creating new instance
+        });
+
+        // Listen for the first message selected event which is more specific than MESSAGE_RECEIVED
+        eventSource.on(event_types.CHARACTER_FIRST_MESSAGE_SELECTED, async (data) => {
+            console.log("[OutfitTracker] CHARACTER_FIRST_MESSAGE_SELECTED event fired");
+            try {
+                // Only process for AI messages (not user messages)
+                if (data && !data.is_user && !data.is_system) {
+                    const context = getContext();
+                    if (context && context.chat) {
+                        // For the first message selected event, the data should be the first message
+                        console.log("[OutfitTracker] Detected first message for this chat, creating outfit instance");
+                        
+                        // Create a specific outfit instance based on the first message content
+                        const firstMessageText = data.mes || '';
+                        
+                        // Determine scenario type based on message content
+                        let instanceId = null;
+                        
+                        // Create a more robust and descriptive instance ID
+                        const messagePreview = firstMessageText.substring(0, 20).replace(/[^\\w\\s]/gi, '').replace(/\\s+/g, '_').toLowerCase();
+                        
+                        if (firstMessageText.toLowerCase().includes('hello') || firstMessageText.toLowerCase().includes('hi')) {
+                            instanceId = `greeting_${messagePreview}_${Date.now()}`;
+                        } else if (firstMessageText.toLowerCase().includes('bedroom') || firstMessageText.toLowerCase().includes('bed')) {
+                            instanceId = `bedroom_${messagePreview}_${Date.now()}`;
+                        } else if (firstMessageText.toLowerCase().includes('office') || firstMessageText.toLowerCase().includes('work')) {
+                            instanceId = `office_${messagePreview}_${Date.now()}`;
+                        } else {
+                            // Create a hash-based ID with more information
+                            const textHash = btoa(encodeURIComponent(firstMessageText.substring(0, 50))).replace(/[=]/g, '').substring(0, 12);
+                            instanceId = `scenario_${textHash}_${Date.now()}`;
                         }
-                        console.log("[OutfitTracker] User reset to default outfit");
+                        
+                        if (botManager) {
+                            // Set the outfit instance ID based on the first message scenario
+                            botManager.setOutfitInstanceId(instanceId);
+                            console.log(`[OutfitTracker] Set bot outfit instance ID: ${instanceId}`);
+                        }
+                        
+                        if (userManager) {
+                            // Also set a corresponding instance ID for the user
+                            userManager.setOutfitInstanceId(instanceId);
+                            console.log(`[OutfitTracker] Set user outfit instance ID: ${instanceId}`);
+                        }
+                        
+                        // Update the panels to reflect the new instance
+                        if (botPanel && botPanel.isVisible) {
+                            botPanel.updateCharacter(botManager.character);
+                            botPanel.renderContent();
+                        }
+                        
+                        if (userPanel && userPanel.isVisible) {
+                            userPanel.renderContent();
+                        }
+                        
+                        console.log(`[OutfitTracker] Created outfit instances: ${instanceId}`);
                     } else {
-                        // If no default outfit exists, initialize all slots to "None"
-                        await initializeOutfitSlotsToNone(userManager, userPanel);
+                        console.warn("[OutfitTracker] Context or chat not available when processing message");
                     }
                 }
             } catch (error) {
-                console.error("[OutfitTracker] Error resetting to default outfit on chat creation:", error);
+                console.error("[OutfitTracker] Error handling first message event:", error);
             }
-            updateForCurrentCharacter(); // Update the character after resetting
         });
 
         // Hook into the clear chat functionality by overriding the clearChat function
@@ -2225,7 +2355,7 @@ Only output command lines, nothing else.`;
             setTimeout(async () => {
                 try {
                     if (botManager) {
-                        // Reset bot outfit to default if available
+                        // Reset bot outfit to default if available for the current instance
                         const botMessage = await botManager.loadDefaultOutfit();
                         if (botMessage && !botMessage.includes('No default outfit set')) {
                             if (extension_settings.outfit_tracker?.enableSysMessages) {
@@ -2239,7 +2369,7 @@ Only output command lines, nothing else.`;
                     }
 
                     if (userManager) {
-                        // Reset user outfit to default if available
+                        // Reset user outfit to default if available for the current instance
                         const userMessage = await userManager.loadDefaultOutfit();
                         if (userMessage && !userMessage.includes('No default outfit set')) {
                             if (extension_settings.outfit_tracker?.enableSysMessages) {
@@ -2251,11 +2381,41 @@ Only output command lines, nothing else.`;
                             await initializeOutfitSlotsToNone(userManager, userPanel);
                         }
                     }
+                    
+                    // Reset outfit instance IDs after chat is cleared
+                    if (botManager) {
+                        const tempInstanceId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                        botManager.setOutfitInstanceId(tempInstanceId);
+                        console.log(`[OutfitTracker] Created new temporary outfit instance after chat clear: ${tempInstanceId}`);
+                    }
+
+                    if (userManager) {
+                        const tempInstanceId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                        userManager.setOutfitInstanceId(tempInstanceId);
+                        console.log(`[OutfitTracker] Created new temporary outfit instance for user after chat clear: ${tempInstanceId}`);
+                    }
                 } catch (error) {
                     console.error("[OutfitTracker] Error resetting to default outfit:", error);
                 }
             }, 100); // Small delay to ensure chat is cleared before resetting
         };
+        
+        // Function to clean up old temporary outfit instances periodically
+        function cleanupOldTempInstances() {
+            try {
+                if (botManager) {
+                    botManager.cleanupTempInstances();
+                }
+                if (userManager) {
+                    userManager.cleanupTempInstances();
+                }
+            } catch (error) {
+                console.error("[OutfitTracker] Error during temp instance cleanup:", error);
+            }
+        }
+        
+        // Schedule cleanup of old temporary instances periodically (every 10 minutes)
+        setInterval(cleanupOldTempInstances, 10 * 60 * 1000);
     }
 
     function initSettings() {
@@ -2914,8 +3074,29 @@ Only output command lines, nothing else.`;
                 
                 let value = 'None'; // Default value if not found
 
+                // Check for global outfit macro patterns like bot_currentOutfit_Headwear
+                if (varName.startsWith('bot_currentOutfit_') || varName.startsWith('user_currentOutfit_')) {
+                    // Extract the slot name from after the prefix
+                    let slotName = varName.substring(varName.lastIndexOf('_') + 1);
+                    // Normalize the slot name to match the internal format if necessary
+                    slotName = slotName.toLowerCase();
+                    // Check if it's a clothing slot or accessory slot
+                    if ([...CLOTHING_SLOTS, ...ACCESSORY_SLOTS].includes(slotName)) {
+                        if (varName.startsWith('bot_currentOutfit_')) {
+                            // Get the bot manager's current outfit value for this slot
+                            if (botManager && botManager.currentValues && botManager.currentValues[slotName] !== undefined) {
+                                value = botManager.currentValues[slotName];
+                            }
+                        } else if (varName.startsWith('user_currentOutfit_')) {
+                            // Get the user manager's current outfit value for this slot
+                            if (userManager && userManager.currentValues && userManager.currentValues[slotName] !== undefined) {
+                                value = userManager.currentValues[slotName];
+                            }
+                        }
+                    }
+                }
                 // Check if it's a character-specific variable (checking multiple possible formats)
-                if (varName.startsWith(`${botCharacterName}_`) || varName.startsWith(`${normalizedBotName}_`)) {
+                else if (varName.startsWith(`${botCharacterName}_`) || varName.startsWith(`${normalizedBotName}_`)) {
                     // Extract slot name after the character name prefix
                     let slot;
                     if (varName.startsWith(`${botCharacterName}_`)) {
@@ -2970,6 +3151,21 @@ Only output command lines, nothing else.`;
         if (window.userOutfitPanel && window.userOutfitPanel.domElement) {
             window.userOutfitPanel.applyPanelColors();
         }
+    }
+
+    // Helper function to generate a simple hash from text for use as instance ID
+    function generateInstanceIdFromText(text) {
+        let hash = 0;
+        const str = text.substring(0, 100); // Only use first 100 chars to keep ID manageable
+        
+        for (let i = 0; i < str.length; i++) {
+            const char = str.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash; // Convert to 32-bit integer
+        }
+        
+        // Convert to positive and return string representation
+        return Math.abs(hash).toString(36);
     }
 
     // Helper function to replace all occurrences of a substring without using regex
