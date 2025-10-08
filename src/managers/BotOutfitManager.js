@@ -134,22 +134,39 @@ export class BotOutfitManager {
             const varName = this.getVarName(slot);
             let value = this.getGlobalVariable(varName);
             
-            // If we're using a temporary instance ID and the value doesn't exist,
-            // check if there was a previous instance with this slot value
+            // Only use a temporary fallback when we're using a temp instance ID and no value exists
+            // But we only want to use a fallback if there's a previous outfit instance for the same character/chat
+            // that matches the same characterId and chatId, not just any instance
             if (this.outfitInstanceId && this.outfitInstanceId.startsWith('temp_') && (value === undefined || value === null || value === '')) {
-                // Try to find any previous outfit instance values for this character/chat to migrate
+                // Try to find any previous outfit instance values for this specific character/chat to migrate
                 const allVars = this.getAllVariables();
                 const matchingVars = Object.keys(allVars).filter(key => 
                     key.startsWith(`OUTFIT_INST_${this.characterId || 'unknown'}_${this.chatId || 'unknown'}_`) && 
                     key.endsWith(`_${slot}`) &&
-                    !key.includes('temp_')  // Exclude temp vars to avoid circular checks
+                    !key.includes('temp_') && // Exclude temp vars to avoid circular checks
+                    key !== varName // Exclude the current var to prevent self-reference
                 );
                 
                 if (matchingVars.length > 0) {
                     // Use the value from the first matching variable found (most recent)
-                    const previousVarName = matchingVars[0];
+                    // Sort by instance ID to get the most recent one if multiple exist
+                    const sortedVars = matchingVars.sort((a, b) => {
+                        // Extract timestamp from instance ID if it's in the format scenario_hash_timestamp
+                        const extractTimestamp = (varKey) => {
+                            const parts = varKey.split('_');
+                            const instanceIdPart = parts.slice(3, -1).join('_'); // Extract the instance ID part
+                            const timestamp = parseInt(instanceIdPart.split('_').pop());
+                            return isNaN(timestamp) ? 0 : timestamp;
+                        };
+                        return extractTimestamp(b) - extractTimestamp(a); // Sort in descending order (most recent first)
+                    });
+                    
+                    const previousVarName = sortedVars[0];
                     value = allVars[previousVarName];
                     console.log(`[BotOutfitManager] Migrating ${slot} value from previous instance: ${previousVarName} = ${value}`);
+                } else {
+                    // If no previous instance was found for this character/chat, just set to 'None'
+                    value = 'None';
                 }
             }
             

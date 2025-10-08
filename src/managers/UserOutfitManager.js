@@ -95,18 +95,37 @@ export class UserOutfitManager {
             // check if there was a previous instance with this slot value
             if (this.outfitInstanceId && this.outfitInstanceId.startsWith('temp_') && (value === undefined || value === null || value === '')) {
                 // Try to find any previous outfit instance values for this user to migrate
+                // Only look for user-specific variables
                 const allVars = this.getAllVariables();
                 const matchingVars = Object.keys(allVars).filter(key => 
                     key.startsWith('OUTFIT_INST_USER_') && 
                     key.endsWith(`_${slot}`) &&
-                    !key.includes('temp_')  // Exclude temp vars to avoid circular checks
+                    !key.includes('temp_') &&  // Exclude temp vars to avoid circular checks
+                    key !== varName // Exclude the current var to prevent self-reference
                 );
                 
                 if (matchingVars.length > 0) {
                     // Use the value from the first matching variable found (most recent)
-                    const previousVarName = matchingVars[0];
+                    // Sort by instance ID to get the most recent one if multiple exist
+                    const sortedVars = matchingVars.sort((a, b) => {
+                        // Extract timestamp from instance ID if it's in the format scenario_hash_timestamp
+                        const extractTimestamp = (varKey) => {
+                            const parts = varKey.split('_');
+                            // OUTFIT_INST_USER_<instanceId>_<slot>
+                            // The instance ID is the 4th element (index 3) in the split array
+                            const instanceIdPart = parts[3]; // Extract the instance ID part
+                            const timestamp = parseInt(instanceIdPart.split('_').pop());
+                            return isNaN(timestamp) ? 0 : timestamp;
+                        };
+                        return extractTimestamp(b) - extractTimestamp(a); // Sort in descending order (most recent first)
+                    });
+                    
+                    const previousVarName = sortedVars[0];
                     value = allVars[previousVarName];
                     console.log(`[UserOutfitManager] Migrating ${slot} value from previous instance: ${previousVarName} = ${value}`);
+                } else {
+                    // If no previous instance was found for this user, just set to 'None'
+                    value = 'None';
                 }
             }
             
