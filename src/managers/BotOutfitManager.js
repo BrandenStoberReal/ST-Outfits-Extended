@@ -75,8 +75,8 @@ export class BotOutfitManager {
         
         // For each slot, copy the data from the old instance to the new instance
         this.slots.forEach(slot => {
-            const oldVarName = `OUTFIT_INST_${this.characterId || 'unknown'}_${this.chatId || 'unknown'}_${oldInstanceId}_${slot}`;
-            const newVarName = `OUTFIT_INST_${this.characterId || 'unknown'}_${this.chatId || 'unknown'}_${newInstanceId}_${slot}`;
+            const oldVarName = `OUTFIT_INST_${this.characterId || 'unknown'}_${oldInstanceId}_${slot}`;
+            const newVarName = `OUTFIT_INST_${this.characterId || 'unknown'}_${newInstanceId}_${slot}`;
             
             const value = this.getGlobalVariable(oldVarName);
             if (value !== undefined && value !== null && value !== '') {
@@ -96,7 +96,7 @@ export class BotOutfitManager {
     // Method to cleanup old temporary instance variables
     cleanupTempInstances() {
         const allVars = this.getAllVariables();
-        const tempVarPattern = new RegExp(`^OUTFIT_INST_${this.characterId || 'unknown'}_${this.chatId || 'unknown'}_temp_`);
+        const tempVarPattern = new RegExp(`^OUTFIT_INST_${this.characterId || 'unknown'}_temp_`);
         
         for (const varName in allVars) {
             if (tempVarPattern.test(varName)) {
@@ -123,13 +123,13 @@ export class BotOutfitManager {
 
     getVarName(slot) {
         // Create a unique namespace for this outfit instance
-        // Format: OUTFIT_INST_<characterId>_<chatId>_<instanceId>_<slot>
+        // Format: OUTFIT_INST_<characterId>_<instanceId>_<slot> - removed chatId to persist across chat resets
         if (this.outfitInstanceId && !this.outfitInstanceId.startsWith('temp_')) {
-            const instanceNamespace = `OUTFIT_INST_${this.characterId || 'unknown'}_${this.chatId || 'unknown'}_${this.outfitInstanceId}`;
+            const instanceNamespace = `OUTFIT_INST_${this.characterId || 'unknown'}_${this.outfitInstanceId}`;
             return `${instanceNamespace}_${slot}`;
         } else if (this.outfitInstanceId && this.outfitInstanceId.startsWith('temp_')) {
             // For temporary IDs, use a format that will be migrated when the real ID is set
-            const instanceNamespace = `OUTFIT_INST_${this.characterId || 'unknown'}_${this.chatId || 'unknown'}_${this.outfitInstanceId}`;
+            const instanceNamespace = `OUTFIT_INST_${this.characterId || 'unknown'}_${this.outfitInstanceId}`;
             return `${instanceNamespace}_${slot}`;
         } else {
             // Fallback to original format if no instance ID is set
@@ -144,13 +144,13 @@ export class BotOutfitManager {
             let value = this.getGlobalVariable(varName);
             
             // Only use a temporary fallback when we're using a temp instance ID and no value exists
-            // But we only want to use a fallback if there's a previous outfit instance for the same character/chat
-            // that matches the same characterId and chatId, not just any instance
+            // But we only want to use a fallback if there's a previous outfit instance for the same character
+            // that matches the same characterId, not just any instance
             if (this.outfitInstanceId && this.outfitInstanceId.startsWith('temp_') && (value === undefined || value === null || value === '')) {
-                // Try to find any previous outfit instance values for this specific character/chat to migrate
+                // Try to find any previous outfit instance values for this specific character to migrate
                 const allVars = this.getAllVariables();
                 const matchingVars = Object.keys(allVars).filter(key => 
-                    key.startsWith(`OUTFIT_INST_${this.characterId || 'unknown'}_${this.chatId || 'unknown'}_`) && 
+                    key.startsWith(`OUTFIT_INST_${this.characterId || 'unknown'}_`) && 
                     key.endsWith(`_${slot}`) &&
                     !key.includes('temp_') && // Exclude temp vars to avoid circular checks
                     key !== varName // Exclude the current var to prevent self-reference
@@ -330,7 +330,7 @@ export class BotOutfitManager {
     // New method: get the namespace for this instance (for UI display)
     getInstanceNamespace() {
         if (this.outfitInstanceId) {
-            return `OUTFIT_INST_${this.characterId || 'unknown'}_${this.chatId || 'unknown'}_${this.outfitInstanceId}`;
+            return `OUTFIT_INST_${this.characterId || 'unknown'}_${this.outfitInstanceId}`;
         }
         return null;
     }
@@ -341,11 +341,11 @@ export class BotOutfitManager {
         const instanceVars = {};
         
         for (const [varName, value] of Object.entries(allVars)) {
-            if (varName.startsWith(`OUTFIT_INST_${this.characterId || 'unknown'}_${this.chatId || 'unknown'}_`)) {
+            if (varName.startsWith(`OUTFIT_INST_${this.characterId || 'unknown'}_`)) {
                 // Extract instance ID from the variable name
                 const parts = varName.split('_');
-                if (parts.length >= 5) { // OUTFIT_INST, characterId, chatId, instanceId, slot
-                    const instanceId = parts[3]; // The instance ID is the 4th part (0-indexed: 3)
+                if (parts.length >= 4) { // OUTFIT_INST, characterId, instanceId, slot
+                    const instanceId = parts[2]; // The instance ID is the 3rd part (0-indexed: 2)
                     if (!instanceVars[instanceId]) {
                         instanceVars[instanceId] = {};
                     }

@@ -19,61 +19,30 @@ export class UserOutfitManager {
         if (this.outfitInstanceId !== instanceId) {
             console.log(`[UserOutfitManager] Changing outfit instance from "${this.outfitInstanceId}" to "${instanceId}"`);
             
-            // Only migrate data if transitioning from a temporary ID to a permanent one
-            // Don't migrate when switching between different permanent instance IDs (e.g., different first messages)
-            if (oldInstanceId && instanceId && oldInstanceId.startsWith('temp_') && !instanceId.startsWith('temp_')) {
-                this.migrateOutfitData(oldInstanceId, instanceId);
-            }
-            
-            // Before switching, save current values to the current namespace
-            if (this.outfitInstanceId) {
-                for (const slot of this.slots) {
-                    const varName = this.getVarName(slot);
-                    this.setGlobalVariable(varName, this.currentValues[slot]);
-                }
-            }
-            
+            // For user, we don't need instance-specific data since user outfits should persist across all instances
+            // We just need to update the instance ID for tracking purposes
             this.outfitInstanceId = instanceId;
-            // Load outfit data for this specific instance
+            // Load outfit data (will be the same for all instances)
             this.loadOutfit();
         }
     }
     
-    // Method to migrate outfit data from an old instance ID to a new one
+    // Method to migrate outfit data from an old instance ID to a new one - not needed since we're not using instance IDs anymore
     migrateOutfitData(oldInstanceId, newInstanceId) {
-        console.log(`[UserOutfitManager] Migrating outfit data from "${oldInstanceId}" to "${newInstanceId}"`);
+        console.log(`[UserOutfitManager] Migration not needed as user outfits are now persistent across all instances`);
         
-        // For each slot, copy the data from the old instance to the new instance
-        this.slots.forEach(slot => {
-            const oldVarName = `OUTFIT_INST_USER_${oldInstanceId}_${slot}`;
-            const newVarName = `OUTFIT_INST_USER_${newInstanceId}_${slot}`;
-            
-            const value = this.getGlobalVariable(oldVarName);
-            if (value !== undefined && value !== null && value !== '') {
-                // Copy the value to the new instance
-                this.setGlobalVariable(newVarName, value);
-                console.log(`[UserOutfitManager] Migrated ${slot} from ${oldVarName} to ${newVarName}: ${value}`);
-                
-                // Remove the old variable to clean up
-                if (window.extension_settings?.variables?.global) {
-                    delete window.extension_settings.variables.global[oldVarName];
-                    console.log(`[UserOutfitManager] Cleaned up old variable: ${oldVarName}`);
-                }
-            }
-        });
+        // Since we're now using simple OUTFIT_INST_USER_<slot> format, we just need to make sure the values are saved
+        for (const slot of this.slots) {
+            const varName = this.getVarName(slot); // This will return OUTFIT_INST_USER_<slot>
+            this.setGlobalVariable(varName, this.currentValues[slot]);
+        }
     }
     
     // Method to cleanup old temporary instance variables
     cleanupTempInstances() {
-        const allVars = this.getAllVariables();
-        const tempVarPattern = /^OUTFIT_INST_USER_temp_/;
-        
-        for (const varName in allVars) {
-            if (tempVarPattern.test(varName)) {
-                delete window.extension_settings.variables.global[varName];
-                console.log(`[UserOutfitManager] Cleaned up temporary variable: ${varName}`);
-            }
-        }
+        // Since we no longer use instance-specific variables for user, 
+        // there's nothing to clean up in this case
+        console.log(`[UserOutfitManager] No temporary user instance variables to clean up`);
     }
 
     // New method: get current instance ID
@@ -83,77 +52,14 @@ export class UserOutfitManager {
 
     getVarName(slot) {
         // Create a unique namespace for this outfit instance
-        // Format: OUTFIT_INST_USER_<instanceId>_<slot>
-        if (this.outfitInstanceId && !this.outfitInstanceId.startsWith('temp_')) {
-            return `OUTFIT_INST_USER_${this.outfitInstanceId}_${slot}`;
-        } else if (this.outfitInstanceId && this.outfitInstanceId.startsWith('temp_')) {
-            // For temporary IDs, use a format that will be migrated when the real ID is set
-            return `OUTFIT_INST_USER_${this.outfitInstanceId}_${slot}`;
-        } else {
-            // Fallback to original format if no instance ID is set
-            return `User_${slot}`;
-        }
+        // Format: OUTFIT_INST_USER_<slot> - tied to user but persistent across chat resets
+        return `OUTFIT_INST_USER_${slot}`;
     }
 
     loadOutfit() {
         this.slots.forEach(slot => {
             const varName = this.getVarName(slot);
             let value = this.getGlobalVariable(varName);
-            
-            // If we're using a temporary instance ID and the value doesn't exist,
-            // check if there was a previous instance with this slot value
-            if (this.outfitInstanceId && this.outfitInstanceId.startsWith('temp_') && (value === undefined || value === null || value === '')) {
-                // Try to find any previous outfit instance values for this user to migrate
-                // Only look for user-specific variables
-                const allVars = this.getAllVariables();
-                const matchingVars = Object.keys(allVars).filter(key => 
-                    key.startsWith('OUTFIT_INST_USER_') && 
-                    key.endsWith(`_${slot}`) &&
-                    !key.includes('temp_') &&  // Exclude temp vars to avoid circular checks
-                    key !== varName // Exclude the current var to prevent self-reference
-                );
-                
-                if (matchingVars.length > 0) {
-                    // Use the value from the most recently used matching variable
-                    // To do this properly, we need to track the actual creation/modification time
-                    // Since we don't have that, we'll try to infer based on the instance ID structure
-                    // If instance IDs contain timestamps, we'll use those; otherwise, we'll take the first one
-                    let previousVarName;
-                    let mostRecentTimestamp = 0;
-                    
-                    for (const varName of matchingVars) {
-                        // Extract potential timestamp from the instance ID part
-                        const parts = varName.split('_');
-                        if (parts.length >= 4) { // OUTFIT_INST_USER_<instanceId>_<slot>
-                            const instanceIdPart = parts[2]; // The instance ID is the 3rd part (0-indexed: 2)
-                            
-                            // Attempt to extract a timestamp from the instance ID
-                            // Instance IDs may be in formats like: greeting_hello_world_abc123 or scenario_abc123
-                            // In these cases, a timestamp might be at the end of the instance ID
-                            const idParts = instanceIdPart.split('_');
-                            const lastPart = idParts[idParts.length - 1];
-                            
-                            // Check if the last part looks like a timestamp (numeric)
-                            const potentialTimestamp = parseInt(lastPart);
-                            if (!isNaN(potentialTimestamp) && potentialTimestamp > mostRecentTimestamp) {
-                                mostRecentTimestamp = potentialTimestamp;
-                                previousVarName = varName;
-                            }
-                        }
-                    }
-                    
-                    // If no timestamp was found, just use the first one
-                    if (mostRecentTimestamp === 0) {
-                        previousVarName = matchingVars[0];
-                    }
-                    
-                    value = allVars[previousVarName];
-                    console.log(`[UserOutfitManager] Migrating ${slot} value from previous instance: ${previousVarName} = ${value}`);
-                } else {
-                    // If no previous instance was found for this user, just set to 'None'
-                    value = 'None';
-                }
-            }
             
             // Make sure empty strings and other falsy values become 'None'
             this.currentValues[slot] = (value !== undefined && value !== null && value !== '') ? value : 'None';
@@ -295,10 +201,8 @@ export class UserOutfitManager {
 
     // New method: get the namespace for this instance (for UI display)
     getInstanceNamespace() {
-        if (this.outfitInstanceId) {
-            return `OUTFIT_INST_USER_${this.outfitInstanceId}`;
-        }
-        return null;
+        // For user, we use a simple namespace since outfits are persistent across instances
+        return `OUTFIT_INST_USER`;
     }
     
     // New method: save preset with instance ID
