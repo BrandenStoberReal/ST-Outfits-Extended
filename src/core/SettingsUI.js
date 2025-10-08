@@ -150,186 +150,6 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem) {
 
     $('#extensions_settings').append(settingsHtml);
 
-    // Custom toggle switch styling
-    $(document).on('change', '#outfit-sys-toggle, #outfit-auto-bot, #outfit-auto-user', function() {
-        window.extension_settings[MODULE_NAME].enableSysMessages = $('#outfit-sys-toggle').prop('checked');
-        window.extension_settings[MODULE_NAME].autoOpenBot = $('#outfit-auto-bot').prop('checked');
-        window.extension_settings[MODULE_NAME].autoOpenUser = $('#outfit-auto-user').prop('checked');
-        window.saveSettingsDebounced();
-    });
-
-    // Update panel colors when settings change
-    $(document).on('input', '#bot-panel-primary-color, #bot-panel-border-color, #bot-panel-shadow-color, #user-panel-primary-color, #user-panel-border-color, #user-panel-shadow-color', function() {
-        updateColorSettingsAndApply();
-    });
-
-    // Color customization event listeners
-    $('#apply-panel-colors').on('click', function() {
-        updateColorSettingsAndApply();
-
-        // Visual feedback for button click
-        const originalText = $(this).text();
-
-        $(this).text('Applied!').css('background', 'linear-gradient(135deg, #5a8d5a, #4a7d4a)');
-
-        setTimeout(() => {
-            $(this).text(originalText).css('background', 'linear-gradient(135deg, #4a5bb8 0%, #3a4ba8 100%)');
-        }, 2000);
-    });
-
-    // Update text inputs when color pickers change
-    $('#bot-panel-primary-color-picker').on('input', function() {
-        // Extract hex color from the picker and update the text field
-        const hexColor = $(this).val();
-
-        $('#bot-panel-primary-color').val(`linear-gradient(135deg, ${hexColor} 0%, #5a49d0 50%, #4a43c0 100%)`);
-    });
-
-    $('#bot-panel-border-color-picker').on('input', function() {
-        const hexColor = $(this).val();
-
-        $('#bot-panel-border-color').val(hexColor);
-    });
-
-    $('#bot-panel-shadow-color-picker').on('input', function() {
-        const hexColor = $(this).val();
-        // Convert hex to rgba for shadow (with opacity)
-        const rgba = hexToRgba(hexColor, 0.4);
-
-        $('#bot-panel-shadow-color').val(rgba);
-    });
-
-    $('#user-panel-primary-color-picker').on('input', function() {
-        const hexColor = $(this).val();
-
-        $('#user-panel-primary-color').val(`linear-gradient(135deg, ${hexColor} 0%, #2a68c1 50%, #1a58b1 100%)`);
-    });
-
-    $('#user-panel-border-color-picker').on('input', function() {
-        const hexColor = $(this).val();
-
-        $('#user-panel-border-color').val(hexColor);
-    });
-
-    $('#user-panel-shadow-color-picker').on('input', function() {
-        const hexColor = $(this).val();
-        // Convert hex to rgba for shadow (with opacity)
-        const rgba = hexToRgba(hexColor, 0.4);
-
-        $('#user-panel-shadow-color').val(rgba);
-    });
-
-    // Update color pickers when text inputs change (in case users type in values)
-    $(document).on('input', '#bot-panel-primary-color, #bot-panel-border-color, #bot-panel-shadow-color, #user-panel-primary-color, #user-panel-border-color, #user-panel-shadow-color', function() {
-        updateColorPickersFromText();
-    });
-
-    // Add hover effects to the apply button
-    $('#apply-panel-colors').hover(
-        function() { // Mouse enter
-            $(this).css('background', 'linear-gradient(135deg, #5a6bc8 0%, #4a5ba8 100%)');
-        },
-        function() { // Mouse leave
-            $(this).css('background', 'linear-gradient(135deg, #4a5bb8 0%, #3a4ba8 100%)');
-        }
-    );
-
-    // Store original default values for comparison
-    const originalDefaults = {
-        bot: {
-            primary: 'linear-gradient(135deg, #6a4fc1 0%, #5a49d0 50%, #4a43c0 100%)',
-            border: '#8a7fdb',
-            shadow: 'rgba(106, 79, 193, 0.4)'
-        },
-        user: {
-            primary: 'linear-gradient(135deg, #1a78d1 0%, #2a68c1 50%, #1a58b1 100%)',
-            border: '#5da6f0',
-            shadow: 'rgba(26, 120, 209, 0.4)'
-        }
-    };
-
-    // Function to check if a field has been modified from its default
-    function isFieldModified(fieldId, defaultValue) {
-        const currentValue = $(`#${fieldId}`).val();
-
-        return currentValue !== defaultValue;
-    }
-
-    // Function to update reset button visibility
-    function updateResetButtonVisibility() {
-        // Bot panel
-        toggleResetButton('bot-panel-primary-reset', isFieldModified('bot-panel-primary-color', originalDefaults.bot.primary));
-        toggleResetButton('bot-panel-border-reset', isFieldModified('bot-panel-border-color', originalDefaults.bot.border));
-        toggleResetButton('bot-panel-shadow-reset', isFieldModified('bot-panel-shadow-color', originalDefaults.bot.shadow));
-
-        // User panel
-        toggleResetButton('user-panel-primary-reset', isFieldModified('user-panel-primary-color', originalDefaults.user.primary));
-        toggleResetButton('user-panel-border-reset', isFieldModified('user-panel-border-color', originalDefaults.user.border));
-        toggleResetButton('user-panel-shadow-reset', isFieldModified('user-panel-shadow-color', originalDefaults.user.shadow));
-    }
-
-    // Helper function to toggle reset button visibility
-    function toggleResetButton(buttonId, show) {
-        const button = $(`#${buttonId}`);
-
-        if (show) {
-            button.show();
-        } else {
-            button.hide();
-        }
-    }
-
-    // Attach input event listeners to text fields to check for modifications
-    $('#bot-panel-primary-color, #bot-panel-border-color, #bot-panel-shadow-color, #user-panel-primary-color, #user-panel-border-color, #user-panel-shadow-color').on('input', function() {
-        updateResetButtonVisibility();
-    });
-
-    // Initialize reset button visibility after UI is created
-    setTimeout(updateResetButtonVisibility, 200);
-
-    // Reset button event handlers
-    $('#bot-panel-primary-reset').on('click', function() {
-        $('#bot-panel-primary-color').val(originalDefaults.bot.primary);
-        $('#bot-panel-primary-color-picker').val(extractHexFromGradient(originalDefaults.bot.primary));
-        updateResetButtonVisibility();
-        updateColorSettingsAndApply();
-    });
-
-    $('#bot-panel-border-reset').on('click', function() {
-        $('#bot-panel-border-color').val(originalDefaults.bot.border);
-        $('#bot-panel-border-color-picker').val(originalDefaults.bot.border);
-        updateResetButtonVisibility();
-        updateColorSettingsAndApply();
-    });
-
-    $('#bot-panel-shadow-reset').on('click', function() {
-        $('#bot-panel-shadow-color').val(originalDefaults.bot.shadow);
-        $('#bot-panel-shadow-color-picker').val(extractHexFromGradient(originalDefaults.bot.shadow));
-        updateResetButtonVisibility();
-        updateColorSettingsAndApply();
-    });
-
-    $('#user-panel-primary-reset').on('click', function() {
-        $('#user-panel-primary-color').val(originalDefaults.user.primary);
-        $('#user-panel-primary-color-picker').val(extractHexFromGradient(originalDefaults.user.primary));
-        updateResetButtonVisibility();
-        updateColorSettingsAndApply();
-    });
-
-    $('#user-panel-border-reset').on('click', function() {
-        $('#user-panel-border-color').val(originalDefaults.user.border);
-        $('#user-panel-border-color-picker').val(originalDefaults.user.border);
-        updateResetButtonVisibility();
-        updateColorSettingsAndApply();
-    });
-
-    $('#user-panel-shadow-reset').on('click', function() {
-        $('#user-panel-shadow-color').val(originalDefaults.user.shadow);
-        $('#user-panel-shadow-color-picker').val(extractHexFromGradient(originalDefaults.user.shadow));
-        updateResetButtonVisibility();
-        updateColorSettingsAndApply();
-    });
-
     // Helper function to convert hex color to rgba
     function hexToRgba(hex, opacity) {
         // Expand shorthand form (e.g. "03F") to full form (e.g. "0033FF")
@@ -439,6 +259,186 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem) {
         // Show a confirmation message
         toastr.success('Panel colors updated successfully!', 'Outfit Colors');
     }
+
+    // Custom toggle switch styling
+    $(document).on('change', '#outfit-sys-toggle, #outfit-auto-bot, #outfit-auto-user', function() {
+        window.extension_settings[MODULE_NAME].enableSysMessages = $('#outfit-sys-toggle').prop('checked');
+        window.extension_settings[MODULE_NAME].autoOpenBot = $('#outfit-auto-bot').prop('checked');
+        window.extension_settings[MODULE_NAME].autoOpenUser = $('#outfit-auto-user').prop('checked');
+        window.saveSettingsDebounced();
+    });
+
+    // Update panel colors when settings change
+    $(document).on('input', '#bot-panel-primary-color, #bot-panel-border-color, #bot-panel-shadow-color, #user-panel-primary-color, #user-panel-border-color, #user-panel-shadow-color', function() {
+        updateColorSettingsAndApply();
+    });
+
+    // Color customization event listeners
+    $('#apply-panel-colors').on('click', function() {
+        updateColorSettingsAndApply();
+
+        // Visual feedback for button click
+        const originalText = $(this).text();
+
+        $(this).text('Applied!').css('background', 'linear-gradient(135deg, #5a8d5a, #4a7d4a)');
+
+        setTimeout(() => {
+            $(this).text(originalText).css('background', 'linear-gradient(135deg, #4a5bb8 0%, #3a4ba8 100%)');
+        }, 2000);
+    });
+
+    // Update text inputs when color pickers change
+    $('#bot-panel-primary-color-picker').on('input', function() {
+        // Extract hex color from the picker and update the text field
+        const hexColor = $(this).val();
+
+        $('#bot-panel-primary-color').val(`linear-gradient(135deg, ${hexColor} 0%, #5a49d0 50%, #4a43c0 100%)`);
+    });
+
+    $('#bot-panel-border-color-picker').on('input', function() {
+        const hexColor = $(this).val();
+
+        $('#bot-panel-border-color').val(hexColor);
+    });
+
+    $('#bot-panel-shadow-color-picker').on('input', function() {
+        const hexColor = $(this).val();
+        // Convert hex to rgba for shadow (with opacity)
+        const rgba = hexToRgba(hexColor, 0.4);
+
+        $('#bot-panel-shadow-color').val(rgba);
+    });
+
+    $('#user-panel-primary-color-picker').on('input', function() {
+        const hexColor = $(this).val();
+
+        $('#user-panel-primary-color').val(`linear-gradient(135deg, ${hexColor} 0%, #2a68c1 50%, #1a58b1 100%)`);
+    });
+
+    $('#user-panel-border-color-picker').on('input', function() {
+        const hexColor = $(this).val();
+
+        $('#user-panel-border-color').val(hexColor);
+    });
+
+    $('#user-panel-shadow-color-picker').on('input', function() {
+        const hexColor = $(this).val();
+        // Convert hex to rgba for shadow (with opacity)
+        const rgba = hexToRgba(hexColor, 0.4);
+
+        $('#user-panel-shadow-color').val(rgba);
+    });
+
+    // Update color pickers when text inputs change (in case users type in values)
+    $(document).on('input', '#bot-panel-primary-color, #bot-panel-border-color, #bot-panel-shadow-color, #user-panel-primary-color, #user-panel-border-color, #user-panel-shadow-color', function() {
+        updateColorPickersFromText();
+    });
+
+    // Add hover effects to the apply button
+    $('#apply-panel-colors').hover(
+        function() { // Mouse enter
+            $(this).css('background', 'linear-gradient(135deg, #5a6bc8 0%, #4a5ba8 100%)');
+        },
+        function() { // Mouse leave
+            $(this).css('background', 'linear-gradient(135deg, #4a5bb8 0%, #3a4ba8 100%)');
+        }
+    );
+
+    // Store original default values for comparison
+    const originalDefaults = {
+        bot: {
+            primary: 'linear-gradient(135deg, #6a4fc1 0%, #5a49d0 50%, #4a43c0 100%)',
+            border: '#8a7fdb',
+            shadow: 'rgba(106, 79, 193, 0.4)'
+        },
+        user: {
+            primary: 'linear-gradient(135deg, #1a78d1 0%, #2a68c1 50%, #1a58b1 100%)',
+            border: '#5da6f0',
+            shadow: 'rgba(26, 120, 209, 0.4)'
+        }
+    };
+
+    // Function to check if a field has been modified from its default
+    function isFieldModified(fieldId, defaultValue) {
+        const currentValue = $(`#${fieldId}`).val();
+
+        return currentValue !== defaultValue;
+    }
+
+    // Helper function to toggle reset button visibility
+    function toggleResetButton(buttonId, show) {
+        const button = $(`#${buttonId}`);
+
+        if (show) {
+            button.show();
+        } else {
+            button.hide();
+        }
+    }
+    
+    // Function to update reset button visibility
+    function updateResetButtonVisibility() {
+        // Bot panel
+        toggleResetButton('bot-panel-primary-reset', isFieldModified('bot-panel-primary-color', originalDefaults.bot.primary));
+        toggleResetButton('bot-panel-border-reset', isFieldModified('bot-panel-border-color', originalDefaults.bot.border));
+        toggleResetButton('bot-panel-shadow-reset', isFieldModified('bot-panel-shadow-color', originalDefaults.bot.shadow));
+
+        // User panel
+        toggleResetButton('user-panel-primary-reset', isFieldModified('user-panel-primary-color', originalDefaults.user.primary));
+        toggleResetButton('user-panel-border-reset', isFieldModified('user-panel-border-color', originalDefaults.user.border));
+        toggleResetButton('user-panel-shadow-reset', isFieldModified('user-panel-shadow-color', originalDefaults.user.shadow));
+    }
+
+    // Attach input event listeners to text fields to check for modifications
+    $('#bot-panel-primary-color, #bot-panel-border-color, #bot-panel-shadow-color, #user-panel-primary-color, #user-panel-border-color, #user-panel-shadow-color').on('input', function() {
+        updateResetButtonVisibility();
+    });
+
+    // Initialize reset button visibility after UI is created
+    setTimeout(updateResetButtonVisibility, 200);
+
+    // Reset button event handlers
+    $('#bot-panel-primary-reset').on('click', function() {
+        $('#bot-panel-primary-color').val(originalDefaults.bot.primary);
+        $('#bot-panel-primary-color-picker').val(extractHexFromGradient(originalDefaults.bot.primary));
+        updateResetButtonVisibility();
+        updateColorSettingsAndApply();
+    });
+
+    $('#bot-panel-border-reset').on('click', function() {
+        $('#bot-panel-border-color').val(originalDefaults.bot.border);
+        $('#bot-panel-border-color-picker').val(originalDefaults.bot.border);
+        updateResetButtonVisibility();
+        updateColorSettingsAndApply();
+    });
+
+    $('#bot-panel-shadow-reset').on('click', function() {
+        $('#bot-panel-shadow-color').val(originalDefaults.bot.shadow);
+        $('#bot-panel-shadow-color-picker').val(extractHexFromGradient(originalDefaults.bot.shadow));
+        updateResetButtonVisibility();
+        updateColorSettingsAndApply();
+    });
+
+    $('#user-panel-primary-reset').on('click', function() {
+        $('#user-panel-primary-color').val(originalDefaults.user.primary);
+        $('#user-panel-primary-color-picker').val(extractHexFromGradient(originalDefaults.user.primary));
+        updateResetButtonVisibility();
+        updateColorSettingsAndApply();
+    });
+
+    $('#user-panel-border-reset').on('click', function() {
+        $('#user-panel-border-color').val(originalDefaults.user.border);
+        $('#user-panel-border-color-picker').val(originalDefaults.user.border);
+        updateResetButtonVisibility();
+        updateColorSettingsAndApply();
+    });
+
+    $('#user-panel-shadow-reset').on('click', function() {
+        $('#user-panel-shadow-color').val(originalDefaults.user.shadow);
+        $('#user-panel-shadow-color-picker').val(extractHexFromGradient(originalDefaults.user.shadow));
+        updateResetButtonVisibility();
+        updateColorSettingsAndApply();
+    });
 
     // Initialize color pickers with current values when the settings UI loads
     setTimeout(updateColorPickersFromText, 100);

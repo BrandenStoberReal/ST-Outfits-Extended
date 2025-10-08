@@ -14,7 +14,7 @@ class ConnectionProfileHelper {
     static async withConnectionProfile(profileId, generationFunc, context = null) {
         if (!profileId) {
             // If no profileId provided, just run the generation function normally
-            return await generationFunc(context);
+            return generationFunc(context);
         }
 
         // Get the current profile to restore later
@@ -27,7 +27,7 @@ class ConnectionProfileHelper {
             // Run the generation function
             const result = await generationFunc(context);
             
-            return result;
+            return result; // Fixed: removed redundant await
         } catch (error) {
             console.error('[LLMUtility] Error during generation with connection profile:', error);
             throw error;
@@ -66,17 +66,10 @@ class ConnectionProfileHelper {
                 await window.SlashCommandParser.commands['profile'].callback({}, profileId);
             }
             // Fallback to other methods if slash command not available
-            else if (typeof applyConnectionProfile === 'function') {
-                // Fallback to global function if available
-                const profile = this.getProfileById(profileId);
-
-                if (profile) {
-                    await applyConnectionProfile(profile);
-                }
-            } else {
-                console.warn('[LLMUtility] Could not apply connection profile, no implementation found');
+            else {
                 // If no connection manager is available, still run generation without profile
                 // This prevents execution from stopping completely
+                console.warn('[LLMUtility] Could not apply connection profile, no implementation found');
             }
         } catch (error) {
             console.error('[LLMUtility] Failed to apply connection profile:', error);
@@ -177,7 +170,7 @@ export class LLMUtility {
      */
     static async generateWithRetry(prompt, systemPrompt = 'You are an AI assistant.', context = null, maxRetries = 3) {
         if (!context) {
-            context = window.getContext && window.getContext() || {};
+            context = (window.getContext && window.getContext()) || {};
         }
 
         let attempt = 0;
@@ -244,7 +237,7 @@ export class LLMUtility {
      */
     static async generateWithProfile(prompt, systemPrompt = 'You are an AI assistant.', context = null, profile = null, maxRetries = 3) {
         if (!context) {
-            context = window.getContext && window.getContext() || {};
+            context = (window.getContext && window.getContext()) || {};
         }
 
         let attempt = 0;
@@ -257,32 +250,30 @@ export class LLMUtility {
                     // Use the connection profile helper to run generation with specified profile
                     result = await ConnectionProfileHelper.withConnectionProfile(profile, async () => {
                         if (context.generateRaw) {
-                            return await context.generateRaw({
+                            return context.generateRaw({
                                 prompt: prompt,
                                 systemPrompt: systemPrompt
                             });
                         } else if (context.generateQuietPrompt) {
-                            return await context.generateQuietPrompt({
+                            return context.generateQuietPrompt({
                                 quietPrompt: prompt
                             });
                         } 
                         throw new Error('No generation method available in context');
                         
                     });
-                } else {
+                } else if (context.generateRaw) {
                     // If no profile specified, run generation normally
-                    if (context.generateRaw) {
-                        result = await context.generateRaw({
-                            prompt: prompt,
-                            systemPrompt: systemPrompt
-                        });
-                    } else if (context.generateQuietPrompt) {
-                        result = await context.generateQuietPrompt({
-                            quietPrompt: prompt
-                        });
-                    } else {
-                        throw new Error('No generation method available in context');
-                    }
+                    result = await context.generateRaw({
+                        prompt: prompt,
+                        systemPrompt: systemPrompt
+                    });
+                } else if (context.generateQuietPrompt) {
+                    result = await context.generateQuietPrompt({
+                        quietPrompt: prompt
+                    });
+                } else {
+                    throw new Error('No generation method available in context');
                 }
 
                 if (!result) {
@@ -313,7 +304,7 @@ export class LLMUtility {
                 } else {
                     // All retries with profile failed, try fallback
                     console.log('[LLMUtility] Trying default generation after profile failures...');
-                    return await this.generateWithRetry(prompt, systemPrompt, context, maxRetries);
+                    return this.generateWithRetry(prompt, systemPrompt, context, maxRetries);
                 }
             }
         }

@@ -1,5 +1,5 @@
 // Import various string processing utilities
-import { replaceAll as replaceAllStr, extractCommands, extractMacros, safeGet, safeSet } from '../utils/StringProcessor.js';
+import { replaceAll as replaceAllStr, extractCommands, extractMacros, safeGet } from '../utils/StringProcessor.js';
 
 // Import LLM utility for outfit generation
 import { LLMUtility } from '../utils/LLMUtility.js';
@@ -263,58 +263,7 @@ NOTES:
             
             // Replace {{user}} with the current active persona name
             // Get the current persona name from the active chat
-            let userName = 'User'; // Default fallback
-            
-            // Get the context and try to extract persona from the current chat
-            const context = window.getContext ? window.getContext() : null;
-
-            if (context && safeGet(context, 'chat')) {
-                // Filter messages that are from the user to get their avatars
-                const userMessages = safeGet(context, 'chat', []).filter(message => message.is_user);
-                
-                if (userMessages.length > 0) {
-                    // Get the most recent user message to determine current persona
-                    const mostRecentUserMessage = userMessages[userMessages.length - 1];
-                    
-                    // If the message has a force_avatar property (used for personas), extract the name
-                    if (mostRecentUserMessage.force_avatar) {
-                        // Extract the persona name from the avatar path
-                        const USER_AVATAR_PATH = 'useravatars/';
-
-                        if (typeof mostRecentUserMessage.force_avatar === 'string' && 
-                            mostRecentUserMessage.force_avatar.startsWith(USER_AVATAR_PATH)) {
-                            userName = mostRecentUserMessage.force_avatar.replace(USER_AVATAR_PATH, '');
-                            
-                            // Remove file extension if present
-                            const lastDotIndex = userName.lastIndexOf('.');
-
-                            if (lastDotIndex > 0) {
-                                userName = userName.substring(0, lastDotIndex);
-                            }
-                        }
-                    }
-                    // If force_avatar doesn't exist, try to get name from the message itself
-                    else if (mostRecentUserMessage.name) {
-                        userName = mostRecentUserMessage.name;
-                    }
-                }
-            }
-            
-            // Fallback: try the old power_user method if we still don't have a name
-            if (userName === 'User') {
-                if (typeof window.power_user !== 'undefined' && window.power_user && window.power_user.personas && 
-                    typeof window.user_avatar !== 'undefined' && window.user_avatar) {
-                    // Get the name from the mapping of avatar to name
-                    const personaName = window.power_user.personas[window.user_avatar];
-                    
-                    // If we found the persona in the mapping, use it; otherwise fall back to name1 or 'User'
-                    userName = personaName || (typeof window.name1 !== 'undefined' ? window.name1 : 'User');
-                }
-                // Fallback to window.name1 if the above method doesn't work
-                else if (typeof window.name1 !== 'undefined' && window.name1) {
-                    userName = window.name1;
-                }
-            }
+            const userName = this.getUserName();
             
             processedPrompt = replaceAllStr(processedPrompt, '{{user}}', userName);
 
@@ -466,7 +415,7 @@ NOTES:
             }
         }
         
-        if (successfulCommands.length > 0 && extension_settings.outfit_tracker?.enableSysMessages) {
+        if (successfulCommands.length > 0 && window.extension_settings?.outfit_tracker?.enableSysMessages) {
             console.log(`[AutoOutfitSystem] Showing ${successfulCommands.length} popup messages`);
             
             const messagesByCharacter = {};
@@ -599,7 +548,7 @@ NOTES:
             throw new Error(`Invalid action: ${action}. Valid actions: wear, remove, change`);
         }
 
-        return await this.outfitManager.setOutfitItem(slot, action === 'remove' ? 'None' : value);
+        return this.outfitManager.setOutfitItem(slot, action === 'remove' ? 'None' : value);
     }
 
     updateOutfitPanel() {
@@ -715,6 +664,44 @@ NOTES:
     getProcessedSystemPrompt() {
         return this.replaceMacrosInPrompt(this.systemPrompt);
     }
+    
+    // Helper method to get the current user's name
+    getUserName() {
+        // Default fallback
+        let userName = 'User';
+        
+        // Get the context and try to extract persona from the current chat
+        const context = window.getContext ? window.getContext() : null;
+
+        if (context && safeGet(context, 'chat')) {
+            // Filter messages that are from the user to get their avatars
+            const userMessages = safeGet(context, 'chat', []).filter(message => message.is_user);
+            
+            if (userMessages.length > 0) {
+                // Get the most recent user message to determine current persona
+                const mostRecentUserMessage = userMessages[userMessages.length - 1];
+                
+                userName = this.extractUserName(mostRecentUserMessage);
+            }
+        }
+        
+        // Fallback: try the old power_user method if we still don't have a name
+        if (userName === 'User') {
+            if (typeof window.power_user !== 'undefined' && window.power_user && window.power_user.personas && 
+                typeof window.user_avatar !== 'undefined' && window.user_avatar) {
+                // Get the name from the mapping of avatar to name
+                const personaName = window.power_user.personas[window.user_avatar];
+                
+                // If we found the persona in the mapping, use it; otherwise fall back to name1 or 'User'
+                userName = personaName || (typeof window.name1 !== 'undefined' ? window.name1 : 'User');
+            } else if (typeof window.name1 !== 'undefined' && window.name1) {
+                // Fallback to window.name1 if the above method doesn't work
+                userName = window.name1;
+            }
+        }
+        
+        return userName;
+    }
 
     resetToDefaultPrompt() {
         this.systemPrompt = this.getDefaultPrompt();
@@ -741,12 +728,40 @@ NOTES:
         const processedPromptText = this.replaceMacrosInPrompt(originalPromptText);
         
         // Use the unified LLM utility with profile
-        return await LLMUtility.generateWithProfile(
+        return LLMUtility.generateWithProfile(
             processedPromptText,
             'You are an outfit change detection system. Analyze the conversation and output outfit commands when clothing changes occur.',
             window.getContext(),
             this.connectionProfile
         );
+    }
+
+    // Helper function to extract username from message
+    extractUserName(mostRecentUserMessage) {
+        let userName = null;
+        
+        // If the message has a force_avatar property (used for personas), extract the name
+        if (mostRecentUserMessage.force_avatar) {
+            // Extract the persona name from the avatar path
+            const USER_AVATAR_PATH = 'useravatars/';
+
+            if (typeof mostRecentUserMessage.force_avatar === 'string' && 
+                mostRecentUserMessage.force_avatar.startsWith(USER_AVATAR_PATH)) {
+                userName = mostRecentUserMessage.force_avatar.replace(USER_AVATAR_PATH, '');
+                
+                // Remove file extension if present
+                const lastDotIndex = userName.lastIndexOf('.');
+
+                if (lastDotIndex > 0) {
+                    userName = userName.substring(0, lastDotIndex);
+                }
+            }
+        } else if (mostRecentUserMessage.name) {
+            // If force_avatar doesn't exist, try to get name from the message itself
+            userName = mostRecentUserMessage.name;
+        }
+        
+        return userName;
     }
 
 

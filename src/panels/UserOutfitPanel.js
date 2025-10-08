@@ -96,6 +96,7 @@ export class UserOutfitPanel {
         switch(this.currentTab) {
         case 'clothing':
             this.renderSlots(this.clothingSlots, contentArea);
+            this.renderFillOutfitButton(contentArea);
             break;
         case 'accessories':
             this.renderSlots(this.accessorySlots, contentArea);
@@ -173,8 +174,10 @@ export class UserOutfitPanel {
                 });
                 
                 container.appendChild(defaultPresetElement);
-            } else {
-                // Render all presets, highlighting the default one
+            }
+            
+            // Render all presets if the default is not 'default' (meaning we have named presets)
+            if (defaultPresetName !== 'default' && regularPresets.length > 0) {
                 regularPresets.forEach(preset => {
                     const isDefault = (defaultPresetName === preset);
                     const presetElement = document.createElement('div');
@@ -222,18 +225,16 @@ export class UserOutfitPanel {
                                 this.saveSettingsDebounced();
                                 this.renderContent();
                             }
-                        } else {
+                        } else if (confirm(`Delete "${preset}"? This will also clear it as the default outfit.`)) {
                             // If trying to delete the default preset, warn user that it will also clear the default
-                            if (confirm(`Delete "${preset}"? This will also clear it as the default outfit.`)) {
-                                // Delete the preset
-                                const message = this.outfitManager.deletePreset(preset);
-                                
-                                if (window.extension_settings.outfit_tracker?.enableSysMessages) {
-                                    this.sendSystemMessage(message + ' Default outfit cleared.');
-                                }
-                                this.saveSettingsDebounced();
-                                this.renderContent();
+                            // Delete the preset
+                            const message = this.outfitManager.deletePreset(preset);
+                            
+                            if (window.extension_settings.outfit_tracker?.enableSysMessages) {
+                                this.sendSystemMessage(message + ' Default outfit cleared.');
                             }
+                            this.saveSettingsDebounced();
+                            this.renderContent();
                         }
                     });
                     
@@ -276,7 +277,7 @@ export class UserOutfitPanel {
                 alert('Please save this outfit with a different name, then use the "Default" button on that outfit.');
             }
         });
-        
+
         container.appendChild(saveButton);
     }
 
@@ -288,6 +289,22 @@ export class UserOutfitPanel {
                 extendedTimeOut: 8000
             });
         }
+    }
+
+    renderFillOutfitButton(container) {
+        const fillOutfitButton = document.createElement('button');
+
+        fillOutfitButton.className = 'fill-outfit-btn';
+        fillOutfitButton.textContent = 'Fill Outfit with LLM';
+        fillOutfitButton.style.marginTop = '5px';
+        fillOutfitButton.style.marginBottom = '10px';
+        fillOutfitButton.style.width = '100%';
+        
+        fillOutfitButton.addEventListener('click', () => {
+            alert('Fill Outfit with LLM is only available for character outfits, not user outfits.');
+        });
+        
+        container.appendChild(fillOutfitButton);
     }
 
     formatSlotName(name) {
@@ -324,7 +341,11 @@ export class UserOutfitPanel {
     }
 
     toggle() {
-        this.isVisible ? this.hide() : this.show();
+        if (this.isVisible) {
+            this.hide();
+        } else {
+            this.show();
+        }
     }
 
 

@@ -187,8 +187,10 @@ export class BotOutfitPanel {
                 });
                 
                 container.appendChild(defaultPresetElement);
-            } else {
-                // Render all presets, highlighting the default one
+            }
+            
+            // Render all presets if the default is not 'default' (meaning we have named presets)
+            if (defaultPresetName !== 'default' && regularPresets.length > 0) {
                 regularPresets.forEach(preset => {
                     const isDefault = (defaultPresetName === preset);
                     const presetElement = document.createElement('div');
@@ -236,18 +238,16 @@ export class BotOutfitPanel {
                                 this.saveSettingsDebounced();
                                 this.renderContent();
                             }
-                        } else {
+                        } else if (confirm(`Delete "${preset}"? This will also clear it as the default outfit.`)) {
                             // If trying to delete the default preset, warn user that it will also clear the default
-                            if (confirm(`Delete "${preset}"? This will also clear it as the default outfit.`)) {
-                                // Delete the preset
-                                const message = this.outfitManager.deletePreset(preset);
-                                
-                                if (window.extension_settings.outfit_tracker?.enableSysMessages) {
-                                    this.sendSystemMessage(message + ' Default outfit cleared.');
-                                }
-                                this.saveSettingsDebounced();
-                                this.renderContent();
+                            // Delete the preset
+                            const message = this.outfitManager.deletePreset(preset);
+                            
+                            if (window.extension_settings.outfit_tracker?.enableSysMessages) {
+                                this.sendSystemMessage(message + ' Default outfit cleared.');
                             }
+                            this.saveSettingsDebounced();
+                            this.renderContent();
                         }
                     });
                     
@@ -290,7 +290,7 @@ export class BotOutfitPanel {
                 alert('Please save this outfit with a different name, then use the "Default" button on that outfit.');
             }
         });
-        
+
         container.appendChild(saveButton);
     }
 
@@ -600,7 +600,11 @@ INSTRUCTIONS:
     }
 
     toggle() {
-        this.isVisible ? this.hide() : this.show();
+        if (this.isVisible) {
+            this.hide();
+        } else {
+            this.show();
+        }
     }
 
 

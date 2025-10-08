@@ -37,8 +37,6 @@ export function setupEventListeners(botManager, userManager, botPanel, userPanel
         console.log('[OutfitTracker] CHAT_CREATED event fired - creating new outfit instance');
         // When a new chat is created, create a new outfit instance for this conversation
         try {
-            const context = window.getContext();
-
             // Use the same temporary ID for both bot and user to ensure consistency
             const tempInstanceId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
@@ -228,8 +226,8 @@ export function setupEventListeners(botManager, userManager, botPanel, userPanel
             if (context && context.chat && Array.isArray(context.chat)) {
                 context.chat = [];
                 // Update the UI to reflect the cleared chat
-                if (typeof updateChatOutput === 'function') {
-                    updateChatOutput();
+                if (typeof window.updateChatOutput === 'function') {
+                    window.updateChatOutput();
                 }
             }
         }

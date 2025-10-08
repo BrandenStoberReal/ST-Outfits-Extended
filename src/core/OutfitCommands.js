@@ -6,7 +6,7 @@ export async function registerOutfitCommands(importOutfitFromCharacterCard, botM
     // Register basic outfit commands using new SlashCommandParser format
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'outfit-bot',
-        callback: async function (args, value) {
+        callback: async function (args) {
             console.log('Bot Outfit command triggered');
             if (window.botOutfitPanel) {
                 window.botOutfitPanel.toggle();
@@ -62,7 +62,7 @@ export async function registerOutfitCommands(importOutfitFromCharacterCard, botM
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'outfit-user',
-        callback: async function (args, value) {
+        callback: async function (args) {
             console.log('User Outfit command triggered');
             if (window.userOutfitPanel) {
                 window.userOutfitPanel.toggle();
@@ -268,7 +268,7 @@ Prompt: ${status.hasPrompt ? 'SET' : 'NOT SET'}`;
 
         SlashCommandParser.addCommandObject(SlashCommand.fromProps({
             name: 'outfit-prompt-reset',
-            callback: async function (args, value) {
+            callback: async function (args) {
                 if (window.autoOutfitSystem) {
                     const message = autoOutfitSystem.resetToDefaultPrompt();
 
@@ -309,7 +309,7 @@ Prompt: ${status.hasPrompt ? 'SET' : 'NOT SET'}`;
 
         SlashCommandParser.addCommandObject(SlashCommand.fromProps({
             name: 'outfit-prompt-view',
-            callback: async function (args, value) {
+            callback: async function (args) {
                 if (window.autoOutfitSystem) {
                     const status = autoOutfitSystem.getStatus();
                     const preview = autoOutfitSystem.systemPrompt.length > 100
@@ -355,7 +355,7 @@ Full length: ${status.promptLength} chars`;
 
         SlashCommandParser.addCommandObject(SlashCommand.fromProps({
             name: 'outfit-auto-trigger',
-            callback: async function (args, value) {
+            callback: async function (args) {
                 if (window.autoOutfitSystem) {
                     const result = await autoOutfitSystem.manualTrigger();
 
@@ -499,7 +499,7 @@ Full length: ${status.promptLength} chars`;
     // Register the import-outfit command
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'import-outfit',
-        callback: async function (args, value) {
+        callback: async function (args) {
             const isQuiet = args?.quiet === true;
 
             try {
@@ -1333,7 +1333,7 @@ Full length: ${status.promptLength} chars`;
     // List all available outfits and presets
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'outfit-list',
-        callback: async function (args, value) {
+        callback: async function (args) {
             const isQuiet = args?.quiet === true;
 
             try {

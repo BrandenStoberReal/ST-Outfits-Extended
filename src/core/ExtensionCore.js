@@ -2,12 +2,11 @@
 import { getContext, extension_settings } from '../../../extensions.js';
 import { saveSettingsDebounced } from '../../../../script.js';
 
-// Import the extractMacros, replaceAll, safeGet, and safeSet functions from StringProcessor
-import { extractMacros, replaceAll, safeGet, safeSet } from '../utils/StringProcessor.js';
+// Import the extractMacros, replaceAll, safeGet functions from StringProcessor
+import { extractMacros, replaceAll, safeGet } from '../utils/StringProcessor.js';
 import { LLMUtility } from '../utils/LLMUtility.js';
 
-// Import path configuration
-import * as Paths from '../config/paths.js';
+
 
 // Import the managers and panels
 import { BotOutfitManager } from '../managers/BotOutfitManager.js';
@@ -15,24 +14,64 @@ import { BotOutfitPanel } from '../panels/BotOutfitPanel.js';
 import { UserOutfitManager } from '../managers/UserOutfitManager.js';
 import { UserOutfitPanel } from '../panels/UserOutfitPanel.js';
 
-// Import AutoOutfitSystem with error handling
+// Helper function to extract username from message
+function extractUserName(mostRecentUserMessage) {
+    let userName = null;
+    
+    // If the message has a force_avatar property (used for personas), extract the name
+    if (mostRecentUserMessage.force_avatar) {
+        // Extract the persona name from the avatar path
+        const USER_AVATAR_PATH = 'useravatars/';
+
+        if (typeof mostRecentUserMessage.force_avatar === 'string' &&
+            mostRecentUserMessage.force_avatar.startsWith(USER_AVATAR_PATH)) {
+            userName = mostRecentUserMessage.force_avatar.replace(USER_AVATAR_PATH, '');
+            
+            // Remove file extension if present
+            const lastDotIndex = userName.lastIndexOf('.');
+
+            if (lastDotIndex > 0) {
+                userName = userName.substring(0, lastDotIndex);
+            }
+        }
+    }
+    // If force_avatar doesn't exist, try to get name from the message itself
+    else if (mostRecentUserMessage.name) {
+        userName = mostRecentUserMessage.name;
+    }
+    
+    return userName;
+}
+
+// Import AutoOutfitSystem with error handling (using dynamic import inside async function)
 let AutoOutfitSystem;
-try {
-    const autoOutfitModule = await import('../core/AutoOutfitSystem.js');
-    AutoOutfitSystem = autoOutfitModule.AutoOutfitSystem;
-} catch (error) {
-    console.error('[OutfitTracker] Failed to load AutoOutfitSystem:', error);
-    // Create a dummy class if AutoOutfitSystem fails to load
-    AutoOutfitSystem = class DummyAutoOutfitSystem {
-        constructor() { this.isEnabled = false; }
-        enable() { return '[Outfit System] Auto outfit system not available'; }
-        disable() { return '[Outfit System] Auto outfit system not available'; }
-        setPrompt() { return '[Outfit System] Auto outfit system not available'; }
-        resetToDefaultPrompt() { return '[Outfit System] Auto outfit system not available'; }
-        getStatus() { return { enabled: false, hasPrompt: false }; }
-        manualTrigger() { this.showPopup('Auto outfit system not available', 'error'); }
-        showPopup() {}
-    };
+let autoOutfitModule;
+
+async function loadAutoOutfitSystem() {
+    try {
+        autoOutfitModule = await import('./AutoOutfitSystem.js');
+        AutoOutfitSystem = autoOutfitModule.AutoOutfitSystem;
+    } catch (error) {
+        console.error('[OutfitTracker] Failed to load AutoOutfitSystem:', error);
+        // Create a dummy class if AutoOutfitSystem fails to load
+        AutoOutfitSystem = class DummyAutoOutfitSystem {
+            constructor() { this.isEnabled = false; }
+            enable() { return '[Outfit System] Auto outfit system not available'; }
+            disable() { return '[Outfit System] Auto outfit system not available'; }
+            setPrompt() { return '[Outfit System] Auto outfit system not available'; }
+            resetToDefaultPrompt() { return '[Outfit System] Auto outfit system not available'; }
+            getStatus() { return { enabled: false, hasPrompt: false }; }
+            manualTrigger() { this.showPopup('Auto outfit system not available', 'error'); }
+            showPopup(message, type = 'info') {
+                // Use toastr if available, otherwise fall back to console
+                if (window.toastr) {
+                    window.toastr[type || 'info'](message);
+                } else {
+                    console.log(`[Outfit System] ${type.toUpperCase()}: ${message}`);
+                }
+            }
+        };
+    }
 }
 
 // Define global variables that might not be imported directly
@@ -41,6 +80,9 @@ try {
 console.log('[OutfitTracker] Starting extension loading...');
 
 export async function initializeExtension() {
+    // Load AutoOutfitSystem dynamically
+    await loadAutoOutfitSystem();
+
     // Make sure these are available globally for child modules
     // This allows dynamically imported modules to access them
     window.getContext = getContext;
@@ -84,78 +126,207 @@ export async function initializeExtension() {
     window.userOutfitPanel = userPanel;
     window.autoOutfitSystem = autoOutfitSystem;
 
-    // Function to import outfit from character card using LLM analysis
-    async function importOutfitFromCharacterCard() {
-        const context = getContext();
+    // Function to get default outfit prompt (same as bot panel)
+    function getDefaultOutfitPrompt() {
+        return `Analyze the character's description, personality, scenario, character notes, and first message. Based on these details, determine an appropriate outfit for the character.
 
-        if (!context || !context.characters || context.characterId === undefined || context.characterId === null) {
-            throw new Error('No character selected or context not ready');
-        }
+Here is the character information:
+Name: <CHARACTER_NAME>
+Description: <CHARACTER_DESCRIPTION>
+Personality: <CHARACTER_PERSONALITY>
+Scenario: <CHARACTER_SCENARIO>
+Character Notes: <CHARACTER_NOTES>
+First Message: <CHARACTER_FIRST_MESSAGE>
 
-        const character = context.characters[context.characterId];
+Based on the information provided, output outfit commands to set the character's clothing and accessories. Only output commands, nothing else.
 
-        if (!character) {
-            throw new Error('Character not found');
-        }
+Use these command formats:
+outfit-system_wear_headwear("item name")
+outfit-system_wear_topwear("item name")
+outfit-system_wear_topunderwear("item name")
+outfit-system_wear_bottomwear("item name")
+outfit-system_wear_bottomunderwear("item name")
+outfit-system_wear_footwear("item name")
+outfit-system_wear_footunderwear("item name")
+outfit-system_wear_head-accessory("item name")
+outfit-system_wear_ears-accessory("item name")
+outfit-system_wear_eyes-accessory("item name")
+outfit-system_wear_mouth-accessory("item name")
+outfit-system_wear_neck-accessory("item name")
+outfit-system_wear_body-accessory("item name")
+outfit-system_wear_arms-accessory("item name")
+outfit-system_wear_hands-accessory("item name")
+outfit-system_wear_waist-accessory("item name")
+outfit-system_wear_bottom-accessory("item name")
+outfit-system_wear_legs-accessory("item name")
+outfit-system_wear_foot-accessory("item name")
+outfit-system_remove_headwear()
+outfit-system_remove_topwear()
+outfit-system_remove_topunderwear()
+outfit-system_remove_bottomwear()
+outfit-system_remove_bottomunderwear()
+outfit-system_remove_footwear()
+outfit-system_remove_footunderwear()
+outfit-system_remove_head-accessory()
+outfit-system_remove_ears-accessory()
+outfit-system_remove_eyes-accessory()
+outfit-system_remove_mouth-accessory()
+outfit-system_remove_neck-accessory()
+outfit-system_remove_body-accessory()
+outfit-system_remove_arms-accessory()
+outfit-system_remove_hands-accessory()
+outfit-system_remove_waist-accessory()
+outfit-system_remove_bottom-accessory()
+outfit-system_remove_legs-accessory()
+outfit-system_remove_foot-accessory()
 
-        // Get character information similar to how BotOutfitPanel does it
-        const characterInfo = {
-            name: character.name || 'Unknown',
-            description: character.description || '',
-            personality: character.personality || '',
-            scenario: character.scenario || '',
-            firstMessage: character.first_message || '',
-            characterNotes: character.character_notes || '',
-        };
+For each clothing item or accessory you identify for this character, output a corresponding command. If an item is not applicable based on the character info, do not output a command for it.
+Only output command lines, nothing else.`;
+    }
 
-        // Get the first message from the current chat if it's different from the character's first_message
-        if (context.chat && context.chat.length > 0) {
-            const firstChatMessage = context.chat.find(msg => !msg.is_user && !msg.is_system);
+    // Function to generate outfit from LLM (same as bot panel)
+    async function generateOutfitFromLLM(characterInfo) {
+        try {
+            // Get the default prompt
+            let prompt = getDefaultOutfitPrompt();
 
-            if (firstChatMessage && firstChatMessage.mes) {
-                characterInfo.firstMessage = firstChatMessage.mes;
+            // Replace placeholders with actual character info
+            prompt = prompt
+                .replace('<CHARACTER_NAME>', characterInfo.name)
+                .replace('<CHARACTER_DESCRIPTION>', characterInfo.description)
+                .replace('<CHARACTER_PERSONALITY>', characterInfo.personality)
+                .replace('<CHARACTER_SCENARIO>', characterInfo.scenario)
+                .replace('<CHARACTER_NOTES>', characterInfo.characterNotes)
+                .replace('<CHARACTER_FIRST_MESSAGE>', characterInfo.firstMessage);
+
+            const context = getContext();
+
+            // Check if there is a connection profile set for the auto outfit system
+            let connectionProfile = null;
+
+            if (autoOutfitSystem && typeof autoOutfitSystem.getConnectionProfile === 'function') {
+                connectionProfile = autoOutfitSystem.getConnectionProfile();
             }
+
+            // Try different generation methods in order of preference
+            if (context.generateRaw) {
+                return await LLMUtility.generateWithProfile(
+                    prompt,
+                    'You are an outfit generation system. Based on the character information provided, output outfit commands to set the character\'s clothing and accessories.',
+                    context,
+                    connectionProfile
+                );
+            } else if (context.generateQuietPrompt) {
+                return await LLMUtility.generateWithProfile(
+                    prompt,
+                    'You are an outfit generation system. Based on the character information provided, output outfit commands to set the character\'s clothing and accessories.',
+                    context,
+                    connectionProfile
+                );
+            } 
+            // Use AutoOutfitSystem's generation method as fallback
+            return await autoOutfitSystem.generateWithProfile(prompt);
+            
+        } catch (error) {
+            console.error('Error generating outfit from LLM:', error);
+            throw error;
         }
+    }
 
-        // Use the same LLM logic as the bot panel to generate outfit from character info
-        const outfitCommands = await generateOutfitFromCharacterInfoLLM(characterInfo);
+    // Function to generate outfit from character info using LLM (same as bot panel)
+    async function generateOutfitFromCharacterInfoLLM(characterInfo) {
+        try {
+            // Generate outfit from LLM using the same method as the bot panel
+            const response = await generateOutfitFromLLM(characterInfo);
 
-        // Apply the outfit commands to the bot manager
-        if (outfitCommands && outfitCommands.length > 0) {
-            for (const command of outfitCommands) {
-                await processSingleOutfitCommand(command, botManager);
+            // Parse the response to get the outfit commands
+            const { extractCommands } = await import('../utils/StringProcessor.js');
+            const commands = extractCommands(response);
+
+            return commands;
+        } catch (error) {
+            console.error('Error in generateOutfitFromCharacterInfoLLM:', error);
+            throw error;
+        }
+    }
+
+    // Function to process a single outfit command (same as bot panel)
+    async function processSingleOutfitCommand(command, outfitManager) {
+        try {
+            // Non-regex approach to parse command - similar to AutoOutfitSystem
+            if (!command.startsWith('outfit-system_')) {
+                throw new Error(`Invalid command format: ${command}`);
             }
 
-            // Update the outfit panel UI to reflect the new outfit values
-            if (window.botOutfitPanel && window.botOutfitPanel.isVisible) {
-                window.botOutfitPanel.outfitManager.loadOutfit();
-                window.botOutfitPanel.renderContent();
+            // Extract the action part
+            const actionStart = 'outfit-system_'.length;
+            const actionEnd = command.indexOf('_', actionStart);
+
+            if (actionEnd === -1) {
+                throw new Error(`Invalid command format: ${command}`);
             }
+
+            const action = command.substring(actionStart, actionEnd);
+
+            if (!['wear', 'remove', 'change'].includes(action)) {
+                throw new Error(`Invalid action: ${action}. Valid actions: wear, remove, change`);
+            }
+
+            // Extract the slot part
+            const slotStart = actionEnd + 1;
+            const slotEnd = command.indexOf('(', slotStart);
+
+            if (slotEnd === -1) {
+                throw new Error(`Invalid command format: ${command}`);
+            }
+
+            const slot = command.substring(slotStart, slotEnd);
+
+            // Extract the value part
+            const valueStart = slotEnd + 1;
+            let value = '';
+
+            if (command.charAt(valueStart) === '"') { // If value is quoted
+                const quoteStart = valueStart + 1;
+                let i = quoteStart;
+                let escaped = false;
+
+                while (i < command.length - 1) {
+                    const char = command.charAt(i);
+
+                    if (escaped) {
+                        value += char;
+                        escaped = false;
+                    } else if (char === '\\') {
+                        escaped = true;
+                    } else if (char === '"') {
+                        break; // Found closing quote
+                    } else {
+                        value += char;
+                    }
+
+                    i++;
+                }
+            } else {
+                // Value is not quoted, extract until closing parenthesis
+                const closingParen = command.indexOf(')', valueStart);
+
+                if (closingParen !== -1) {
+                    value = command.substring(valueStart, closingParen);
+                }
+            }
+
+            const cleanValue = value.replace(/"/g, '').trim();
+
+            console.log(`[Import Outfit Command] Processing: ${action} ${slot} "${cleanValue}"`);
+
+            // Apply the outfit change to the outfit manager
+            await outfitManager.setOutfitItem(slot, action === 'remove' ? 'None' : cleanValue);
+
+        } catch (error) {
+            console.error('Error processing single command:', error);
+            throw error;
         }
-
-        // Use LLM to intelligently remove clothing references and fix grammar
-        const updatedCharacterInfo = await removeClothingReferencesWithLLM(characterInfo);
-
-        // Update the character card in the current context
-        character.description = updatedCharacterInfo.description;
-        character.personality = updatedCharacterInfo.personality;
-        character.scenario = updatedCharacterInfo.scenario;
-        character.character_notes = updatedCharacterInfo.characterNotes;
-
-        // Update the UI to reflect changes
-        if (typeof updateCharacterInChat === 'function') {
-            updateCharacterInChat();
-        }
-
-        // Update the character in the characters array (if context allows)
-        context.characters[context.characterId] = character;
-
-        // Return success message
-        const itemsCount = outfitCommands ? outfitCommands.length : 0;
-
-        return {
-            message: `Successfully imported outfit with ${itemsCount} items from character card using LLM analysis and updated character description.`
-        };
     }
 
     // Function to use LLM for intelligent removal of clothing references
@@ -274,223 +445,81 @@ Only return the formatted sections with cleaned content.`;
         }
     }
 
-    // Function to generate outfit from character info using LLM (same as bot panel)
-    async function generateOutfitFromCharacterInfoLLM(characterInfo) {
-        try {
-            // Generate outfit from LLM using the same method as the bot panel
-            const response = await generateOutfitFromLLM(characterInfo);
+    // Function to import outfit from character card using LLM analysis
+    async function importOutfitFromCharacterCard() {
+        const context = getContext();
 
-            // Parse the response to get the outfit commands
-            const { extractCommands } = await import('../utils/StringProcessor.js');
-            const commands = extractCommands(response);
-
-            return commands;
-        } catch (error) {
-            console.error('Error in generateOutfitFromCharacterInfoLLM:', error);
-            throw error;
+        if (!context || !context.characters || context.characterId === undefined || context.characterId === null) {
+            throw new Error('No character selected or context not ready');
         }
-    }
 
-    // Function to generate outfit from LLM (same as bot panel)
-    async function generateOutfitFromLLM(characterInfo) {
-        try {
-            // Get the default prompt
-            let prompt = getDefaultOutfitPrompt();
+        const character = context.characters[context.characterId];
 
-            // Replace placeholders with actual character info
-            prompt = prompt
-                .replace('<CHARACTER_NAME>', characterInfo.name)
-                .replace('<CHARACTER_DESCRIPTION>', characterInfo.description)
-                .replace('<CHARACTER_PERSONALITY>', characterInfo.personality)
-                .replace('<CHARACTER_SCENARIO>', characterInfo.scenario)
-                .replace('<CHARACTER_NOTES>', characterInfo.characterNotes)
-                .replace('<CHARACTER_FIRST_MESSAGE>', characterInfo.firstMessage);
-
-            const context = getContext();
-
-            // Check if there is a connection profile set for the auto outfit system
-            let connectionProfile = null;
-
-            if (autoOutfitSystem && typeof autoOutfitSystem.getConnectionProfile === 'function') {
-                connectionProfile = autoOutfitSystem.getConnectionProfile();
-            }
-
-            // Try different generation methods in order of preference
-            if (context.generateRaw) {
-                return await LLMUtility.generateWithProfile(
-                    prompt,
-                    'You are an outfit generation system. Based on the character information provided, output outfit commands to set the character\'s clothing and accessories.',
-                    context,
-                    connectionProfile
-                );
-            } else if (context.generateQuietPrompt) {
-                return await LLMUtility.generateWithProfile(
-                    prompt,
-                    'You are an outfit generation system. Based on the character information provided, output outfit commands to set the character\'s clothing and accessories.',
-                    context,
-                    connectionProfile
-                );
-            } 
-            // Use AutoOutfitSystem's generation method as fallback
-            return await autoOutfitSystem.generateWithProfile(prompt);
-            
-        } catch (error) {
-            console.error('Error generating outfit from LLM:', error);
-            throw error;
+        if (!character) {
+            throw new Error('Character not found');
         }
-    }
 
-    // Function to get default outfit prompt (same as bot panel)
-    function getDefaultOutfitPrompt() {
-        return `Analyze the character's description, personality, scenario, character notes, and first message. Based on these details, determine an appropriate outfit for the character.
+        // Get character information similar to how BotOutfitPanel does it
+        const characterInfo = {
+            name: character.name || 'Unknown',
+            description: character.description || '',
+            personality: character.personality || '',
+            scenario: character.scenario || '',
+            firstMessage: character.first_message || '',
+            characterNotes: character.character_notes || '',
+        };
 
-Here is the character information:
-Name: <CHARACTER_NAME>
-Description: <CHARACTER_DESCRIPTION>
-Personality: <CHARACTER_PERSONALITY>
-Scenario: <CHARACTER_SCENARIO>
-Character Notes: <CHARACTER_NOTES>
-First Message: <CHARACTER_FIRST_MESSAGE>
+        // Get the first message from the current chat if it's different from the character's first_message
+        if (context.chat && context.chat.length > 0) {
+            const firstChatMessage = context.chat.find(msg => !msg.is_user && !msg.is_system);
 
-Based on the information provided, output outfit commands to set the character's clothing and accessories. Only output commands, nothing else.
-
-Use these command formats:
-outfit-system_wear_headwear("item name")
-outfit-system_wear_topwear("item name")
-outfit-system_wear_topunderwear("item name")
-outfit-system_wear_bottomwear("item name")
-outfit-system_wear_bottomunderwear("item name")
-outfit-system_wear_footwear("item name")
-outfit-system_wear_footunderwear("item name")
-outfit-system_wear_head-accessory("item name")
-outfit-system_wear_ears-accessory("item name")
-outfit-system_wear_eyes-accessory("item name")
-outfit-system_wear_mouth-accessory("item name")
-outfit-system_wear_neck-accessory("item name")
-outfit-system_wear_body-accessory("item name")
-outfit-system_wear_arms-accessory("item name")
-outfit-system_wear_hands-accessory("item name")
-outfit-system_wear_waist-accessory("item name")
-outfit-system_wear_bottom-accessory("item name")
-outfit-system_wear_legs-accessory("item name")
-outfit-system_wear_foot-accessory("item name")
-outfit-system_remove_headwear()
-outfit-system_remove_topwear()
-outfit-system_remove_topunderwear()
-outfit-system_remove_bottomwear()
-outfit-system_remove_bottomunderwear()
-outfit-system_remove_footwear()
-outfit-system_remove_footunderwear()
-outfit-system_remove_head-accessory()
-outfit-system_remove_ears-accessory()
-outfit-system_remove_eyes-accessory()
-outfit-system_remove_mouth-accessory()
-outfit-system_remove_neck-accessory()
-outfit-system_remove_body-accessory()
-outfit-system_remove_arms-accessory()
-outfit-system_remove_hands-accessory()
-outfit-system_remove_waist-accessory()
-outfit-system_remove_bottom-accessory()
-outfit-system_remove_legs-accessory()
-outfit-system_remove_foot-accessory()
-
-For each clothing item or accessory you identify for this character, output a corresponding command. If an item is not applicable based on the character info, do not output a command for it.
-Only output command lines, nothing else.`;
-    }
-
-    // Function to process a single outfit command (same as bot panel)
-    async function processSingleOutfitCommand(command, outfitManager) {
-        try {
-            // Non-regex approach to parse command - similar to AutoOutfitSystem
-            if (!command.startsWith('outfit-system_')) {
-                throw new Error(`Invalid command format: ${command}`);
-            }
-
-            // Extract the action part
-            const actionStart = 'outfit-system_'.length;
-            const actionEnd = command.indexOf('_', actionStart);
-
-            if (actionEnd === -1) {
-                throw new Error(`Invalid command format: ${command}`);
-            }
-
-            const action = command.substring(actionStart, actionEnd);
-
-            if (!['wear', 'remove', 'change'].includes(action)) {
-                throw new Error(`Invalid action: ${action}. Valid actions: wear, remove, change`);
-            }
-
-            // Extract the slot part
-            const slotStart = actionEnd + 1;
-            const slotEnd = command.indexOf('(', slotStart);
-
-            if (slotEnd === -1) {
-                throw new Error(`Invalid command format: ${command}`);
-            }
-
-            const slot = command.substring(slotStart, slotEnd);
-
-            // Extract the value part
-            const valueStart = slotEnd + 1;
-            let value = '';
-
-            if (command.charAt(valueStart) === '"') { // If value is quoted
-                const quoteStart = valueStart + 1;
-                let i = quoteStart;
-                let escaped = false;
-
-                while (i < command.length - 1) {
-                    const char = command.charAt(i);
-
-                    if (escaped) {
-                        value += char;
-                        escaped = false;
-                    } else if (char === '\\') {
-                        escaped = true;
-                    } else if (char === '"') {
-                        break; // Found closing quote
-                    } else {
-                        value += char;
-                    }
-
-                    i++;
-                }
-            } else {
-                // Value is not quoted, extract until closing parenthesis
-                const closingParen = command.indexOf(')', valueStart);
-
-                if (closingParen !== -1) {
-                    value = command.substring(valueStart, closingParen);
-                }
-            }
-
-            const cleanValue = value.replace(/"/g, '').trim();
-
-            console.log(`[Import Outfit Command] Processing: ${action} ${slot} "${cleanValue}"`);
-
-            // Apply the outfit change to the outfit manager
-            await outfitManager.setOutfitItem(slot, action === 'remove' ? 'None' : cleanValue);
-
-        } catch (error) {
-            console.error('Error processing single command:', error);
-            throw error;
-        }
-    }
-
-    // Helper function to initialize all outfit slots to "None" when no default exists
-    async function initializeOutfitSlotsToNone(outfitManager, outfitPanel) {
-        const allSlots = [...CLOTHING_SLOTS, ...ACCESSORY_SLOTS];
-
-        for (const slot of allSlots) {
-            // Check if the current value is not already "None" or empty
-            if (outfitManager.currentValues[slot] !== 'None' && outfitManager.currentValues[slot] !== '') {
-                // Set the slot to "None" using the manager's method
-                await outfitManager.setOutfitItem(slot, 'None');
+            if (firstChatMessage && firstChatMessage.mes) {
+                characterInfo.firstMessage = firstChatMessage.mes;
             }
         }
 
-        console.log('[OutfitTracker] All outfit slots initialized to \'None\'');
+        // Use the same LLM logic as the bot panel to generate outfit from character info
+        const outfitCommands = await generateOutfitFromCharacterInfoLLM(characterInfo);
+
+        // Apply the outfit commands to the bot manager
+        if (outfitCommands && outfitCommands.length > 0) {
+            for (const command of outfitCommands) {
+                await processSingleOutfitCommand(command, botManager);
+            }
+
+            // Update the outfit panel UI to reflect the new outfit values
+            if (window.botOutfitPanel && window.botOutfitPanel.isVisible) {
+                window.botOutfitPanel.outfitManager.loadOutfit();
+                window.botOutfitPanel.renderContent();
+            }
+        }
+
+        // Use LLM to intelligently remove clothing references and fix grammar
+        const updatedCharacterInfo = await removeClothingReferencesWithLLM(characterInfo);
+
+        // Update the character card in the current context
+        character.description = updatedCharacterInfo.description;
+        character.personality = updatedCharacterInfo.personality;
+        character.scenario = updatedCharacterInfo.scenario;
+        character.character_notes = updatedCharacterInfo.characterNotes;
+
+        // Update the UI to reflect changes
+        if (typeof window.updateCharacterInChat === 'function') {
+            window.updateCharacterInChat();
+        }
+
+        // Update the character in the characters array (if context allows)
+        context.characters[context.characterId] = character;
+
+        // Return success message
+        const itemsCount = outfitCommands ? outfitCommands.length : 0;
+
+        return {
+            message: `Successfully imported outfit with ${itemsCount} items from character card using LLM analysis and updated character description.`
+        };
     }
+
+
 
     // Define a function to replace outfit-related macros in text without using regex
     function replaceOutfitMacrosInText(text) {
@@ -516,43 +545,24 @@ Only output command lines, nothing else.`;
                 if (userMessages.length > 0) {
                     // Get the most recent user message to determine current persona
                     const mostRecentUserMessage = userMessages[userMessages.length - 1];
-
-                    // If the message has a force_avatar property (used for personas), extract the name
-                    if (mostRecentUserMessage.force_avatar) {
-                        // Extract the persona name from the avatar path
-                        const USER_AVATAR_PATH = 'useravatars/';
-
-                        if (typeof mostRecentUserMessage.force_avatar === 'string' &&
-                            mostRecentUserMessage.force_avatar.startsWith(USER_AVATAR_PATH)) {
-                            userName = mostRecentUserMessage.force_avatar.replace(USER_AVATAR_PATH, '');
-
-                            // Remove file extension if present
-                            const lastDotIndex = userName.lastIndexOf('.');
-
-                            if (lastDotIndex > 0) {
-                                userName = userName.substring(0, lastDotIndex);
-                            }
-                        }
-                    }
-                    // If force_avatar doesn't exist, try to get name from the message itself
-                    else if (mostRecentUserMessage.name) {
-                        userName = mostRecentUserMessage.name;
-                    }
+                    
+                    // Extract username using helper function
+                    userName = extractUserName(mostRecentUserMessage);
                 }
             }
 
             // Fallback: try the old power_user method if we still don't have a name
             if (userName === 'User') {
-                if (typeof power_user !== 'undefined' && power_user && power_user.personas && typeof user_avatar !== 'undefined' && user_avatar) {
+                if (typeof window.power_user !== 'undefined' && window.power_user && window.power_user.personas && typeof window.user_avatar !== 'undefined' && window.user_avatar) {
                     // Get the name from the mapping of avatar to name
-                    const personaName = power_user.personas[user_avatar];
+                    const personaName = window.power_user.personas[window.user_avatar];
 
                     // If we found the persona in the mapping, use it; otherwise fall back to name1 or 'User'
-                    userName = personaName || (typeof name1 !== 'undefined' ? name1 : 'User');
+                    userName = personaName || (typeof window.name1 !== 'undefined' ? window.name1 : 'User');
                 }
                 // Fallback to name1 if the above method doesn't work
-                else if (typeof name1 !== 'undefined' && name1) {
-                    userName = name1;
+                else if (typeof window.name1 !== 'undefined' && window.name1) {
+                    userName = window.name1;
                 }
             }
 
@@ -663,6 +673,22 @@ Only output command lines, nothing else.`;
         }
     }
 
+    // Fallback function for simple hash
+    function generateInstanceIdFromTextSimple(text) {
+        let hash = 0;
+        const str = text.substring(0, 100); // Only use first 100 chars to keep ID manageable
+
+        for (let i = 0; i < str.length; i++) {
+            const char = str.charCodeAt(i);
+
+            hash = ((hash << 5) - hash) + char;
+            hash &= hash; // Convert to 32-bit integer
+        }
+
+        // Convert to positive and return string representation
+        return Math.abs(hash).toString(36);
+    }
+    
     // Helper function to generate a stronger hash from text for use as instance ID
     function generateInstanceIdFromText(text) {
         // Use a more robust hashing algorithm using Web Crypto API
@@ -678,29 +704,13 @@ Only output command lines, nothing else.`;
                 return hashHex.substring(0, 16);
             }).catch(err => {
                 // Fallback to simple hash if crypto fails
-                console.warn('Crypto API not available, falling back to simple hash for instance ID generation');
+                console.warn('Crypto API not available, falling back to simple hash for instance ID generation', err);
                 return generateInstanceIdFromTextSimple(text);
             });
         } 
         // Fallback to simple hash if crypto is not available
-        return Promise.resolve(generateInstanceIdFromTextSimple(text));
+        return generateInstanceIdFromTextSimple(text);
         
-    }
-    
-    // Fallback function for simple hash
-    function generateInstanceIdFromTextSimple(text) {
-        let hash = 0;
-        const str = text.substring(0, 100); // Only use first 100 chars to keep ID manageable
-
-        for (let i = 0; i < str.length; i++) {
-            const char = str.charCodeAt(i);
-
-            hash = ((hash << 5) - hash) + char;
-            hash &= hash; // Convert to 32-bit integer
-        }
-
-        // Convert to positive and return string representation
-        return Math.abs(hash).toString(36);
     }
     
     // Function to create a unique conversation ID based on character and other identifying factors
@@ -1095,19 +1105,82 @@ Only output command lines, nothing else.`;
             (navigator.maxTouchPoints > 1); // Has multiple touch points
     }
     
+    function initSettings() {
+        const MODULE_NAME = 'outfit_tracker';
+
+        if (!extension_settings[MODULE_NAME]) {
+            extension_settings[MODULE_NAME] = {
+                autoOpenBot: true,
+                autoOpenUser: false,
+                position: 'right',
+                enableSysMessages: true,
+                autoOutfitSystem: false,
+                autoOutfitPrompt: AutoOutfitSystem.name !== 'DummyAutoOutfitSystem'
+                    ? new AutoOutfitSystem().getDefaultPrompt()
+                    : '',
+                autoOutfitConnectionProfile: null, // Added connection profile setting
+                presets: {
+                    bot: {},
+                    user: {}
+                },
+                // Default color settings
+                botPanelColors: {
+                    primary: 'linear-gradient(135deg, #6a4fc1 0%, #5a49d0 50%, #4a43c0 100%)',
+                    border: '#8a7fdb',
+                    shadow: 'rgba(106, 79, 193, 0.4)'
+                },
+                userPanelColors: {
+                    primary: 'linear-gradient(135deg, #1a78d1 0%, #2a68c1 50%, #1a58b1 100%)',
+                    border: '#5da6f0',
+                    shadow: 'rgba(26, 120, 209, 0.4)'
+                }
+            };
+        }
+
+        // Ensure variables.global exists for storing outfit data
+        if (!extension_settings.variables) {
+            extension_settings.variables = {};
+        }
+        if (!extension_settings.variables.global) {
+            extension_settings.variables.global = {};
+        }
+
+        // Only initialize auto outfit system if it loaded successfully
+        if (AutoOutfitSystem.name !== 'DummyAutoOutfitSystem') {
+            if (extension_settings[MODULE_NAME].autoOutfitPrompt) {
+                window.autoOutfitSystem.setPrompt(extension_settings[MODULE_NAME].autoOutfitPrompt);
+            } else {
+            // Ensure we always have a prompt
+                extension_settings[MODULE_NAME].autoOutfitPrompt = window.autoOutfitSystem.systemPrompt;
+            }
+
+            // Set the connection profile if it exists
+            if (extension_settings[MODULE_NAME].autoOutfitConnectionProfile) {
+                window.autoOutfitSystem.setConnectionProfile(extension_settings[MODULE_NAME].autoOutfitConnectionProfile);
+            }
+
+            if (extension_settings[MODULE_NAME].autoOutfitSystem) {
+                window.autoOutfitSystem.enable();
+            }
+        }
+    }
+    
     // Initialize settings
     initSettings();
     
     // Register slash commands
     const { registerOutfitCommands } = await import('./OutfitCommands.js');
+
     registerOutfitCommands(importOutfitFromCharacterCard, botManager, userManager, autoOutfitSystem, CLOTHING_SLOTS, ACCESSORY_SLOTS);
 
     // Setup event listeners
     const { setupEventListeners } = await import('./EventSystem.js');
+
     setupEventListeners(botManager, userManager, botPanel, userPanel, autoOutfitSystem, updateForCurrentCharacter, CLOTHING_SLOTS, ACCESSORY_SLOTS);
 
     // Create settings UI
     const { createSettingsUI } = await import('./SettingsUI.js');
+
     createSettingsUI(AutoOutfitSystem, autoOutfitSystem);
 
     // Apply color settings to panels if they are visible
@@ -1131,6 +1204,11 @@ Only output command lines, nothing else.`;
     // Define the global interceptor function for outfit information injection
     globalThis.outfitTrackerInterceptor = async function(chat, contextSize, abort, type) {
         try {
+            // Only inject outfit info if not in a system message context
+            if (type && (type === 'system' || type.includes('system'))) {
+                return chat;
+            }
+
             // Get outfit information that should be injected
             const outfitInfo = getOutfitInfoString();
 
@@ -1200,61 +1278,4 @@ Only output command lines, nothing else.`;
     globalThis.replaceOutfitMacrosInText = replaceOutfitMacrosInText;
 }
 
-function initSettings() {
-    const MODULE_NAME = 'outfit_tracker';
-    if (!extension_settings[MODULE_NAME]) {
-        extension_settings[MODULE_NAME] = {
-            autoOpenBot: true,
-            autoOpenUser: false,
-            position: 'right',
-            enableSysMessages: true,
-            autoOutfitSystem: false,
-            autoOutfitPrompt: AutoOutfitSystem.name !== 'DummyAutoOutfitSystem'
-                ? new AutoOutfitSystem().getDefaultPrompt()
-                : '',
-            autoOutfitConnectionProfile: null, // Added connection profile setting
-            presets: {
-                bot: {},
-                user: {}
-            },
-            // Default color settings
-            botPanelColors: {
-                primary: 'linear-gradient(135deg, #6a4fc1 0%, #5a49d0 50%, #4a43c0 100%)',
-                border: '#8a7fdb',
-                shadow: 'rgba(106, 79, 193, 0.4)'
-            },
-            userPanelColors: {
-                primary: 'linear-gradient(135deg, #1a78d1 0%, #2a68c1 50%, #1a58b1 100%)',
-                border: '#5da6f0',
-                shadow: 'rgba(26, 120, 209, 0.4)'
-            }
-        };
-    }
 
-    // Ensure variables.global exists for storing outfit data
-    if (!extension_settings.variables) {
-        extension_settings.variables = {};
-    }
-    if (!extension_settings.variables.global) {
-        extension_settings.variables.global = {};
-    }
-
-    // Only initialize auto outfit system if it loaded successfully
-    if (AutoOutfitSystem.name !== 'DummyAutoOutfitSystem') {
-        if (extension_settings[MODULE_NAME].autoOutfitPrompt) {
-            window.autoOutfitSystem.setPrompt(extension_settings[MODULE_NAME].autoOutfitPrompt);
-        } else {
-            // Ensure we always have a prompt
-            extension_settings[MODULE_NAME].autoOutfitPrompt = window.autoOutfitSystem.systemPrompt;
-        }
-
-        // Set the connection profile if it exists
-        if (extension_settings[MODULE_NAME].autoOutfitConnectionProfile) {
-            window.autoOutfitSystem.setConnectionProfile(extension_settings[MODULE_NAME].autoOutfitConnectionProfile);
-        }
-
-        if (extension_settings[MODULE_NAME].autoOutfitSystem) {
-            window.autoOutfitSystem.enable();
-        }
-    }
-}

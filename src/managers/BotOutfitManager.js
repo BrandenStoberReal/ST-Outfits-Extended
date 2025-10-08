@@ -11,7 +11,7 @@ export class BotOutfitManager {
         this.chatId = null;
         this.currentValues = {};
         this.outfitInstanceId = null; // New: unique identifier for the outfit instance
-        this.slots.forEach(slot => this.currentValues[slot] = '');
+        this.slots.forEach(slot => { this.currentValues[slot] = ''; });
     }
 
     setCharacter(name, characterId = null, chatId = null) {
@@ -93,14 +93,14 @@ export class BotOutfitManager {
             let valueFound = false;
             
             if (window.extension_settings?.variables?.global && 
-                window.extension_settings.variables.global.hasOwnProperty(oldVarName)) {
+                Object.prototype.hasOwnProperty.call(window.extension_settings.variables.global, oldVarName)) {
                 value = window.extension_settings.variables.global[oldVarName];
                 valueFound = true;
                 console.log(`[BotOutfitManager] Found value in extension_settings for ${oldVarName}: ${value}`);
             }
             
             // If value is in window object but not in extension_settings, look there
-            if (!valueFound && window.hasOwnProperty(oldVarName)) {
+            if (!valueFound && Object.prototype.hasOwnProperty.call(window, oldVarName)) {
                 value = window[oldVarName];
                 valueFound = true;
                 console.log(`[BotOutfitManager] Found value in window object for ${oldVarName}: ${value}`);
@@ -119,14 +119,12 @@ export class BotOutfitManager {
                     delete window.extension_settings.variables.global[oldVarName];
                     console.log(`[BotOutfitManager] Cleaned up old variable: ${oldVarName}`);
                 }
-            } else {
+            } else if (!valueFound || value === '' || value === undefined || value === null) {
                 // If the old value doesn't exist, ensure the new variable uses 'None' instead of empty
-                if (!valueFound || value === '' || value === undefined || value === null) {
-                    this.setGlobalVariable(newVarName, 'None');
-                    console.log(`[BotOutfitManager] Set ${newVarName} to 'None' since old value was not found, empty, undefined, or null`);
-                } else {
-                    console.log(`[BotOutfitManager] Skipping migration for ${slot} from ${oldVarName} - value is 'None'`);
-                }
+                this.setGlobalVariable(newVarName, 'None');
+                console.log(`[BotOutfitManager] Set ${newVarName} to 'None' since old value was not found, empty, undefined, or null`);
+            } else {
+                console.log(`[BotOutfitManager] Skipping migration for ${slot} from ${oldVarName} - value is 'None'`);
             }
         });
     }
@@ -198,40 +196,11 @@ export class BotOutfitManager {
                 
                 if (defaultOutfits && Object.keys(defaultOutfits).length > 0) {
                     // Look for default outfit in any instance
-                    for (const [instanceId, instancePresets] of Object.entries(defaultOutfits)) {
-                        if (instancePresets && instancePresets['default'] && instancePresets['default'][slot]) {
-                            value = instancePresets['default'][slot];
-                            console.log(`[BotOutfitManager] Found default outfit value for ${slot}: ${value}`);
-                            break;
-                        }
-                    }
+                    value = this.findDefaultOutfitValue(defaultOutfits, slot, value);
                     
                     // If still no value from defaults, look for any matching preset that contains this slot
                     if ((value === undefined || value === null || value === '' || value === 'None') && defaultOutfits) {
-                        // Look through all instances and presets to find a matching value for this slot
-                        for (const [instanceId, instancePresets] of Object.entries(defaultOutfits)) {
-                            if (instancePresets) {
-                                // Check first for the specifically named 'default' preset
-                                if (instancePresets['default'] && instancePresets['default'][slot]) {
-                                    value = instancePresets['default'][slot];
-                                    console.log(`[BotOutfitManager] Found default preset value for ${slot}: ${value}`);
-                                    break;
-                                }
-                                
-                                // If no default preset, look for other presets that have this slot filled
-                                for (const [presetName, presetData] of Object.entries(instancePresets)) {
-                                    if (presetName !== 'default' && presetData && presetData[slot] && presetData[slot] !== 'None' && presetData[slot] !== '') {
-                                        value = presetData[slot];
-                                        console.log(`[BotOutfitManager] Found preset value for ${slot} in preset ${presetName}: ${value}`);
-                                        break;
-                                    }
-                                }
-                                
-                                if (value !== undefined && value !== null && value !== '' && value !== 'None') {
-                                    break; // Found a value, stop searching
-                                }
-                            }
-                        }
+                        value = this.findAnyPresetValue(defaultOutfits, slot, value);
                     }
                 }
                 
@@ -731,7 +700,7 @@ export class BotOutfitManager {
         }
         
         for (const slot of this.slots) {
-            if (!preset.hasOwnProperty(slot) && this.currentValues[slot] !== 'None') {
+            if (!Object.prototype.hasOwnProperty.call(preset, slot) && this.currentValues[slot] !== 'None') {
                 const varName = this.getVarName(slot); // This will use the current instance ID
 
                 this.setGlobalVariable(varName, 'None');
@@ -800,5 +769,49 @@ export class BotOutfitManager {
         
         // If no matching preset found, return a special value to indicate the default exists but doesn't match any preset
         return 'default';
+    }
+    
+    findDefaultOutfitValue(defaultOutfits, slot, currentValue) {
+        let value = currentValue;
+
+        // Look for default outfit in any instance
+        for (const [, instancePresets] of Object.entries(defaultOutfits)) {
+            if (instancePresets && instancePresets['default'] && instancePresets['default'][slot]) {
+                value = instancePresets['default'][slot];
+                console.log(`[BotOutfitManager] Found default outfit value for ${slot}: ${value}`);
+                break;
+            }
+        }
+        return value;
+    }
+    
+    findAnyPresetValue(defaultOutfits, slot, currentValue) {
+        let value = currentValue;
+
+        // Look through all instances and presets to find a matching value for this slot
+        for (const [, instancePresets] of Object.entries(defaultOutfits)) {
+            if (instancePresets) {
+                // Check first for the specifically named 'default' preset
+                if (instancePresets['default'] && instancePresets['default'][slot]) {
+                    value = instancePresets['default'][slot];
+                    console.log(`[BotOutfitManager] Found default preset value for ${slot}: ${value}`);
+                    break;
+                }
+                
+                // If no default preset, look for other presets that have this slot filled
+                for (const [presetName, presetData] of Object.entries(instancePresets)) {
+                    if (presetName !== 'default' && presetData && presetData[slot] && presetData[slot] !== 'None' && presetData[slot] !== '') {
+                        value = presetData[slot];
+                        console.log(`[BotOutfitManager] Found preset value for ${slot} in preset ${presetName}: ${value}`);
+                        break;
+                    }
+                }
+                
+                if (value !== undefined && value !== null && value !== '' && value !== 'None') {
+                    break; // Found a value, stop searching
+                }
+            }
+        }
+        return value;
     }
 }

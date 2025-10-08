@@ -7,14 +7,14 @@ export class UserOutfitManager {
         this.currentValues = {};
         this.outfitInstanceId = null; // New: unique identifier for the outfit instance
         // Initialize currentValues to ensure we have all slots defined
-        this.slots.forEach(slot => this.currentValues[slot] = 'None');
+        this.slots.forEach(slot => {
+            this.currentValues[slot] = 'None';
+        });
         this.initializeOutfit();
     }
 
     // New method: set outfit instance ID
     setOutfitInstanceId(instanceId) {
-        const oldInstanceId = this.outfitInstanceId;
-        
         // Only update if the instance ID is actually changing
         if (this.outfitInstanceId !== instanceId) {
             console.log(`[UserOutfitManager] Changing outfit instance from "${this.outfitInstanceId}" to "${instanceId}"`);
@@ -28,7 +28,7 @@ export class UserOutfitManager {
     }
     
     // Method to migrate outfit data from an old instance ID to a new one - not needed since we're not using instance IDs anymore
-    migrateOutfitData(oldInstanceId, newInstanceId) {
+    migrateOutfitData() {
         console.log('[UserOutfitManager] Migration not needed as user outfits are now persistent across all instances');
         
         // Since we're now using simple OUTFIT_INST_USER_<slot> format, we just need to make sure the values are saved
@@ -441,7 +441,7 @@ export class UserOutfitManager {
         }
         
         for (const slot of this.slots) {
-            if (!preset.hasOwnProperty(slot) && this.currentValues[slot] !== 'None') {
+            if (!Object.prototype.hasOwnProperty.call(preset, slot) && this.currentValues[slot] !== 'None') {
                 const varName = this.getVarName(slot); // This will use the current instance ID
 
                 this.setGlobalVariable(varName, 'None');
