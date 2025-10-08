@@ -2,17 +2,20 @@
 // Extensions are installed in public/extensions/third-party/[extension-name]/
 // So core modules are located at relative paths from extension files
 
+// Base path with 4 levels of parent directory for consistent access to SillyTavern core
+const ROOTDIR = '../../../../';
+
 export const SILLY_TAVERN_PATHS = {
     // Path to extensions.js from extension files (when extension is in public/extensions/third-party/[name]/)
-    EXTENSIONS: '../../scripts/extensions.js',
+    EXTENSIONS: ROOTDIR + 'scripts/extensions.js',
     
     // Path to main script.js from extension files
-    SCRIPT: '../../script.js',
+    SCRIPT: ROOTDIR + 'script.js',
     
     // Path to slash commands from extension files
     SLASH_COMMANDS: {
-        PARSER: '../../slash-commands/SlashCommandParser.js',
-        COMMAND: '../../slash-commands/SlashCommand.js',
-        ARGUMENT: '../../slash-commands/SlashCommandArgument.js'
+        PARSER: ROOTDIR + 'slash-commands/SlashCommandParser.js',
+        COMMAND: ROOTDIR + 'slash-commands/SlashCommand.js',
+        ARGUMENT: ROOTDIR + 'slash-commands/SlashCommandArgument.js'
     }
 };
