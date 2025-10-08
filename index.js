@@ -1965,7 +1965,7 @@ Only output command lines, nothing else.`;
 
 
 
-    function updateForCurrentCharacter() {
+    async function updateForCurrentCharacter() {
         try {
             const context = getContext();
 
@@ -2000,40 +2000,8 @@ Only output command lines, nothing else.`;
             // Check if we have a new chat or the same character but different first message
             const currentChatId = context.chatId;
 
-            // Create a unique instance ID based on character ID and first message
-            let instanceId = null;
-            if (context.chat && context.chat.length > 0) {
-                // Find all AI messages in the current chat and get the first one
-                const aiMessages = context.chat.filter(msg => !msg.is_user && !msg.is_system);
-                const firstMessage = aiMessages.length > 0 ? aiMessages[0] : null;
-
-                if (firstMessage) {
-                    // Use the content of the first message to create a unique instance ID
-                    // This means if the first message changes, it's considered a different scenario/instance
-                    const firstMessageText = firstMessage.mes || '';
-
-                    // Create a more robust and descriptive instance ID
-                    const messagePreview = firstMessageText.substring(0, 20).replace(/[^\w\s]/gi, '').replace(/\s+/g, '_').toLowerCase();
-
-                    if (firstMessageText.toLowerCase().includes('hello') || firstMessageText.toLowerCase().includes('hi')) {
-                        // Create consistent ID based on message content
-                        const textHash = btoa(encodeURIComponent(firstMessageText)).replace(/[=]/g, '').substring(0, 16);
-                        instanceId = `greeting_${messagePreview}_${textHash}`;
-                    } else if (firstMessageText.toLowerCase().includes('bedroom') || firstMessageText.toLowerCase().includes('bed')) {
-                        // Create consistent ID based on message content
-                        const textHash = btoa(encodeURIComponent(firstMessageText)).replace(/[=]/g, '').substring(0, 16);
-                        instanceId = `bedroom_${messagePreview}_${textHash}`;
-                    } else if (firstMessageText.toLowerCase().includes('office') || firstMessageText.toLowerCase().includes('work')) {
-                        // Create consistent ID based on message content
-                        const textHash = btoa(encodeURIComponent(firstMessageText)).replace(/[=]/g, '').substring(0, 16);
-                        instanceId = `office_${messagePreview}_${textHash}`;
-                    } else {
-                        // Create a hash-based ID with more information
-                        const textHash = btoa(encodeURIComponent(firstMessageText)).replace(/[=]/g, '').substring(0, 16);
-                        instanceId = `scenario_${textHash}`;
-                    }
-                }
-            }
+            // Generate a unique conversation instance ID using the hash function
+            const instanceId = await generateConversationInstanceId(context, context.characterId);
 
             if (botManager) {
                 // Update the character with characterId and chatId for proper namespace
@@ -3232,8 +3200,31 @@ Only output command lines, nothing else.`;
         }
     }
 
-    // Helper function to generate a simple hash from text for use as instance ID
+    // Helper function to generate a stronger hash from text for use as instance ID
     function generateInstanceIdFromText(text) {
+        // Use a more robust hashing algorithm using Web Crypto API
+        if (typeof crypto !== 'undefined' && crypto.subtle) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(text);
+            
+            return crypto.subtle.digest('SHA-256', data).then(hashBuffer => {
+                const hashArray = Array.from(new Uint8Array(hashBuffer));
+                const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+                // Return first 16 characters for manageable length
+                return hashHex.substring(0, 16);
+            }).catch(err => {
+                // Fallback to simple hash if crypto fails
+                console.warn('Crypto API not available, falling back to simple hash for instance ID generation');
+                return generateInstanceIdFromTextSimple(text);
+            });
+        } else {
+            // Fallback to simple hash if crypto is not available
+            return Promise.resolve(generateInstanceIdFromTextSimple(text));
+        }
+    }
+    
+    // Fallback function for simple hash
+    function generateInstanceIdFromTextSimple(text) {
         let hash = 0;
         const str = text.substring(0, 100); // Only use first 100 chars to keep ID manageable
 
@@ -3245,6 +3236,42 @@ Only output command lines, nothing else.`;
 
         // Convert to positive and return string representation
         return Math.abs(hash).toString(36);
+    }
+    
+    // Function to create a unique conversation ID based on character and other identifying factors
+    function generateConversationInstanceId(context, characterId) {
+        if (!context || !characterId) {
+            // If context or characterId is not available, generate a temporary ID
+            return `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        }
+        
+        // Create identifiers using character information
+        const identifiers = [
+            characterId || 'unknown',
+            context.characterId || 'unknown',
+            context.chatId || 'unknown'
+        ];
+        
+        // Check if there are AI messages in the current chat and get the first one
+        if (context.chat && context.chat.length > 0) {
+            const aiMessages = context.chat.filter(msg => !msg.is_user && !msg.is_system);
+            if (aiMessages.length > 0) {
+                const firstMessage = aiMessages[0];
+                const firstMessageText = firstMessage.mes || '';
+                
+                // Add first message content to the identifiers for uniqueness
+                identifiers.push(firstMessageText);
+            }
+        }
+        
+        // Combine all identifiers to create a unique string
+        const combinedIdentifiers = identifiers.join('_');
+        
+        // Generate hash from the combined identifiers
+        return generateInstanceIdFromText(combinedIdentifiers).then(hash => {
+            // Return a descriptive instance ID that includes a hash
+            return `conv_${hash}`;
+        });
     }
 
     // Helper function to replace all occurrences of a substring without using regex
