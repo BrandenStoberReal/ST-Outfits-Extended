@@ -19,39 +19,23 @@ export class UserOutfitManager {
         if (this.outfitInstanceId !== instanceId) {
             console.log(`[UserOutfitManager] Changing outfit instance from "${this.outfitInstanceId}" to "${instanceId}"`);
             
-            // Before switching to a new instance, ensure current values are saved to current namespace
-            if (oldInstanceId) {
-                // Save current values to the old instance's namespace before switching
-                for (const slot of this.slots) {
-                    const oldVarName = this.getVarNameForInstanceId(oldInstanceId, slot);
-                    this.setGlobalVariable(oldVarName, this.currentValues[slot]);
-                }
-            }
-            
             // Only migrate data if transitioning from a temporary ID to a permanent one
             // Don't migrate when switching between different permanent instance IDs (e.g., different first messages)
             if (oldInstanceId && instanceId && oldInstanceId.startsWith('temp_') && !instanceId.startsWith('temp_')) {
                 this.migrateOutfitData(oldInstanceId, instanceId);
             }
             
+            // Before switching, save current values to the current namespace
+            if (this.outfitInstanceId) {
+                for (const slot of this.slots) {
+                    const varName = this.getVarName(slot);
+                    this.setGlobalVariable(varName, this.currentValues[slot]);
+                }
+            }
+            
             this.outfitInstanceId = instanceId;
             // Load outfit data for this specific instance
             this.loadOutfit();
-        }
-    }
-    
-    // Helper method to get variable name for a specific instance ID
-    getVarNameForInstanceId(instanceId, slot) {
-        // Create a unique namespace for the given outfit instance
-        // Format: OUTFIT_INST_USER_<instanceId>_<slot>
-        if (instanceId && !instanceId.startsWith('temp_')) {
-            return `OUTFIT_INST_USER_${instanceId}_${slot}`;
-        } else if (instanceId && instanceId.startsWith('temp_')) {
-            // For temporary IDs, use a format that will be migrated when the real ID is set
-            return `OUTFIT_INST_USER_${instanceId}_${slot}`;
-        } else {
-            // Fallback to original format if no instance ID is set
-            return `User_${slot}`;
         }
     }
     
