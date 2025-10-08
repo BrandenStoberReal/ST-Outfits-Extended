@@ -2029,13 +2029,40 @@ Only output command lines, nothing else.`;
                 userPanel.updateHeader();
             }
 
+            // Additional fix: Ensure outfit managers have loaded their values before panel renders
+            // This addresses the issue where fields are empty until a swipe occurs
+            if (botManager) {
+                // Ensure all outfit slots are properly loaded for this character/conversation instance
+                botManager.loadOutfit();
+                // Force update the manager's current values to ensure they're loaded from storage
+                await botManager.loadOutfit(); // Call it again to ensure values are fresh
+            }
+            if (userManager) {
+                // Ensure all outfit slots are properly loaded for user in this conversation instance
+                userManager.loadOutfit();
+                // Force update the manager's current values to ensure they're loaded from storage
+                await userManager.loadOutfit(); // Call it again to ensure values are fresh
+            }
+            
             // Make sure the panel renders the content with the new character name
-            if (botPanel.isVisible && !botPanel.isMinimized && botPanel.renderContent) {
+            // Fix visual bug: render content even when minimized as the data needs to be updated
+            if (botPanel.isVisible && botPanel.renderContent) {
                 botPanel.renderContent();
             }
             if (userPanel.isVisible && userPanel.renderContent) {
                 userPanel.renderContent();
             }
+            
+            // Additional fix for the case where values are empty until swipe:
+            // Ensure the UI reflects the latest values by forcing a refresh after a brief delay
+            setTimeout(() => {
+                if (botPanel.isVisible && botPanel.renderContent) {
+                    botPanel.renderContent();
+                }
+                if (userPanel.isVisible && userPanel.renderContent) {
+                    userPanel.renderContent();
+                }
+            }, 100); // Small delay to ensure all data is loaded before rendering
         } catch (error) {
             console.error("[OutfitTracker] Error updating for current character:", error);
         }
@@ -3339,6 +3366,11 @@ Only output command lines, nothing else.`;
                 window.userOutfitPanel.outfitManager.loadOutfit();
                 window.userOutfitPanel.renderContent();
             }
+            
+            // Reload the page after a short delay to ensure data is properly cleared
+            setTimeout(() => {
+                location.reload();
+            }, 1000); // 1 second delay to allow UI updates before reload
             
             return keysToWipe.length;
         } catch (error) {
