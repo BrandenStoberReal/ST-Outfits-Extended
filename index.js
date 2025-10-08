@@ -2381,25 +2381,6 @@ Only output command lines, nothing else.`;
                 console.log(`[OutfitTracker] Saved ${Object.keys(savedUserOutfits).length} user outfit instances before chat clear`);
             }
 
-            // Restore saved outfit data BEFORE calling the original function
-            // This ensures that when CHAT_CREATED event fires and temporary instances are created,
-            // the saved data is already available in extension_settings
-            if (botManager && Object.keys(savedBotOutfits).length > 0) {
-                // Restore all saved bot outfit instances
-                for (const [varName, value] of Object.entries(savedBotOutfits)) {
-                    botManager.setGlobalVariable(varName, value);
-                }
-                console.log("[OutfitTracker] Restored bot outfit instances before chat clear");
-            }
-
-            if (userManager && Object.keys(savedUserOutfits).length > 0) {
-                // Restore all saved user outfit instances
-                for (const [varName, value] of Object.entries(savedUserOutfits)) {
-                    userManager.setGlobalVariable(varName, value);
-                }
-                console.log("[OutfitTracker] Restored user outfit instances before chat clear");
-            }
-
             // First call the original function to clear the chat
             if (typeof originalClearChat === 'function') {
                 originalClearChat.apply(this, arguments);
@@ -2414,6 +2395,46 @@ Only output command lines, nothing else.`;
                         updateChatOutput();
                     }
                 }
+            }
+
+            // Restore saved outfit data AFTER calling the original function
+            // This ensures that when CHAT_CREATED event fires and temporary instances are created,
+            // the saved data is applied to the new instances properly after they are set up
+            if (botManager && Object.keys(savedBotOutfits).length > 0) {
+                // After chat is cleared, we need to wait a bit for the CHAT_CREATED event to set up new instances
+                setTimeout(() => {
+                    // Restore all saved bot outfit instances
+                    for (const [varName, value] of Object.entries(savedBotOutfits)) {
+                        botManager.setGlobalVariable(varName, value);
+                    }
+                    // Reload the outfit for the new instances to reflect the restored data
+                    botManager.loadOutfit();
+                    
+                    // Update the UI to reflect the restored data
+                    if (botPanel && botPanel.isVisible) {
+                        botPanel.renderContent();
+                    }
+                    
+                    console.log("[OutfitTracker] Restored bot outfit instances after chat clear");
+                }, 100); // Small delay to ensure new instances are set up
+            }
+
+            if (userManager && Object.keys(savedUserOutfits).length > 0) {
+                // Restore all saved user outfit instances
+                setTimeout(() => {
+                    for (const [varName, value] of Object.entries(savedUserOutfits)) {
+                        userManager.setGlobalVariable(varName, value);
+                    }
+                    // Reload the outfit for the new instances to reflect the restored data
+                    userManager.loadOutfit();
+                    
+                    // Update the UI to reflect the restored data
+                    if (userPanel && userPanel.isVisible) {
+                        userPanel.renderContent();
+                    }
+                    
+                    console.log("[OutfitTracker] Restored user outfit instances after chat clear");
+                }, 100); // Small delay to ensure new instances are set up
             }
         };
 
