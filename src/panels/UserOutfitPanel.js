@@ -27,7 +27,7 @@ export class UserOutfitPanel {
         
         panel.innerHTML = `
             <div class="outfit-header">
-                <h3>{{user}}'s Outfit${hashDisplay}</h3>
+                <h3>Your Outfit${hashDisplay}</h3>
                 <div class="outfit-actions">
                     <span class="outfit-action" id="user-outfit-refresh">↻</span>
                     <span class="outfit-action" id="user-outfit-close">×</span>
@@ -370,7 +370,7 @@ export class UserOutfitPanel {
                 const messageHash = this.generateMessageHash(this.getFirstMessageText() || this.outfitManager.getOutfitInstanceId() || '');
                 const hashDisplay = messageHash ? ` (${messageHash})` : '';
                 
-                header.textContent = `{{user}}'s Outfit${hashDisplay}`;
+                header.textContent = `Your Outfit${hashDisplay}`;
             }
         }
     }

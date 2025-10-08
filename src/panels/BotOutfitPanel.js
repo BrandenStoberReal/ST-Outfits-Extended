@@ -31,9 +31,12 @@ export class BotOutfitPanel {
         const messageHash = this.generateMessageHash(this.getFirstMessageText() || this.outfitManager.getOutfitInstanceId() || '');
         const hashDisplay = messageHash ? ` (${messageHash})` : '';
         
+        // Replace placeholder "{{char}}" with the actual character name
+        const characterName = this.outfitManager.character || 'Unknown';
+        
         panel.innerHTML = `
             <div class="outfit-header">
-                <h3>{{char}}'s Outfit${hashDisplay}</h3>
+                <h3>${characterName}'s Outfit${hashDisplay}</h3>
                 <div class="outfit-actions">
                     <span class="outfit-action" id="bot-outfit-refresh">↻</span>
                     <span class="outfit-action" id="bot-outfit-close">×</span>
@@ -635,8 +638,8 @@ INSTRUCTIONS:
                 const messageHash = this.generateMessageHash(this.getFirstMessageText() || this.outfitManager.getOutfitInstanceId() || '');
                 const hashDisplay = messageHash ? ` (${messageHash})` : '';
                 
-                // Replace placeholder "{{char}}" with the actual character name
-                const formattedName = name || 'Unknown';
+                // Use the name parameter or the manager's character property
+                const formattedName = name || this.outfitManager.character || 'Unknown';
                 header.textContent = `${formattedName}'s Outfit${hashDisplay}`;
             }
         }
