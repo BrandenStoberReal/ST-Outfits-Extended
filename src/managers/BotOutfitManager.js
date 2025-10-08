@@ -51,22 +51,28 @@ export class BotOutfitManager {
         if (this.outfitInstanceId !== instanceId) {
             console.log(`[BotOutfitManager] Changing outfit instance from "${this.outfitInstanceId}" to "${instanceId}"`);
             
-            // Only migrate data if transitioning from a temporary ID to a permanent one
-            // Don't migrate when switching between different permanent instance IDs (e.g., different first messages)
-            if (oldInstanceId && instanceId && oldInstanceId.startsWith('temp_') && !instanceId.startsWith('temp_')) {
-                this.migrateOutfitData(oldInstanceId, instanceId);
-            }
-            
             // Before switching, save current values to the current namespace
             if (this.outfitInstanceId) {
+                console.log(`[BotOutfitManager] Saving current values to namespace ${this.outfitInstanceId}`);
                 for (const slot of this.slots) {
-                    const varName = this.getVarName(slot);
-                    this.setGlobalVariable(varName, this.currentValues[slot]);
+                    // Use the helper method to get the variable name for the old instance
+                    const oldVarName = this.getVarNameForInstance(slot, this.outfitInstanceId);
+                    this.setGlobalVariable(oldVarName, this.currentValues[slot]);
+                    console.log(`[BotOutfitManager] Saved ${slot} as ${this.currentValues[slot]} in ${oldVarName}`);
                 }
             }
             
+            // Only migrate data if transitioning from a temporary ID to a permanent one
+            // Don't migrate when switching between different permanent instance IDs (e.g., different first messages)
+            if (oldInstanceId && instanceId && oldInstanceId.startsWith('temp_') && !instanceId.startsWith('temp_')) {
+                console.log(`[BotOutfitManager] Starting migration from temporary to permanent instance`);
+                this.migrateOutfitData(oldInstanceId, instanceId);
+            }
+            
             this.outfitInstanceId = instanceId;
+            
             // Load outfit data for this specific instance
+            // But first, make sure we have the right data loaded for our slots
             this.loadOutfit();
         }
     }
@@ -80,8 +86,28 @@ export class BotOutfitManager {
             const oldVarName = `OUTFIT_INST_${this.characterId || 'unknown'}_${oldInstanceId}_${slot}`;
             const newVarName = `OUTFIT_INST_${this.characterId || 'unknown'}_${newInstanceId}_${slot}`;
             
-            const value = this.getGlobalVariable(oldVarName);
-            if (value !== undefined && value !== null && value !== '') {
+            // Get the value directly from extension_settings to ensure we get the actual stored value
+            let value = null;
+            let valueFound = false;
+            
+            if (window.extension_settings?.variables?.global && 
+                window.extension_settings.variables.global.hasOwnProperty(oldVarName)) {
+                value = window.extension_settings.variables.global[oldVarName];
+                valueFound = true;
+                console.log(`[BotOutfitManager] Found value in extension_settings for ${oldVarName}: ${value}`);
+            }
+            
+            // If value is in window object but not in extension_settings, look there
+            if (!valueFound && window.hasOwnProperty(oldVarName)) {
+                value = window[oldVarName];
+                valueFound = true;
+                console.log(`[BotOutfitManager] Found value in window object for ${oldVarName}: ${value}`);
+            }
+            
+            console.log(`[BotOutfitManager] Processing migration for ${slot}: oldVarName=${oldVarName}, value=${value}, valueFound=${valueFound}`);
+            
+            // Only migrate if we have a valid non-empty value
+            if (valueFound && value !== undefined && value !== null && value !== '' && value !== 'None') {
                 // Copy the value to the new instance
                 this.setGlobalVariable(newVarName, value);
                 console.log(`[BotOutfitManager] Migrated ${slot} from ${oldVarName} to ${newVarName}: ${value}`);
@@ -90,6 +116,14 @@ export class BotOutfitManager {
                 if (window.extension_settings?.variables?.global) {
                     delete window.extension_settings.variables.global[oldVarName];
                     console.log(`[BotOutfitManager] Cleaned up old variable: ${oldVarName}`);
+                }
+            } else {
+                // If the old value doesn't exist, ensure the new variable uses 'None' instead of empty
+                if (!valueFound || value === '' || value === undefined || value === null) {
+                    this.setGlobalVariable(newVarName, 'None');
+                    console.log(`[BotOutfitManager] Set ${newVarName} to 'None' since old value was not found, empty, undefined, or null`);
+                } else {
+                    console.log(`[BotOutfitManager] Skipping migration for ${slot} from ${oldVarName} - value is 'None'`);
                 }
             }
         });
@@ -145,9 +179,12 @@ export class BotOutfitManager {
             const varName = this.getVarName(slot);
             let value = this.getGlobalVariable(varName);
             
+            console.log(`[BotOutfitManager] Loading ${slot} from ${varName}, got value: ${value}`);
+            
             // Only use a temporary fallback when we're using a temp instance ID and no value exists
             // Look for existing outfit data for this character from previous instances
-            if (this.outfitInstanceId && this.outfitInstanceId.startsWith('temp_') && (value === undefined || value === null || value === '')) {
+            if (this.outfitInstanceId && this.outfitInstanceId.startsWith('temp_') && (value === undefined || value === null || value === '' || value === 'None')) {
+                console.log(`[BotOutfitManager] Looking for previous outfit instance values for ${slot} (current value is "${value}")`);
                 // Try to find any previous outfit instance values for this specific character to migrate
                 const allVars = this.getAllVariables();
                 const matchingVars = Object.keys(allVars).filter(key => 
@@ -156,6 +193,8 @@ export class BotOutfitManager {
                     !key.includes('temp_') && // Exclude temp vars to avoid circular checks
                     key !== varName // Exclude the current var to prevent self-reference
                 );
+                
+                console.log(`[BotOutfitManager] Found ${matchingVars.length} previous instances for ${slot}`);
                 
                 if (matchingVars.length > 0) {
                     // Use the value from the most recently used matching variable
@@ -195,12 +234,15 @@ export class BotOutfitManager {
                     console.log(`[BotOutfitManager] Migrating ${slot} value from previous instance: ${previousVarName} = ${value}`);
                 } else {
                     // If no previous instance was found for this character, just set to 'None'
+                    console.log(`[BotOutfitManager] No previous instance found for ${slot}, using 'None'`);
                     value = 'None';
                 }
             }
             
             // Make sure empty strings and other falsy values become 'None'
-            this.currentValues[slot] = (value !== undefined && value !== null && value !== '') ? value : 'None';
+            this.currentValues[slot] = (value !== undefined && value !== null && value !== '' && value !== 'None') ? value : 'None';
+            console.log(`[BotOutfitManager] Set current value for ${slot} to: ${this.currentValues[slot]}`);
+            
             // Also ensure the global variable itself is not empty
             if (value === undefined || value === null || value === '') {
                 this.setGlobalVariable(varName, 'None');
@@ -334,6 +376,21 @@ export class BotOutfitManager {
             return `OUTFIT_INST_${this.characterId || 'unknown'}_${this.outfitInstanceId}`;
         }
         return null;
+    }
+    
+    // Helper method to get variable name for a specific instance
+    getVarNameForInstance(slot, instanceId) {
+        if (instanceId && !instanceId.startsWith('temp_')) {
+            const instanceNamespace = `OUTFIT_INST_${this.characterId || 'unknown'}_${instanceId}`;
+            return `${instanceNamespace}_${slot}`;
+        } else if (instanceId && instanceId.startsWith('temp_')) {
+            const instanceNamespace = `OUTFIT_INST_${this.characterId || 'unknown'}_${instanceId}`;
+            return `${instanceNamespace}_${slot}`;
+        } else {
+            // Fallback to original format if no instance ID is set
+            const formattedCharacterName = this.character.replace(/\\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+            return `${formattedCharacterName}_${slot}`;
+        }
     }
 
     // New method: get all outfit instances for this character
