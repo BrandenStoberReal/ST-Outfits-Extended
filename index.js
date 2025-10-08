@@ -2665,6 +2665,14 @@ Only output command lines, nothing else.`;
                         <h4>${hasAutoSystem ? 'Auto Outfit Settings' : 'Advanced Settings'}</h4>
                         ${autoSettingsHtml}
                     </div>
+                    
+                    <div class="setting-group">
+                        <h4>Data Management</h4>
+                        <div class="flex-container">
+                            <button id="outfit-wipe-all-btn" class="menu_button warning-button">Wipe All Outfits</button>
+                        </div>
+                        <p class="setting-description">This will permanently delete all saved outfit information for all characters and users. This action cannot be undone.</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -2992,6 +3000,15 @@ Only output command lines, nothing else.`;
                 });
             });
         }
+        
+        // Add event listener for the wipe all outfits button
+        $("#outfit-wipe-all-btn").on("click", function() {
+            // Show confirmation dialog
+            if (confirm("Are you sure you want to permanently delete ALL saved outfit information for all characters and users? This action cannot be undone.")) {
+                // Call the wipe function after confirmation
+                wipeAllOutfits();
+            }
+        });
     }
 
     initSettings();
@@ -3264,6 +3281,59 @@ Only output command lines, nothing else.`;
             return `conv_${hash}`;
         });
     }
+
+    // Function to wipe all outfit data for all characters
+    async function wipeAllOutfits() {
+        try {
+            // Clear all outfit instance variables from global settings
+            const globalVars = safeGet(window, 'extension_settings.variables.global', {});
+            const keysToWipe = [];
+            
+            // Find all outfit-related global variables
+            for (const key in globalVars) {
+                if (key.startsWith('OUTFIT_INST_')) {
+                    keysToWipe.push(key);
+                }
+            }
+            
+            // Remove all found keys
+            for (const key of keysToWipe) {
+                delete window.extension_settings.variables.global[key];
+            }
+            
+            // Clear all preset data
+            if (window.extension_settings?.outfit_tracker?.presets) {
+                window.extension_settings.outfit_tracker.presets = {
+                    bot: {},
+                    user: {}
+                };
+            }
+            
+            // Notify user of completion
+            console.log(`[OutfitTracker] Wiped ${keysToWipe.length} outfit variables and all presets`);
+            toastr.success(`Successfully wiped ${keysToWipe.length} outfit variables and all presets`, 'Outfit Data Wiped');
+            
+            // If panels exist, refresh them to show the cleared state
+            if (window.botOutfitPanel) {
+                window.botOutfitPanel.loadOutfit();
+                window.botOutfitPanel.renderContent();
+            }
+            
+            if (window.userOutfitPanel) {
+                window.userOutfitPanel.loadOutfit();
+                window.userOutfitPanel.renderContent();
+            }
+            
+            return keysToWipe.length;
+        } catch (error) {
+            console.error('[OutfitTracker] Error wiping outfit data:', error);
+            toastr.error('Error wiping outfit data. Check console for details.', 'Wipe Failed');
+            return -1;
+        }
+    }
+
+    // Add the function to global scope so it can be accessed by the settings UI
+    globalThis.wipeAllOutfits = wipeAllOutfits;
 
     // Helper function to replace all occurrences of a substring without using regex
     // We'll import this from StringProcessor to ensure consistency

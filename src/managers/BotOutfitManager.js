@@ -185,57 +185,104 @@ export class BotOutfitManager {
             // Look for existing outfit data for this character from previous instances
             if (this.outfitInstanceId && this.outfitInstanceId.startsWith('temp_') && (value === undefined || value === null || value === '' || value === 'None')) {
                 console.log(`[BotOutfitManager] Looking for previous outfit instance values for ${slot} (current value is "${value}")`);
-                // Try to find any previous outfit instance values for this specific character to migrate
-                const allVars = this.getAllVariables();
-                const matchingVars = Object.keys(allVars).filter(key => 
-                    key.startsWith(`OUTFIT_INST_${this.characterId || 'unknown'}_`) && 
-                    key.endsWith(`_${slot}`) &&
-                    !key.includes('temp_') && // Exclude temp vars to avoid circular checks
-                    key !== varName // Exclude the current var to prevent self-reference
-                );
                 
-                console.log(`[BotOutfitManager] Found ${matchingVars.length} previous instances for ${slot}`);
+                // First check if there is a default outfit for this character and instance that we should use
+                // This ensures that if the user has set a default outfit, it takes precedence over random previous instances
+                const defaultOutfits = safeGet(window, `extension_settings.outfit_tracker.presets.bot.${this.character}`, {});
                 
-                if (matchingVars.length > 0) {
-                    // Use the value from the most recently used matching variable
-                    // To do this properly, we need to track the actual creation/modification time
-                    // Since we don't have that, we'll try to infer based on the instance ID structure
-                    // If instance IDs contain timestamps, we'll use those; otherwise, we'll take the first one
-                    let previousVarName;
-                    let mostRecentTimestamp = 0;
-                    
-                    for (const varName of matchingVars) {
-                        // Extract potential timestamp from the instance ID part
-                        const parts = varName.split('_');
-                        if (parts.length >= 4) { // OUTFIT_INST_<characterId>_<instanceId>_<slot>
-                            const instanceIdPart = parts[2]; // The instance ID is the 3rd part (0-indexed: 2)
-                            
-                            // Attempt to extract a timestamp from the instance ID
-                            // Instance IDs may be in formats like: greeting_hello_world_abc123 or scenario_abc123
-                            // In these cases, a timestamp might be at the end of the instance ID
-                            const idParts = instanceIdPart.split('_');
-                            const lastPart = idParts[idParts.length - 1];
-                            
-                            // Check if the last part looks like a timestamp (numeric)
-                            const potentialTimestamp = parseInt(lastPart);
-                            if (!isNaN(potentialTimestamp) && potentialTimestamp > mostRecentTimestamp) {
-                                mostRecentTimestamp = potentialTimestamp;
-                                previousVarName = varName;
-                            }
+                if (defaultOutfits && Object.keys(defaultOutfits).length > 0) {
+                    // Look for default outfit in any instance
+                    for (const [instanceId, instancePresets] of Object.entries(defaultOutfits)) {
+                        if (instancePresets && instancePresets['default'] && instancePresets['default'][slot]) {
+                            value = instancePresets['default'][slot];
+                            console.log(`[BotOutfitManager] Found default outfit value for ${slot}: ${value}`);
+                            break;
                         }
                     }
                     
-                    // If no timestamp was found, just use the first one
-                    if (mostRecentTimestamp === 0) {
-                        previousVarName = matchingVars[0];
+                    // If still no value from defaults, look for any matching preset that contains this slot
+                    if ((value === undefined || value === null || value === '' || value === 'None') && defaultOutfits) {
+                        // Look through all instances and presets to find a matching value for this slot
+                        for (const [instanceId, instancePresets] of Object.entries(defaultOutfits)) {
+                            if (instancePresets) {
+                                // Check first for the specifically named 'default' preset
+                                if (instancePresets['default'] && instancePresets['default'][slot]) {
+                                    value = instancePresets['default'][slot];
+                                    console.log(`[BotOutfitManager] Found default preset value for ${slot}: ${value}`);
+                                    break;
+                                }
+                                
+                                // If no default preset, look for other presets that have this slot filled
+                                for (const [presetName, presetData] of Object.entries(instancePresets)) {
+                                    if (presetName !== 'default' && presetData && presetData[slot] && presetData[slot] !== 'None' && presetData[slot] !== '') {
+                                        value = presetData[slot];
+                                        console.log(`[BotOutfitManager] Found preset value for ${slot} in preset ${presetName}: ${value}`);
+                                        break;
+                                    }
+                                }
+                                
+                                if (value !== undefined && value !== null && value !== '' && value !== 'None') {
+                                    break; // Found a value, stop searching
+                                }
+                            }
+                        }
                     }
+                }
+                
+                // Only fall back to previous instance if we still don't have a value from presets
+                if (value === undefined || value === null || value === '' || value === 'None') {
+                    // Try to find any previous outfit instance values for this specific character to migrate
+                    const allVars = this.getAllVariables();
+                    const matchingVars = Object.keys(allVars).filter(key => 
+                        key.startsWith(`OUTFIT_INST_${this.characterId || 'unknown'}_`) && 
+                        key.endsWith(`_${slot}`) &&
+                        !key.includes('temp_') && // Exclude temp vars to avoid circular checks
+                        key !== varName // Exclude the current var to prevent self-reference
+                    );
                     
-                    value = allVars[previousVarName];
-                    console.log(`[BotOutfitManager] Migrating ${slot} value from previous instance: ${previousVarName} = ${value}`);
-                } else {
-                    // If no previous instance was found for this character, just set to 'None'
-                    console.log(`[BotOutfitManager] No previous instance found for ${slot}, using 'None'`);
-                    value = 'None';
+                    console.log(`[BotOutfitManager] Found ${matchingVars.length} previous instances for ${slot}`);
+                    
+                    if (matchingVars.length > 0) {
+                        // Use the value from the most recently used matching variable
+                        // To do this properly, we need to track the actual creation/modification time
+                        // Since we don't have that, we'll try to infer based on the instance ID structure
+                        // If instance IDs contain timestamps, we'll use those; otherwise, we'll take the first one
+                        let previousVarName;
+                        let mostRecentTimestamp = 0;
+                        
+                        for (const varName of matchingVars) {
+                            // Extract potential timestamp from the instance ID part
+                            const parts = varName.split('_');
+                            if (parts.length >= 4) { // OUTFIT_INST_<characterId>_<instanceId>_<slot>
+                                const instanceIdPart = parts[2]; // The instance ID is the 3rd part (0-indexed: 2)
+                                
+                                // Attempt to extract a timestamp from the instance ID
+                                // Instance IDs may be in formats like: greeting_hello_world_abc123 or scenario_abc123
+                                // In these cases, a timestamp might be at the end of the instance ID
+                                const idParts = instanceIdPart.split('_');
+                                const lastPart = idParts[idParts.length - 1];
+                                
+                                // Check if the last part looks like a timestamp (numeric)
+                                const potentialTimestamp = parseInt(lastPart);
+                                if (!isNaN(potentialTimestamp) && potentialTimestamp > mostRecentTimestamp) {
+                                    mostRecentTimestamp = potentialTimestamp;
+                                    previousVarName = varName;
+                                }
+                            }
+                        }
+                        
+                        // If no timestamp was found, just use the first one
+                        if (mostRecentTimestamp === 0) {
+                            previousVarName = matchingVars[0];
+                        }
+                        
+                        value = allVars[previousVarName];
+                        console.log(`[BotOutfitManager] Migrating ${slot} value from previous instance: ${previousVarName} = ${value}`);
+                    } else {
+                        // If no previous instance was found for this character, just set to 'None'
+                        console.log(`[BotOutfitManager] No previous instance found for ${slot}, using 'None'`);
+                        value = 'None';
+                    }
                 }
             }
             

@@ -686,6 +686,17 @@
     color: #ffffff !important;
 }
 
+.outfit-extension-settings .warning-button {
+    background: #b71c1c !important;
+    border: 1px solid #d32f2f !important;
+}
+
+.outfit-extension-settings .warning-button:hover {
+    background: #c62828 !important;
+    transform: scale(1.05);
+    box-shadow: 0 4px 8px rgba(183, 28, 28, 0.4) !important;
+}
+
 .outfit-extension-settings .color-input-wrapper input[type="text"] {
     border-radius: 5px 0 0 5px !important;
     margin-left: 8px !important;
@@ -700,6 +711,17 @@
 .outfit-extension-settings .error-text {
     color: #000000 !important;
     font-weight: bold !important;
+}
+
+.outfit-extension-settings .setting-description {
+    margin: 10px 0 !important;
+    padding: 10px !important;
+    background: #3a1c1c !important;
+    border: 1px solid #d32f2f !important;
+    border-radius: 5px !important;
+    color: #ffcccc !important;
+    font-size: 0.9em !important;
+    line-height: 1.4 !important;
 }
 
 
