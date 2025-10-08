@@ -2035,6 +2035,9 @@ Only output command lines, nothing else.`;
                 
                 // Set the outfit instance ID based on the first message scenario
                 botManager.setOutfitInstanceId(instanceId);
+                
+                // Load the outfit data for the new instance
+                botManager.loadOutfit();
             }
             if (botPanel) {
                 botPanel.updateCharacter(charName);
@@ -2044,6 +2047,9 @@ Only output command lines, nothing else.`;
             if (userManager) {
                 // Set the outfit instance ID for user based on the same first message scenario
                 userManager.setOutfitInstanceId(instanceId);
+                
+                // Load the outfit data for the new instance
+                userManager.loadOutfit();
             }
             if (userPanel) {
                 userPanel.updateHeader();
@@ -2347,12 +2353,18 @@ Only output command lines, nothing else.`;
                                 // Set the outfit instance ID based on the first message scenario
                                 botManager.setOutfitInstanceId(instanceId);
                                 console.log(`[OutfitTracker] Set bot outfit instance ID after swipe: ${instanceId}`);
+                                
+                                // Load the outfit data for the new instance
+                                botManager.loadOutfit();
                             }
                             
                             if (userManager) {
                                 // Also set a corresponding instance ID for the user
                                 userManager.setOutfitInstanceId(instanceId);
                                 console.log(`[OutfitTracker] Set user outfit instance ID after swipe: ${instanceId}`);
+                                
+                                // Load the outfit data for the new instance
+                                userManager.loadOutfit();
                             }
                             
                             // Update the panels to reflect the new instance
