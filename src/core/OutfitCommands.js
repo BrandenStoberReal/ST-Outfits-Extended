@@ -1561,6 +1561,5 @@ Full length: ${status.promptLength} chars`;
     }));
 }
 
-// Close the main function and export it
+// Close the main function 
 }
-export { registerOutfitCommands };
