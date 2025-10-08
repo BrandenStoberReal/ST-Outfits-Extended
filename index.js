@@ -8,8 +8,8 @@ import { SlashCommandParser } from "../../../slash-commands/SlashCommandParser.j
 import { SlashCommand } from "../../../slash-commands/SlashCommand.js";
 import { SlashCommandArgument, SlashCommandNamedArgument, ARGUMENT_TYPE } from "../../../slash-commands/SlashCommandArgument.js";
 
-// Import the extractMacros and replaceAll functions from StringProcessor
-import { extractMacros, replaceAll } from "./src/utils/StringProcessor.js";
+// Import the extractMacros, replaceAll, safeGet, and safeSet functions from StringProcessor
+import { extractMacros, replaceAll, safeGet, safeSet } from "./src/utils/StringProcessor.js";
 import { LLMUtility } from "./src/utils/LLMUtility.js";
 
 // Import path configuration
