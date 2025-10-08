@@ -1,6 +1,6 @@
-import { SlashCommandParser } from '../../../../slash-commands/SlashCommandParser.js';
-import { SlashCommand } from '../../../../slash-commands/SlashCommand.js';
-import { SlashCommandArgument, SlashCommandNamedArgument, ARGUMENT_TYPE } from '../../../../slash-commands/SlashCommandArgument.js';
+import { SlashCommandParser } from '../../../../../../slash-commands/SlashCommandParser.js';
+import { SlashCommand } from '../../../../../../slash-commands/SlashCommand.js';
+import { SlashCommandArgument, SlashCommandNamedArgument, ARGUMENT_TYPE } from '../../../../../../slash-commands/SlashCommandArgument.js';
 
 export async function registerOutfitCommands(importOutfitFromCharacterCard, botManager, userManager, autoOutfitSystem, CLOTHING_SLOTS, ACCESSORY_SLOTS) {
     // Register basic outfit commands using new SlashCommandParser format

@@ -1,6 +1,6 @@
-// Import modules from SillyTavern core - using 4-level parent path
-import { getContext, extension_settings } from '../../../../scripts/extensions.js';
-import { saveSettingsDebounced } from '../../../../script.js';
+// Import modules from SillyTavern core - using 6-level parent path
+import { getContext, extension_settings } from '../../../../../../scripts/extensions.js';
+import { saveSettingsDebounced } from '../../../../../../script.js';
 
 // Import the extractMacros, replaceAll, safeGet functions from StringProcessor
 import { extractMacros, replaceAll, safeGet } from '../utils/StringProcessor.js';
