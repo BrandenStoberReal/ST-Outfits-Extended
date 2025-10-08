@@ -49,8 +49,9 @@ export class BotOutfitManager {
         if (this.outfitInstanceId !== instanceId) {
             console.log(`[BotOutfitManager] Changing outfit instance from "${this.outfitInstanceId}" to "${instanceId}"`);
             
-            // If we have an old instance ID and a new one, migrate the data
-            if (oldInstanceId && instanceId) {
+            // Only migrate data if transitioning from a temporary ID to a permanent one
+            // Don't migrate when switching between different permanent instance IDs (e.g., different first messages)
+            if (oldInstanceId && instanceId && oldInstanceId.startsWith('temp_') && !instanceId.startsWith('temp_')) {
                 this.migrateOutfitData(oldInstanceId, instanceId);
             }
             
