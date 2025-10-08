@@ -1,10 +1,14 @@
-import { SlashCommandParser } from '../../../../../../slash-commands/SlashCommandParser.js';
-import { SlashCommand } from '../../../../../../slash-commands/SlashCommand.js';
-import { SlashCommandArgument, SlashCommandNamedArgument, ARGUMENT_TYPE } from '../../../../../../slash-commands/SlashCommandArgument.js';
-
 export async function registerOutfitCommands(importOutfitFromCharacterCard, botManager, userManager, autoOutfitSystem, CLOTHING_SLOTS, ACCESSORY_SLOTS) {
-    // Register basic outfit commands using new SlashCommandParser format
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+    // Check if new slash command system is available in SillyTavern
+    const hasSlashCommands = typeof window.SlashCommandParser !== 'undefined' && 
+                             typeof window.SlashCommand !== 'undefined' &&
+                             typeof window.SlashCommandArgument !== 'undefined' &&
+                             typeof window.SlashCommandNamedArgument !== 'undefined' &&
+                             typeof window.ARGUMENT_TYPE !== 'undefined';
+    
+    if (hasSlashCommands) {
+        // Use new slash command system
+        window.SlashCommandParser.addCommandObject(window.SlashCommand.fromProps({
         name: 'outfit-bot',
         callback: async function (args) {
             console.log('Bot Outfit command triggered');
