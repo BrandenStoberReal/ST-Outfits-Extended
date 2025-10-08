@@ -8,7 +8,12 @@ ST-Outfits is a SillyTavern extension that enables tracking of character outfits
 
 The extension follows a modular architecture with distinct components:
 
-- **Core**: Contains the main extension entry point (`index.js`)
+- **Core**: Contains the main extension functionality in separate modules
+  - `ExtensionCore.js`: Main initialization and core functionality
+  - `OutfitCommands.js`: All slash command definitions and handlers
+  - `EventSystem.js`: SillyTavern event listeners and handlers
+  - `SettingsUI.js`: Settings panel UI creation and management
+  - `AutoOutfitSystem.js`: Auto-outfit detection functionality
 - **Managers**: Handle outfit data management for bot and user (`BotOutfitManager.js`, `UserOutfitManager.js`)
 - **Panels**: UI components for displaying and modifying outfits (`BotOutfitPanel.js`, `UserOutfitPanel.js`)
 - **Utils**: Utility functions for string processing and LLM interaction (`StringProcessor.js`, `LLMUtility.js`)
@@ -81,7 +86,7 @@ This is a SillyTavern extension that should be installed using SillyTavern's ext
 ```
 src/
 ├── common/          # Shared utilities and common functions
-├── core/            # Core business logic modules
+├── core/            # Core business logic modules (ExtensionCore, OutfitCommands, EventSystem, SettingsUI)
 ├── managers/        # Outfit management classes
 ├── panels/          # UI panel implementations
 ├── utils/           # Utility functions

@@ -15,7 +15,7 @@ export class BotOutfitManager {
     }
 
     setCharacter(name, characterId = null, chatId = null) {
-        if (name === this.character) return;
+        if (name === this.character) {return;}
         
         // Validate the character name
         if (!name || typeof name !== 'string') {
@@ -35,6 +35,7 @@ export class BotOutfitManager {
         for (const slot of this.slots) {
             const varName = this.getVarName(slot);
             const value = this.getGlobalVariable(varName);
+
             // If the value is empty or undefined, set it to 'None'
             if (value === undefined || value === null || value === '') {
                 this.setGlobalVariable(varName, 'None');
@@ -57,6 +58,7 @@ export class BotOutfitManager {
                 for (const slot of this.slots) {
                     // Use the helper method to get the variable name for the old instance
                     const oldVarName = this.getVarNameForInstance(slot, this.outfitInstanceId);
+
                     this.setGlobalVariable(oldVarName, this.currentValues[slot]);
                     console.log(`[BotOutfitManager] Saved ${slot} as ${this.currentValues[slot]} in ${oldVarName}`);
                 }
@@ -65,7 +67,7 @@ export class BotOutfitManager {
             // Only migrate data if transitioning from a temporary ID to a permanent one
             // Don't migrate when switching between different permanent instance IDs (e.g., different first messages)
             if (oldInstanceId && instanceId && oldInstanceId.startsWith('temp_') && !instanceId.startsWith('temp_')) {
-                console.log(`[BotOutfitManager] Starting migration from temporary to permanent instance`);
+                console.log('[BotOutfitManager] Starting migration from temporary to permanent instance');
                 this.migrateOutfitData(oldInstanceId, instanceId);
             }
             
@@ -150,6 +152,7 @@ export class BotOutfitManager {
     initializeOutfit() {
         this.slots.forEach(slot => {
             const varName = this.getVarName(slot);
+
             if (this.getGlobalVariable(varName) === 'None' || this.getGlobalVariable(varName) === '') {
                 this.setGlobalVariable(varName, 'None');
             }
@@ -162,16 +165,19 @@ export class BotOutfitManager {
         // Format: OUTFIT_INST_<characterId>_<instanceId>_<slot> - removed chatId to persist across chat resets
         if (this.outfitInstanceId && !this.outfitInstanceId.startsWith('temp_')) {
             const instanceNamespace = `OUTFIT_INST_${this.characterId || 'unknown'}_${this.outfitInstanceId}`;
+
             return `${instanceNamespace}_${slot}`;
         } else if (this.outfitInstanceId && this.outfitInstanceId.startsWith('temp_')) {
             // For temporary IDs, use a format that will be migrated when the real ID is set
             const instanceNamespace = `OUTFIT_INST_${this.characterId || 'unknown'}_${this.outfitInstanceId}`;
+
             return `${instanceNamespace}_${slot}`;
-        } else {
-            // Fallback to original format if no instance ID is set
-            const formattedCharacterName = this.character.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
-            return `${formattedCharacterName}_${slot}`;
-        }
+        } 
+        // Fallback to original format if no instance ID is set
+        const formattedCharacterName = this.character.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+
+        return `${formattedCharacterName}_${slot}`;
+        
     }
 
     loadOutfit() {
@@ -253,6 +259,7 @@ export class BotOutfitManager {
                         for (const varName of matchingVars) {
                             // Extract potential timestamp from the instance ID part
                             const parts = varName.split('_');
+
                             if (parts.length >= 4) { // OUTFIT_INST_<characterId>_<instanceId>_<slot>
                                 const instanceIdPart = parts[2]; // The instance ID is the 3rd part (0-indexed: 2)
                                 
@@ -264,6 +271,7 @@ export class BotOutfitManager {
                                 
                                 // Check if the last part looks like a timestamp (numeric)
                                 const potentialTimestamp = parseInt(lastPart);
+
                                 if (!isNaN(potentialTimestamp) && potentialTimestamp > mostRecentTimestamp) {
                                     mostRecentTimestamp = potentialTimestamp;
                                     previousVarName = varName;
@@ -302,6 +310,7 @@ export class BotOutfitManager {
     getAllVariables() {
         try {
             const globalVars = safeGet(window, 'extension_settings.variables.global', {});
+
             return globalVars;
         } catch (error) {
             console.error('[BotOutfitManager] Error accessing global variables:', error);
@@ -313,6 +322,7 @@ export class BotOutfitManager {
         try {
             // Access extension_settings from the global window object
             const globalVars = safeGet(window, 'extension_settings.variables.global', {});
+
             return globalVars[name] || window[name] || 'None';
         } catch (error) {
             console.error('[BotOutfitManager] Error accessing global variable:', name, error);
@@ -324,7 +334,7 @@ export class BotOutfitManager {
         try {
             window[name] = value;
             if (!window.extension_settings?.variables) {
-                if (!window.extension_settings) window.extension_settings = {};
+                if (!window.extension_settings) {window.extension_settings = {};}
                 window.extension_settings.variables = { global: {} };
             }
             window.extension_settings.variables.global[name] = value;
@@ -352,6 +362,7 @@ export class BotOutfitManager {
         
         // Limit the length of values to prevent storage issues
         const MAX_VALUE_LENGTH = 1000;
+
         if (value.length > MAX_VALUE_LENGTH) {
             value = value.substring(0, MAX_VALUE_LENGTH);
             console.warn(`[BotOutfitManager] Value truncated to ${MAX_VALUE_LENGTH} characters for slot ${slot}`);
@@ -359,6 +370,7 @@ export class BotOutfitManager {
         
         const previousValue = this.currentValues[slot];
         const varName = this.getVarName(slot);
+
         this.setGlobalVariable(varName, value);
         this.currentValues[slot] = value;
     
@@ -366,9 +378,9 @@ export class BotOutfitManager {
             return `${this.character} put on ${value}.`;
         } else if (value === 'None') {
             return `${this.character} removed ${previousValue}.`;
-        } else {
-            return `${this.character} changed from ${previousValue} to ${value}.`;
-        }
+        } 
+        return `${this.character} changed from ${previousValue} to ${value}.`;
+        
     }
 
     async changeOutfitItem(slot) {
@@ -382,19 +394,19 @@ export class BotOutfitManager {
         let newValue = currentValue;
 
         if (currentValue === 'None') {
-            newValue = prompt(`What is ${this.character} wearing on their ${slot}?`, "");
+            newValue = prompt(`What is ${this.character} wearing on their ${slot}?`, '');
             // Handle empty input as 'None'
-            if (newValue === null) return null; // User cancelled the prompt
-            if (newValue === "") newValue = 'None'; // User entered empty string
+            if (newValue === null) {return null;} // User cancelled the prompt
+            if (newValue === '') {newValue = 'None';} // User entered empty string
         } else {
             const choice = prompt(
                 `${this.character}'s ${slot}: ${currentValue}\n\nEnter 'remove' to remove, or type new item:`,
-                ""
+                ''
             );
 
-            if (choice === null) return null; // User cancelled the prompt
+            if (choice === null) {return null;} // User cancelled the prompt
             // Handle empty input as 'None'
-            if (choice === "") {
+            if (choice === '') {
                 newValue = 'None';
             } else {
                 newValue = choice.toLowerCase() === 'remove' ? 'None' : choice;
@@ -429,15 +441,18 @@ export class BotOutfitManager {
     getVarNameForInstance(slot, instanceId) {
         if (instanceId && !instanceId.startsWith('temp_')) {
             const instanceNamespace = `OUTFIT_INST_${this.characterId || 'unknown'}_${instanceId}`;
+
             return `${instanceNamespace}_${slot}`;
         } else if (instanceId && instanceId.startsWith('temp_')) {
             const instanceNamespace = `OUTFIT_INST_${this.characterId || 'unknown'}_${instanceId}`;
+
             return `${instanceNamespace}_${slot}`;
-        } else {
-            // Fallback to original format if no instance ID is set
-            const formattedCharacterName = this.character.replace(/\\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
-            return `${formattedCharacterName}_${slot}`;
-        }
+        } 
+        // Fallback to original format if no instance ID is set
+        const formattedCharacterName = this.character.replace(/\\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+
+        return `${formattedCharacterName}_${slot}`;
+        
     }
 
     // New method: get all outfit instances for this character
@@ -449,13 +464,16 @@ export class BotOutfitManager {
             if (varName.startsWith(`OUTFIT_INST_${this.characterId || 'unknown'}_`)) {
                 // Extract instance ID from the variable name
                 const parts = varName.split('_');
+
                 if (parts.length >= 4) { // OUTFIT_INST, characterId, instanceId, slot
                     const instanceId = parts[2]; // The instance ID is the 3rd part (0-indexed: 2)
+
                     if (!instanceVars[instanceId]) {
                         instanceVars[instanceId] = {};
                     }
                     // Extract slot name which should be the last part
                     const slot = varName.substring(varName.indexOf(`_${instanceId}_`) + instanceId.length + 2);
+
                     instanceVars[instanceId][slot] = value;
                 }
             }
@@ -487,6 +505,7 @@ export class BotOutfitManager {
         
         // Create preset data for all slots
         const presetData = {};
+
         this.slots.forEach(slot => {
             presetData[slot] = this.currentValues[slot];
         });
@@ -522,6 +541,7 @@ export class BotOutfitManager {
         
         // Create preset data for all slots
         const presetData = {};
+
         this.slots.forEach(slot => {
             presetData[slot] = this.currentValues[slot];
         });
@@ -545,6 +565,7 @@ export class BotOutfitManager {
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
         
         const presets = safeGet(window, `extension_settings.outfit_tracker.presets.bot.${this.character}.${actualInstanceId}`);
+
         if (!presets || !presets[presetName]) {
             return `[Outfit System] Preset "${presetName}" not found for instance ${actualInstanceId}.`;
         }
@@ -555,6 +576,7 @@ export class BotOutfitManager {
         for (const [slot, value] of Object.entries(preset)) {
             if (this.slots.includes(slot) && this.currentValues[slot] !== value) {
                 const varName = this.getVarName(slot); // This will use the current instance ID
+
                 this.setGlobalVariable(varName, value);
                 this.currentValues[slot] = value;
                 changed = true;
@@ -577,6 +599,7 @@ export class BotOutfitManager {
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
         
         const presets = safeGet(window, `extension_settings.outfit_tracker.presets.bot.${this.character}.${actualInstanceId}`);
+
         if (!presets || !presets[presetName]) {
             return `[Outfit System] Preset "${presetName}" not found for instance ${actualInstanceId}.`;
         }
@@ -586,11 +609,13 @@ export class BotOutfitManager {
         
         // Cleanup character instance if no presets left
         const instancePresets = safeGet(window, `extension_settings.outfit_tracker.presets.bot.${this.character}.${actualInstanceId}`, {});
+
         if (Object.keys(instancePresets).length === 0) {
             delete safeGet(window, `extension_settings.outfit_tracker.presets.bot.${this.character}`)[actualInstanceId];
             
             // Also cleanup the character if no instances left
             const characterPresets = safeGet(window, `extension_settings.outfit_tracker.presets.bot.${this.character}`, {});
+
             if (Object.keys(characterPresets).length === 0) {
                 delete safeGet(window, 'extension_settings.outfit_tracker.presets.bot')[this.character];
             }
@@ -607,6 +632,7 @@ export class BotOutfitManager {
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
         
         const presets = safeGet(window, `extension_settings.outfit_tracker.presets.bot.${this.character}.${actualInstanceId}`);
+
         if (!presets) {
             return [];
         }
@@ -629,6 +655,7 @@ export class BotOutfitManager {
         
         // Create preset data for all slots
         const presetData = {};
+
         this.slots.forEach(slot => {
             presetData[slot] = this.currentValues[slot];
         });
@@ -662,6 +689,7 @@ export class BotOutfitManager {
         }
         
         const presets = safeGet(window, `extension_settings.outfit_tracker.presets.bot.${this.character}.${actualInstanceId}`);
+
         // Check if the preset exists
         if (!presets || !presets[presetName]) {
             return `[Outfit System] Preset "${presetName}" not found for instance ${actualInstanceId}.`;
@@ -684,6 +712,7 @@ export class BotOutfitManager {
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
         
         const presets = safeGet(window, `extension_settings.outfit_tracker.presets.bot.${this.character}.${actualInstanceId}`);
+
         if (!presets || !presets['default']) {
             return `[Outfit System] No default outfit set for ${this.character} (instance: ${actualInstanceId}).`;
         }
@@ -694,6 +723,7 @@ export class BotOutfitManager {
         for (const [slot, value] of Object.entries(preset)) {
             if (this.slots.includes(slot) && this.currentValues[slot] !== value) {
                 const varName = this.getVarName(slot); // This will use the current instance ID
+
                 this.setGlobalVariable(varName, value);
                 this.currentValues[slot] = value;
                 changed = true;
@@ -703,6 +733,7 @@ export class BotOutfitManager {
         for (const slot of this.slots) {
             if (!preset.hasOwnProperty(slot) && this.currentValues[slot] !== 'None') {
                 const varName = this.getVarName(slot); // This will use the current instance ID
+
                 this.setGlobalVariable(varName, 'None');
                 this.currentValues[slot] = 'None';
                 changed = true;
@@ -720,7 +751,8 @@ export class BotOutfitManager {
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
         
         const presets = safeGet(window, `extension_settings.outfit_tracker.presets.bot.${this.character}.${actualInstanceId}`);
-        return !!(presets && presets['default']);
+
+        return Boolean(presets && presets['default']);
     }
     
     // Identify which preset is the default by comparing data for a specific instance
@@ -733,6 +765,7 @@ export class BotOutfitManager {
         }
         
         const presets = safeGet(window, `extension_settings.outfit_tracker.presets.bot.${this.character}.${actualInstanceId}`);
+
         if (!presets || !presets['default']) {
             return null;
         }
@@ -741,7 +774,7 @@ export class BotOutfitManager {
         
         // Find which preset matches the default data
         for (const [presetName, presetData] of Object.entries(presets)) {
-            if (presetName !== 'default') {  // Skip the default entry itself
+            if (presetName !== 'default') { // Skip the default entry itself
                 let isMatch = true;
                 
                 // Compare all slots in the preset

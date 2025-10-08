@@ -50,6 +50,7 @@ class ConnectionProfileHelper {
             if (window.connectionManager && typeof window.connectionManager.applyProfile === 'function') {
                 // The applyProfile function expects a profile object, not just an ID
                 const profile = this.getProfileById(profileId);
+
                 if (profile) {
                     await window.connectionManager.applyProfile(profile);
                 } else {
@@ -68,6 +69,7 @@ class ConnectionProfileHelper {
             else if (typeof applyConnectionProfile === 'function') {
                 // Fallback to global function if available
                 const profile = this.getProfileById(profileId);
+
                 if (profile) {
                     await applyConnectionProfile(profile);
                 }
@@ -103,10 +105,12 @@ class ConnectionProfileHelper {
             try {
                 // Get current profile name via slash command
                 const currentProfile = window.SlashCommandParser.commands['profile'].callback({}, null);
+
                 // If it's not "None", find the corresponding profile ID
-                if (currentProfile && currentProfile !== "None") {
+                if (currentProfile && currentProfile !== 'None') {
                     const profiles = this.getAllProfiles();
                     const profile = profiles.find(p => p.name === currentProfile || p.id === currentProfile);
+
                     if (profile) {
                         return profile.id;
                     }
@@ -125,7 +129,7 @@ class ConnectionProfileHelper {
      * @returns {Object|null}
      */
     static getProfileById(profileId) {
-        if (!profileId) return null;
+        if (!profileId) {return null;}
         
         // First try from extension settings
         if (window.extension_settings?.connectionManager?.profiles) {
@@ -139,6 +143,7 @@ class ConnectionProfileHelper {
         
         // Fallback: get all profiles and find by ID
         const profiles = this.getAllProfiles();
+
         return profiles.find(p => p.id === profileId);
     }
     
@@ -170,7 +175,7 @@ export class LLMUtility {
      * @param {number} maxRetries - Maximum number of retry attempts (default: 3)
      * @returns {Promise<string>} - The generated response from LLM
      */
-    static async generateWithRetry(prompt, systemPrompt = "You are an AI assistant.", context = null, maxRetries = 3) {
+    static async generateWithRetry(prompt, systemPrompt = 'You are an AI assistant.', context = null, maxRetries = 3) {
         if (!context) {
             context = window.getContext && window.getContext() || {};
         }
@@ -237,7 +242,7 @@ export class LLMUtility {
      * @param {number} maxRetries - Maximum number of retry attempts (default: 3)
      * @returns {Promise<string>} - The generated response from LLM
      */
-    static async generateWithProfile(prompt, systemPrompt = "You are an AI assistant.", context = null, profile = null, maxRetries = 3) {
+    static async generateWithProfile(prompt, systemPrompt = 'You are an AI assistant.', context = null, profile = null, maxRetries = 3) {
         if (!context) {
             context = window.getContext && window.getContext() || {};
         }
@@ -260,9 +265,9 @@ export class LLMUtility {
                             return await context.generateQuietPrompt({
                                 quietPrompt: prompt
                             });
-                        } else {
-                            throw new Error('No generation method available in context');
-                        }
+                        } 
+                        throw new Error('No generation method available in context');
+                        
                     });
                 } else {
                     // If no profile specified, run generation normally

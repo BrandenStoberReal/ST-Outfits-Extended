@@ -4,10 +4,10 @@
 
 // Helper function to replace all occurrences of a substring without using regex
 export function replaceAll(str, searchValue, replaceValue) {
-    if (!searchValue) return str;
+    if (!searchValue) {return str;}
     
     // Prevent infinite loops when the replacement value contains the search value
-    if (searchValue === replaceValue) return str;
+    if (searchValue === replaceValue) {return str;}
     
     let result = str;
     let index = result.indexOf(searchValue);
@@ -24,7 +24,7 @@ export function replaceAll(str, searchValue, replaceValue) {
 // Function to extract all commands matching the pattern without using regex
 // Looking for patterns like: outfit-system_wear_headwear("Red Baseball Cap")
 export function extractCommands(text) {
-    if (!text || typeof text !== 'string') return [];
+    if (!text || typeof text !== 'string') {return [];}
     
     const commands = [];
     const pattern = 'outfit-system_';
@@ -32,11 +32,13 @@ export function extractCommands(text) {
     
     while (startIndex < text.length) {
         const patternIndex = text.indexOf(pattern, startIndex);
-        if (patternIndex === -1) break;
+
+        if (patternIndex === -1) {break;}
         
         // Find the action part (wear, remove, change)
         const actionStart = patternIndex + pattern.length;
         const actionEnd = text.indexOf('_', actionStart);
+
         if (actionEnd === -1) {
             startIndex = patternIndex + 1;
             continue;
@@ -53,6 +55,7 @@ export function extractCommands(text) {
         // Find the slot part (headwear, topwear, etc.)
         const slotStart = actionEnd + 1;
         const slotEnd = text.indexOf('(', slotStart);
+
         if (slotEnd === -1) {
             startIndex = patternIndex + 1;
             continue;
@@ -63,8 +66,10 @@ export function extractCommands(text) {
         // Validate basic slot format - we'll allow alphanumeric, dash, and underscore characters
         // Instead of using a regex, we'll validate character by character
         let isValidSlot = true;
+
         for (let i = 0; i < slot.length; i++) {
             const char = slot[i];
+
             // Check if the character is alphanumeric, underscore, or dash
             if (!((char >= 'a' && char <= 'z') || 
                   (char >= 'A' && char <= 'Z') || 
@@ -107,7 +112,7 @@ export function extractCommands(text) {
                             i++;
                         }
                     }
-                    if (i < text.length) i++; // Skip the closing quote
+                    if (i < text.length) {i++;} // Skip the closing quote
                     continue;
                 }
                 i++;
@@ -124,6 +129,7 @@ export function extractCommands(text) {
         }
         
         const fullCommand = text.substring(patternIndex, parenEnd + 1);
+
         commands.push(fullCommand);
         startIndex = parenEnd + 1;
     }
@@ -134,7 +140,7 @@ export function extractCommands(text) {
 // Function to extract all macro patterns without using regex
 // Looking for patterns like: {{getglobalvar::<BOT>_headwear}} or {{getglobalvar::Emma_headwear}}
 export function extractMacros(text) {
-    if (!text || typeof text !== 'string') return [];
+    if (!text || typeof text !== 'string') {return [];}
     
     const macros = [];
     const startPattern = '{{getglobalvar::';
@@ -143,9 +149,11 @@ export function extractMacros(text) {
     
     while (startIndex < text.length) {
         const startIdx = text.indexOf(startPattern, startIndex);
-        if (startIdx === -1) break;
+
+        if (startIdx === -1) {break;}
         
         const endIdx = text.indexOf(endPattern, startIdx + startPattern.length);
+
         if (endIdx === -1) {
             // No closing tag found, invalid macro format
             startIndex = startIdx + 1;
@@ -168,17 +176,19 @@ export function extractMacros(text) {
 
 // Function to extract multiple values from a text without using regex
 export function extractValues(text, startMarker, endMarker) {
-    if (!text || typeof text !== 'string') return [];
+    if (!text || typeof text !== 'string') {return [];}
     
     const values = [];
     let startIndex = 0;
     
     while (startIndex < text.length) {
         const startIdx = text.indexOf(startMarker, startIndex);
-        if (startIdx === -1) break;
+
+        if (startIdx === -1) {break;}
         
         const contentStart = startIdx + startMarker.length;
         const endIdx = text.indexOf(endMarker, contentStart);
+
         if (endIdx === -1) {
             // No closing marker found, invalid format
             startIndex = startIdx + 1;
@@ -186,6 +196,7 @@ export function extractValues(text, startMarker, endMarker) {
         }
         
         const value = text.substring(contentStart, endIdx);
+
         values.push({
             fullMatch: text.substring(startIdx, endIdx + endMarker.length),
             value
@@ -199,7 +210,7 @@ export function extractValues(text, startMarker, endMarker) {
 
 // Function to safely access nested properties
 export function safeGet(obj, path, defaultValue = null) {
-    if (!obj || typeof obj !== 'object') return defaultValue;
+    if (!obj || typeof obj !== 'object') {return defaultValue;}
     
     const keys = path.split('.');
     let current = obj;
@@ -216,7 +227,7 @@ export function safeGet(obj, path, defaultValue = null) {
 
 // Function to safely set nested properties
 export function safeSet(obj, path, value) {
-    if (!obj || typeof obj !== 'object') return;
+    if (!obj || typeof obj !== 'object') {return;}
     
     const keys = path.split('.');
     const lastKey = keys.pop();

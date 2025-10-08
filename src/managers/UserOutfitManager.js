@@ -29,11 +29,12 @@ export class UserOutfitManager {
     
     // Method to migrate outfit data from an old instance ID to a new one - not needed since we're not using instance IDs anymore
     migrateOutfitData(oldInstanceId, newInstanceId) {
-        console.log(`[UserOutfitManager] Migration not needed as user outfits are now persistent across all instances`);
+        console.log('[UserOutfitManager] Migration not needed as user outfits are now persistent across all instances');
         
         // Since we're now using simple OUTFIT_INST_USER_<slot> format, we just need to make sure the values are saved
         for (const slot of this.slots) {
             const varName = this.getVarName(slot); // This will return OUTFIT_INST_USER_<slot>
+
             this.setGlobalVariable(varName, this.currentValues[slot]);
         }
     }
@@ -42,7 +43,7 @@ export class UserOutfitManager {
     cleanupTempInstances() {
         // Since we no longer use instance-specific variables for user, 
         // there's nothing to clean up in this case
-        console.log(`[UserOutfitManager] No temporary user instance variables to clean up`);
+        console.log('[UserOutfitManager] No temporary user instance variables to clean up');
     }
 
     // New method: get current instance ID
@@ -77,6 +78,7 @@ export class UserOutfitManager {
     getAllVariables() {
         try {
             const globalVars = safeGet(window, 'extension_settings.variables.global', {});
+
             return globalVars;
         } catch (error) {
             console.error('[UserOutfitManager] Error accessing global variables:', error);
@@ -87,6 +89,7 @@ export class UserOutfitManager {
     initializeOutfit() {
         this.slots.forEach(slot => {
             const varName = this.getVarName(slot);
+
             if (this.getGlobalVariable(varName) === 'None' || this.getGlobalVariable(varName) === '') {
                 this.setGlobalVariable(varName, 'None');
             }
@@ -97,6 +100,7 @@ export class UserOutfitManager {
     getGlobalVariable(name) {
         try {
             const globalVars = safeGet(window, 'extension_settings.variables.global', {});
+
             return globalVars[name] || window[name] || 'None';
         } catch (error) {
             console.error('[UserOutfitManager] Error accessing global variable:', name, error);
@@ -108,7 +112,7 @@ export class UserOutfitManager {
         try {
             window[name] = value;
             if (!window.extension_settings?.variables) {
-                if (!window.extension_settings) window.extension_settings = {};
+                if (!window.extension_settings) {window.extension_settings = {};}
                 window.extension_settings.variables = { global: {} };
             }
             window.extension_settings.variables.global[name] = value;
@@ -136,6 +140,7 @@ export class UserOutfitManager {
         
         // Limit the length of values to prevent storage issues
         const MAX_VALUE_LENGTH = 1000;
+
         if (value.length > MAX_VALUE_LENGTH) {
             value = value.substring(0, MAX_VALUE_LENGTH);
             console.warn(`[UserOutfitManager] Value truncated to ${MAX_VALUE_LENGTH} characters for slot ${slot}`);
@@ -143,6 +148,7 @@ export class UserOutfitManager {
         
         const previousValue = this.currentValues[slot];
         const varName = this.getVarName(slot);
+
         this.setGlobalVariable(varName, value);
         this.currentValues[slot] = value;
     
@@ -150,9 +156,9 @@ export class UserOutfitManager {
             return `You put on ${value}.`;
         } else if (value === 'None') {
             return `You removed ${previousValue}.`;
-        } else {
-            return `You changed from ${previousValue} to ${value}.`;
-        }
+        } 
+        return `You changed from ${previousValue} to ${value}.`;
+        
     }
 
     async changeOutfitItem(slot) {
@@ -166,19 +172,19 @@ export class UserOutfitManager {
         let newValue = currentValue;
 
         if (currentValue === 'None') {
-            newValue = prompt(`What are you wearing on your ${slot}?`, "");
+            newValue = prompt(`What are you wearing on your ${slot}?`, '');
             // Handle empty input as 'None'
-            if (newValue === null) return null; // User cancelled the prompt
-            if (newValue === "") newValue = 'None'; // User entered empty string
+            if (newValue === null) {return null;} // User cancelled the prompt
+            if (newValue === '') {newValue = 'None';} // User entered empty string
         } else {
             const choice = prompt(
                 `Your ${slot}: ${currentValue}\n\nEnter 'remove' to remove, or type new item:`,
-                ""
+                ''
             );
 
-            if (choice === null) return null; // User cancelled the prompt
+            if (choice === null) {return null;} // User cancelled the prompt
             // Handle empty input as 'None'
-            if (choice === "") {
+            if (choice === '') {
                 newValue = 'None';
             } else {
                 newValue = choice.toLowerCase() === 'remove' ? 'None' : choice;
@@ -204,7 +210,7 @@ export class UserOutfitManager {
     // New method: get the namespace for this instance (for UI display)
     getInstanceNamespace() {
         // For user, we use a simple namespace since outfits are persistent across instances
-        return `OUTFIT_INST_USER`;
+        return 'OUTFIT_INST_USER';
     }
     
     // New method: save preset with instance ID
@@ -225,6 +231,7 @@ export class UserOutfitManager {
         
         // Create preset data for all slots
         const presetData = {};
+
         this.slots.forEach(slot => {
             presetData[slot] = this.currentValues[slot];
         });
@@ -255,6 +262,7 @@ export class UserOutfitManager {
         
         // Create preset data for all slots
         const presetData = {};
+
         this.slots.forEach(slot => {
             presetData[slot] = this.currentValues[slot];
         });
@@ -278,6 +286,7 @@ export class UserOutfitManager {
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
         
         const presets = safeGet(window, `extension_settings.outfit_tracker.presets.user.${actualInstanceId}`);
+
         if (!presets || !presets[presetName]) {
             return `[Outfit System] Preset "${presetName}" not found for user instance ${actualInstanceId}.`;
         }
@@ -288,6 +297,7 @@ export class UserOutfitManager {
         for (const [slot, value] of Object.entries(preset)) {
             if (this.slots.includes(slot) && this.currentValues[slot] !== value) {
                 const varName = this.getVarName(slot); // This will use the current instance ID
+
                 this.setGlobalVariable(varName, value);
                 this.currentValues[slot] = value;
                 changed = true;
@@ -310,6 +320,7 @@ export class UserOutfitManager {
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
         
         const presets = safeGet(window, `extension_settings.outfit_tracker.presets.user.${actualInstanceId}`);
+
         if (!presets || !presets[presetName]) {
             return `[Outfit System] Preset "${presetName}" not found for user instance ${actualInstanceId}.`;
         }
@@ -318,11 +329,13 @@ export class UserOutfitManager {
         
         // Cleanup instance if no presets left
         const instancePresets = safeGet(window, `extension_settings.outfit_tracker.presets.user.${actualInstanceId}`, {});
+
         if (Object.keys(instancePresets).length === 0) {
             delete safeGet(window, 'extension_settings.outfit_tracker.presets.user')[actualInstanceId];
             
             // Also cleanup the user if no instances left
-            const userPresets = safeGet(window, `extension_settings.outfit_tracker.presets.user`, {});
+            const userPresets = safeGet(window, 'extension_settings.outfit_tracker.presets.user', {});
+
             if (Object.keys(userPresets).length === 0) {
                 delete window.extension_settings.outfit_tracker.presets.user;
             }
@@ -339,6 +352,7 @@ export class UserOutfitManager {
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
         
         const presets = safeGet(window, `extension_settings.outfit_tracker.presets.user.${actualInstanceId}`);
+
         if (!presets) {
             return [];
         }
@@ -356,6 +370,7 @@ export class UserOutfitManager {
         
         // Create preset data for all slots
         const presetData = {};
+
         this.slots.forEach(slot => {
             presetData[slot] = this.currentValues[slot];
         });
@@ -384,6 +399,7 @@ export class UserOutfitManager {
         }
         
         const presets = safeGet(window, `extension_settings.outfit_tracker.presets.user.${actualInstanceId}`);
+
         // Check if the preset exists
         if (!presets || !presets[presetName]) {
             return `[Outfit System] Preset "${presetName}" not found for instance ${actualInstanceId}.`;
@@ -406,6 +422,7 @@ export class UserOutfitManager {
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
         
         const presets = safeGet(window, `extension_settings.outfit_tracker.presets.user.${actualInstanceId}`);
+
         if (!presets || !presets['default']) {
             return `[Outfit System] No default outfit set for user (instance: ${actualInstanceId}).`;
         }
@@ -416,6 +433,7 @@ export class UserOutfitManager {
         for (const [slot, value] of Object.entries(preset)) {
             if (this.slots.includes(slot) && this.currentValues[slot] !== value) {
                 const varName = this.getVarName(slot); // This will use the current instance ID
+
                 this.setGlobalVariable(varName, value);
                 this.currentValues[slot] = value;
                 changed = true;
@@ -425,6 +443,7 @@ export class UserOutfitManager {
         for (const slot of this.slots) {
             if (!preset.hasOwnProperty(slot) && this.currentValues[slot] !== 'None') {
                 const varName = this.getVarName(slot); // This will use the current instance ID
+
                 this.setGlobalVariable(varName, 'None');
                 this.currentValues[slot] = 'None';
                 changed = true;
@@ -442,7 +461,8 @@ export class UserOutfitManager {
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
         
         const presets = safeGet(window, `extension_settings.outfit_tracker.presets.user.${actualInstanceId}`);
-        return !!(presets && presets['default']);
+
+        return Boolean(presets && presets['default']);
     }
     
     // Identify which preset is the default by comparing data for a specific instance
@@ -455,6 +475,7 @@ export class UserOutfitManager {
         }
         
         const presets = safeGet(window, `extension_settings.outfit_tracker.presets.user.${actualInstanceId}`);
+
         if (!presets || !presets['default']) {
             return null;
         }
@@ -463,7 +484,7 @@ export class UserOutfitManager {
         
         // Find which preset matches the default data
         for (const [presetName, presetData] of Object.entries(presets)) {
-            if (presetName !== 'default') {  // Skip the default entry itself
+            if (presetName !== 'default') { // Skip the default entry itself
                 let isMatch = true;
                 
                 // Compare all slots in the preset

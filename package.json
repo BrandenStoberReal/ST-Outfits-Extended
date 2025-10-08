@@ -1,0 +1,25 @@
+{
+  "name": "st-outfits",
+  "version": "1.4.36",
+  "description": "SillyTavern Outfit Engine",
+  "main": "index.js",
+  "scripts": {
+    "lint": "eslint src/**/*.js index.js",
+    "lint:fix": "eslint --fix src/**/*.js index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "devDependencies": {
+    "eslint": "^8.57.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/BrandenStoberReal/ST-Outfits-Extended"
+  },
+  "keywords": [
+    "silvertavern",
+    "outfit",
+    "extension"
+  ],
+  "author": "Branden (Original by Lucanna)",
+  "license": "MIT"
+}

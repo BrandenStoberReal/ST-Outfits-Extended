@@ -18,6 +18,7 @@ export class UserOutfitPanel {
         }
 
         const panel = document.createElement('div');
+
         panel.id = 'user-outfit-panel';
         panel.className = 'outfit-panel';
 
@@ -44,9 +45,11 @@ export class UserOutfitPanel {
         document.body.appendChild(panel);
         
         const tabs = panel.querySelectorAll('.outfit-tab');
+
         tabs.forEach(tab => {
             tab.addEventListener('click', (event) => {
                 const tabName = event.target.dataset.tab;
+
                 this.currentTab = tabName;
                 this.renderContent();
                 
@@ -62,6 +65,7 @@ export class UserOutfitPanel {
     getFirstMessageText() {
         try {
             const context = window.getContext();
+
             if (context && context.chat && Array.isArray(context.chat)) {
                 // Get the first AI message from the character (instance identifier)
                 const aiMessages = context.chat.filter(msg => 
@@ -69,6 +73,7 @@ export class UserOutfitPanel {
                 
                 if (aiMessages.length > 0) {
                     const firstMessage = aiMessages[0];
+
                     return firstMessage.mes || '';
                 }
             }
@@ -80,23 +85,24 @@ export class UserOutfitPanel {
     }
 
     renderContent() {
-        if (!this.domElement) return;
+        if (!this.domElement) {return;}
         
         const contentArea = this.domElement.querySelector('.outfit-content');
-        if (!contentArea) return;
+
+        if (!contentArea) {return;}
         
         contentArea.innerHTML = '';
         
         switch(this.currentTab) {
-            case 'clothing':
-                this.renderSlots(this.clothingSlots, contentArea);
-                break;
-            case 'accessories':
-                this.renderSlots(this.accessorySlots, contentArea);
-                break;
-            case 'outfits':
-                this.renderPresets(contentArea);
-                break;
+        case 'clothing':
+            this.renderSlots(this.clothingSlots, contentArea);
+            break;
+        case 'accessories':
+            this.renderSlots(this.accessorySlots, contentArea);
+            break;
+        case 'outfits':
+            this.renderPresets(contentArea);
+            break;
         }
     }
 
@@ -105,6 +111,7 @@ export class UserOutfitPanel {
     
         outfitData.forEach(slot => {
             const slotElement = document.createElement('div');
+
             slotElement.className = 'outfit-slot';
             slotElement.dataset.slot = slot.name;
     
@@ -118,6 +125,7 @@ export class UserOutfitPanel {
     
             slotElement.querySelector('.slot-change').addEventListener('click', async () => {
                 const message = await this.outfitManager.changeOutfitItem(slot.name);
+
                 if (message && window.extension_settings.outfit_tracker?.enableSysMessages) {
                     this.sendSystemMessage(message);
                 }
@@ -145,6 +153,7 @@ export class UserOutfitPanel {
             if (defaultPresetName === 'default') {
                 // Create a special entry for the unmatched default
                 const defaultPresetElement = document.createElement('div');
+
                 defaultPresetElement.className = 'outfit-preset default-preset';
                 defaultPresetElement.innerHTML = `
                     <div class="preset-name">Default: Current Setup</div>
@@ -155,6 +164,7 @@ export class UserOutfitPanel {
                 
                 defaultPresetElement.querySelector('.load-preset').addEventListener('click', async () => {
                     const message = await this.outfitManager.loadDefaultOutfit();
+
                     if (message && window.extension_settings.outfit_tracker?.enableSysMessages) {
                         this.sendSystemMessage(message);
                     }
@@ -168,6 +178,7 @@ export class UserOutfitPanel {
                 regularPresets.forEach(preset => {
                     const isDefault = (defaultPresetName === preset);
                     const presetElement = document.createElement('div');
+
                     presetElement.className = `outfit-preset ${isDefault ? 'default-preset' : ''}`;
                     presetElement.innerHTML = `
                         <div class="preset-name">${preset}${isDefault ? '' : ''}</div>
@@ -181,6 +192,7 @@ export class UserOutfitPanel {
                     
                     presetElement.querySelector('.load-preset').addEventListener('click', async () => {
                         const message = await this.outfitManager.loadPreset(preset);
+
                         if (message && window.extension_settings.outfit_tracker?.enableSysMessages) {
                             this.sendSystemMessage(message);
                         }
@@ -190,6 +202,7 @@ export class UserOutfitPanel {
                     
                     presetElement.querySelector('.set-default-preset').addEventListener('click', async () => {
                         const message = await this.outfitManager.setPresetAsDefault(preset);
+
                         if (message && window.extension_settings.outfit_tracker?.enableSysMessages) {
                             this.sendSystemMessage(message);
                         }
@@ -202,6 +215,7 @@ export class UserOutfitPanel {
                             // If it's not the default preset, just delete normally
                             if (confirm(`Delete "${preset}" outfit?`)) {
                                 const message = this.outfitManager.deletePreset(preset);
+
                                 if (message && window.extension_settings.outfit_tracker?.enableSysMessages) {
                                     this.sendSystemMessage(message);
                                 }
@@ -227,6 +241,7 @@ export class UserOutfitPanel {
                         // Confirmation dialog to confirm overwriting the preset
                         if (confirm(`Overwrite "${preset}" with current outfit?`)) {
                             const message = this.outfitManager.overwritePreset(preset);
+
                             if (message && window.extension_settings.outfit_tracker?.enableSysMessages) {
                                 this.sendSystemMessage(message);
                             }
@@ -242,13 +257,16 @@ export class UserOutfitPanel {
     
         // Add save regular outfit button
         const saveButton = document.createElement('button');
+
         saveButton.className = 'save-outfit-btn';
         saveButton.textContent = 'Save Current Outfit';
         saveButton.style.marginTop = '5px';
         saveButton.addEventListener('click', async () => {
             const presetName = prompt('Name this outfit:');
+
             if (presetName && presetName.toLowerCase() !== 'default') {
                 const message = await this.outfitManager.savePreset(presetName.trim());
+
                 if (message && window.extension_settings.outfit_tracker?.enableSysMessages) {
                     this.sendSystemMessage(message);
                 }
@@ -349,6 +367,7 @@ export class UserOutfitPanel {
     applyPanelColors() {
         if (window.extension_settings && window.extension_settings.outfit_tracker && this.domElement) {
             const colors = window.extension_settings.outfit_tracker.userPanelColors;
+
             if (colors) {
                 this.domElement.style.background = colors.primary;
                 this.domElement.style.border = `1px solid ${colors.border}`;
@@ -373,6 +392,7 @@ export class UserOutfitPanel {
         
         if (this.domElement) {
             const header = this.domElement.querySelector('.outfit-header h3');
+
             if (header) {
                 // Get the first message hash for display in the header (instance ID)
                 const messageHash = this.generateMessageHash(this.getFirstMessageText() || this.outfitManager.getOutfitInstanceId() || '');
@@ -385,28 +405,30 @@ export class UserOutfitPanel {
 
     // Generate a short identifier from the instance ID
     generateShortId(instanceId) {
-        if (!instanceId) return '';
+        if (!instanceId) {return '';}
         
         // If the instance ID is already a short identifier, return it
-        if (instanceId.startsWith('temp_')) return 'temp';
+        if (instanceId.startsWith('temp_')) {return 'temp';}
         
         // Create a simple short identifier by taking up to 6 characters of the instance ID
         // but only alphanumeric characters for better readability
         const cleanId = instanceId.replace(/[^a-zA-Z0-9]/g, '');
+
         return cleanId.substring(0, 6);
     }
     
     // Generate an 8-character hash from a text string
     generateMessageHash(text) {
-        if (!text) return '';
+        if (!text) {return '';}
         
         let hash = 0;
         const str = text.substring(0, 100); // Only use first 100 chars to keep ID manageable
         
         for (let i = 0; i < str.length; i++) {
             const char = str.charCodeAt(i);
+
             hash = ((hash << 5) - hash) + char;
-            hash = hash & hash; // Convert to 32-bit integer
+            hash &= hash; // Convert to 32-bit integer
         }
         
         // Convert to positive and return 8-character string representation

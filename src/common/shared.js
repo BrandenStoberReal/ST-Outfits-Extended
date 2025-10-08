@@ -2,7 +2,7 @@ export function dragElement(element) {
     let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
     const header = element.find('.outfit-header')[0];
 
-    if (header) header.onmousedown = dragMouseDown;
+    if (header) {header.onmousedown = dragMouseDown;}
 
     function dragMouseDown(e) {
         e.preventDefault();
@@ -18,8 +18,8 @@ export function dragElement(element) {
         pos2 = pos4 - e.clientY;
         pos3 = e.clientX;
         pos4 = e.clientY;
-        element[0].style.top = (element[0].offsetTop - pos2) + "px";
-        element[0].style.left = (element[0].offsetLeft - pos1) + "px";
+        element[0].style.top = (element[0].offsetTop - pos2) + 'px';
+        element[0].style.left = (element[0].offsetLeft - pos1) + 'px';
     }
 
     function closeDragElement() {
@@ -39,7 +39,7 @@ export function resizeElement(element, panelId, options = {}) {
         ...options
     };
 
-    if (!opts.resizable) return;
+    if (!opts.resizable) {return;}
 
     // Try to load saved state, and apply defaults if nothing is saved
     const savedState = loadPanelState(panelId);
@@ -93,6 +93,7 @@ export function resizeElement(element, panelId, options = {}) {
 
     // Add resize handle to the bottom-right corner
     const resizeHandle = document.createElement('div');
+
     resizeHandle.className = 'resize-handle';
     resizeHandle.innerHTML = '...';
     element[0].appendChild(resizeHandle);
@@ -169,9 +170,9 @@ export function loadPanelState(panelId) {
     // Determine which panel we're loading for
     if (panelId.includes('bot')) {
         return window.extension_settings.outfit_tracker.botPanelState;
-    } else {
-        return window.extension_settings.outfit_tracker.userPanelState;
-    }
+    } 
+    return window.extension_settings.outfit_tracker.userPanelState;
+    
 }
 
 // Enhanced dragElement function to save position when dragging stops
@@ -179,7 +180,7 @@ export function dragElementWithSave(element, panelId) {
     let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
     const header = element.find('.outfit-header')[0];
 
-    if (header) header.onmousedown = dragMouseDown;
+    if (header) {header.onmousedown = dragMouseDown;}
 
     function dragMouseDown(e) {
         e.preventDefault();
@@ -195,8 +196,8 @@ export function dragElementWithSave(element, panelId) {
         pos2 = pos4 - e.clientY;
         pos3 = e.clientX;
         pos4 = e.clientY;
-        element[0].style.top = (element[0].offsetTop - pos2) + "px";
-        element[0].style.left = (element[0].offsetLeft - pos1) + "px";
+        element[0].style.top = (element[0].offsetTop - pos2) + 'px';
+        element[0].style.left = (element[0].offsetLeft - pos1) + 'px';
     }
 
     function closeDragElement() {

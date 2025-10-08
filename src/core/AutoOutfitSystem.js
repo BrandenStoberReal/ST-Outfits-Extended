@@ -55,7 +55,7 @@ NOTES:
     }
 
     enable() {
-        if (this.isEnabled) return '[Outfit System] Auto outfit updates already enabled.';
+        if (this.isEnabled) {return '[Outfit System] Auto outfit updates already enabled.';}
         
         this.isEnabled = true;
         this.consecutiveFailures = 0;
@@ -65,7 +65,7 @@ NOTES:
     }
 
     disable() {
-        if (!this.isEnabled) return '[Outfit System] Auto outfit updates already disabled.';
+        if (!this.isEnabled) {return '[Outfit System] Auto outfit updates already disabled.';}
         
         this.isEnabled = false;
         this.removeEventListeners();
@@ -78,6 +78,7 @@ NOTES:
         
         try {
             const context = window.getContext();
+
             if (!context || !context.eventSource || !context.event_types) {
                 console.error('[AutoOutfitSystem] Context not ready for event listeners');
                 return;
@@ -118,6 +119,7 @@ NOTES:
         try {
             if (this.eventHandler) {
                 const context = window.getContext();
+
                 if (context && context.eventSource && context.event_types) {
                     context.eventSource.off(context.event_types.MESSAGE_RECEIVED, this.eventHandler);
                 }
@@ -202,6 +204,7 @@ NOTES:
 
     async executeGenCommand() {
         const recentMessages = this.getLastMessages(3);
+
         if (!recentMessages.trim()) {
             throw new Error('No valid messages to process');
         }
@@ -214,13 +217,14 @@ NOTES:
         
         try {
             const context = window.getContext();
+
             if (!context) {
                 throw new Error('Context not available for LLM generation');
             }
             
             const result = await LLMUtility.generateWithProfile(
                 promptText,
-                "You are an outfit change detection system. Analyze the conversation and output outfit commands when clothing changes occur.",
+                'You are an outfit change detection system. Analyze the conversation and output outfit commands when clothing changes occur.',
                 context,
                 this.connectionProfile
             );
@@ -263,6 +267,7 @@ NOTES:
             
             // Get the context and try to extract persona from the current chat
             const context = window.getContext ? window.getContext() : null;
+
             if (context && safeGet(context, 'chat')) {
                 // Filter messages that are from the user to get their avatars
                 const userMessages = safeGet(context, 'chat', []).filter(message => message.is_user);
@@ -275,12 +280,14 @@ NOTES:
                     if (mostRecentUserMessage.force_avatar) {
                         // Extract the persona name from the avatar path
                         const USER_AVATAR_PATH = 'useravatars/';
+
                         if (typeof mostRecentUserMessage.force_avatar === 'string' && 
                             mostRecentUserMessage.force_avatar.startsWith(USER_AVATAR_PATH)) {
                             userName = mostRecentUserMessage.force_avatar.replace(USER_AVATAR_PATH, '');
                             
                             // Remove file extension if present
                             const lastDotIndex = userName.lastIndexOf('.');
+
                             if (lastDotIndex > 0) {
                                 userName = userName.substring(0, lastDotIndex);
                             }
@@ -322,6 +329,7 @@ NOTES:
                 if (varName.startsWith(`${characterName}_`) || varName.startsWith(`${normalizedCharName}_`)) {
                     // Extract slot name after the character name prefix
                     let slot;
+
                     if (varName.startsWith(`${characterName}_`)) {
                         slot = varName.substring(characterName.length + 1);
                     } else if (varName.startsWith(`${normalizedCharName}_`)) {
@@ -345,6 +353,7 @@ NOTES:
                 else if (varName.startsWith('User_')) {
                     try {
                         const globalVars = safeGet(window, 'extension_settings.variables.global', {});
+
                         if (globalVars[varName] !== undefined) {
                             value = globalVars[varName];
                         }
@@ -377,7 +386,7 @@ NOTES:
             if (context.generateQuietPrompt) {
                 result = await LLMUtility.generateWithProfile(
                     processedPromptText,
-                    "You are an outfit change detection system. Analyze the conversation and output outfit commands when clothing changes occur.",
+                    'You are an outfit change detection system. Analyze the conversation and output outfit commands when clothing changes occur.',
                     context,
                     this.connectionProfile
                 );
@@ -385,7 +394,7 @@ NOTES:
                 // Try standard generateRaw as a fallback if generateQuietPrompt is not available
                 result = await LLMUtility.generateWithProfile(
                     processedPromptText,
-                    "You are an outfit change detection system. Analyze the conversation and output outfit commands when clothing changes occur.",
+                    'You are an outfit change detection system. Analyze the conversation and output outfit commands when clothing changes occur.',
                     context,
                     this.connectionProfile
                 );
@@ -416,7 +425,7 @@ NOTES:
     }
 
     parseGeneratedText(text) {
-        if (!text) return [];
+        if (!text) {return [];}
         
         // Check if the text is just "[none]" (meaning no changes detected)
         if (text.trim() === '[none]') {
@@ -445,6 +454,7 @@ NOTES:
         for (const command of commands) {
             try {
                 const result = await this.processSingleCommand(command);
+
                 if (result.success) {
                     successfulCommands.push(result);
                 } else {
@@ -460,8 +470,10 @@ NOTES:
             console.log(`[AutoOutfitSystem] Showing ${successfulCommands.length} popup messages`);
             
             const messagesByCharacter = {};
+
             successfulCommands.forEach(({ message }) => {
                 const charName = message.match(/(\w+) put on|removed|changed/)?.[1] || 'Character';
+
                 if (!messagesByCharacter[charName]) {
                     messagesByCharacter[charName] = [];
                 }
@@ -497,11 +509,13 @@ NOTES:
             // Extract the action part
             const actionStart = 'outfit-system_'.length;
             const actionEnd = command.indexOf('_', actionStart);
+
             if (actionEnd === -1) {
                 throw new Error(`Invalid command format: ${command}`);
             }
             
             const action = command.substring(actionStart, actionEnd);
+
             if (!['wear', 'remove', 'change'].includes(action)) {
                 throw new Error(`Invalid action: ${action}. Valid actions: wear, remove, change`);
             }
@@ -509,6 +523,7 @@ NOTES:
             // Extract the slot part
             const slotStart = actionEnd + 1;
             const slotEnd = command.indexOf('(', slotStart);
+
             if (slotEnd === -1) {
                 throw new Error(`Invalid command format: ${command}`);
             }
@@ -543,6 +558,7 @@ NOTES:
             } else {
                 // Value is not quoted, extract until closing parenthesis
                 const closingParen = command.indexOf(')', valueStart);
+
                 if (closingParen !== -1) {
                     value = command.substring(valueStart, closingParen);
                 }
@@ -622,6 +638,7 @@ NOTES:
             }
             
             const recentMessages = validMessages.slice(-count);
+
             return recentMessages.map(msg => 
                 `${msg.is_user ? 'User' : (safeGet(msg, 'name', 'AI'))}: ${safeGet(msg, 'mes', '')}`
             ).join('\n');
@@ -641,17 +658,17 @@ NOTES:
                 };
                 
                 switch(type) {
-                    case 'error':
-                        toastr.error(message, 'Outfit System', options);
-                        break;
-                    case 'warning':
-                        toastr.warning(message, 'Outfit System', options);
-                        break;
-                    case 'success':
-                        toastr.success(message, 'Outfit System', options);
-                        break;
-                    default:
-                        toastr.info(message, 'Outfit System', options);
+                case 'error':
+                    toastr.error(message, 'Outfit System', options);
+                    break;
+                case 'warning':
+                    toastr.warning(message, 'Outfit System', options);
+                    break;
+                case 'success':
+                    toastr.success(message, 'Outfit System', options);
+                    break;
+                default:
+                    toastr.info(message, 'Outfit System', options);
                 }
             }
         } catch (error) {
@@ -666,7 +683,7 @@ NOTES:
     getStatus() {
         return {
             enabled: this.isEnabled,
-            hasPrompt: !!this.systemPrompt,
+            hasPrompt: Boolean(this.systemPrompt),
             promptLength: this.systemPrompt?.length || 0,
             isProcessing: this.isProcessing,
             consecutiveFailures: this.consecutiveFailures,
@@ -726,7 +743,7 @@ NOTES:
         // Use the unified LLM utility with profile
         return await LLMUtility.generateWithProfile(
             processedPromptText,
-            "You are an outfit change detection system. Analyze the conversation and output outfit commands when clothing changes occur.",
+            'You are an outfit change detection system. Analyze the conversation and output outfit commands when clothing changes occur.',
             window.getContext(),
             this.connectionProfile
         );
