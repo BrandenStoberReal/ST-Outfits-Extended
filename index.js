@@ -2040,9 +2040,21 @@ Only output command lines, nothing else.`;
                 botPanel.updateCharacter(charName);
             }
 
+            // Update the user panel as well when chat changes
+            if (userManager) {
+                // Set the outfit instance ID for user based on the same first message scenario
+                userManager.setOutfitInstanceId(instanceId);
+            }
+            if (userPanel) {
+                userPanel.updateHeader();
+            }
+
             // Make sure the panel renders the content with the new character name
             if (botPanel.isVisible && !botPanel.isMinimized && botPanel.renderContent) {
                 botPanel.renderContent();
+            }
+            if (userPanel.isVisible && userPanel.renderContent) {
+                userPanel.renderContent();
             }
         } catch (error) {
             console.error("[OutfitTracker] Error updating for current character:", error);
@@ -2233,10 +2245,6 @@ Only output command lines, nothing else.`;
             console.log("[OutfitTracker] CHAT_ID_CHANGED event fired");
             updateForCurrentCharacter();
         });
-        eventSource.on(event_types.CHAT_CHANGED, () => {
-            console.log("[OutfitTracker] CHAT_CHANGED event fired");
-            updateForCurrentCharacter();
-        });
         eventSource.on(event_types.CHARACTER_PAGE_LOADED, () => {
             console.log("[OutfitTracker] CHARACTER_PAGE_LOADED event fired");
             updateForCurrentCharacter();
@@ -2272,68 +2280,7 @@ Only output command lines, nothing else.`;
         });
 
         // Listen for the first message selected event which is more specific than MESSAGE_RECEIVED
-        eventSource.on(event_types.CHARACTER_FIRST_MESSAGE_SELECTED, async (data) => {
-            console.log("[OutfitTracker] CHARACTER_FIRST_MESSAGE_SELECTED event fired");
-            try {
-                // Only process for AI messages (not user messages)
-                if (data && !data.is_user && !data.is_system) {
-                    const context = getContext();
-                    if (context && context.chat) {
-                        // For the first message selected event, the data should be the first message
-                        console.log("[OutfitTracker] Detected first message for this chat, creating outfit instance");
-                        
-                        // Create a specific outfit instance based on the first message content
-                        const firstMessageText = data.mes || '';
-                        
-                        // Determine scenario type based on message content
-                        let instanceId = null;
-                        
-                        // Create a more robust and descriptive instance ID
-                        const messagePreview = firstMessageText.substring(0, 20).replace(/[^\\w\\s]/gi, '').replace(/\\s+/g, '_').toLowerCase();
-                        
-                        if (firstMessageText.toLowerCase().includes('hello') || firstMessageText.toLowerCase().includes('hi')) {
-                            instanceId = `greeting_${messagePreview}_${Date.now()}`;
-                        } else if (firstMessageText.toLowerCase().includes('bedroom') || firstMessageText.toLowerCase().includes('bed')) {
-                            instanceId = `bedroom_${messagePreview}_${Date.now()}`;
-                        } else if (firstMessageText.toLowerCase().includes('office') || firstMessageText.toLowerCase().includes('work')) {
-                            instanceId = `office_${messagePreview}_${Date.now()}`;
-                        } else {
-                            // Create a hash-based ID with more information
-                            const textHash = btoa(encodeURIComponent(firstMessageText.substring(0, 50))).replace(/[=]/g, '').substring(0, 12);
-                            instanceId = `scenario_${textHash}_${Date.now()}`;
-                        }
-                        
-                        if (botManager) {
-                            // Set the outfit instance ID based on the first message scenario
-                            botManager.setOutfitInstanceId(instanceId);
-                            console.log(`[OutfitTracker] Set bot outfit instance ID: ${instanceId}`);
-                        }
-                        
-                        if (userManager) {
-                            // Also set a corresponding instance ID for the user
-                            userManager.setOutfitInstanceId(instanceId);
-                            console.log(`[OutfitTracker] Set user outfit instance ID: ${instanceId}`);
-                        }
-                        
-                        // Update the panels to reflect the new instance
-                        if (botPanel && botPanel.isVisible) {
-                            botPanel.updateCharacter(botManager.character);
-                            botPanel.renderContent();
-                        }
-                        
-                        if (userPanel && userPanel.isVisible) {
-                            userPanel.renderContent();
-                        }
-                        
-                        console.log(`[OutfitTracker] Created outfit instances: ${instanceId}`);
-                    } else {
-                        console.warn("[OutfitTracker] Context or chat not available when processing message");
-                    }
-                }
-            } catch (error) {
-                console.error("[OutfitTracker] Error handling first message event:", error);
-            }
-        });
+
 
         // Listen for message swiped event to handle first message changes
         eventSource.on(event_types.MESSAGE_SWIPED, async (data) => {
@@ -2415,10 +2362,13 @@ Only output command lines, nothing else.`;
                             }
                             
                             if (userPanel && userPanel.isVisible) {
+                                userPanel.updateHeader();
                                 userPanel.renderContent();
                             }
                             
                             console.log(`[OutfitTracker] Created outfit instances after first message swipe: ${instanceId}`);
+                        } else {
+                            console.log("[OutfitTracker] Swiped message is not the first AI message, skipping instance update");
                         }
                     }
                 }
@@ -2489,6 +2439,17 @@ Only output command lines, nothing else.`;
                         const tempInstanceId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
                         userManager.setOutfitInstanceId(tempInstanceId);
                         console.log(`[OutfitTracker] Created new temporary outfit instance for user after chat clear: ${tempInstanceId}`);
+                    }
+                    
+                    // Update the panel headers after chat is cleared
+                    if (botPanel && botPanel.isVisible) {
+                        botPanel.updateCharacter(botManager.character);
+                        botPanel.renderContent();
+                    }
+                    
+                    if (userPanel && userPanel.isVisible) {
+                        userPanel.updateHeader();
+                        userPanel.renderContent();
                     }
                 } catch (error) {
                     console.error("[OutfitTracker] Error resetting to default outfit:", error);

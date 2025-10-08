@@ -360,6 +360,20 @@ export class UserOutfitPanel {
         }
         this.isVisible = false;
     }
+    
+    // Update the header to reflect changes (like new instance ID)
+    updateHeader() {
+        if (this.domElement) {
+            const header = this.domElement.querySelector('.outfit-header h3');
+            if (header) {
+                // Get the first message hash for display in the header (instance ID)
+                const messageHash = this.generateMessageHash(this.getFirstMessageText() || this.outfitManager.getOutfitInstanceId() || '');
+                const hashDisplay = messageHash ? ` (${messageHash})` : '';
+                
+                header.textContent = `{{user}}'s Outfit${hashDisplay}`;
+            }
+        }
+    }
 
     // Generate a short identifier from the instance ID
     generateShortId(instanceId) {
