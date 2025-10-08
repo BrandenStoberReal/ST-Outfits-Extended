@@ -2457,6 +2457,10 @@ Only output command lines, nothing else.`;
                         console.log("[OutfitTracker] Restored user outfit instances after chat clear");
                     }
 
+                    // Update the current character which will properly set the instance ID based on first message
+                    // (or create a new temporary one if no first message exists yet)
+                    updateForCurrentCharacter();
+                    
                     if (botManager) {
                         // Reset bot outfit to default if available for the current instance
                         const botMessage = await botManager.loadDefaultOutfit();
@@ -2483,19 +2487,6 @@ Only output command lines, nothing else.`;
                             // If no default outfit exists, initialize all slots to "None"
                             await initializeOutfitSlotsToNone(userManager, userPanel);
                         }
-                    }
-                    
-                    // Reset outfit instance IDs after chat is cleared
-                    if (botManager) {
-                        const tempInstanceId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-                        botManager.setOutfitInstanceId(tempInstanceId);
-                        console.log(`[OutfitTracker] Created new temporary outfit instance after chat clear: ${tempInstanceId}`);
-                    }
-
-                    if (userManager) {
-                        const tempInstanceId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-                        userManager.setOutfitInstanceId(tempInstanceId);
-                        console.log(`[OutfitTracker] Created new temporary outfit instance for user after chat clear: ${tempInstanceId}`);
                     }
                     
                     // Update the panel headers after chat is cleared
