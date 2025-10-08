@@ -19,8 +19,8 @@ export class UserOutfitManager {
         if (this.outfitInstanceId !== instanceId) {
             console.log(`[UserOutfitManager] Changing outfit instance from "${this.outfitInstanceId}" to "${instanceId}"`);
             
-            // If transitioning from a temporary ID to a permanent one, migrate the data
-            if (oldInstanceId && oldInstanceId.startsWith('temp_') && instanceId && !instanceId.startsWith('temp_')) {
+            // If we have an old instance ID and a new one, migrate the data
+            if (oldInstanceId && instanceId) {
                 this.migrateOutfitData(oldInstanceId, instanceId);
             }
             
