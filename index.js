@@ -2306,21 +2306,37 @@ Only output command lines, nothing else.`;
                         }
 
                         if (botManager) {
-                            // Set the outfit instance ID based on the first message scenario
-                            botManager.setOutfitInstanceId(instanceId);
-                            console.log(`[OutfitTracker] Set bot outfit instance ID after swipe: ${instanceId}`);
+                            // Check if the instance ID is actually changing before updating
+                            const currentInstanceId = botManager.getOutfitInstanceId();
+                            
+                            // Only update if the instance ID is actually changing
+                            if (currentInstanceId !== instanceId) {
+                                // Set the outfit instance ID based on the first message scenario
+                                botManager.setOutfitInstanceId(instanceId);
+                                console.log(`[OutfitTracker] Set bot outfit instance ID after swipe: ${instanceId} (was ${currentInstanceId})`);
 
-                            // Load the outfit data for the new instance
-                            botManager.loadOutfit();
+                                // Load the outfit data for the new instance
+                                botManager.loadOutfit();
+                            } else {
+                                console.log(`[OutfitTracker] Bot instance ID unchanged, skipping update: ${instanceId}`);
+                            }
                         }
 
                         if (userManager) {
-                            // Also set a corresponding instance ID for the user
-                            userManager.setOutfitInstanceId(instanceId);
-                            console.log(`[OutfitTracker] Set user outfit instance ID after swipe: ${instanceId}`);
+                            // Check if the instance ID is actually changing before updating
+                            const currentUserInstanceId = userManager.getOutfitInstanceId();
+                            
+                            // Only update if the instance ID is actually changing
+                            if (currentUserInstanceId !== instanceId) {
+                                // Also set a corresponding instance ID for the user
+                                userManager.setOutfitInstanceId(instanceId);
+                                console.log(`[OutfitTracker] Set user outfit instance ID after swipe: ${instanceId} (was ${currentUserInstanceId})`);
 
-                            // Load the outfit data for the new instance
-                            userManager.loadOutfit();
+                                // Load the outfit data for the new instance
+                                userManager.loadOutfit();
+                            } else {
+                                console.log(`[OutfitTracker] User instance ID unchanged, skipping update: ${instanceId}`);
+                            }
                         }
 
                         // Update the panels to reflect the new instance
