@@ -2011,7 +2011,7 @@ Only output command lines, nothing else.`;
                 botManager.setOutfitInstanceId(instanceId);
 
                 // Load the outfit data for the new instance
-                botManager.loadOutfit();
+                await botManager.loadOutfit();
             }
             if (botPanel) {
                 botPanel.updateCharacter(charName);
@@ -2023,46 +2023,88 @@ Only output command lines, nothing else.`;
                 userManager.setOutfitInstanceId(instanceId);
 
                 // Load the outfit data for the new instance
-                userManager.loadOutfit();
+                await userManager.loadOutfit();
             }
             if (userPanel) {
                 userPanel.updateHeader();
             }
 
-            // Additional fix: Ensure outfit managers have loaded their values before panel renders
+            // Ensure outfit managers have loaded their values before panel renders
             // This addresses the issue where fields are empty until a swipe occurs
             if (botManager) {
                 // Ensure all outfit slots are properly loaded for this character/conversation instance
-                botManager.loadOutfit();
-                // Force update the manager's current values to ensure they're loaded from storage
-                await botManager.loadOutfit(); // Call it again to ensure values are fresh
+                await botManager.loadOutfit();
             }
             if (userManager) {
                 // Ensure all outfit slots are properly loaded for user in this conversation instance
-                userManager.loadOutfit();
-                // Force update the manager's current values to ensure they're loaded from storage
-                await userManager.loadOutfit(); // Call it again to ensure values are fresh
+                await userManager.loadOutfit();
             }
             
-            // Make sure the panel renders the content with the new character name
-            // Fix visual bug: render content even when minimized as the data needs to be updated
-            if (botPanel.isVisible && botPanel.renderContent) {
+            // Force an immediate render to update UI with the loaded values
+            // This should fix the issue where values are empty until swipe occurs
+            if (botPanel.renderContent) {
                 botPanel.renderContent();
             }
-            if (userPanel.isVisible && userPanel.renderContent) {
+            if (userPanel.renderContent) {
                 userPanel.renderContent();
             }
             
-            // Additional fix for the case where values are empty until swipe:
-            // Ensure the UI reflects the latest values by forcing a refresh after a brief delay
-            setTimeout(() => {
-                if (botPanel.isVisible && botPanel.renderContent) {
+            // Another attempt to ensure data is loaded and rendered properly
+            // This addresses the specific issue where fields are empty until the first message is swiped
+            setTimeout(async () => {
+                if (botManager) {
+                    // Reload the outfit data to ensure latest values are in place
+                    await botManager.loadOutfit();
+                    // Ensure that all slots have values (default to 'None' if empty)
+                    for (const slot of [...CLOTHING_SLOTS, ...ACCESSORY_SLOTS]) {
+                        const varName = botManager.getVarName(slot);
+                        let value = botManager.getGlobalVariable(varName);
+                        if (value === undefined || value === null || value === '') {
+                            value = 'None';
+                            botManager.setGlobalVariable(varName, value);
+                            botManager.currentValues[slot] = value;
+                        }
+                    }
+                }
+                if (userManager) {
+                    // Reload the outfit data to ensure latest values are in place
+                    await userManager.loadOutfit();
+                    // Ensure that all slots have values (default to 'None' if empty)
+                    for (const slot of [...CLOTHING_SLOTS, ...ACCESSORY_SLOTS]) {
+                        const varName = userManager.getVarName(slot);
+                        let value = userManager.getGlobalVariable(varName);
+                        if (value === undefined || value === null || value === '') {
+                            value = 'None';
+                            userManager.setGlobalVariable(varName, value);
+                            userManager.currentValues[slot] = value;
+                        }
+                    }
+                }
+                
+                // Force update the panels to show the latest values after loading
+                if (botPanel.renderContent) {
                     botPanel.renderContent();
                 }
-                if (userPanel.isVisible && userPanel.renderContent) {
+                if (userPanel.renderContent) {
                     userPanel.renderContent();
                 }
-            }, 100); // Small delay to ensure all data is loaded before rendering
+            }, 150); // Slightly longer delay to ensure instance loading completes
+
+            // Final attempt to ensure the values are properly populated
+            if (botManager && botPanel) {
+                // Load the outfit data one more time and update the panel
+                await botManager.loadOutfit();
+                if (botPanel.renderContent) {
+                    botPanel.renderContent();
+                }
+            }
+            if (userManager && userPanel) {
+                // Load the outfit data one more time and update the panel
+                await userManager.loadOutfit();
+                if (userPanel.renderContent) {
+                    userPanel.renderContent();
+                }
+            }
         } catch (error) {
             console.error("[OutfitTracker] Error updating for current character:", error);
         }
@@ -2237,13 +2279,15 @@ Only output command lines, nothing else.`;
             updateForCurrentCharacter();
         });
 
+        
+
         // Listen for chat-related events since outfit states are tied to chats
         eventSource.on(event_types.CHAT_ID_CHANGED, () => {
             console.log("[OutfitTracker] CHAT_ID_CHANGED event fired");
             updateForCurrentCharacter();
         });
         eventSource.on(event_types.CHAT_CHANGED, () => {
-            console.log("[OutfitTracker] CHAT_CHANGED event fired");
+            console.log("[OutfitTracker] CHAT_CHANGED event fired - updating outfit data for character switch");
             updateForCurrentCharacter();
         });
         eventSource.on(event_types.CHAT_CREATED, async () => {

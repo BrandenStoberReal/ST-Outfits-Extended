@@ -154,3 +154,23 @@ For issues with auto outfit updates, verify that:
 2. A valid system prompt is set
 3. An appropriate LLM connection is available
 4. The character has a properly formatted name and description
+
+## Event Handling
+
+The extension listens to several SillyTavern events to ensure outfit data is properly loaded and updated:
+
+- `APP_READY`: The app is fully loaded and ready to use. It will auto-fire every time a new listener is attached after the app is ready.
+- `CHARACTER_PAGE_LOADED`: This event references the character selection page loading, NOT the character's data loading. This event is used to update outfit data when the character selection page is loaded.
+- `CHAT_ID_CHANGED`: Triggered when switching between different chat conversations
+- `CHAT_CHANGED`: Triggered when the current chat context changes (e.g., switched to another character, or another chat was loaded).
+- `CHAT_CREATED`: Triggered when a new chat is created
+- `MESSAGE_RECEIVED`: The LLM message is generated and recorded into the chat object but not yet rendered in the UI.
+- `MESSAGE_SENT`: The message is sent by the user and recorded into the chat object but not yet rendered in the UI.
+- `USER_MESSAGE_RENDERED`: The message sent by a user is rendered in the UI.
+- `CHARACTER_MESSAGE_RENDERED`: The generated LLM message is rendered in the UI.
+- `GENERATION_AFTER_COMMANDS`: The generation is about to start after processing slash commands.
+- `GENERATION_STOPPED`: The generation was stopped by the user.
+- `GENERATION_ENDED`: The generation has been completed or has errored out.
+- `MESSAGE_SWIPED`: Triggered when switching between different message variants
+- `CHARACTER_FIRST_MESSAGE_SELECTED`: Triggered when the first message of a character is selected
+- `SETTINGS_UPDATED`: The application settings have been updated.
