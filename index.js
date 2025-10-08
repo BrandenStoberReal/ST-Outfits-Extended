@@ -2459,46 +2459,31 @@ Only output command lines, nothing else.`;
 
                     // Update the current character which will properly set the instance ID based on first message
                     // (or create a new temporary one if no first message exists yet)
-                    updateForCurrentCharacter();
-                    
-                    if (botManager) {
-                        // Reset bot outfit to default if available for the current instance
-                        const botMessage = await botManager.loadDefaultOutfit();
-                        if (botMessage && !botMessage.includes('No default outfit set')) {
-                            if (extension_settings.outfit_tracker?.enableSysMessages) {
-                                botPanel.sendSystemMessage(botMessage);
-                            }
-                            console.log("[OutfitTracker] Character reset to default outfit");
-                        } else {
-                            // If no default outfit exists, initialize all slots to "None"
-                            await initializeOutfitSlotsToNone(botManager, botPanel);
+                    // Add a small delay to ensure context.chat is properly populated before updating
+                    setTimeout(() => {
+                        updateForCurrentCharacter();
+                        
+                        if (botManager) {
+                            // Reset bot outfit to default if available for the current instance
+                            botManager.loadDefaultOutfit();
                         }
-                    }
 
-                    if (userManager) {
-                        // Reset user outfit to default if available for the current instance
-                        const userMessage = await userManager.loadDefaultOutfit();
-                        if (userMessage && !userMessage.includes('No default outfit set')) {
-                            if (extension_settings.outfit_tracker?.enableSysMessages) {
-                                userPanel.sendSystemMessage(userMessage);
-                            }
-                            console.log("[OutfitTracker] User reset to default outfit");
-                        } else {
-                            // If no default outfit exists, initialize all slots to "None"
-                            await initializeOutfitSlotsToNone(userManager, userPanel);
+                        if (userManager) {
+                            // Reset user outfit to default if available for the current instance
+                            userManager.loadDefaultOutfit();
                         }
-                    }
-                    
-                    // Update the panel headers after chat is cleared
-                    if (botPanel && botPanel.isVisible) {
-                        botPanel.updateCharacter(botManager.character);
-                        botPanel.renderContent();
-                    }
-                    
-                    if (userPanel && userPanel.isVisible) {
-                        userPanel.updateHeader();
-                        userPanel.renderContent();
-                    }
+                        
+                        // Update the panel headers after chat is cleared
+                        if (botPanel && botPanel.isVisible) {
+                            botPanel.updateCharacter(botManager.character);
+                            botPanel.renderContent();
+                        }
+                        
+                        if (userPanel && userPanel.isVisible) {
+                            userPanel.updateHeader();
+                            userPanel.renderContent();
+                        }
+                    }, 300); // Increased delay to allow for chat to be fully populated
                 } catch (error) {
                     console.error("[OutfitTracker] Error resetting to default outfit:", error);
                 }
