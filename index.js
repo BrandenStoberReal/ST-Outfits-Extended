@@ -2381,6 +2381,25 @@ Only output command lines, nothing else.`;
                 console.log(`[OutfitTracker] Saved ${Object.keys(savedUserOutfits).length} user outfit instances before chat clear`);
             }
 
+            // Restore saved outfit data BEFORE calling the original function
+            // This ensures that when CHAT_CREATED event fires and temporary instances are created,
+            // the saved data is already available in extension_settings
+            if (botManager && Object.keys(savedBotOutfits).length > 0) {
+                // Restore all saved bot outfit instances
+                for (const [varName, value] of Object.entries(savedBotOutfits)) {
+                    botManager.setGlobalVariable(varName, value);
+                }
+                console.log("[OutfitTracker] Restored bot outfit instances before chat clear");
+            }
+
+            if (userManager && Object.keys(savedUserOutfits).length > 0) {
+                // Restore all saved user outfit instances
+                for (const [varName, value] of Object.entries(savedUserOutfits)) {
+                    userManager.setGlobalVariable(varName, value);
+                }
+                console.log("[OutfitTracker] Restored user outfit instances before chat clear");
+            }
+
             // First call the original function to clear the chat
             if (typeof originalClearChat === 'function') {
                 originalClearChat.apply(this, arguments);
@@ -2396,69 +2415,6 @@ Only output command lines, nothing else.`;
                     }
                 }
             }
-
-            // Then update outfits after restoring saved instances
-            setTimeout(async () => {
-                try {
-                    // Use the same temporary ID for both bot and user to ensure consistency
-                    const tempInstanceId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-                    
-                    // Restore saved outfit data after chat is cleared and before setting temporary instances
-                    if (botManager && Object.keys(savedBotOutfits).length > 0) {
-                        // Restore all saved bot outfit instances
-                        for (const [varName, value] of Object.entries(savedBotOutfits)) {
-                            botManager.setGlobalVariable(varName, value);
-                        }
-                        console.log("[OutfitTracker] Restored bot outfit instances after chat clear");
-                    }
-
-                    if (userManager && Object.keys(savedUserOutfits).length > 0) {
-                        // Restore all saved user outfit instances
-                        for (const [varName, value] of Object.entries(savedUserOutfits)) {
-                            userManager.setGlobalVariable(varName, value);
-                        }
-                        console.log("[OutfitTracker] Restored user outfit instances after chat clear");
-                    }
-
-                    // Now create temporary outfit instances and load the outfit data
-                    if (botManager) {
-                        // Set the outfit instance ID for bot with the temporary ID
-                        botManager.setOutfitInstanceId(tempInstanceId);
-                        // Load outfit data for the temporary instance - this will load "None" values if there's nothing for this specific instance
-                        // but the migration logic will still work correctly
-                        botManager.loadOutfit();
-                        console.log("[OutfitTracker] Created new temporary outfit instance for character:", tempInstanceId);
-                    }
-
-                    if (userManager) {
-                        // Set the outfit instance ID for user with the temporary ID
-                        userManager.setOutfitInstanceId(tempInstanceId);
-                        // Load outfit data for the temporary instance - user outfits are consistent across chats
-                        userManager.loadOutfit();
-                        console.log("[OutfitTracker] Created new temporary outfit instance for user:", tempInstanceId);
-                    }
-
-                    // Update the current character which will properly set the instance ID based on first message
-                    // (or create a new temporary one if no first message exists yet)
-                    // Add a small delay to ensure context.chat is properly populated before updating
-                    setTimeout(() => {
-                        updateForCurrentCharacter();
-
-                        // Update the panel headers after chat is cleared
-                        if (botPanel && botPanel.isVisible) {
-                            botPanel.updateCharacter(botManager.character);
-                            botPanel.renderContent();
-                        }
-
-                        if (userPanel && userPanel.isVisible) {
-                            userPanel.updateHeader();
-                            userPanel.renderContent();
-                        }
-                    }, 300); // Increased delay to allow for chat to be fully populated
-                } catch (error) {
-                    console.error("[OutfitTracker] Error in outfit restoration after chat clear:", error);
-                }
-            }, 100); // Small delay to ensure chat is cleared before restoring
         };
 
         // Function to clean up old temporary outfit instances periodically
