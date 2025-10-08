@@ -1,4 +1,4 @@
-// Import modules from SillyTavern core - these are expected to be available when installed correctly
+// Import modules from SillyTavern core using unified pathing system
 import { getContext, extension_settings } from '../../../extensions.js';
 import { saveSettingsDebounced } from '../../../../script.js';
 
@@ -85,9 +85,15 @@ export async function initializeExtension() {
 
     // Make sure these are available globally for child modules
     // This allows dynamically imported modules to access them
-    window.getContext = getContext;
-    window.extension_settings = extension_settings;
-    window.saveSettingsDebounced = saveSettingsDebounced;
+    window.getContext = getContext || window.getContext;
+    window.extension_settings = extension_settings || window.extension_settings;
+    window.saveSettingsDebounced = saveSettingsDebounced || window.saveSettingsDebounced;
+
+    // Check if we have the required SillyTavern globals
+    if (!window.getContext || !window.extension_settings || !window.saveSettingsDebounced) {
+        console.error('[OutfitTracker] Required SillyTavern functions are not available. Is the extension installed in the correct location?');
+        throw new Error('Missing required SillyTavern globals. Extension must be installed in SillyTavern\'s extensions directory.');
+    }
 
     const MODULE_NAME = 'outfit_tracker';
     const CLOTHING_SLOTS = [
