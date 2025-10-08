@@ -1282,6 +1282,56 @@ Only return the formatted sections with cleaned content.`;
 
     // Make the macro replacement function available globally
     globalThis.replaceOutfitMacrosInText = replaceOutfitMacrosInText;
+    
+}
+
+// Cleanup function to remove global variables and event listeners
+function cleanupExtension() {
+    console.log('[OutfitTracker] Starting extension cleanup...');
+    
+    try {
+        // Remove DOM elements but preserve outfit data in extension settings
+        if (window.botOutfitPanel) {
+            if (window.botOutfitPanel.domElement && window.botOutfitPanel.domElement.parentNode) {
+                window.botOutfitPanel.domElement.parentNode.removeChild(window.botOutfitPanel.domElement);
+            }
+            window.botOutfitPanel = null;
+        }
+        
+        if (window.userOutfitPanel) {
+            if (window.userOutfitPanel.domElement && window.userOutfitPanel.domElement.parentNode) {
+                window.userOutfitPanel.domElement.parentNode.removeChild(window.userOutfitPanel.domElement);
+            }
+            window.userOutfitPanel = null;
+        }
+        
+        if (window.autoOutfitSystem && typeof window.autoOutfitSystem.removeEventListeners === 'function') {
+            window.autoOutfitSystem.removeEventListeners();
+        }
+        
+        // Only remove global functions, but keep outfit data in extension_settings
+        if (globalThis.outfitTrackerInterceptor) {
+            delete globalThis.outfitTrackerInterceptor;
+        }
+        
+        if (globalThis.replaceOutfitMacrosInText) {
+            delete globalThis.replaceOutfitMacrosInText;
+        }
+        
+        if (globalThis.wipeAllOutfits) {
+            delete globalThis.wipeAllOutfits;
+        }
+        
+        // Remove event listener override for clearChat if we set it
+        if (window._originalClearChat) {
+            window.clearChat = window._originalClearChat;
+            window._originalClearChat = null;
+        }
+        
+        console.log('[OutfitTracker] Extension cleanup completed. Outfit data preserved in extension settings.');
+    } catch (error) {
+        console.error('[OutfitTracker] Error during extension cleanup:', error);
+    }
 }
 
 

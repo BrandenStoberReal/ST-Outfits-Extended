@@ -24,7 +24,7 @@
     "semi": ["error", "always"],
     "no-console": ["warn", { "allow": ["warn", "error", "log"] }],
     "no-unused-vars": "warn",
-    "no-undef": "warn",
+    "no-undef": "off",
     "no-implicit-globals": "warn",
     "no-global-assign": "error",
     "no-extra-semi": "error",

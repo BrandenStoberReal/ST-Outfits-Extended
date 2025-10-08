@@ -9,36 +9,36 @@ export async function registerOutfitCommands(importOutfitFromCharacterCard, botM
     if (hasSlashCommands) {
         // Use new slash command system
         window.SlashCommandParser.addCommandObject(window.SlashCommand.fromProps({
-        name: 'outfit-bot',
-        callback: async function (args) {
-            console.log('Bot Outfit command triggered');
-            if (window.botOutfitPanel) {
-                window.botOutfitPanel.toggle();
-            } else {
-                console.error('[OutfitTracker] Bot outfit panel not available');
-                if (!args?.quiet) {
-                    toastr.error('Bot outfit panel not available', 'Outfit System');
+            name: 'outfit-bot',
+            callback: async function (args) {
+                console.log('Bot Outfit command triggered');
+                if (window.botOutfitPanel) {
+                    window.botOutfitPanel.toggle();
+                } else {
+                    console.error('[OutfitTracker] Bot outfit panel not available');
+                    if (!args?.quiet) {
+                        toastr.error('Bot outfit panel not available', 'Outfit System');
+                    }
+                    return '[Outfit System] Bot outfit panel not available';
                 }
-                return '[Outfit System] Bot outfit panel not available';
-            }
-            const isQuiet = args?.quiet === true;
+                const isQuiet = args?.quiet === true;
 
-            if (!isQuiet) {
-                toastr.info('Toggled character outfit panel', 'Outfit System');
-            }
-            return '';
-        },
-        returns: 'toggles the character outfit panel',
-        namedArgumentList: [
-            SlashCommandNamedArgument.fromProps({
-                name: 'quiet',
-                description: 'Suppress the toast message',
-                typeList: [ARGUMENT_TYPE.BOOLEAN],
-                defaultValue: 'false',
-            }),
-        ],
-        unnamedArgumentList: [],
-        helpString: `
+                if (!isQuiet) {
+                    toastr.info('Toggled character outfit panel', 'Outfit System');
+                }
+                return '';
+            },
+            returns: 'toggles the character outfit panel',
+            namedArgumentList: [
+                SlashCommandNamedArgument.fromProps({
+                    name: 'quiet',
+                    description: 'Suppress the toast message',
+                    typeList: [ARGUMENT_TYPE.BOOLEAN],
+                    defaultValue: 'false',
+                }),
+            ],
+            unnamedArgumentList: [],
+            helpString: `
             <div>
                 Toggles the character outfit tracker panel.
             </div>
@@ -62,39 +62,39 @@ export async function registerOutfitCommands(importOutfitFromCharacterCard, botM
                 </ul>
             </div>
         `,
-    }));
+        }));
 
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'outfit-user',
-        callback: async function (args) {
-            console.log('User Outfit command triggered');
-            if (window.userOutfitPanel) {
-                window.userOutfitPanel.toggle();
-            } else {
-                console.error('[OutfitTracker] User outfit panel not available');
-                if (!args?.quiet) {
-                    toastr.error('User outfit panel not available', 'Outfit System');
+        SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+            name: 'outfit-user',
+            callback: async function (args) {
+                console.log('User Outfit command triggered');
+                if (window.userOutfitPanel) {
+                    window.userOutfitPanel.toggle();
+                } else {
+                    console.error('[OutfitTracker] User outfit panel not available');
+                    if (!args?.quiet) {
+                        toastr.error('User outfit panel not available', 'Outfit System');
+                    }
+                    return '[Outfit System] User outfit panel not available';
                 }
-                return '[Outfit System] User outfit panel not available';
-            }
-            const isQuiet = args?.quiet === true;
+                const isQuiet = args?.quiet === true;
 
-            if (!isQuiet) {
-                toastr.info('Toggled user outfit panel', 'Outfit System');
-            }
-            return '';
-        },
-        returns: 'toggles the user outfit panel',
-        namedArgumentList: [
-            SlashCommandNamedArgument.fromProps({
-                name: 'quiet',
-                description: 'Suppress the toast message',
-                typeList: [ARGUMENT_TYPE.BOOLEAN],
-                defaultValue: 'false',
-            }),
-        ],
-        unnamedArgumentList: [],
-        helpString: `
+                if (!isQuiet) {
+                    toastr.info('Toggled user outfit panel', 'Outfit System');
+                }
+                return '';
+            },
+            returns: 'toggles the user outfit panel',
+            namedArgumentList: [
+                SlashCommandNamedArgument.fromProps({
+                    name: 'quiet',
+                    description: 'Suppress the toast message',
+                    typeList: [ARGUMENT_TYPE.BOOLEAN],
+                    defaultValue: 'false',
+                }),
+            ],
+            unnamedArgumentList: [],
+            helpString: `
             <div>
                 Toggles the user outfit tracker panel.
             </div>
@@ -118,68 +118,68 @@ export async function registerOutfitCommands(importOutfitFromCharacterCard, botM
                 </ul>
             </div>
         `,
-    }));
+        }));
 
-    // Only register auto commands if AutoOutfitSystem loaded successfully
-    if (typeof autoOutfitSystem !== 'undefined' && autoOutfitSystem.constructor.name !== 'DummyAutoOutfitSystem') {
-        SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-            name: 'outfit-auto',
-            callback: async function (args, value) {
-                const arg = value?.toString().toLowerCase() || '';
-                const isQuiet = args?.quiet === true;
+        // Only register auto commands if AutoOutfitSystem loaded successfully
+        if (typeof autoOutfitSystem !== 'undefined' && autoOutfitSystem.constructor.name !== 'DummyAutoOutfitSystem') {
+            SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+                name: 'outfit-auto',
+                callback: async function (args, value) {
+                    const arg = value?.toString().toLowerCase() || '';
+                    const isQuiet = args?.quiet === true;
 
-                if (window.autoOutfitSystem) {
-                    if (arg === 'on') {
-                        const message = autoOutfitSystem.enable();
+                    if (window.autoOutfitSystem) {
+                        if (arg === 'on') {
+                            const message = autoOutfitSystem.enable();
 
-                        if (!isQuiet) {
-                            toastr.info(message, 'Outfit System');
-                        }
-                        return message;
-                    } else if (arg === 'off') {
-                        const message = autoOutfitSystem.disable();
+                            if (!isQuiet) {
+                                toastr.info(message, 'Outfit System');
+                            }
+                            return message;
+                        } else if (arg === 'off') {
+                            const message = autoOutfitSystem.disable();
 
-                        if (!isQuiet) {
-                            toastr.info(message, 'Outfit System');
-                        }
-                        return message;
-                    } 
-                    const status = autoOutfitSystem.getStatus();
-                    const statusMessage = `Auto outfit: ${status.enabled ? 'ON' : 'OFF'}
+                            if (!isQuiet) {
+                                toastr.info(message, 'Outfit System');
+                            }
+                            return message;
+                        } 
+                        const status = autoOutfitSystem.getStatus();
+                        const statusMessage = `Auto outfit: ${status.enabled ? 'ON' : 'OFF'}
 Prompt: ${status.hasPrompt ? 'SET' : 'NOT SET'}`;
 
-                    if (!isQuiet) {
-                        toastr.info(statusMessage);
-                    }
-                    return statusMessage;
+                        if (!isQuiet) {
+                            toastr.info(statusMessage);
+                        }
+                        return statusMessage;
                     
-                } 
-                const message = 'Auto outfit system not available';
+                    } 
+                    const message = 'Auto outfit system not available';
 
-                if (!isQuiet) {
-                    toastr.error(message, 'Outfit System');
-                }
-                return message;
+                    if (!isQuiet) {
+                        toastr.error(message, 'Outfit System');
+                    }
+                    return message;
                 
-            },
-            returns: 'toggles auto outfit updates',
-            namedArgumentList: [
-                SlashCommandNamedArgument.fromProps({
-                    name: 'quiet',
-                    description: 'Suppress the toast message',
-                    typeList: [ARGUMENT_TYPE.BOOLEAN],
-                    defaultValue: 'false',
-                }),
-            ],
-            unnamedArgumentList: [
-                SlashCommandArgument.fromProps({
-                    description: 'whether to enable or disable auto outfit updates',
-                    typeList: [ARGUMENT_TYPE.STRING],
-                    isRequired: false,
-                    enumList: ['on', 'off'],
-                }),
-            ],
-            helpString: `
+                },
+                returns: 'toggles auto outfit updates',
+                namedArgumentList: [
+                    SlashCommandNamedArgument.fromProps({
+                        name: 'quiet',
+                        description: 'Suppress the toast message',
+                        typeList: [ARGUMENT_TYPE.BOOLEAN],
+                        defaultValue: 'false',
+                    }),
+                ],
+                unnamedArgumentList: [
+                    SlashCommandArgument.fromProps({
+                        description: 'whether to enable or disable auto outfit updates',
+                        typeList: [ARGUMENT_TYPE.STRING],
+                        isRequired: false,
+                        enumList: ['on', 'off'],
+                    }),
+                ],
+                helpString: `
                 <div>
                     Toggle auto outfit updates (on/off).
                 </div>
@@ -211,46 +211,46 @@ Prompt: ${status.hasPrompt ? 'SET' : 'NOT SET'}`;
                     </ul>
                 </div>
             `,
-        }));
+            }));
 
-        SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-            name: 'outfit-prompt',
-            callback: async function (args, value) {
-                if (window.autoOutfitSystem) {
-                    const prompt = value?.toString() || '';
+            SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+                name: 'outfit-prompt',
+                callback: async function (args, value) {
+                    if (window.autoOutfitSystem) {
+                        const prompt = value?.toString() || '';
 
-                    if (prompt) {
-                        const message = autoOutfitSystem.setPrompt(prompt);
+                        if (prompt) {
+                            const message = autoOutfitSystem.setPrompt(prompt);
 
-                        if (window.extension_settings.outfit_tracker?.enableSysMessages) {
-                            window.botOutfitPanel.sendSystemMessage(message);
-                        }
-                        return message;
-                    } 
-                    const length = autoOutfitSystem.systemPrompt?.length || 0;
+                            if (window.extension_settings.outfit_tracker?.enableSysMessages) {
+                                window.botOutfitPanel.sendSystemMessage(message);
+                            }
+                            return message;
+                        } 
+                        const length = autoOutfitSystem.systemPrompt?.length || 0;
 
-                    toastr.info(`Current prompt length: ${length}`);
-                    return `Current prompt length: ${length}`;
+                        toastr.info(`Current prompt length: ${length}`);
+                        return `Current prompt length: ${length}`;
                     
-                } 
-                const message = 'Auto outfit system not available';
+                    } 
+                    const message = 'Auto outfit system not available';
 
-                if (!args?.quiet) {
-                    toastr.error(message, 'Outfit System');
-                }
-                return message;
+                    if (!args?.quiet) {
+                        toastr.error(message, 'Outfit System');
+                    }
+                    return message;
                 
-            },
-            returns: 'sets or shows the auto outfit system prompt',
-            namedArgumentList: [],
-            unnamedArgumentList: [
-                SlashCommandArgument.fromProps({
-                    description: 'the new system prompt for auto outfit detection',
-                    typeList: [ARGUMENT_TYPE.STRING],
-                    isRequired: false,
-                }),
-            ],
-            helpString: `
+                },
+                returns: 'sets or shows the auto outfit system prompt',
+                namedArgumentList: [],
+                unnamedArgumentList: [
+                    SlashCommandArgument.fromProps({
+                        description: 'the new system prompt for auto outfit detection',
+                        typeList: [ARGUMENT_TYPE.STRING],
+                        isRequired: false,
+                    }),
+                ],
+                helpString: `
                 <div>
                     Set auto outfit system prompt.
                 </div>
@@ -268,34 +268,34 @@ Prompt: ${status.hasPrompt ? 'SET' : 'NOT SET'}`;
                     </ul>
                 </div>
             `,
-        }));
+            }));
 
-        SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-            name: 'outfit-prompt-reset',
-            callback: async function (args) {
-                if (window.autoOutfitSystem) {
-                    const message = autoOutfitSystem.resetToDefaultPrompt();
+            SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+                name: 'outfit-prompt-reset',
+                callback: async function (args) {
+                    if (window.autoOutfitSystem) {
+                        const message = autoOutfitSystem.resetToDefaultPrompt();
 
-                    if (window.extension_settings.outfit_tracker?.enableSysMessages) {
-                        window.botOutfitPanel.sendSystemMessage(message);
+                        if (window.extension_settings.outfit_tracker?.enableSysMessages) {
+                            window.botOutfitPanel.sendSystemMessage(message);
+                        }
+                        // Update the textarea in settings
+                        $('#outfit-prompt-input').val(autoOutfitSystem.systemPrompt);
+                        window.saveSettingsDebounced();
+                        return message;
+                    } 
+                    const message = 'Auto outfit system not available';
+
+                    if (!args?.quiet) {
+                        toastr.error(message, 'Outfit System');
                     }
-                    // Update the textarea in settings
-                    $('#outfit-prompt-input').val(autoOutfitSystem.systemPrompt);
-                    window.saveSettingsDebounced();
                     return message;
-                } 
-                const message = 'Auto outfit system not available';
-
-                if (!args?.quiet) {
-                    toastr.error(message, 'Outfit System');
-                }
-                return message;
                 
-            },
-            returns: 'resets to default system prompt',
-            namedArgumentList: [],
-            unnamedArgumentList: [],
-            helpString: `
+                },
+                returns: 'resets to default system prompt',
+                namedArgumentList: [],
+                unnamedArgumentList: [],
+                helpString: `
                 <div>
                     Reset to default system prompt.
                 </div>
@@ -309,39 +309,39 @@ Prompt: ${status.hasPrompt ? 'SET' : 'NOT SET'}`;
                     </ul>
                 </div>
             `,
-        }));
+            }));
 
-        SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-            name: 'outfit-prompt-view',
-            callback: async function (args) {
-                if (window.autoOutfitSystem) {
-                    const status = autoOutfitSystem.getStatus();
-                    const preview = autoOutfitSystem.systemPrompt.length > 100
-                        ? autoOutfitSystem.systemPrompt.substring(0, 100) + '...'
-                        : autoOutfitSystem.systemPrompt;
+            SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+                name: 'outfit-prompt-view',
+                callback: async function (args) {
+                    if (window.autoOutfitSystem) {
+                        const status = autoOutfitSystem.getStatus();
+                        const preview = autoOutfitSystem.systemPrompt.length > 100
+                            ? autoOutfitSystem.systemPrompt.substring(0, 100) + '...'
+                            : autoOutfitSystem.systemPrompt;
 
-                    const message = `Prompt preview: ${preview}
+                        const message = `Prompt preview: ${preview}
                     
 Full length: ${status.promptLength} chars`;
 
-                    toastr.info(message, 'Current System Prompt', {
-                        timeOut: 10000,
-                        extendedTimeOut: 20000
-                    });
-                    return message;
-                } 
-                const message = 'Auto outfit system not available';
+                        toastr.info(message, 'Current System Prompt', {
+                            timeOut: 10000,
+                            extendedTimeOut: 20000
+                        });
+                        return message;
+                    } 
+                    const message = 'Auto outfit system not available';
 
-                if (!args?.quiet) {
-                    toastr.error(message, 'Outfit System');
-                }
-                return message;
+                    if (!args?.quiet) {
+                        toastr.error(message, 'Outfit System');
+                    }
+                    return message;
                 
-            },
-            returns: 'shows current system prompt',
-            namedArgumentList: [],
-            unnamedArgumentList: [],
-            helpString: `
+                },
+                returns: 'shows current system prompt',
+                namedArgumentList: [],
+                unnamedArgumentList: [],
+                helpString: `
                 <div>
                     View current system prompt.
                 </div>
@@ -355,29 +355,29 @@ Full length: ${status.promptLength} chars`;
                     </ul>
                 </div>
             `,
-        }));
+            }));
 
-        SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-            name: 'outfit-auto-trigger',
-            callback: async function (args) {
-                if (window.autoOutfitSystem) {
-                    const result = await autoOutfitSystem.manualTrigger();
+            SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+                name: 'outfit-auto-trigger',
+                callback: async function (args) {
+                    if (window.autoOutfitSystem) {
+                        const result = await autoOutfitSystem.manualTrigger();
 
-                    toastr.info(result, 'Manual Outfit Check');
-                    return result;
-                } 
-                const message = 'Auto outfit system not available';
+                        toastr.info(result, 'Manual Outfit Check');
+                        return result;
+                    } 
+                    const message = 'Auto outfit system not available';
 
-                if (!args?.quiet) {
-                    toastr.error(message, 'Outfit System');
-                }
-                return message;
+                    if (!args?.quiet) {
+                        toastr.error(message, 'Outfit System');
+                    }
+                    return message;
                 
-            },
-            returns: 'manually trigger auto outfit check',
-            namedArgumentList: [],
-            unnamedArgumentList: [],
-            helpString: `
+                },
+                returns: 'manually trigger auto outfit check',
+                namedArgumentList: [],
+                unnamedArgumentList: [],
+                helpString: `
                 <div>
                     Manually trigger auto outfit check.
                 </div>
@@ -391,96 +391,96 @@ Full length: ${status.promptLength} chars`;
                     </ul>
                 </div>
             `,
-        }));
-    }
+            }));
+        }
 
-    // Register the switch-outfit command
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'switch-outfit',
-        callback: async function (args, value) {
-            const outfitName = value?.toString().trim() || '';
-            const isQuiet = args?.quiet === true;
+        // Register the switch-outfit command
+        SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+            name: 'switch-outfit',
+            callback: async function (args, value) {
+                const outfitName = value?.toString().trim() || '';
+                const isQuiet = args?.quiet === true;
 
-            if (!outfitName) {
-                const warning = 'Please specify an outfit name. Usage: /switch-outfit <outfit-name>';
-
-                if (!isQuiet) {
-                    toastr.warning(warning, 'Outfit System');
-                }
-                return warning;
-            }
-
-            try {
-                // First try to load the outfit for the bot character
-                let message = await botManager.loadPreset(outfitName);
-
-                if (message.includes('not found')) {
-                    // If not found for bot, try loading default outfit if requested
-                    if (outfitName.toLowerCase() === 'default') {
-                        message = await botManager.loadDefaultOutfit();
-                    }
-                }
-
-                if (window.extension_settings.outfit_tracker?.enableSysMessages) {
-                    window.botOutfitPanel.sendSystemMessage(message);
-                }
-
-                // Also try to load the outfit for the user if it exists
-                let userMessage = await userManager.loadPreset(outfitName);
-
-                if (userMessage.includes('not found')) {
-                    // If not found for user, try loading default outfit if requested
-                    if (outfitName.toLowerCase() === 'default') {
-                        userMessage = await userManager.loadDefaultOutfit();
-                    }
-                }
-
-                if (window.extension_settings.outfit_tracker?.enableSysMessages && userMessage && !userMessage.includes('not found')) {
-                    window.userOutfitPanel.sendSystemMessage(userMessage);
-                }
-
-                if (message.includes('not found') && (userMessage && userMessage.includes('not found'))) {
-                    const error = `Outfit "${outfitName}" not found for either character or user.`;
+                if (!outfitName) {
+                    const warning = 'Please specify an outfit name. Usage: /switch-outfit <outfit-name>';
 
                     if (!isQuiet) {
-                        toastr.error(error, 'Outfit System');
+                        toastr.warning(warning, 'Outfit System');
                     }
-                    return error;
-                } 
-                const success = `Switched to "${outfitName}" outfit.`;
-
-                if (!isQuiet) {
-                    toastr.info(success, 'Outfit System');
+                    return warning;
                 }
-                return success;
+
+                try {
+                // First try to load the outfit for the bot character
+                    let message = await botManager.loadPreset(outfitName);
+
+                    if (message.includes('not found')) {
+                    // If not found for bot, try loading default outfit if requested
+                        if (outfitName.toLowerCase() === 'default') {
+                            message = await botManager.loadDefaultOutfit();
+                        }
+                    }
+
+                    if (window.extension_settings.outfit_tracker?.enableSysMessages) {
+                        window.botOutfitPanel.sendSystemMessage(message);
+                    }
+
+                    // Also try to load the outfit for the user if it exists
+                    let userMessage = await userManager.loadPreset(outfitName);
+
+                    if (userMessage.includes('not found')) {
+                    // If not found for user, try loading default outfit if requested
+                        if (outfitName.toLowerCase() === 'default') {
+                            userMessage = await userManager.loadDefaultOutfit();
+                        }
+                    }
+
+                    if (window.extension_settings.outfit_tracker?.enableSysMessages && userMessage && !userMessage.includes('not found')) {
+                        window.userOutfitPanel.sendSystemMessage(userMessage);
+                    }
+
+                    if (message.includes('not found') && (userMessage && userMessage.includes('not found'))) {
+                        const error = `Outfit "${outfitName}" not found for either character or user.`;
+
+                        if (!isQuiet) {
+                            toastr.error(error, 'Outfit System');
+                        }
+                        return error;
+                    } 
+                    const success = `Switched to "${outfitName}" outfit.`;
+
+                    if (!isQuiet) {
+                        toastr.info(success, 'Outfit System');
+                    }
+                    return success;
                 
-            } catch (error) {
-                console.error('Error switching outfit:', error);
-                const error_msg = `Error switching to "${outfitName}" outfit.`;
+                } catch (error) {
+                    console.error('Error switching outfit:', error);
+                    const error_msg = `Error switching to "${outfitName}" outfit.`;
 
-                if (!isQuiet) {
-                    toastr.error(error_msg, 'Outfit System');
+                    if (!isQuiet) {
+                        toastr.error(error_msg, 'Outfit System');
+                    }
+                    return error_msg;
                 }
-                return error_msg;
-            }
-        },
-        returns: 'switches to a saved outfit by name',
-        namedArgumentList: [
-            SlashCommandNamedArgument.fromProps({
-                name: 'quiet',
-                description: 'Suppress the toast message',
-                typeList: [ARGUMENT_TYPE.BOOLEAN],
-                defaultValue: 'false',
-            }),
-        ],
-        unnamedArgumentList: [
-            SlashCommandArgument.fromProps({
-                description: 'the name of the outfit to switch to',
-                typeList: [ARGUMENT_TYPE.STRING],
-                isRequired: true,
-            }),
-        ],
-        helpString: `
+            },
+            returns: 'switches to a saved outfit by name',
+            namedArgumentList: [
+                SlashCommandNamedArgument.fromProps({
+                    name: 'quiet',
+                    description: 'Suppress the toast message',
+                    typeList: [ARGUMENT_TYPE.BOOLEAN],
+                    defaultValue: 'false',
+                }),
+            ],
+            unnamedArgumentList: [
+                SlashCommandArgument.fromProps({
+                    description: 'the name of the outfit to switch to',
+                    typeList: [ARGUMENT_TYPE.STRING],
+                    isRequired: true,
+                }),
+            ],
+            helpString: `
             <div>
                 Switch to a saved outfit by name. Usage: /switch-outfit <outfit-name>
             </div>
@@ -498,42 +498,42 @@ Full length: ${status.promptLength} chars`;
                 </ul>
             </div>
         `,
-    }));
+        }));
 
-    // Register the import-outfit command
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'import-outfit',
-        callback: async function (args) {
-            const isQuiet = args?.quiet === true;
+        // Register the import-outfit command
+        SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+            name: 'import-outfit',
+            callback: async function (args) {
+                const isQuiet = args?.quiet === true;
 
-            try {
-                const result = await importOutfitFromCharacterCard();
+                try {
+                    const result = await importOutfitFromCharacterCard();
 
-                if (!isQuiet) {
-                    toastr.info(result.message, 'Outfit Import');
+                    if (!isQuiet) {
+                        toastr.info(result.message, 'Outfit Import');
+                    }
+                    return result.message;
+                } catch (error) {
+                    console.error('Error importing outfit from character card:', error);
+                    const errorMessage = `Error importing outfit: ${error.message}`;
+
+                    if (!isQuiet) {
+                        toastr.error(errorMessage, 'Outfit Import');
+                    }
+                    return errorMessage;
                 }
-                return result.message;
-            } catch (error) {
-                console.error('Error importing outfit from character card:', error);
-                const errorMessage = `Error importing outfit: ${error.message}`;
-
-                if (!isQuiet) {
-                    toastr.error(errorMessage, 'Outfit Import');
-                }
-                return errorMessage;
-            }
-        },
-        returns: 'imports outfit from character card and updates character description',
-        namedArgumentList: [
-            SlashCommandNamedArgument.fromProps({
-                name: 'quiet',
-                description: 'Suppress the toast message',
-                typeList: [ARGUMENT_TYPE.BOOLEAN],
-                defaultValue: 'false',
-            }),
-        ],
-        unnamedArgumentList: [],
-        helpString: `
+            },
+            returns: 'imports outfit from character card and updates character description',
+            namedArgumentList: [
+                SlashCommandNamedArgument.fromProps({
+                    name: 'quiet',
+                    description: 'Suppress the toast message',
+                    typeList: [ARGUMENT_TYPE.BOOLEAN],
+                    defaultValue: 'false',
+                }),
+            ],
+            unnamedArgumentList: [],
+            helpString: `
             <div>
                 Imports outfit information from the character card and updates both the outfit tracker and character description.
                 This command will:
@@ -562,76 +562,76 @@ Full length: ${status.promptLength} chars`;
                 </ul>
             </div>
         `,
-    }));
+        }));
 
-    // Register mobile-friendly slash commands for outfit operations
-    // Character outfit commands
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'outfit-wear',
-        callback: async function (args, value) {
-            const isQuiet = args?.quiet === true;
-            // Parse slot and item from value
-            const params = value?.toString().trim() || '';
-            const parts = params.split(' ');
+        // Register mobile-friendly slash commands for outfit operations
+        // Character outfit commands
+        SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+            name: 'outfit-wear',
+            callback: async function (args, value) {
+                const isQuiet = args?.quiet === true;
+                // Parse slot and item from value
+                const params = value?.toString().trim() || '';
+                const parts = params.split(' ');
 
-            if (parts.length < 2) {
-                const error = 'Usage: /outfit-wear <slot> <item>. Example: /outfit-wear headwear "Red Baseball Cap"';
+                if (parts.length < 2) {
+                    const error = 'Usage: /outfit-wear <slot> <item>. Example: /outfit-wear headwear "Red Baseball Cap"';
 
-                if (!isQuiet) {
-                    toastr.error(error, 'Outfit System');
+                    if (!isQuiet) {
+                        toastr.error(error, 'Outfit System');
+                    }
+                    return error;
                 }
-                return error;
-            }
 
-            const slot = parts[0];
-            const item = parts.slice(1).join(' ');
+                const slot = parts[0];
+                const item = parts.slice(1).join(' ');
 
-            if (!botManager.slots.includes(slot)) {
-                const error = `Invalid slot: ${slot}. Valid slots: ${botManager.slots.join(', ')}`;
+                if (!botManager.slots.includes(slot)) {
+                    const error = `Invalid slot: ${slot}. Valid slots: ${botManager.slots.join(', ')}`;
 
-                if (!isQuiet) {
-                    toastr.error(error, 'Outfit System');
+                    if (!isQuiet) {
+                        toastr.error(error, 'Outfit System');
+                    }
+                    return error;
                 }
-                return error;
-            }
 
-            try {
-                const message = await botManager.setOutfitItem(slot, item);
+                try {
+                    const message = await botManager.setOutfitItem(slot, item);
 
-                if (window.extension_settings.outfit_tracker?.enableSysMessages) {
-                    window.botOutfitPanel.sendSystemMessage(message);
-                }
-                if (!isQuiet) {
-                    toastr.info(message, 'Outfit System');
-                }
-                return message;
-            } catch (error) {
-                console.error('Error setting outfit item:', error);
-                const error_msg = `Error setting ${slot} to ${item}.`;
+                    if (window.extension_settings.outfit_tracker?.enableSysMessages) {
+                        window.botOutfitPanel.sendSystemMessage(message);
+                    }
+                    if (!isQuiet) {
+                        toastr.info(message, 'Outfit System');
+                    }
+                    return message;
+                } catch (error) {
+                    console.error('Error setting outfit item:', error);
+                    const error_msg = `Error setting ${slot} to ${item}.`;
 
-                if (!isQuiet) {
-                    toastr.error(error_msg, 'Outfit System');
+                    if (!isQuiet) {
+                        toastr.error(error_msg, 'Outfit System');
+                    }
+                    return error_msg;
                 }
-                return error_msg;
-            }
-        },
-        returns: 'sets a character outfit item',
-        namedArgumentList: [
-            SlashCommandNamedArgument.fromProps({
-                name: 'quiet',
-                description: 'Suppress the toast message',
-                typeList: [ARGUMENT_TYPE.BOOLEAN],
-                defaultValue: 'false',
-            }),
-        ],
-        unnamedArgumentList: [
-            SlashCommandArgument.fromProps({
-                description: 'slot and item to wear',
-                typeList: [ARGUMENT_TYPE.STRING],
-                isRequired: true,
-            }),
-        ],
-        helpString: `
+            },
+            returns: 'sets a character outfit item',
+            namedArgumentList: [
+                SlashCommandNamedArgument.fromProps({
+                    name: 'quiet',
+                    description: 'Suppress the toast message',
+                    typeList: [ARGUMENT_TYPE.BOOLEAN],
+                    defaultValue: 'false',
+                }),
+            ],
+            unnamedArgumentList: [
+                SlashCommandArgument.fromProps({
+                    description: 'slot and item to wear',
+                    typeList: [ARGUMENT_TYPE.STRING],
+                    isRequired: true,
+                }),
+            ],
+            helpString: `
             <div>
                 Sets a character outfit item. Usage: /outfit-wear <slot> <item>
             </div>
@@ -649,60 +649,60 @@ Full length: ${status.promptLength} chars`;
                 </ul>
             </div>
         `,
-    }));
+        }));
 
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'outfit-remove',
-        callback: async function (args, value) {
-            const isQuiet = args?.quiet === true;
-            const slot = value?.toString().trim() || '';
+        SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+            name: 'outfit-remove',
+            callback: async function (args, value) {
+                const isQuiet = args?.quiet === true;
+                const slot = value?.toString().trim() || '';
 
-            if (!botManager.slots.includes(slot)) {
-                const error = `Invalid slot: ${slot}. Valid slots: ${botManager.slots.join(', ')}`;
+                if (!botManager.slots.includes(slot)) {
+                    const error = `Invalid slot: ${slot}. Valid slots: ${botManager.slots.join(', ')}`;
 
-                if (!isQuiet) {
-                    toastr.error(error, 'Outfit System');
+                    if (!isQuiet) {
+                        toastr.error(error, 'Outfit System');
+                    }
+                    return error;
                 }
-                return error;
-            }
 
-            try {
-                const message = await botManager.setOutfitItem(slot, 'None');
+                try {
+                    const message = await botManager.setOutfitItem(slot, 'None');
 
-                if (window.extension_settings.outfit_tracker?.enableSysMessages) {
-                    window.botOutfitPanel.sendSystemMessage(message);
-                }
-                if (!isQuiet) {
-                    toastr.info(message, 'Outfit System');
-                }
-                return message;
-            } catch (error) {
-                console.error('Error removing outfit item:', error);
-                const error_msg = `Error removing ${slot}.`;
+                    if (window.extension_settings.outfit_tracker?.enableSysMessages) {
+                        window.botOutfitPanel.sendSystemMessage(message);
+                    }
+                    if (!isQuiet) {
+                        toastr.info(message, 'Outfit System');
+                    }
+                    return message;
+                } catch (error) {
+                    console.error('Error removing outfit item:', error);
+                    const error_msg = `Error removing ${slot}.`;
 
-                if (!isQuiet) {
-                    toastr.error(error_msg, 'Outfit System');
+                    if (!isQuiet) {
+                        toastr.error(error_msg, 'Outfit System');
+                    }
+                    return error_msg;
                 }
-                return error_msg;
-            }
-        },
-        returns: 'removes a character outfit item',
-        namedArgumentList: [
-            SlashCommandNamedArgument.fromProps({
-                name: 'quiet',
-                description: 'Suppress the toast message',
-                typeList: [ARGUMENT_TYPE.BOOLEAN],
-                defaultValue: 'false',
-            }),
-        ],
-        unnamedArgumentList: [
-            SlashCommandArgument.fromProps({
-                description: 'slot to remove item from',
-                typeList: [ARGUMENT_TYPE.STRING],
-                isRequired: true,
-            }),
-        ],
-        helpString: `
+            },
+            returns: 'removes a character outfit item',
+            namedArgumentList: [
+                SlashCommandNamedArgument.fromProps({
+                    name: 'quiet',
+                    description: 'Suppress the toast message',
+                    typeList: [ARGUMENT_TYPE.BOOLEAN],
+                    defaultValue: 'false',
+                }),
+            ],
+            unnamedArgumentList: [
+                SlashCommandArgument.fromProps({
+                    description: 'slot to remove item from',
+                    typeList: [ARGUMENT_TYPE.STRING],
+                    isRequired: true,
+                }),
+            ],
+            helpString: `
             <div>
                 Removes a character outfit item. Usage: /outfit-remove <slot>
             </div>
@@ -720,74 +720,74 @@ Full length: ${status.promptLength} chars`;
                 </ul>
             </div>
         `,
-    }));
+        }));
 
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'outfit-change',
-        callback: async function (args, value) {
-            const isQuiet = args?.quiet === true;
-            // Parse slot and item from value
-            const params = value?.toString().trim() || '';
-            const parts = params.split(' ');
+        SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+            name: 'outfit-change',
+            callback: async function (args, value) {
+                const isQuiet = args?.quiet === true;
+                // Parse slot and item from value
+                const params = value?.toString().trim() || '';
+                const parts = params.split(' ');
 
-            if (parts.length < 2) {
-                const error = 'Usage: /outfit-change <slot> <item>. Example: /outfit-change headwear "Black Hat"';
+                if (parts.length < 2) {
+                    const error = 'Usage: /outfit-change <slot> <item>. Example: /outfit-change headwear "Black Hat"';
 
-                if (!isQuiet) {
-                    toastr.error(error, 'Outfit System');
+                    if (!isQuiet) {
+                        toastr.error(error, 'Outfit System');
+                    }
+                    return error;
                 }
-                return error;
-            }
 
-            const slot = parts[0];
-            const item = parts.slice(1).join(' ');
+                const slot = parts[0];
+                const item = parts.slice(1).join(' ');
 
-            if (!botManager.slots.includes(slot)) {
-                const error = `Invalid slot: ${slot}. Valid slots: ${botManager.slots.join(', ')}`;
+                if (!botManager.slots.includes(slot)) {
+                    const error = `Invalid slot: ${slot}. Valid slots: ${botManager.slots.join(', ')}`;
 
-                if (!isQuiet) {
-                    toastr.error(error, 'Outfit System');
+                    if (!isQuiet) {
+                        toastr.error(error, 'Outfit System');
+                    }
+                    return error;
                 }
-                return error;
-            }
 
-            try {
-                const message = await botManager.setOutfitItem(slot, item);
+                try {
+                    const message = await botManager.setOutfitItem(slot, item);
 
-                if (window.extension_settings.outfit_tracker?.enableSysMessages) {
-                    window.botOutfitPanel.sendSystemMessage(message);
-                }
-                if (!isQuiet) {
-                    toastr.info(message, 'Outfit System');
-                }
-                return message;
-            } catch (error) {
-                console.error('Error changing outfit item:', error);
-                const error_msg = `Error changing ${slot} to ${item}.`;
+                    if (window.extension_settings.outfit_tracker?.enableSysMessages) {
+                        window.botOutfitPanel.sendSystemMessage(message);
+                    }
+                    if (!isQuiet) {
+                        toastr.info(message, 'Outfit System');
+                    }
+                    return message;
+                } catch (error) {
+                    console.error('Error changing outfit item:', error);
+                    const error_msg = `Error changing ${slot} to ${item}.`;
 
-                if (!isQuiet) {
-                    toastr.error(error_msg, 'Outfit System');
+                    if (!isQuiet) {
+                        toastr.error(error_msg, 'Outfit System');
+                    }
+                    return error_msg;
                 }
-                return error_msg;
-            }
-        },
-        returns: 'changes a character outfit item',
-        namedArgumentList: [
-            SlashCommandNamedArgument.fromProps({
-                name: 'quiet',
-                description: 'Suppress the toast message',
-                typeList: [ARGUMENT_TYPE.BOOLEAN],
-                defaultValue: 'false',
-            }),
-        ],
-        unnamedArgumentList: [
-            SlashCommandArgument.fromProps({
-                description: 'slot and new item',
-                typeList: [ARGUMENT_TYPE.STRING],
-                isRequired: true,
-            }),
-        ],
-        helpString: `
+            },
+            returns: 'changes a character outfit item',
+            namedArgumentList: [
+                SlashCommandNamedArgument.fromProps({
+                    name: 'quiet',
+                    description: 'Suppress the toast message',
+                    typeList: [ARGUMENT_TYPE.BOOLEAN],
+                    defaultValue: 'false',
+                }),
+            ],
+            unnamedArgumentList: [
+                SlashCommandArgument.fromProps({
+                    description: 'slot and new item',
+                    typeList: [ARGUMENT_TYPE.STRING],
+                    isRequired: true,
+                }),
+            ],
+            helpString: `
             <div>
                 Changes a character outfit item. Usage: /outfit-change <slot> <item>
             </div>
@@ -805,75 +805,75 @@ Full length: ${status.promptLength} chars`;
                 </ul>
             </div>
         `,
-    }));
+        }));
 
-    // User outfit commands
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'user-outfit-wear',
-        callback: async function (args, value) {
-            const isQuiet = args?.quiet === true;
-            // Parse slot and item from value
-            const params = value?.toString().trim() || '';
-            const parts = params.split(' ');
+        // User outfit commands
+        SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+            name: 'user-outfit-wear',
+            callback: async function (args, value) {
+                const isQuiet = args?.quiet === true;
+                // Parse slot and item from value
+                const params = value?.toString().trim() || '';
+                const parts = params.split(' ');
 
-            if (parts.length < 2) {
-                const error = 'Usage: /user-outfit-wear <slot> <item>. Example: /user-outfit-wear headwear "Red Baseball Cap"';
+                if (parts.length < 2) {
+                    const error = 'Usage: /user-outfit-wear <slot> <item>. Example: /user-outfit-wear headwear "Red Baseball Cap"';
 
-                if (!isQuiet) {
-                    toastr.error(error, 'Outfit System');
+                    if (!isQuiet) {
+                        toastr.error(error, 'Outfit System');
+                    }
+                    return error;
                 }
-                return error;
-            }
 
-            const slot = parts[0];
-            const item = parts.slice(1).join(' ');
+                const slot = parts[0];
+                const item = parts.slice(1).join(' ');
 
-            if (!userManager.slots.includes(slot)) {
-                const error = `Invalid slot: ${slot}. Valid slots: ${userManager.slots.join(', ')}`;
+                if (!userManager.slots.includes(slot)) {
+                    const error = `Invalid slot: ${slot}. Valid slots: ${userManager.slots.join(', ')}`;
 
-                if (!isQuiet) {
-                    toastr.error(error, 'Outfit System');
+                    if (!isQuiet) {
+                        toastr.error(error, 'Outfit System');
+                    }
+                    return error;
                 }
-                return error;
-            }
 
-            try {
-                const message = await userManager.setOutfitItem(slot, item);
+                try {
+                    const message = await userManager.setOutfitItem(slot, item);
 
-                if (window.extension_settings.outfit_tracker?.enableSysMessages) {
-                    window.userOutfitPanel.sendSystemMessage(message);
-                }
-                if (!isQuiet) {
-                    toastr.info(message, 'Outfit System');
-                }
-                return message;
-            } catch (error) {
-                console.error('Error setting user outfit item:', error);
-                const error_msg = `Error setting user ${slot} to ${item}.`;
+                    if (window.extension_settings.outfit_tracker?.enableSysMessages) {
+                        window.userOutfitPanel.sendSystemMessage(message);
+                    }
+                    if (!isQuiet) {
+                        toastr.info(message, 'Outfit System');
+                    }
+                    return message;
+                } catch (error) {
+                    console.error('Error setting user outfit item:', error);
+                    const error_msg = `Error setting user ${slot} to ${item}.`;
 
-                if (!isQuiet) {
-                    toastr.error(error_msg, 'Outfit System');
+                    if (!isQuiet) {
+                        toastr.error(error_msg, 'Outfit System');
+                    }
+                    return error_msg;
                 }
-                return error_msg;
-            }
-        },
-        returns: 'sets a user outfit item',
-        namedArgumentList: [
-            SlashCommandNamedArgument.fromProps({
-                name: 'quiet',
-                description: 'Suppress the toast message',
-                typeList: [ARGUMENT_TYPE.BOOLEAN],
-                defaultValue: 'false',
-            }),
-        ],
-        unnamedArgumentList: [
-            SlashCommandArgument.fromProps({
-                description: 'slot and item to wear',
-                typeList: [ARGUMENT_TYPE.STRING],
-                isRequired: true,
-            }),
-        ],
-        helpString: `
+            },
+            returns: 'sets a user outfit item',
+            namedArgumentList: [
+                SlashCommandNamedArgument.fromProps({
+                    name: 'quiet',
+                    description: 'Suppress the toast message',
+                    typeList: [ARGUMENT_TYPE.BOOLEAN],
+                    defaultValue: 'false',
+                }),
+            ],
+            unnamedArgumentList: [
+                SlashCommandArgument.fromProps({
+                    description: 'slot and item to wear',
+                    typeList: [ARGUMENT_TYPE.STRING],
+                    isRequired: true,
+                }),
+            ],
+            helpString: `
             <div>
                 Sets a user outfit item. Usage: /user-outfit-wear <slot> <item>
             </div>
@@ -891,60 +891,60 @@ Full length: ${status.promptLength} chars`;
                 </ul>
             </div>
         `,
-    }));
+        }));
 
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'user-outfit-remove',
-        callback: async function (args, value) {
-            const isQuiet = args?.quiet === true;
-            const slot = value?.toString().trim() || '';
+        SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+            name: 'user-outfit-remove',
+            callback: async function (args, value) {
+                const isQuiet = args?.quiet === true;
+                const slot = value?.toString().trim() || '';
 
-            if (!userManager.slots.includes(slot)) {
-                const error = `Invalid slot: ${slot}. Valid slots: ${userManager.slots.join(', ')}`;
+                if (!userManager.slots.includes(slot)) {
+                    const error = `Invalid slot: ${slot}. Valid slots: ${userManager.slots.join(', ')}`;
 
-                if (!isQuiet) {
-                    toastr.error(error, 'Outfit System');
+                    if (!isQuiet) {
+                        toastr.error(error, 'Outfit System');
+                    }
+                    return error;
                 }
-                return error;
-            }
 
-            try {
-                const message = await userManager.setOutfitItem(slot, 'None');
+                try {
+                    const message = await userManager.setOutfitItem(slot, 'None');
 
-                if (window.extension_settings.outfit_tracker?.enableSysMessages) {
-                    window.userOutfitPanel.sendSystemMessage(message);
-                }
-                if (!isQuiet) {
-                    toastr.info(message, 'Outfit System');
-                }
-                return message;
-            } catch (error) {
-                console.error('Error removing user outfit item:', error);
-                const error_msg = `Error removing user ${slot}.`;
+                    if (window.extension_settings.outfit_tracker?.enableSysMessages) {
+                        window.userOutfitPanel.sendSystemMessage(message);
+                    }
+                    if (!isQuiet) {
+                        toastr.info(message, 'Outfit System');
+                    }
+                    return message;
+                } catch (error) {
+                    console.error('Error removing user outfit item:', error);
+                    const error_msg = `Error removing user ${slot}.`;
 
-                if (!isQuiet) {
-                    toastr.error(error_msg, 'Outfit System');
+                    if (!isQuiet) {
+                        toastr.error(error_msg, 'Outfit System');
+                    }
+                    return error_msg;
                 }
-                return error_msg;
-            }
-        },
-        returns: 'removes a user outfit item',
-        namedArgumentList: [
-            SlashCommandNamedArgument.fromProps({
-                name: 'quiet',
-                description: 'Suppress the toast message',
-                typeList: [ARGUMENT_TYPE.BOOLEAN],
-                defaultValue: 'false',
-            }),
-        ],
-        unnamedArgumentList: [
-            SlashCommandArgument.fromProps({
-                description: 'slot to remove item from',
-                typeList: [ARGUMENT_TYPE.STRING],
-                isRequired: true,
-            }),
-        ],
-        helpString: `
+            },
+            returns: 'removes a user outfit item',
+            namedArgumentList: [
+                SlashCommandNamedArgument.fromProps({
+                    name: 'quiet',
+                    description: 'Suppress the toast message',
+                    typeList: [ARGUMENT_TYPE.BOOLEAN],
+                    defaultValue: 'false',
+                }),
+            ],
+            unnamedArgumentList: [
+                SlashCommandArgument.fromProps({
+                    description: 'slot to remove item from',
+                    typeList: [ARGUMENT_TYPE.STRING],
+                    isRequired: true,
+                }),
+            ],
+            helpString: `
             <div>
                 Removes a user outfit item. Usage: /user-outfit-remove <slot>
             </div>
@@ -962,74 +962,74 @@ Full length: ${status.promptLength} chars`;
                 </ul>
             </div>
         `,
-    }));
+        }));
 
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'user-outfit-change',
-        callback: async function (args, value) {
-            const isQuiet = args?.quiet === true;
-            // Parse slot and item from value
-            const params = value?.toString().trim() || '';
-            const parts = params.split(' ');
+        SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+            name: 'user-outfit-change',
+            callback: async function (args, value) {
+                const isQuiet = args?.quiet === true;
+                // Parse slot and item from value
+                const params = value?.toString().trim() || '';
+                const parts = params.split(' ');
 
-            if (parts.length < 2) {
-                const error = 'Usage: /user-outfit-change <slot> <item>. Example: /user-outfit-change headwear "Black Hat"';
+                if (parts.length < 2) {
+                    const error = 'Usage: /user-outfit-change <slot> <item>. Example: /user-outfit-change headwear "Black Hat"';
 
-                if (!isQuiet) {
-                    toastr.error(error, 'Outfit System');
+                    if (!isQuiet) {
+                        toastr.error(error, 'Outfit System');
+                    }
+                    return error;
                 }
-                return error;
-            }
 
-            const slot = parts[0];
-            const item = parts.slice(1).join(' ');
+                const slot = parts[0];
+                const item = parts.slice(1).join(' ');
 
-            if (!userManager.slots.includes(slot)) {
-                const error = `Invalid slot: ${slot}. Valid slots: ${userManager.slots.join(', ')}`;
+                if (!userManager.slots.includes(slot)) {
+                    const error = `Invalid slot: ${slot}. Valid slots: ${userManager.slots.join(', ')}`;
 
-                if (!isQuiet) {
-                    toastr.error(error, 'Outfit System');
+                    if (!isQuiet) {
+                        toastr.error(error, 'Outfit System');
+                    }
+                    return error;
                 }
-                return error;
-            }
 
-            try {
-                const message = await userManager.setOutfitItem(slot, item);
+                try {
+                    const message = await userManager.setOutfitItem(slot, item);
 
-                if (window.extension_settings.outfit_tracker?.enableSysMessages) {
-                    window.userOutfitPanel.sendSystemMessage(message);
-                }
-                if (!isQuiet) {
-                    toastr.info(message, 'Outfit System');
-                }
-                return message;
-            } catch (error) {
-                console.error('Error changing user outfit item:', error);
-                const error_msg = `Error changing user ${slot} to ${item}.`;
+                    if (window.extension_settings.outfit_tracker?.enableSysMessages) {
+                        window.userOutfitPanel.sendSystemMessage(message);
+                    }
+                    if (!isQuiet) {
+                        toastr.info(message, 'Outfit System');
+                    }
+                    return message;
+                } catch (error) {
+                    console.error('Error changing user outfit item:', error);
+                    const error_msg = `Error changing user ${slot} to ${item}.`;
 
-                if (!isQuiet) {
-                    toastr.error(error_msg, 'Outfit System');
+                    if (!isQuiet) {
+                        toastr.error(error_msg, 'Outfit System');
+                    }
+                    return error_msg;
                 }
-                return error_msg;
-            }
-        },
-        returns: 'changes a user outfit item',
-        namedArgumentList: [
-            SlashCommandNamedArgument.fromProps({
-                name: 'quiet',
-                description: 'Suppress the toast message',
-                typeList: [ARGUMENT_TYPE.BOOLEAN],
-                defaultValue: 'false',
-            }),
-        ],
-        unnamedArgumentList: [
-            SlashCommandArgument.fromProps({
-                description: 'slot and new item',
-                typeList: [ARGUMENT_TYPE.STRING],
-                isRequired: true,
-            }),
-        ],
-        helpString: `
+            },
+            returns: 'changes a user outfit item',
+            namedArgumentList: [
+                SlashCommandNamedArgument.fromProps({
+                    name: 'quiet',
+                    description: 'Suppress the toast message',
+                    typeList: [ARGUMENT_TYPE.BOOLEAN],
+                    defaultValue: 'false',
+                }),
+            ],
+            unnamedArgumentList: [
+                SlashCommandArgument.fromProps({
+                    description: 'slot and new item',
+                    typeList: [ARGUMENT_TYPE.STRING],
+                    isRequired: true,
+                }),
+            ],
+            helpString: `
             <div>
                 Changes a user outfit item. Usage: /user-outfit-change <slot> <item>
             </div>
@@ -1047,61 +1047,61 @@ Full length: ${status.promptLength} chars`;
                 </ul>
             </div>
         `,
-    }));
+        }));
 
-    // Outfit preset commands
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'outfit-save',
-        callback: async function (args, value) {
-            const isQuiet = args?.quiet === true;
-            const presetName = value?.toString().trim() || '';
+        // Outfit preset commands
+        SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+            name: 'outfit-save',
+            callback: async function (args, value) {
+                const isQuiet = args?.quiet === true;
+                const presetName = value?.toString().trim() || '';
 
-            if (!presetName) {
-                const error = 'Please specify a preset name. Usage: /outfit-save <name>';
+                if (!presetName) {
+                    const error = 'Please specify a preset name. Usage: /outfit-save <name>';
 
-                if (!isQuiet) {
-                    toastr.error(error, 'Outfit System');
+                    if (!isQuiet) {
+                        toastr.error(error, 'Outfit System');
+                    }
+                    return error;
                 }
-                return error;
-            }
 
-            try {
-                const message = await botManager.savePreset(presetName);
+                try {
+                    const message = await botManager.savePreset(presetName);
 
-                if (window.extension_settings.outfit_tracker?.enableSysMessages) {
-                    window.botOutfitPanel.sendSystemMessage(message);
-                }
-                if (!isQuiet) {
-                    toastr.info(message, 'Outfit System');
-                }
-                return message;
-            } catch (error) {
-                console.error('Error saving outfit preset:', error);
-                const error_msg = `Error saving outfit preset "${presetName}".`;
+                    if (window.extension_settings.outfit_tracker?.enableSysMessages) {
+                        window.botOutfitPanel.sendSystemMessage(message);
+                    }
+                    if (!isQuiet) {
+                        toastr.info(message, 'Outfit System');
+                    }
+                    return message;
+                } catch (error) {
+                    console.error('Error saving outfit preset:', error);
+                    const error_msg = `Error saving outfit preset "${presetName}".`;
 
-                if (!isQuiet) {
-                    toastr.error(error_msg, 'Outfit System');
+                    if (!isQuiet) {
+                        toastr.error(error_msg, 'Outfit System');
+                    }
+                    return error_msg;
                 }
-                return error_msg;
-            }
-        },
-        returns: 'saves character outfit as a preset',
-        namedArgumentList: [
-            SlashCommandNamedArgument.fromProps({
-                name: 'quiet',
-                description: 'Suppress the toast message',
-                typeList: [ARGUMENT_TYPE.BOOLEAN],
-                defaultValue: 'false',
-            }),
-        ],
-        unnamedArgumentList: [
-            SlashCommandArgument.fromProps({
-                description: 'preset name to save',
-                typeList: [ARGUMENT_TYPE.STRING],
-                isRequired: true,
-            }),
-        ],
-        helpString: `
+            },
+            returns: 'saves character outfit as a preset',
+            namedArgumentList: [
+                SlashCommandNamedArgument.fromProps({
+                    name: 'quiet',
+                    description: 'Suppress the toast message',
+                    typeList: [ARGUMENT_TYPE.BOOLEAN],
+                    defaultValue: 'false',
+                }),
+            ],
+            unnamedArgumentList: [
+                SlashCommandArgument.fromProps({
+                    description: 'preset name to save',
+                    typeList: [ARGUMENT_TYPE.STRING],
+                    isRequired: true,
+                }),
+            ],
+            helpString: `
             <div>
                 Saves character outfit as a preset. Usage: /outfit-save <name>
             </div>
@@ -1119,60 +1119,60 @@ Full length: ${status.promptLength} chars`;
                 </ul>
             </div>
         `,
-    }));
+        }));
 
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'outfit-delete',
-        callback: async function (args, value) {
-            const isQuiet = args?.quiet === true;
-            const presetName = value?.toString().trim() || '';
+        SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+            name: 'outfit-delete',
+            callback: async function (args, value) {
+                const isQuiet = args?.quiet === true;
+                const presetName = value?.toString().trim() || '';
 
-            if (!presetName) {
-                const error = 'Please specify a preset name. Usage: /outfit-delete <name>';
+                if (!presetName) {
+                    const error = 'Please specify a preset name. Usage: /outfit-delete <name>';
 
-                if (!isQuiet) {
-                    toastr.error(error, 'Outfit System');
+                    if (!isQuiet) {
+                        toastr.error(error, 'Outfit System');
+                    }
+                    return error;
                 }
-                return error;
-            }
 
-            try {
-                const message = await botManager.deletePreset(presetName);
+                try {
+                    const message = await botManager.deletePreset(presetName);
 
-                if (window.extension_settings.outfit_tracker?.enableSysMessages) {
-                    window.botOutfitPanel.sendSystemMessage(message);
-                }
-                if (!isQuiet) {
-                    toastr.info(message, 'Outfit System');
-                }
-                return message;
-            } catch (error) {
-                console.error('Error deleting outfit preset:', error);
-                const error_msg = `Error deleting outfit preset "${presetName}".`;
+                    if (window.extension_settings.outfit_tracker?.enableSysMessages) {
+                        window.botOutfitPanel.sendSystemMessage(message);
+                    }
+                    if (!isQuiet) {
+                        toastr.info(message, 'Outfit System');
+                    }
+                    return message;
+                } catch (error) {
+                    console.error('Error deleting outfit preset:', error);
+                    const error_msg = `Error deleting outfit preset "${presetName}".`;
 
-                if (!isQuiet) {
-                    toastr.error(error_msg, 'Outfit System');
+                    if (!isQuiet) {
+                        toastr.error(error_msg, 'Outfit System');
+                    }
+                    return error_msg;
                 }
-                return error_msg;
-            }
-        },
-        returns: 'deletes character outfit preset',
-        namedArgumentList: [
-            SlashCommandNamedArgument.fromProps({
-                name: 'quiet',
-                description: 'Suppress the toast message',
-                typeList: [ARGUMENT_TYPE.BOOLEAN],
-                defaultValue: 'false',
-            }),
-        ],
-        unnamedArgumentList: [
-            SlashCommandArgument.fromProps({
-                description: 'preset name to delete',
-                typeList: [ARGUMENT_TYPE.STRING],
-                isRequired: true,
-            }),
-        ],
-        helpString: `
+            },
+            returns: 'deletes character outfit preset',
+            namedArgumentList: [
+                SlashCommandNamedArgument.fromProps({
+                    name: 'quiet',
+                    description: 'Suppress the toast message',
+                    typeList: [ARGUMENT_TYPE.BOOLEAN],
+                    defaultValue: 'false',
+                }),
+            ],
+            unnamedArgumentList: [
+                SlashCommandArgument.fromProps({
+                    description: 'preset name to delete',
+                    typeList: [ARGUMENT_TYPE.STRING],
+                    isRequired: true,
+                }),
+            ],
+            helpString: `
             <div>
                 Deletes character outfit preset. Usage: /outfit-delete <name>
             </div>
@@ -1190,60 +1190,60 @@ Full length: ${status.promptLength} chars`;
                 </ul>
             </div>
         `,
-    }));
+        }));
 
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'user-outfit-save',
-        callback: async function (args, value) {
-            const isQuiet = args?.quiet === true;
-            const presetName = value?.toString().trim() || '';
+        SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+            name: 'user-outfit-save',
+            callback: async function (args, value) {
+                const isQuiet = args?.quiet === true;
+                const presetName = value?.toString().trim() || '';
 
-            if (!presetName) {
-                const error = 'Please specify a preset name. Usage: /user-outfit-save <name>';
+                if (!presetName) {
+                    const error = 'Please specify a preset name. Usage: /user-outfit-save <name>';
 
-                if (!isQuiet) {
-                    toastr.error(error, 'Outfit System');
+                    if (!isQuiet) {
+                        toastr.error(error, 'Outfit System');
+                    }
+                    return error;
                 }
-                return error;
-            }
 
-            try {
-                const message = await userManager.savePreset(presetName);
+                try {
+                    const message = await userManager.savePreset(presetName);
 
-                if (window.extension_settings.outfit_tracker?.enableSysMessages) {
-                    window.userOutfitPanel.sendSystemMessage(message);
-                }
-                if (!isQuiet) {
-                    toastr.info(message, 'Outfit System');
-                }
-                return message;
-            } catch (error) {
-                console.error('Error saving user outfit preset:', error);
-                const error_msg = `Error saving user outfit preset "${presetName}".`;
+                    if (window.extension_settings.outfit_tracker?.enableSysMessages) {
+                        window.userOutfitPanel.sendSystemMessage(message);
+                    }
+                    if (!isQuiet) {
+                        toastr.info(message, 'Outfit System');
+                    }
+                    return message;
+                } catch (error) {
+                    console.error('Error saving user outfit preset:', error);
+                    const error_msg = `Error saving user outfit preset "${presetName}".`;
 
-                if (!isQuiet) {
-                    toastr.error(error_msg, 'Outfit System');
+                    if (!isQuiet) {
+                        toastr.error(error_msg, 'Outfit System');
+                    }
+                    return error_msg;
                 }
-                return error_msg;
-            }
-        },
-        returns: 'saves user outfit as a preset',
-        namedArgumentList: [
-            SlashCommandNamedArgument.fromProps({
-                name: 'quiet',
-                description: 'Suppress the toast message',
-                typeList: [ARGUMENT_TYPE.BOOLEAN],
-                defaultValue: 'false',
-            }),
-        ],
-        unnamedArgumentList: [
-            SlashCommandArgument.fromProps({
-                description: 'preset name to save',
-                typeList: [ARGUMENT_TYPE.STRING],
-                isRequired: true,
-            }),
-        ],
-        helpString: `
+            },
+            returns: 'saves user outfit as a preset',
+            namedArgumentList: [
+                SlashCommandNamedArgument.fromProps({
+                    name: 'quiet',
+                    description: 'Suppress the toast message',
+                    typeList: [ARGUMENT_TYPE.BOOLEAN],
+                    defaultValue: 'false',
+                }),
+            ],
+            unnamedArgumentList: [
+                SlashCommandArgument.fromProps({
+                    description: 'preset name to save',
+                    typeList: [ARGUMENT_TYPE.STRING],
+                    isRequired: true,
+                }),
+            ],
+            helpString: `
             <div>
                 Saves user outfit as a preset. Usage: /user-outfit-save <name>
             </div>
@@ -1261,60 +1261,60 @@ Full length: ${status.promptLength} chars`;
                 </ul>
             </div>
         `,
-    }));
+        }));
 
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'user-outfit-delete',
-        callback: async function (args, value) {
-            const isQuiet = args?.quiet === true;
-            const presetName = value?.toString().trim() || '';
+        SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+            name: 'user-outfit-delete',
+            callback: async function (args, value) {
+                const isQuiet = args?.quiet === true;
+                const presetName = value?.toString().trim() || '';
 
-            if (!presetName) {
-                const error = 'Please specify a preset name. Usage: /user-outfit-delete <name>';
+                if (!presetName) {
+                    const error = 'Please specify a preset name. Usage: /user-outfit-delete <name>';
 
-                if (!isQuiet) {
-                    toastr.error(error, 'Outfit System');
+                    if (!isQuiet) {
+                        toastr.error(error, 'Outfit System');
+                    }
+                    return error;
                 }
-                return error;
-            }
 
-            try {
-                const message = await userManager.deletePreset(presetName);
+                try {
+                    const message = await userManager.deletePreset(presetName);
 
-                if (window.extension_settings.outfit_tracker?.enableSysMessages) {
-                    window.userOutfitPanel.sendSystemMessage(message);
-                }
-                if (!isQuiet) {
-                    toastr.info(message, 'Outfit System');
-                }
-                return message;
-            } catch (error) {
-                console.error('Error deleting user outfit preset:', error);
-                const error_msg = `Error deleting user outfit preset "${presetName}".`;
+                    if (window.extension_settings.outfit_tracker?.enableSysMessages) {
+                        window.userOutfitPanel.sendSystemMessage(message);
+                    }
+                    if (!isQuiet) {
+                        toastr.info(message, 'Outfit System');
+                    }
+                    return message;
+                } catch (error) {
+                    console.error('Error deleting user outfit preset:', error);
+                    const error_msg = `Error deleting user outfit preset "${presetName}".`;
 
-                if (!isQuiet) {
-                    toastr.error(error_msg, 'Outfit System');
+                    if (!isQuiet) {
+                        toastr.error(error_msg, 'Outfit System');
+                    }
+                    return error_msg;
                 }
-                return error_msg;
-            }
-        },
-        returns: 'deletes user outfit preset',
-        namedArgumentList: [
-            SlashCommandNamedArgument.fromProps({
-                name: 'quiet',
-                description: 'Suppress the toast message',
-                typeList: [ARGUMENT_TYPE.BOOLEAN],
-                defaultValue: 'false',
-            }),
-        ],
-        unnamedArgumentList: [
-            SlashCommandArgument.fromProps({
-                description: 'preset name to delete',
-                typeList: [ARGUMENT_TYPE.STRING],
-                isRequired: true,
-            }),
-        ],
-        helpString: `
+            },
+            returns: 'deletes user outfit preset',
+            namedArgumentList: [
+                SlashCommandNamedArgument.fromProps({
+                    name: 'quiet',
+                    description: 'Suppress the toast message',
+                    typeList: [ARGUMENT_TYPE.BOOLEAN],
+                    defaultValue: 'false',
+                }),
+            ],
+            unnamedArgumentList: [
+                SlashCommandArgument.fromProps({
+                    description: 'preset name to delete',
+                    typeList: [ARGUMENT_TYPE.STRING],
+                    isRequired: true,
+                }),
+            ],
+            helpString: `
             <div>
                 Deletes user outfit preset. Usage: /user-outfit-delete <name>
             </div>
@@ -1332,64 +1332,64 @@ Full length: ${status.promptLength} chars`;
                 </ul>
             </div>
         `,
-    }));
+        }));
 
-    // List all available outfits and presets
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'outfit-list',
-        callback: async function (args) {
-            const isQuiet = args?.quiet === true;
+        // List all available outfits and presets
+        SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+            name: 'outfit-list',
+            callback: async function (args) {
+                const isQuiet = args?.quiet === true;
 
-            try {
+                try {
                 // Get character presets
-                const botPresets = botManager.getPresets();
-                // Get user presets
-                const userPresets = userManager.getPresets();
+                    const botPresets = botManager.getPresets();
+                    // Get user presets
+                    const userPresets = userManager.getPresets();
 
-                // Get current outfit data for both character and user
-                const botOutfitData = botManager.getOutfitData([...CLOTHING_SLOTS, ...ACCESSORY_SLOTS]);
-                const userOutfitData = userManager.getOutfitData([...CLOTHING_SLOTS, ...ACCESSORY_SLOTS]);
+                    // Get current outfit data for both character and user
+                    const botOutfitData = botManager.getOutfitData([...CLOTHING_SLOTS, ...ACCESSORY_SLOTS]);
+                    const userOutfitData = userManager.getOutfitData([...CLOTHING_SLOTS, ...ACCESSORY_SLOTS]);
 
-                let message = `Available character presets: ${botPresets.length > 0 ? botPresets.join(', ') : 'None'}`;
+                    let message = `Available character presets: ${botPresets.length > 0 ? botPresets.join(', ') : 'None'}`;
 
-                message += `Available user presets: ${userPresets.length > 0 ? userPresets.join(', ') : 'None'}`;
+                    message += `Available user presets: ${userPresets.length > 0 ? userPresets.join(', ') : 'None'}`;
 
-                // Add current outfit information
-                message += `Current ${botManager.character} outfit:`;
-                for (const item of botOutfitData) {
-                    message += `  ${item.name}: ${item.value}`;
+                    // Add current outfit information
+                    message += `Current ${botManager.character} outfit:`;
+                    for (const item of botOutfitData) {
+                        message += `  ${item.name}: ${item.value}`;
+                    }
+
+                    message += 'Current user outfit:';
+                    for (const item of userOutfitData) {
+                        message += `  ${item.name}: ${item.value}`;
+                    }
+
+                    if (!isQuiet) {
+                        toastr.info('Outfit information retrieved', 'Outfit System');
+                    }
+                    return message;
+                } catch (error) {
+                    console.error('Error listing outfits:', error);
+                    const error_msg = 'Error listing outfit information.';
+
+                    if (!isQuiet) {
+                        toastr.error(error_msg, 'Outfit System');
+                    }
+                    return error_msg;
                 }
-
-                message += 'Current user outfit:';
-                for (const item of userOutfitData) {
-                    message += `  ${item.name}: ${item.value}`;
-                }
-
-                if (!isQuiet) {
-                    toastr.info('Outfit information retrieved', 'Outfit System');
-                }
-                return message;
-            } catch (error) {
-                console.error('Error listing outfits:', error);
-                const error_msg = 'Error listing outfit information.';
-
-                if (!isQuiet) {
-                    toastr.error(error_msg, 'Outfit System');
-                }
-                return error_msg;
-            }
-        },
-        returns: 'lists all available outfit presets and current outfits',
-        namedArgumentList: [
-            SlashCommandNamedArgument.fromProps({
-                name: 'quiet',
-                description: 'Suppress the toast message',
-                typeList: [ARGUMENT_TYPE.BOOLEAN],
-                defaultValue: 'false',
-            }),
-        ],
-        unnamedArgumentList: [],
-        helpString: `
+            },
+            returns: 'lists all available outfit presets and current outfits',
+            namedArgumentList: [
+                SlashCommandNamedArgument.fromProps({
+                    name: 'quiet',
+                    description: 'Suppress the toast message',
+                    typeList: [ARGUMENT_TYPE.BOOLEAN],
+                    defaultValue: 'false',
+                }),
+            ],
+            unnamedArgumentList: [],
+            helpString: `
             <div>
                 Lists all available outfit presets and current outfits. Usage: /outfit-list
             </div>
@@ -1403,61 +1403,61 @@ Full length: ${status.promptLength} chars`;
                 </ul>
             </div>
         `,
-    }));
+        }));
 
-    // Outfit overwrite commands
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'outfit-overwrite',
-        callback: async function (args, value) {
-            const isQuiet = args?.quiet === true;
-            const presetName = value?.toString().trim() || '';
+        // Outfit overwrite commands
+        SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+            name: 'outfit-overwrite',
+            callback: async function (args, value) {
+                const isQuiet = args?.quiet === true;
+                const presetName = value?.toString().trim() || '';
 
-            if (!presetName) {
-                const error = 'Please specify a preset name. Usage: /outfit-overwrite <name>';
+                if (!presetName) {
+                    const error = 'Please specify a preset name. Usage: /outfit-overwrite <name>';
 
-                if (!isQuiet) {
-                    toastr.error(error, 'Outfit System');
+                    if (!isQuiet) {
+                        toastr.error(error, 'Outfit System');
+                    }
+                    return error;
                 }
-                return error;
-            }
 
-            try {
-                const message = await botManager.overwritePreset(presetName);
+                try {
+                    const message = await botManager.overwritePreset(presetName);
 
-                if (window.extension_settings.outfit_tracker?.enableSysMessages) {
-                    window.botOutfitPanel.sendSystemMessage(message);
-                }
-                if (!isQuiet) {
-                    toastr.info(message, 'Outfit System');
-                }
-                return message;
-            } catch (error) {
-                console.error('Error overwriting outfit preset:', error);
-                const error_msg = `Error overwriting outfit preset "${presetName}".`;
+                    if (window.extension_settings.outfit_tracker?.enableSysMessages) {
+                        window.botOutfitPanel.sendSystemMessage(message);
+                    }
+                    if (!isQuiet) {
+                        toastr.info(message, 'Outfit System');
+                    }
+                    return message;
+                } catch (error) {
+                    console.error('Error overwriting outfit preset:', error);
+                    const error_msg = `Error overwriting outfit preset "${presetName}".`;
 
-                if (!isQuiet) {
-                    toastr.error(error_msg, 'Outfit System');
+                    if (!isQuiet) {
+                        toastr.error(error_msg, 'Outfit System');
+                    }
+                    return error_msg;
                 }
-                return error_msg;
-            }
-        },
-        returns: 'overwrites character outfit preset with current outfit',
-        namedArgumentList: [
-            SlashCommandNamedArgument.fromProps({
-                name: 'quiet',
-                description: 'Suppress the toast message',
-                typeList: [ARGUMENT_TYPE.BOOLEAN],
-                defaultValue: 'false',
-            }),
-        ],
-        unnamedArgumentList: [
-            SlashCommandArgument.fromProps({
-                description: 'preset name to overwrite',
-                typeList: [ARGUMENT_TYPE.STRING],
-                isRequired: true,
-            }),
-        ],
-        helpString: `
+            },
+            returns: 'overwrites character outfit preset with current outfit',
+            namedArgumentList: [
+                SlashCommandNamedArgument.fromProps({
+                    name: 'quiet',
+                    description: 'Suppress the toast message',
+                    typeList: [ARGUMENT_TYPE.BOOLEAN],
+                    defaultValue: 'false',
+                }),
+            ],
+            unnamedArgumentList: [
+                SlashCommandArgument.fromProps({
+                    description: 'preset name to overwrite',
+                    typeList: [ARGUMENT_TYPE.STRING],
+                    isRequired: true,
+                }),
+            ],
+            helpString: `
             <div>
                 Overwrites character outfit preset with current outfit. Usage: /outfit-overwrite <name>
             </div>
@@ -1481,60 +1481,60 @@ Full length: ${status.promptLength} chars`;
                 </ul>
             </div>
         `,
-    }));
+        }));
 
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'user-outfit-overwrite',
-        callback: async function (args, value) {
-            const isQuiet = args?.quiet === true;
-            const presetName = value?.toString().trim() || '';
+        SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+            name: 'user-outfit-overwrite',
+            callback: async function (args, value) {
+                const isQuiet = args?.quiet === true;
+                const presetName = value?.toString().trim() || '';
 
-            if (!presetName) {
-                const error = 'Please specify a preset name. Usage: /user-outfit-overwrite <name>';
+                if (!presetName) {
+                    const error = 'Please specify a preset name. Usage: /user-outfit-overwrite <name>';
 
-                if (!isQuiet) {
-                    toastr.error(error, 'Outfit System');
+                    if (!isQuiet) {
+                        toastr.error(error, 'Outfit System');
+                    }
+                    return error;
                 }
-                return error;
-            }
 
-            try {
-                const message = await userManager.overwritePreset(presetName);
+                try {
+                    const message = await userManager.overwritePreset(presetName);
 
-                if (window.extension_settings.outfit_tracker?.enableSysMessages) {
-                    window.userOutfitPanel.sendSystemMessage(message);
-                }
-                if (!isQuiet) {
-                    toastr.info(message, 'Outfit System');
-                }
-                return message;
-            } catch (error) {
-                console.error('Error overwriting user outfit preset:', error);
-                const error_msg = `Error overwriting user outfit preset "${presetName}".`;
+                    if (window.extension_settings.outfit_tracker?.enableSysMessages) {
+                        window.userOutfitPanel.sendSystemMessage(message);
+                    }
+                    if (!isQuiet) {
+                        toastr.info(message, 'Outfit System');
+                    }
+                    return message;
+                } catch (error) {
+                    console.error('Error overwriting user outfit preset:', error);
+                    const error_msg = `Error overwriting user outfit preset "${presetName}".`;
 
-                if (!isQuiet) {
-                    toastr.error(error_msg, 'Outfit System');
+                    if (!isQuiet) {
+                        toastr.error(error_msg, 'Outfit System');
+                    }
+                    return error_msg;
                 }
-                return error_msg;
-            }
-        },
-        returns: 'overwrites user outfit preset with current outfit',
-        namedArgumentList: [
-            SlashCommandNamedArgument.fromProps({
-                name: 'quiet',
-                description: 'Suppress the toast message',
-                typeList: [ARGUMENT_TYPE.BOOLEAN],
-                defaultValue: 'false',
-            }),
-        ],
-        unnamedArgumentList: [
-            SlashCommandArgument.fromProps({
-                description: 'preset name to overwrite',
-                typeList: [ARGUMENT_TYPE.STRING],
-                isRequired: true,
-            }),
-        ],
-        helpString: `
+            },
+            returns: 'overwrites user outfit preset with current outfit',
+            namedArgumentList: [
+                SlashCommandNamedArgument.fromProps({
+                    name: 'quiet',
+                    description: 'Suppress the toast message',
+                    typeList: [ARGUMENT_TYPE.BOOLEAN],
+                    defaultValue: 'false',
+                }),
+            ],
+            unnamedArgumentList: [
+                SlashCommandArgument.fromProps({
+                    description: 'preset name to overwrite',
+                    typeList: [ARGUMENT_TYPE.STRING],
+                    isRequired: true,
+                }),
+            ],
+            helpString: `
             <div>
                 Overwrites user outfit preset with current outfit. Usage: /user-outfit-overwrite <name>
             </div>
@@ -1558,8 +1558,8 @@ Full length: ${status.promptLength} chars`;
                 </ul>
             </div>
         `,
-    }));
-}
+        }));
+    }
 
 // Close the main function 
 }

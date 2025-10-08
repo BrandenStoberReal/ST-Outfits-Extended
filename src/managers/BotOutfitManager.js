@@ -289,10 +289,10 @@ export class BotOutfitManager {
 
     getGlobalVariable(name) {
         try {
-            // Access extension_settings from the global window object
+            // Access extension_settings from the global window object - only look in extension settings
             const globalVars = safeGet(window, 'extension_settings.variables.global', {});
 
-            return globalVars[name] || window[name] || 'None';
+            return globalVars[name] || 'None';
         } catch (error) {
             console.error('[BotOutfitManager] Error accessing global variable:', name, error);
             return 'None';
@@ -301,7 +301,7 @@ export class BotOutfitManager {
 
     setGlobalVariable(name, value) {
         try {
-            window[name] = value;
+            // Store in extension settings which is where SillyTavern expects global variables
             if (!window.extension_settings?.variables) {
                 if (!window.extension_settings) {window.extension_settings = {};}
                 window.extension_settings.variables = { global: {} };
