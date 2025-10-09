@@ -20,15 +20,13 @@ export class NewUserOutfitManager {
 
     // Set outfit instance ID based on first message (for consistency with bot)
     setOutfitInstanceId(instanceId) {
-        if (this.outfitInstanceId !== instanceId) {
-            // Before switching, save current values to the current namespace if we have an old instance ID
-            if (this.outfitInstanceId) {
-                this.saveOutfit();
-            }
-            
-            this.outfitInstanceId = instanceId;
-            this.loadOutfit();
+        // Before switching, save current values to the current namespace if we have an old instance ID
+        if (this.outfitInstanceId) {
+            this.saveOutfit();
         }
+        
+        this.outfitInstanceId = instanceId;
+        this.loadOutfit();
     }
     
     // Get current instance ID
@@ -133,23 +131,30 @@ export class NewUserOutfitManager {
         }
 
         // Create the structure in extension settings
-        if (!window.extension_settings.outfit_tracker.instances) {
-            window.extension_settings.outfit_tracker.instances = {};
-        }
-        
-        // We need to find which character instance ID we're associated with and save there
-        // For now, let's store it in a dedicated user section
         if (!window.extension_settings.outfit_tracker.user_instances) {
             window.extension_settings.outfit_tracker.user_instances = {};
         }
         
-        // Save the slot values
+        // Save the slot values from currentValues
         const userOutfit = {};
         this.slots.forEach(slot => {
-            userOutfit[slot] = this.currentValues[slot];
+            userOutfit[slot] = this.currentValues[slot] || 'None';
         });
         
         window.extension_settings.outfit_tracker.user_instances[this.outfitInstanceId] = userOutfit;
+        
+        // Also update the global variables for this instance
+        for (const slot of this.slots) {
+            const varName = this.getVarName(slot);
+            if (varName) {
+                this.setGlobalVariable(varName, userOutfit[slot]);
+            }
+        }
+        
+        // Ensure settings are saved
+        if (window.saveSettingsDebounced) {
+            window.saveSettingsDebounced();
+        }
     }
     
     // Update the global pointer to the current instance
@@ -159,22 +164,9 @@ export class NewUserOutfitManager {
             return;
         }
         
-        const allInstances = safeGet(window, 'extension_settings.outfit_tracker.instances', {});
-        let userOutfit = null;
-        
-        // Try to find user outfit data from the instance structure
-        for (const [charId, charInstances] of Object.entries(allInstances)) {
-            if (charInstances[this.outfitInstanceId] && charInstances[this.outfitInstanceId].user) {
-                userOutfit = charInstances[this.outfitInstanceId].user;
-                break;
-            }
-        }
-        
-        // If not found there, try the dedicated user instances structure
-        if (!userOutfit) {
-            const userInstances = safeGet(window, 'extension_settings.outfit_tracker.user_instances', {});
-            userOutfit = userInstances[this.outfitInstanceId] || {};
-        }
+        // Get user outfit from the dedicated user instances structure
+        const userInstances = safeGet(window, 'extension_settings.outfit_tracker.user_instances', {});
+        const userOutfit = userInstances[this.outfitInstanceId] || {};
         
         window.currentUserOutfitInstance = userOutfit;
     }
@@ -237,18 +229,9 @@ export class NewUserOutfitManager {
         // Update internal state
         this.currentValues[slot] = value;
         
-        // Update in the instance data
+        // Save the entire outfit to persist the change
         if (this.outfitInstanceId) {
-            // Update the user instances structure
-            if (!window.extension_settings.outfit_tracker.user_instances) {
-                window.extension_settings.outfit_tracker.user_instances = {};
-            }
-            
-            if (!window.extension_settings.outfit_tracker.user_instances[this.outfitInstanceId]) {
-                window.extension_settings.outfit_tracker.user_instances[this.outfitInstanceId] = {};
-            }
-            
-            window.extension_settings.outfit_tracker.user_instances[this.outfitInstanceId][slot] = value;
+            this.saveOutfit();
         }
         
         // Update the instance-specific global variable too

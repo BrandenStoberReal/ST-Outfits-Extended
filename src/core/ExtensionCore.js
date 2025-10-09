@@ -757,6 +757,14 @@ Only return the formatted sections with cleaned content.`;
             }
         }
         
+        // Update the global instance pointers
+        if (botManager.outfitInstanceId) {
+            botManager.updateGlobalInstancePointer();
+        }
+        if (userManager.outfitInstanceId) {
+            userManager.updateGlobalInstancePointer();
+        }
+        
         // Ensure settings are saved after updating variables
         if (typeof saveSettingsDebounced === 'function') {
             saveSettingsDebounced();

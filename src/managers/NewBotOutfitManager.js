@@ -37,15 +37,13 @@ export class NewBotOutfitManager {
 
     // Set outfit instance ID based on first message
     setOutfitInstanceId(instanceId) {
-        if (this.outfitInstanceId !== instanceId) {
-            // Before switching, save current values to the current namespace if we have an old instance ID
-            if (this.outfitInstanceId) {
-                this.saveOutfit();
-            }
-            
-            this.outfitInstanceId = instanceId;
-            this.loadOutfit();
+        // Before switching, save current values to the current namespace if we have an old instance ID
+        if (this.outfitInstanceId) {
+            this.saveOutfit();
         }
+        
+        this.outfitInstanceId = instanceId;
+        this.loadOutfit();
     }
     
     // Get current instance ID
@@ -56,7 +54,9 @@ export class NewBotOutfitManager {
     // Get the variable name for a slot in the current instance
     getVarName(slot) {
         if (!this.characterId || !this.outfitInstanceId) {
-            return null;
+            // If we don't have proper IDs, return a default pattern
+            // This might happen during initialization
+            return `OUTFIT_INST_${this.characterId || 'unknown'}_temp_${slot}`;
         }
         return `OUTFIT_INST_${this.characterId}_${this.outfitInstanceId}_${slot}`;
     }
@@ -121,13 +121,26 @@ export class NewBotOutfitManager {
             window.extension_settings.outfit_tracker.instances[this.characterId][this.outfitInstanceId] = { bot: {}, user: {} };
         }
         
-        // Save the slot values
+        // Save the slot values from currentValues
         const botOutfit = {};
         this.slots.forEach(slot => {
-            botOutfit[slot] = this.currentValues[slot];
+            botOutfit[slot] = this.currentValues[slot] || 'None';
         });
         
         window.extension_settings.outfit_tracker.instances[this.characterId][this.outfitInstanceId].bot = botOutfit;
+        
+        // Also update the global variables for this instance
+        for (const slot of this.slots) {
+            const varName = this.getVarName(slot);
+            if (varName) {
+                this.setGlobalVariable(varName, botOutfit[slot]);
+            }
+        }
+        
+        // Ensure settings are saved
+        if (window.saveSettingsDebounced) {
+            window.saveSettingsDebounced();
+        }
     }
     
     // Update the global pointer to the current instance
@@ -201,9 +214,7 @@ export class NewBotOutfitManager {
         
         // Update in the instance data
         if (this.characterId && this.outfitInstanceId) {
-            const instanceData = safeGet(window, `extension_settings.outfit_tracker.instances.${this.characterId}.${this.outfitInstanceId}.bot`, {});
-            instanceData[slot] = value;
-            // Save the instance data back
+            // Save the entire outfit to persist the change
             this.saveOutfit();
         }
         
