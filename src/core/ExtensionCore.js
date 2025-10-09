@@ -742,7 +742,8 @@ Only return the formatted sections with cleaned content.`;
         // Function to update global variables with current instance values
         function updateGlobalInstanceVariables() {
             const context = getContext();
-            if (!context) return;
+
+            if (!context) {return;}
 
             // Get current character and user names
             let botCharacterName = 'Unknown';
@@ -750,6 +751,7 @@ Only return the formatted sections with cleaned content.`;
 
             if (context && context.characters && context.characterId !== undefined && context.characterId !== null) {
                 const character = context.characters[context.characterId];
+
                 if (character && character.name) {
                     botCharacterName = character.name;
                 }
@@ -758,8 +760,10 @@ Only return the formatted sections with cleaned content.`;
             // Get user name from chat
             if (context && context.chat) {
                 const userMessages = context.chat.filter(message => message.is_user);
+
                 if (userMessages.length > 0) {
                     const mostRecentUserMessage = userMessages[userMessages.length - 1];
+
                     userName = extractUserName(mostRecentUserMessage) || userName;
                 }
             }
@@ -772,20 +776,24 @@ Only return the formatted sections with cleaned content.`;
             [...CLOTHING_SLOTS, ...ACCESSORY_SLOTS].forEach(slot => {
                 // Bot slots: <characterName>_<slot>
                 const botVarName = `${botCharacterName.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '')}_${slot}`;
+
                 window.extension_settings.variables.global[botVarName] = currentBotOutfit[slot] || 'None';
 
                 // User slots: User_<slot>
                 const userVarName = `User_${slot}`;
+
                 window.extension_settings.variables.global[userVarName] = currentUserOutfit[slot] || 'None';
 
                 // Instance-specific variables (for compatibility with older system)
                 if (botManager.outfitInstanceId) {
                     const botInstanceVarName = `OUTFIT_INST_${botManager.characterId || 'unknown'}_${botManager.outfitInstanceId}_${slot}`;
+
                     window.extension_settings.variables.global[botInstanceVarName] = currentBotOutfit[slot] || 'None';
                 }
 
                 if (userManager.outfitInstanceId) {
                     const userInstanceVarName = `OUTFIT_INST_USER_${userManager.outfitInstanceId}_${slot}`;
+
                     window.extension_settings.variables.global[userInstanceVarName] = currentUserOutfit[slot] || 'None';
                 }
             });
