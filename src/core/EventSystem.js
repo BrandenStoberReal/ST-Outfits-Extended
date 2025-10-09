@@ -53,19 +53,32 @@ class EventSystem {
     }
 
     handleChatChange() {
-        console.log('[OutfitTracker] CHAT_CHANGED event fired - updating outfit data for character switch or chat reset');
-        this.updateForCurrentCharacter();
+        const chat = this.context.chat;
+        // Only trigger an update if the chat is populated.
+        // This allows the handler to work for character switches, but prevents it from firing
+        // with an empty context during a chat reset.
+        if (chat && chat.length > 0) {
+            console.log('[OutfitTracker] CHAT_CHANGED event fired with populated chat - updating for character switch');
+            this.updateForCurrentCharacter();
+        } else {
+            console.log('[OutfitTracker] CHAT_CHANGED event fired with empty chat - likely a reset, skipping update and waiting for message render.');
+        }
     }
 
     handleChatCreated() {
-        console.log('[OutfitTracker] CHAT_CREATED event fired - updating for new chat session');
-        this.updateForCurrentCharacter();
+        console.log('[OutfitTracker] CHAT_CREATED event fired - skipping update, will be handled by message render to prevent race conditions.');
+        // This handler is intentionally left blank. 
+        // CHAT_CREATED fires too early on reset, before the chat is populated.
+        // The update is now reliably handled by the CHARACTER_MESSAGE_RENDERED event.
     }
 
     async handleCharacterMessageRendered(messageId, type) {
         if (type === 'first_message') {
-            console.log(`[OutfitTracker] CHARACTER_MESSAGE_RENDERED (first_message) event fired with message ID: ${messageId}`);
-            await this.updateForCurrentCharacter();
+            console.log(`[OutfitTracker] CHARACTER_MESSAGE_RENDERED (first_message) event fired. This is the primary trigger for chat resets.`);
+            // Add a small delay to ensure the chat context is fully updated before we access it.
+            setTimeout(async () => {
+                await this.updateForCurrentCharacter();
+            }, 150);
         }
     }
 
