@@ -7,7 +7,7 @@ import { extractMacros, replaceAll, safeGet } from '../utils/StringProcessor.js'
 import { LLMUtility } from '../utils/LLMUtility.js';
 
 // Import our new store
-import { outfitStore, setGlobalVariable } from '../common/Store.js';
+import { outfitStore } from '../common/Store.js';
 
 
 
