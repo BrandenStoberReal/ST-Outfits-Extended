@@ -239,3 +239,13 @@ export function safeSet(obj, path, value) {
     
     current[lastKey] = value;
 }
+
+// Function to remove macros from a string
+export function removeMacros(text) {
+    if (!text || typeof text !== 'string') {
+        return text;
+    }
+
+    // Remove {{...}} and <...> patterns
+    return text.replace(/\{\{.*?}}/g, '').replace(/<.*?>/g, '');
+}
