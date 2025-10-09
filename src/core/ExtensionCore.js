@@ -3,7 +3,7 @@ import { getContext, extension_settings } from '../../../../../../scripts/extens
 import { saveSettingsDebounced } from '../../../../../../script.js';
 
 // Import the extractMacros, replaceAll, safeGet functions from StringProcessor
-import { extractMacros, replaceAll, safeGet } from '../utils/StringProcessor.js';
+import { extractMacros, replaceAll, safeGet, removeMacros } from '../utils/StringProcessor.js';
 import { LLMUtility } from '../utils/LLMUtility.js';
 
 // Import our new store
@@ -1182,6 +1182,7 @@ Only return the formatted sections with cleaned content.`;
     async function updateForCurrentCharacter() {
         try {
             const context = getContext();
+
             if (!context || !context.characters || context.characterId === undefined || context.characterId === null) {
                 botManager.setCharacter('Unknown', null);
                 botPanel.updateCharacter('Unknown');
@@ -1189,6 +1190,7 @@ Only return the formatted sections with cleaned content.`;
             }
 
             const character = context.characters[context.characterId];
+
             if (!character) {
                 botManager.setCharacter('Unknown', null);
                 botPanel.updateCharacter('Unknown');
@@ -1196,6 +1198,7 @@ Only return the formatted sections with cleaned content.`;
             }
 
             const charName = character.name || 'Unknown';
+
             console.log(`[OutfitTracker] Updating character to: ${charName} (ID: ${context.characterId})`);
 
             const aiMessages = context.chat ? context.chat.filter(msg => !msg.is_user && !msg.is_system) : [];
@@ -1214,7 +1217,8 @@ Only return the formatted sections with cleaned content.`;
             }
 
             if (firstMessageText) {
-                instanceId = await generateInstanceIdFromText(firstMessageText);
+                const cleanedMessage = removeMacros(firstMessageText);
+                instanceId = await generateInstanceIdFromText(cleanedMessage);
             } else {
                 // As a last resort (e.g., new character with no first message), create a temporary ID.
                 console.log('[OutfitTracker] No first message found in chat or character definition. Using temporary instance ID.');

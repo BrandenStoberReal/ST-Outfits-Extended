@@ -37,7 +37,7 @@ class EventSystem {
         eventSource.on(event_types.APP_READY, () => this.handleAppReady());
         eventSource.on(event_types.CHAT_CHANGED, () => this.handleChatChange());
         eventSource.on(event_types.CHAT_CREATED, () => this.handleChatCreated());
-        eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, (messageId, type) => this.handleCharacterMessageRendered(messageId, type));
+        eventSource.on(event_types.MESSAGE_RECEIVED, (data) => this.handleMessageReceived(data));
         eventSource.on(event_types.MESSAGE_SWIPED, (index) => this.handleMessageSwiped(index));
     }
 
@@ -55,6 +55,7 @@ class EventSystem {
 
     handleChatChange() {
         const chat = this.context.chat;
+
         // Only trigger an update if the chat is populated.
         // This allows the handler to work for character switches, but prevents it from firing
         // with an empty context during a chat reset.
@@ -68,18 +69,18 @@ class EventSystem {
 
     handleChatCreated() {
         console.log('[OutfitTracker] CHAT_CREATED event fired - skipping update, will be handled by message render to prevent race conditions.');
-        // This handler is intentionally left blank. 
+        // This handler is intentionally left blank.
         // CHAT_CREATED fires too early on reset, before the chat is populated.
-        // The update is now reliably handled by the CHARACTER_MESSAGE_RENDERED event.
+        // The update is now reliably handled by the MESSAGE_RECEIVED event.
     }
 
-    async handleCharacterMessageRendered(messageId, type) {
-        if (type === 'first_message') {
-            console.log(`[OutfitTracker] CHARACTER_MESSAGE_RENDERED (first_message) event fired. This is the primary trigger for chat resets.`);
-            // Add a small delay to ensure the chat context is fully updated before we access it.
-            setTimeout(async () => {
-                await this.updateForCurrentCharacter();
-            }, 150);
+    async handleMessageReceived(data) {
+        // Check if the message is the first AI message
+        const aiMessages = this.context.chat.filter(msg => !msg.is_user && !msg.is_system);
+
+        if (aiMessages.length === 0 && !data.is_user) {
+            console.log('[OutfitTracker] First AI message received, updating outfit instance');
+            await this.updateForCurrentCharacter();
         }
     }
 
