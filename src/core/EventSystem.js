@@ -25,6 +25,7 @@ class EventSystem {
         this.setupSillyTavernEventListeners();
         this.setupExtensionEventListeners();
         this.overrideClearChat();
+        this.overrideResetChat();
 
         // Initial update
         this.updateForCurrentCharacter();
@@ -100,6 +101,28 @@ class EventSystem {
 
     handleContextUpdate() {
         this.updateForCurrentCharacter();
+    }
+
+    overrideResetChat() {
+        // The function to reset chat is called `restartLLM` in the UI
+        const originalRestart = window.restartLLM;
+
+        if (!originalRestart) {
+            console.warn('[OutfitTracker] window.restartLLM not found. Cannot override chat reset to flush saves.');
+            return;
+        }
+
+        window.restartLLM = (...args) => {
+            console.log('[OutfitTracker] Chat reset triggered (restartLLM). Flushing debounced saves.');
+            
+            // Flush any pending settings saves to prevent stale data on reset
+            if (window.saveSettingsDebounced && typeof window.saveSettingsDebounced.flush === 'function') {
+                window.saveSettingsDebounced.flush();
+            }
+
+            // Call the original function
+            return originalRestart.apply(this, args);
+        };
     }
 
     overrideClearChat() {
