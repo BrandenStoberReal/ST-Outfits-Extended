@@ -1,5 +1,6 @@
 // Import utility functions for safe object property access
 import { safeGet, safeSet } from '../utils/StringProcessor.js';
+import { outfitStore } from '../common/Store.js';
 
 export class NewBotOutfitManager {
     constructor(slots) {
@@ -61,15 +62,16 @@ export class NewBotOutfitManager {
         return `OUTFIT_INST_${this.characterId}_${this.outfitInstanceId}_${slot}`;
     }
 
-    // Load outfit from the extension settings
+    // Load outfit from the store
     loadOutfit() {
         if (!this.characterId || !this.outfitInstanceId) {
             console.warn('[NewBotOutfitManager] Cannot load outfit - missing characterId or outfitInstanceId');
             // Set all slots to 'None' as default
             this.slots.forEach(slot => {
                 this.currentValues[slot] = 'None';
-                // Set in extension settings as well
+                // Set in extension settings as well for compatibility
                 const varName = this.getVarName(slot);
+
                 if (varName) {
                     this.setGlobalVariable(varName, 'None');
                 }
@@ -77,16 +79,18 @@ export class NewBotOutfitManager {
             return;
         }
 
-        // Get the outfits from extension settings
-        const instanceOutfits = safeGet(window, `extension_settings.outfit_tracker.instances.${this.characterId}.${this.outfitInstanceId}.bot`, {});
-        
+        // Get the outfits from the store
+        const instanceOutfits = outfitStore.getBotOutfit(this.characterId, this.outfitInstanceId);
+
         // Load the slot values
         this.slots.forEach(slot => {
             const value = instanceOutfits[slot] !== undefined ? instanceOutfits[slot] : 'None';
+
             this.currentValues[slot] = value;
             
-            // Also update the global variable with the instance-specific name
+            // Also update the global variable with the instance-specific name for compatibility
             const varName = this.getVarName(slot);
+
             if (varName) {
                 this.setGlobalVariable(varName, value);
             }
@@ -101,46 +105,34 @@ export class NewBotOutfitManager {
         }
     }
     
-    // Save outfit to the extension settings
+    // Save outfit to the store
     saveOutfit() {
         if (!this.characterId || !this.outfitInstanceId) {
             console.warn('[NewBotOutfitManager] Cannot save outfit - missing characterId or outfitInstanceId');
             return;
         }
 
-        // Create the structure in extension settings
-        if (!window.extension_settings.outfit_tracker.instances) {
-            window.extension_settings.outfit_tracker.instances = {};
-        }
-        
-        if (!window.extension_settings.outfit_tracker.instances[this.characterId]) {
-            window.extension_settings.outfit_tracker.instances[this.characterId] = {};
-        }
-        
-        if (!window.extension_settings.outfit_tracker.instances[this.characterId][this.outfitInstanceId]) {
-            window.extension_settings.outfit_tracker.instances[this.characterId][this.outfitInstanceId] = { bot: {}, user: {} };
-        }
-        
-        // Save the slot values from currentValues
+        // Create the outfit data to save
         const botOutfit = {};
+
         this.slots.forEach(slot => {
             botOutfit[slot] = this.currentValues[slot] || 'None';
         });
         
-        window.extension_settings.outfit_tracker.instances[this.characterId][this.outfitInstanceId].bot = botOutfit;
+        // Save to the store
+        outfitStore.setBotOutfit(this.characterId, this.outfitInstanceId, botOutfit);
         
-        // Also update the global variables for this instance
+        // Also update the global variables for this instance for compatibility
         for (const slot of this.slots) {
             const varName = this.getVarName(slot);
+
             if (varName) {
                 this.setGlobalVariable(varName, botOutfit[slot]);
             }
         }
         
-        // Ensure settings are saved
-        if (window.saveSettingsDebounced) {
-            window.saveSettingsDebounced();
-        }
+        // Persist settings to ensure data is saved for reload
+        outfitStore.saveSettings();
     }
     
     // Update the global pointer to the current instance
@@ -150,19 +142,9 @@ export class NewBotOutfitManager {
             return;
         }
         
-        const instanceOutfits = safeGet(window, `extension_settings.outfit_tracker.instances.${this.characterId}.${this.outfitInstanceId}.bot`, {});
-        window.currentBotOutfitInstance = instanceOutfits;
-    }
+        const instanceOutfits = outfitStore.getBotOutfit(this.characterId, this.outfitInstanceId);
 
-    getGlobalVariable(name) {
-        try {
-            // Access extension_settings from the global window object
-            const globalVars = safeGet(window, 'extension_settings.variables.global', {});
-            return globalVars[name] || 'None';
-        } catch (error) {
-            console.error('[NewBotOutfitManager] Error accessing global variable:', name, error);
-            return 'None';
-        }
+        window.currentBotOutfitInstance = instanceOutfits;
     }
 
     setGlobalVariable(name, value) {
@@ -202,6 +184,7 @@ export class NewBotOutfitManager {
         
         // Limit the length of values to prevent storage issues
         const MAX_VALUE_LENGTH = 1000;
+
         if (value.length > MAX_VALUE_LENGTH) {
             value = value.substring(0, MAX_VALUE_LENGTH);
             console.warn(`[NewBotOutfitManager] Value truncated to ${MAX_VALUE_LENGTH} characters for slot ${slot}`);
@@ -220,6 +203,7 @@ export class NewBotOutfitManager {
         
         // Update the instance-specific global variable too
         const varName = this.getVarName(slot);
+
         if (varName) {
             this.setGlobalVariable(varName, value);
         }
@@ -290,26 +274,17 @@ export class NewBotOutfitManager {
         // Use either the provided instanceId or the current one
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
         
-        // Initialize presets if needed
-        if (!safeGet(window, 'extension_settings.outfit_tracker.presets')) {
-            safeSet(window, 'extension_settings.outfit_tracker.presets', { bot: {}, user: {} });
-        }
-        
-        // Ensure character presets exist
-        if (!safeGet(window, `extension_settings.outfit_tracker.presets.bot.${this.character}`)) {
-            safeSet(window, `extension_settings.outfit_tracker.presets.bot.${this.character}`, {});
-        }
-        
         // Create preset data for all slots
         const presetData = {};
+
         this.slots.forEach(slot => {
             presetData[slot] = this.currentValues[slot];
         });
         
-        // Save or update preset with instance ID
-        safeSet(window, `extension_settings.outfit_tracker.presets.bot.${this.character}.${actualInstanceId}.${presetName}`, presetData);
+        // Save to the store
+        outfitStore.savePreset(this.character, actualInstanceId, presetName, presetData, 'bot');
         
-        if (safeGet(window, 'extension_settings.outfit_tracker.enableSysMessages')) {
+        if (outfitStore.getSetting('enableSysMessages')) {
             return `Saved "${presetName}" outfit for ${this.character} (instance: ${actualInstanceId}).`;
         }
         return '';
@@ -324,7 +299,7 @@ export class NewBotOutfitManager {
         // Use either the provided instanceId or the current one
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
         
-        const presets = safeGet(window, `extension_settings.outfit_tracker.presets.bot.${this.character}.${actualInstanceId}`);
+        const { bot: presets } = outfitStore.getPresets(this.character, actualInstanceId);
 
         if (!presets || !presets[presetName]) {
             return `[Outfit System] Preset "${presetName}" not found for instance ${actualInstanceId}.`;
@@ -355,28 +330,32 @@ export class NewBotOutfitManager {
         // Use either the provided instanceId or the current one
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
         
-        const presets = safeGet(window, `extension_settings.outfit_tracker.presets.bot.${this.character}.${actualInstanceId}`);
+        const { bot: presets } = outfitStore.getPresets(this.character, actualInstanceId);
 
         if (!presets || !presets[presetName]) {
             return `[Outfit System] Preset "${presetName}" not found for instance ${actualInstanceId}.`;
         }
         
-        // Delete the preset
-        delete safeGet(window, `extension_settings.outfit_tracker.presets.bot.${this.character}.${actualInstanceId}`)[presetName];
+        // Delete the preset from the store
+        const key = `${this.character}_${actualInstanceId}`;
+
+        delete outfitStore.getState().presets.bot[key][presetName];
         
         // Cleanup character instance if no presets left
-        const instancePresets = safeGet(window, `extension_settings.outfit_tracker.presets.bot.${this.character}.${actualInstanceId}`, {});
+        const instancePresets = outfitStore.getState().presets.bot[key] || {};
+
         if (Object.keys(instancePresets).length === 0) {
-            delete safeGet(window, `extension_settings.outfit_tracker.presets.bot.${this.character}`)[actualInstanceId];
+            delete outfitStore.getState().presets.bot[key];
             
             // Also cleanup the character if no instances left
-            const characterPresets = safeGet(window, `extension_settings.outfit_tracker.presets.bot.${this.character}`, {});
+            const characterPresets = outfitStore.getState().presets.bot || {};
+
             if (Object.keys(characterPresets).length === 0) {
-                delete safeGet(window, 'extension_settings.outfit_tracker.presets.bot')[this.character];
+                delete outfitStore.getState().presets.bot;
             }
         }
         
-        if (safeGet(window, 'extension_settings.outfit_tracker.enableSysMessages')) {
+        if (outfitStore.getSetting('enableSysMessages')) {
             return `Deleted "${presetName}" outfit for instance ${actualInstanceId}.`;
         }
         return '';
@@ -386,7 +365,7 @@ export class NewBotOutfitManager {
         // Use either the provided instanceId or the current one
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
         
-        const presets = safeGet(window, `extension_settings.outfit_tracker.presets.bot.${this.character}.${actualInstanceId}`);
+        const { bot: presets } = outfitStore.getPresets(this.character, actualInstanceId);
 
         if (!presets) {
             return [];

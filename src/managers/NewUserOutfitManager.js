@@ -1,5 +1,6 @@
 // Import utility functions for safe object property access
 import { safeGet, safeSet } from '../utils/StringProcessor.js';
+import { outfitStore } from '../common/Store.js';
 
 export class NewUserOutfitManager {
     constructor(slots) {
@@ -43,15 +44,16 @@ export class NewUserOutfitManager {
         return `OUTFIT_INST_USER_${this.outfitInstanceId}_${slot}`;
     }
 
-    // Load outfit from the extension settings
+    // Load outfit from the store
     loadOutfit() {
         if (!this.outfitInstanceId) {
             console.warn('[NewUserOutfitManager] Cannot load outfit - missing outfitInstanceId');
             // Set all slots to 'None' as default
             this.slots.forEach(slot => {
                 this.currentValues[slot] = 'None';
-                // Set in extension settings as well
+                // Set in extension settings as well for compatibility
                 const varName = this.getVarName(slot);
+
                 if (varName) {
                     this.setGlobalVariable(varName, 'None');
                 }
@@ -59,17 +61,18 @@ export class NewUserOutfitManager {
             return;
         }
 
-        // Get the user outfits from the user_instances structure
-        const userInstances = safeGet(window, 'extension_settings.outfit_tracker.user_instances', {});
-        const userOutfit = userInstances[this.outfitInstanceId] || {};
+        // Get the user outfits from the store
+        const userOutfit = outfitStore.getUserOutfit(this.outfitInstanceId);
 
         // Load the slot values
         this.slots.forEach(slot => {
             const value = userOutfit[slot] !== undefined ? userOutfit[slot] : 'None';
+
             this.currentValues[slot] = value;
             
-            // Also update the global variable with the instance-specific name
+            // Also update the global variable with the instance-specific name for compatibility
             const varName = this.getVarName(slot);
+
             if (varName) {
                 this.setGlobalVariable(varName, value);
             }
@@ -84,38 +87,34 @@ export class NewUserOutfitManager {
         }
     }
     
-    // Save outfit to the extension settings
+    // Save outfit to the store
     saveOutfit() {
         if (!this.outfitInstanceId) {
             console.warn('[NewUserOutfitManager] Cannot save outfit - missing outfitInstanceId');
             return;
         }
 
-        // Create the structure in extension settings
-        if (!window.extension_settings.outfit_tracker.user_instances) {
-            window.extension_settings.outfit_tracker.user_instances = {};
-        }
-        
-        // Save the slot values from currentValues
+        // Create the outfit data to save
         const userOutfit = {};
+
         this.slots.forEach(slot => {
             userOutfit[slot] = this.currentValues[slot] || 'None';
         });
         
-        window.extension_settings.outfit_tracker.user_instances[this.outfitInstanceId] = userOutfit;
+        // Save to the store
+        outfitStore.setUserOutfit(this.outfitInstanceId, userOutfit);
         
-        // Also update the global variables for this instance
+        // Also update the global variables for this instance for compatibility
         for (const slot of this.slots) {
             const varName = this.getVarName(slot);
+
             if (varName) {
                 this.setGlobalVariable(varName, userOutfit[slot]);
             }
         }
         
-        // Ensure settings are saved
-        if (window.saveSettingsDebounced) {
-            window.saveSettingsDebounced();
-        }
+        // Persist settings to ensure data is saved for reload
+        outfitStore.saveSettings();
     }
     
     // Update the global pointer to the current instance
@@ -125,22 +124,10 @@ export class NewUserOutfitManager {
             return;
         }
         
-        // Get user outfit from the dedicated user instances structure
-        const userInstances = safeGet(window, 'extension_settings.outfit_tracker.user_instances', {});
-        const userOutfit = userInstances[this.outfitInstanceId] || {};
-        
-        window.currentUserOutfitInstance = userOutfit;
-    }
+        // Get user outfit from the store
+        const userOutfit = outfitStore.getUserOutfit(this.outfitInstanceId);
 
-    getGlobalVariable(name) {
-        try {
-            // Access extension_settings from the global window object
-            const globalVars = safeGet(window, 'extension_settings.variables.global', {});
-            return globalVars[name] || 'None';
-        } catch (error) {
-            console.error('[NewUserOutfitManager] Error accessing global variable:', name, error);
-            return 'None';
-        }
+        window.currentUserOutfitInstance = userOutfit;
     }
 
     setGlobalVariable(name, value) {
@@ -180,6 +167,7 @@ export class NewUserOutfitManager {
         
         // Limit the length of values to prevent storage issues
         const MAX_VALUE_LENGTH = 1000;
+
         if (value.length > MAX_VALUE_LENGTH) {
             value = value.substring(0, MAX_VALUE_LENGTH);
             console.warn(`[NewUserOutfitManager] Value truncated to ${MAX_VALUE_LENGTH} characters for slot ${slot}`);
@@ -197,6 +185,7 @@ export class NewUserOutfitManager {
         
         // Update the instance-specific global variable too
         const varName = this.getVarName(slot);
+
         if (varName) {
             this.setGlobalVariable(varName, value);
         }
@@ -267,21 +256,17 @@ export class NewUserOutfitManager {
         // Use either the provided instanceId or the current one
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
         
-        // Initialize presets if needed
-        if (!safeGet(window, 'extension_settings.outfit_tracker.presets')) {
-            safeSet(window, 'extension_settings.outfit_tracker.presets', { bot: {}, user: {} });
-        }
-        
         // Create preset data for all slots
         const presetData = {};
+
         this.slots.forEach(slot => {
             presetData[slot] = this.currentValues[slot];
         });
         
-        // Save or update preset with instance ID
-        safeSet(window, `extension_settings.outfit_tracker.presets.user.${actualInstanceId}.${presetName}`, presetData);
+        // Save to the store
+        outfitStore.savePreset('user', actualInstanceId, presetName, presetData, 'user');
         
-        if (safeGet(window, 'extension_settings.outfit_tracker.enableSysMessages')) {
+        if (outfitStore.getSetting('enableSysMessages')) {
             return `Saved "${presetName}" outfit for user character (instance: ${actualInstanceId}).`;
         }
         return '';
@@ -296,7 +281,7 @@ export class NewUserOutfitManager {
         // Use either the provided instanceId or the current one
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
         
-        const presets = safeGet(window, `extension_settings.outfit_tracker.presets.user.${actualInstanceId}`);
+        const { user: presets } = outfitStore.getPresets('user', actualInstanceId);
 
         if (!presets || !presets[presetName]) {
             return `[Outfit System] Preset "${presetName}" not found for user instance ${actualInstanceId}.`;
@@ -327,27 +312,30 @@ export class NewUserOutfitManager {
         // Use either the provided instanceId or the current one
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
         
-        const presets = safeGet(window, `extension_settings.outfit_tracker.presets.user.${actualInstanceId}`);
+        const { user: presets } = outfitStore.getPresets('user', actualInstanceId);
 
         if (!presets || !presets[presetName]) {
             return `[Outfit System] Preset "${presetName}" not found for user instance ${actualInstanceId}.`;
         }
         
-        delete presets[presetName];
+        // Delete the preset from the store
+        delete outfitStore.getState().presets.user[actualInstanceId][presetName];
         
         // Cleanup instance if no presets left
-        const instancePresets = safeGet(window, `extension_settings.outfit_tracker.presets.user.${actualInstanceId}`, {});
+        const instancePresets = outfitStore.getState().presets.user[actualInstanceId] || {};
+
         if (Object.keys(instancePresets).length === 0) {
-            delete safeGet(window, 'extension_settings.outfit_tracker.presets.user')[actualInstanceId];
+            delete outfitStore.getState().presets.user[actualInstanceId];
             
             // Also cleanup the user if no instances left
-            const userPresets = safeGet(window, 'extension_settings.outfit_tracker.presets.user', {});
+            const userPresets = outfitStore.getState().presets.user || {};
+
             if (Object.keys(userPresets).length === 0) {
-                delete window.extension_settings.outfit_tracker.presets.user;
+                delete outfitStore.getState().presets.user;
             }
         }
         
-        if (safeGet(window, 'extension_settings.outfit_tracker.enableSysMessages')) {
+        if (outfitStore.getSetting('enableSysMessages')) {
             return `Deleted your "${presetName}" outfit for instance ${actualInstanceId}.`;
         }
         return '';
@@ -357,7 +345,7 @@ export class NewUserOutfitManager {
         // Use either the provided instanceId or the current one
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
         
-        const presets = safeGet(window, `extension_settings.outfit_tracker.presets.user.${actualInstanceId}`);
+        const { user: presets } = outfitStore.getPresets('user', actualInstanceId);
 
         if (!presets) {
             return [];
@@ -370,7 +358,7 @@ export class NewUserOutfitManager {
         // Use either the provided instanceId or the current one
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
         
-        const presets = safeGet(window, `extension_settings.outfit_tracker.presets.user.${actualInstanceId}`);
+        const { user: presets } = outfitStore.getPresets('user', actualInstanceId);
 
         if (!presets || !presets['default']) {
             return `[Outfit System] No default outfit set for user (instance: ${actualInstanceId}).`;

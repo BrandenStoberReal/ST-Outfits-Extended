@@ -192,10 +192,11 @@ export function setupEventListeners(botManager, userManager, botPanel, userPanel
         if (botManager && botManager.characterId && botManager.outfitInstanceId) {
             // Save the current outfit instance data for this character
             const instanceKey = botManager.outfitInstanceId;
+
             savedBotOutfitData = {
                 characterId: botManager.characterId,
                 instanceId: instanceKey,
-                outfit: { ...botManager.currentValues }  // Copy current values
+                outfit: { ...botManager.currentValues } // Copy current values
             };
 
             console.log(`[OutfitTracker] Saved bot outfit instance data before chat clear: ${instanceKey}`);
@@ -204,9 +205,10 @@ export function setupEventListeners(botManager, userManager, botPanel, userPanel
         if (userManager && userManager.outfitInstanceId) {
             // Save the current user outfit instance data
             const instanceKey = userManager.outfitInstanceId;
+
             savedUserOutfitData = {
                 instanceId: instanceKey,
-                outfit: { ...userManager.currentValues }  // Copy current values
+                outfit: { ...userManager.currentValues } // Copy current values
             };
 
             console.log(`[OutfitTracker] Saved user outfit instance data before chat clear: ${instanceKey}`);
@@ -278,8 +280,8 @@ export function setupEventListeners(botManager, userManager, botPanel, userPanel
                     
                     console.log('[OutfitTracker] Restored user outfit data after chat clear');
                 }
-            }, 200);  // Delay to ensure temporary instance is created
-        }, 50);  // Delay to ensure chat clear is processed
+            }, 200); // Delay to ensure temporary instance is created
+        }, 50); // Delay to ensure chat clear is processed
     };
 
     // Function to clean up old temporary outfit instances periodically

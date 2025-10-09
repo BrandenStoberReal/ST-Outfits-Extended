@@ -18,7 +18,7 @@ The extension follows a modular architecture with distinct components:
 - **Panels**: UI components for displaying and modifying outfits (`BotOutfitPanel.js`, `UserOutfitPanel.js`)
 - **Utils**: Utility functions for string processing and LLM interaction (`StringProcessor.js`, `LLMUtility.js`)
 - **Config**: Configuration modules (`paths.js`)
-- **Common**: Shared utilities
+- **Common**: Shared utilities including the centralized data store (`Store.js`)
 
 ## Key Features
 
@@ -73,6 +73,60 @@ The extension automatically injects current outfit information into the conversa
 ### LLM-Powered Import
 The `/import-outfit` command uses LLM analysis to automatically extract outfit information from character descriptions, personality notes, scenario, and character notes, then updates the outfit tracker accordingly.
 
+## Implementation of Centralized Data Storage
+
+### Problem with Global Variables
+The previous version of the extension relied heavily on global variables for data storage, which created several issues:
+- Risk of variable name conflicts
+- Data pollution across the global scope
+- Difficulty in tracking and managing changes
+- Potential performance issues with large datasets
+- Hard to debug and maintain
+
+### New Data Storage Architecture
+To address these issues, a new centralized data storage system has been implemented:
+
+#### 1. Centralized Store Module (`Store.js`)
+- Implements a state management system that acts as a single source of truth for all outfit-related data
+- Uses a class-based approach with methods for setting, getting, and updating state
+- Provides methods for subscribing to state changes
+- Includes migration functionality to handle data from the old global variable system
+
+#### 2. Core Store Features
+- **Bot Outfit Data**: Manages outfit data by character ID and instance ID
+- **User Outfit Data**: Handles user outfit data by instance ID
+- **Instance Management**: Tracks conversation-specific outfit instances
+- **Presets**: Stores outfit presets for both bot and user
+- **Panel Settings**: Manages UI settings like panel colors and visibility
+- **Extension Settings**: Handles general settings like auto-open preferences
+- **Panel References**: Keeps track of UI panel instances
+- **Auto Outfit System**: Maintains reference to the auto-outfit system
+
+#### 3. Backward Compatibility
+- Maintains compatibility with SillyTavern's extension settings system
+- Falls back to legacy data format when needed
+- Updates both the new store and legacy system for smooth transition
+- Preserves all existing functionality
+
+#### 4. Migration Process
+- The system automatically migrates old data format to the new store structure
+- Preserves all existing outfit data and settings
+- Maintains data integrity during the transition
+
+#### 5. Module Updates
+- **NewBotOutfitManager**: Updated to use the store for all data operations
+- **NewUserOutfitManager**: Updated to use the store for all data operations
+- **AutoOutfitSystem**: Updated to access macro values through the store when possible
+- **ExtensionCore**: Updated to initialize and register components with the store
+
+### Benefits of the New Architecture
+- **Cleaner Code**: Eliminates global variable pollution
+- **Better Performance**: More efficient data access and updates
+- **Easier Debugging**: Centralized data management makes it easier to track changes
+- **Scalability**: The architecture can easily handle more features in the future
+- **Maintainability**: Clear separation of concerns makes the code easier to maintain
+- **State Management**: Proper handling of UI state, data, and references
+
 ## Installation
 
 This is a SillyTavern extension that should be installed using SillyTavern's extension management system. The manifest file specifies the extension details including the JavaScript file (`index.js`), CSS file (`style.css`), and loading order.
@@ -87,7 +141,7 @@ This is a SillyTavern extension that should be installed using SillyTavern's ext
 ### File Structure
 ```
 src/
-├── common/          # Shared utilities and common functions
+├── common/          # Shared utilities and common functions including Store.js
 ├── core/            # Core business logic modules (ExtensionCore, OutfitCommands, EventSystem, SettingsUI)
 ├── managers/        # Outfit management classes
 ├── panels/          # UI panel implementations
@@ -109,7 +163,7 @@ The extension is loaded automatically when SillyTavern starts, provided it's pro
 - Uses ES6 modules for imports/exports
 - Follows SillyTavern extension patterns and conventions
 - Uses `extension_settings` for storing persistent data
-- Uses global variables for sharing data between modules
+- Implements a centralized store for application state management
 - Implements a generate interceptor for context injection
 
 ### Testing
@@ -147,6 +201,7 @@ The extension implements several performance optimizations:
 - Efficient UI rendering
 - Asynchronous operations where appropriate
 - Cleanup of temporary outfit instances
+- Centralized state management for efficient data access
 
 ## Troubleshooting
 

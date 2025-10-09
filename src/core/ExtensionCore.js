@@ -6,6 +6,9 @@ import { saveSettingsDebounced } from '../../../../../../script.js';
 import { extractMacros, replaceAll, safeGet } from '../utils/StringProcessor.js';
 import { LLMUtility } from '../utils/LLMUtility.js';
 
+// Import our new store
+import { outfitStore, setGlobalVariable } from '../common/Store.js';
+
 
 
 // Import the new managers and panels
@@ -135,6 +138,11 @@ export async function initializeExtension() {
     window.botOutfitPanel = botPanel;
     window.userOutfitPanel = userPanel;
     window.autoOutfitSystem = autoOutfitSystem;
+
+    // Register panels with the store for state management
+    outfitStore.setPanelRef('bot', botPanel);
+    outfitStore.setPanelRef('user', userPanel);
+    outfitStore.setAutoOutfitSystem(autoOutfitSystem);
 
     // Function to get default outfit prompt (same as bot panel)
     function getDefaultOutfitPrompt() {
@@ -704,6 +712,103 @@ Only return the formatted sections with cleaned content.`;
 
         return processedText;
     }
+    
+    // New global variable system for current instance data
+    // This system provides access to current instance outfit values without needing to know the specific instance ID
+    function setupNewGlobalVariableSystem() {
+        // This function sets up a new system for global variables that reference the current instance
+        if (!window.extension_settings?.variables?.global) {
+            window.extension_settings.variables = { global: {} };
+        }
+
+        // Define a function to get the current instance data for the bot
+        const getCurrentBotOutfit = () => {
+            if (!botManager || !botManager.outfitInstanceId) {
+                return {};
+            }
+            
+            return outfitStore.getBotOutfit(botManager.characterId || 'unknown', botManager.outfitInstanceId);
+        };
+
+        // Define a function to get the current instance data for the user
+        const getCurrentUserOutfit = () => {
+            if (!userManager || !userManager.outfitInstanceId) {
+                return {};
+            }
+            
+            return outfitStore.getUserOutfit(userManager.outfitInstanceId);
+        };
+
+        // Function to update global variables with current instance values
+        function updateGlobalInstanceVariables() {
+            const context = getContext();
+            if (!context) return;
+
+            // Get current character and user names
+            let botCharacterName = 'Unknown';
+            let userName = 'User';
+
+            if (context && context.characters && context.characterId !== undefined && context.characterId !== null) {
+                const character = context.characters[context.characterId];
+                if (character && character.name) {
+                    botCharacterName = character.name;
+                }
+            }
+
+            // Get user name from chat
+            if (context && context.chat) {
+                const userMessages = context.chat.filter(message => message.is_user);
+                if (userMessages.length > 0) {
+                    const mostRecentUserMessage = userMessages[userMessages.length - 1];
+                    userName = extractUserName(mostRecentUserMessage) || userName;
+                }
+            }
+
+            // Get current outfit data
+            const currentBotOutfit = getCurrentBotOutfit();
+            const currentUserOutfit = getCurrentUserOutfit();
+
+            // Update global variables for each slot with current instance values
+            [...CLOTHING_SLOTS, ...ACCESSORY_SLOTS].forEach(slot => {
+                // Bot slots: <characterName>_<slot>
+                const botVarName = `${botCharacterName.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '')}_${slot}`;
+                window.extension_settings.variables.global[botVarName] = currentBotOutfit[slot] || 'None';
+
+                // User slots: User_<slot>
+                const userVarName = `User_${slot}`;
+                window.extension_settings.variables.global[userVarName] = currentUserOutfit[slot] || 'None';
+
+                // Instance-specific variables (for compatibility with older system)
+                if (botManager.outfitInstanceId) {
+                    const botInstanceVarName = `OUTFIT_INST_${botManager.characterId || 'unknown'}_${botManager.outfitInstanceId}_${slot}`;
+                    window.extension_settings.variables.global[botInstanceVarName] = currentBotOutfit[slot] || 'None';
+                }
+
+                if (userManager.outfitInstanceId) {
+                    const userInstanceVarName = `OUTFIT_INST_USER_${userManager.outfitInstanceId}_${slot}`;
+                    window.extension_settings.variables.global[userInstanceVarName] = currentUserOutfit[slot] || 'None';
+                }
+            });
+
+            // Save settings to persist the variables
+            if (typeof window.saveSettingsDebounced === 'function') {
+                window.saveSettingsDebounced();
+            }
+        }
+
+        // Update global variables when outfit changes
+        botManager.setUpdateCharacterVariablesCallback(updateGlobalInstanceVariables);
+        userManager.setUpdateCharacterVariablesCallback(updateGlobalInstanceVariables);
+
+        // Update global variables initially and whenever context changes
+        updateGlobalInstanceVariables();
+
+        // Return the function so it can be called when needed
+        return updateGlobalInstanceVariables;
+    }
+
+    // Setup the new global variable system after managers are initialized
+    const updateGlobalInstanceVariables = setupNewGlobalVariableSystem();
 
     // Function to update character-specific global variables to point to current instance values
     function updateCharacterVariables() {
@@ -748,11 +853,13 @@ Only return the formatted sections with cleaned content.`;
         for (const slot of [...CLOTHING_SLOTS, ...ACCESSORY_SLOTS]) {
             if (botManager.outfitInstanceId) {
                 const varName = `OUTFIT_INST_${botManager.characterId || 'unknown'}_${botManager.outfitInstanceId}_${slot}`;
+
                 window.extension_settings.variables.global[varName] = botManager.currentValues[slot];
             }
             
             if (userManager.outfitInstanceId) {
                 const varName = `OUTFIT_INST_USER_${userManager.outfitInstanceId}_${slot}`;
+
                 window.extension_settings.variables.global[varName] = userManager.currentValues[slot];
             }
         }
@@ -763,6 +870,11 @@ Only return the formatted sections with cleaned content.`;
         }
         if (userManager.outfitInstanceId) {
             userManager.updateGlobalInstancePointer();
+        }
+        
+        // Also update using the new global variable system
+        if (typeof updateGlobalInstanceVariables === 'function') {
+            updateGlobalInstanceVariables();
         }
         
         // Ensure settings are saved after updating variables
@@ -781,6 +893,18 @@ Only return the formatted sections with cleaned content.`;
         // Update user panel styles if it exists
         if (window.userOutfitPanel && window.userOutfitPanel.domElement) {
             window.userOutfitPanel.applyPanelColors();
+        }
+        
+        // Also update from the store references
+        const botPanelFromStore = outfitStore.getPanelRef('bot');
+        const userPanelFromStore = outfitStore.getPanelRef('user');
+        
+        if (botPanelFromStore && botPanelFromStore !== window.botOutfitPanel && botPanelFromStore.domElement) {
+            botPanelFromStore.applyPanelColors();
+        }
+        
+        if (userPanelFromStore && userPanelFromStore !== window.userOutfitPanel && userPanelFromStore.domElement) {
+            userPanelFromStore.applyPanelColors();
         }
     }
 
@@ -915,6 +1039,7 @@ Only return the formatted sections with cleaned content.`;
                         } else {
                             // If using temporary ID or no ID, fall back to character-based naming
                             const formattedCharacterName = (botManager.character || 'Unknown').replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+
                             varName = `${formattedCharacterName}_${slotData.name}`;
                         }
                         outfitInfo += `**${formattedSlotName}:** {{getglobalvar::${varName}}}\n`;
@@ -953,6 +1078,7 @@ Only return the formatted sections with cleaned content.`;
                         } else {
                             // If using temporary ID or no ID, fall back to character-based naming
                             const formattedCharacterName = (botManager.character || 'Unknown').replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+
                             varName = `${formattedCharacterName}_${slotData.name}`;
                         }
                         outfitInfo += `**${formattedSlotName}:** {{getglobalvar::${varName}}}\n`;
@@ -1205,6 +1331,7 @@ Only return the formatted sections with cleaned content.`;
                     // Ensure that all slots have values (default to 'None' if empty)
                     for (const slot of [...CLOTHING_SLOTS, ...ACCESSORY_SLOTS]) {
                         const value = botManager.currentValues[slot];
+
                         if (value === undefined || value === null || value === '') {
                             botManager.currentValues[slot] = 'None';
                         }
@@ -1216,6 +1343,7 @@ Only return the formatted sections with cleaned content.`;
                     // Ensure that all slots have values (default to 'None' if empty)
                     for (const slot of [...CLOTHING_SLOTS, ...ACCESSORY_SLOTS]) {
                         const value = userManager.currentValues[slot];
+
                         if (value === undefined || value === null || value === '') {
                             userManager.currentValues[slot] = 'None';
                         }
@@ -1280,6 +1408,7 @@ Only return the formatted sections with cleaned content.`;
             // Process bot outfit variables in old format: characterName_slot
             for (const [varName, value] of Object.entries(globalVars)) {
                 const botMatch = varName.match(oldBotPattern);
+
                 if (botMatch) {
                     const characterName = botMatch[1];
                     const slot = botMatch[2];
@@ -1303,6 +1432,7 @@ Only return the formatted sections with cleaned content.`;
                 
                 // Process instance-specific bot variables: OUTFIT_INST_charId_instanceId_slot
                 const instanceMatch = varName.match(oldInstancePattern);
+
                 if (instanceMatch) {
                     const instanceId = instanceMatch[1];
                     const slot = instanceMatch[2];
@@ -1310,6 +1440,7 @@ Only return the formatted sections with cleaned content.`;
                     // Extract character ID from the variable name
                     // Format is OUTFIT_INST_[charId]_[instanceId]_[slot]
                     const parts = varName.split('_');
+
                     if (parts.length >= 4) {
                         const charId = parts[2]; // After OUTFIT, INST
                         
@@ -1361,6 +1492,7 @@ Only return the formatted sections with cleaned content.`;
     function initSettings() {
         const MODULE_NAME = 'outfit_tracker';
 
+        // Initialize extension settings if not present
         if (!extension_settings[MODULE_NAME]) {
             extension_settings[MODULE_NAME] = {
                 autoOpenBot: true,
@@ -1400,6 +1532,11 @@ Only return the formatted sections with cleaned content.`;
         if (!extension_settings.variables.global) {
             extension_settings.variables.global = {};
         }
+
+        // Load data from settings for reload persistence
+        outfitStore.loadDataFromSettings();
+        // Migrate any existing data to our new store
+        outfitStore.migrateFromLegacy(extension_settings.outfit_tracker);
 
         // Only initialize auto outfit system if it loaded successfully
         if (AutoOutfitSystem.name !== 'DummyAutoOutfitSystem') {
@@ -1560,6 +1697,9 @@ function cleanupExtension() {
                 window.botOutfitPanel.domElement.parentNode.removeChild(window.botOutfitPanel.domElement);
             }
             window.botOutfitPanel = null;
+            
+            // Also clear reference in store
+            outfitStore.setPanelRef('bot', null);
         }
         
         if (window.userOutfitPanel) {
@@ -1567,10 +1707,16 @@ function cleanupExtension() {
                 window.userOutfitPanel.domElement.parentNode.removeChild(window.userOutfitPanel.domElement);
             }
             window.userOutfitPanel = null;
+            
+            // Also clear reference in store
+            outfitStore.setPanelRef('user', null);
         }
         
         if (window.autoOutfitSystem && typeof window.autoOutfitSystem.removeEventListeners === 'function') {
             window.autoOutfitSystem.removeEventListeners();
+            
+            // Clear reference in store
+            outfitStore.setAutoOutfitSystem(null);
         }
         
         // Only remove global functions, but keep outfit data in extension_settings

@@ -4,6 +4,9 @@ import { replaceAll as replaceAllStr, extractCommands, extractMacros, safeGet } 
 // Import LLM utility for outfit generation
 import { LLMUtility } from '../utils/LLMUtility.js';
 
+// Import our new store
+import { outfitStore } from '../common/Store.js';
+
 export class AutoOutfitSystem {
     constructor(outfitManager) {
         this.outfitManager = outfitManager;
