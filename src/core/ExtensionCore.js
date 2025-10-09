@@ -975,12 +975,53 @@ Only return the formatted sections with cleaned content.`;
                 delete window.extension_settings.variables.global[key];
             }
             
-            // Clear all preset data
+            // Clear all preset data in extension settings
             if (window.extension_settings?.outfit_tracker?.presets) {
                 window.extension_settings.outfit_tracker.presets = {
                     bot: {},
                     user: {}
                 };
+            }
+            
+            // Clear all instance data in extension settings
+            if (window.extension_settings?.outfit_tracker?.instances) {
+                window.extension_settings.outfit_tracker.instances = {};
+            }
+            if (window.extension_settings?.outfit_tracker?.user_instances) {
+                window.extension_settings.outfit_tracker.user_instances = {};
+            }
+            
+            // Clear all outfit data in the centralized store
+            // Reset bot outfit instances
+            outfitStore.setState({
+                ...outfitStore.getState(),
+                botInstances: {},
+                userInstances: {},
+                presets: {
+                    bot: {},
+                    user: {}
+                }
+            });
+            
+            // Clear current outfit instance data in managers if they exist
+            if (window.botOutfitManager) {
+                // Reset all slots to 'None' for the current instance
+                const slots = [...CLOTHING_SLOTS, ...ACCESSORY_SLOTS];
+                for (const slot of slots) {
+                    window.botOutfitManager.currentValues[slot] = 'None';
+                }
+                // Save the cleared outfit to ensure it's persisted
+                await window.botOutfitManager.saveOutfit();
+            }
+            
+            if (window.userOutfitManager) {
+                // Reset all slots to 'None' for the current instance
+                const slots = [...CLOTHING_SLOTS, ...ACCESSORY_SLOTS];
+                for (const slot of slots) {
+                    window.userOutfitManager.currentValues[slot] = 'None';
+                }
+                // Save the cleared outfit to ensure it's persisted
+                await window.userOutfitManager.saveOutfit();
             }
             
             // Notify user of completion
@@ -992,11 +1033,16 @@ Only return the formatted sections with cleaned content.`;
                 window.botOutfitPanel.outfitManager.loadOutfit();
                 window.botOutfitPanel.renderContent();
             }
-            
             if (window.userOutfitPanel && window.userOutfitPanel.outfitManager) {
                 window.userOutfitPanel.outfitManager.loadOutfit();
                 window.userOutfitPanel.renderContent();
             }
+            
+            // Clear global instance pointer
+            window.currentBotOutfitInstance = null;
+            
+            // Save the cleared state to ensure persistence
+            outfitStore.saveSettings();
             
             // Reload the page after a short delay to ensure data is properly cleared
             setTimeout(() => {
