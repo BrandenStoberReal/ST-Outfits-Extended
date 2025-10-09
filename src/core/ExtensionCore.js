@@ -1179,7 +1179,7 @@ Only return the formatted sections with cleaned content.`;
         }
     }
     
-    async function updateForCurrentCharacter(isRetry = false) {
+    async function updateForCurrentCharacter() {
         try {
             const context = getContext();
             if (!context || !context.characters || context.characterId === undefined || context.characterId === null) {
@@ -1196,26 +1196,30 @@ Only return the formatted sections with cleaned content.`;
             }
 
             const charName = character.name || 'Unknown';
-            
-            const aiMessages = context.chat ? context.chat.filter(msg => !msg.is_user && !msg.is_system) : [];
-            let instanceId;
-
-            // If the chat is empty on the first attempt, it's likely a race condition on chat reset.
-            // Wait a moment and retry once to allow the chat context to populate.
-            if (aiMessages.length === 0 && !isRetry) {
-                console.log('[OutfitTracker] Chat is empty on initial update. Retrying in 250ms to resolve potential race condition.');
-                setTimeout(() => updateForCurrentCharacter(true), 250);
-                return; // Exit the current execution and let the retry handle it
-            }
-
             console.log(`[OutfitTracker] Updating character to: ${charName} (ID: ${context.characterId})`);
 
-            if (aiMessages.length === 0) {
-                console.log('[OutfitTracker] No AI messages found in chat after retry, using temporary instance ID');
-                instanceId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-            } else {
-                const firstMessageText = aiMessages[0].mes || '';
+            const aiMessages = context.chat ? context.chat.filter(msg => !msg.is_user && !msg.is_system) : [];
+            let instanceId;
+            let firstMessageText = '';
+
+            if (aiMessages.length > 0) {
+                // If chat history exists, the instance ID is based on the first AI message in the chat.
+                // This correctly handles scenarios like message swiping.
+                firstMessageText = aiMessages[0].mes || '';
+                console.log('[OutfitTracker] Generating instanceId from existing chat message.');
+            } else if (character.first_message) {
+                // If chat history is empty (e.g., on chat reset), use the character's defined first_message.
+                // This resolves the race condition where the chat array isn't populated yet.
+                firstMessageText = character.first_message;
+                console.log('[OutfitTracker] Chat is empty. Generating instanceId from character.first_message.');
+            }
+
+            if (firstMessageText) {
                 instanceId = await generateInstanceIdFromText(firstMessageText);
+            } else {
+                // As a last resort (e.g., new character with no first message), create a temporary ID.
+                console.log('[OutfitTracker] No first message found in chat or character definition. Using temporary instance ID.');
+                instanceId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
             }
 
             botManager.setCharacter(charName, context.characterId);
