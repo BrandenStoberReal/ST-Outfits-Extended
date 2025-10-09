@@ -78,6 +78,13 @@ export class UserOutfitManager {
                 this.currentValues[slot] = 'None';
             }
         });
+        
+        // After loading outfit data, trigger the update of character-specific variables
+        // This ensures that when user outfit is loaded, the user-specific variables 
+        // (like User_bottomwear) are updated to reflect the current values
+        if (this.updateCharacterVariablesCallback && typeof this.updateCharacterVariablesCallback === 'function') {
+            this.updateCharacterVariablesCallback();
+        }
     }
     
     // Helper function to get all global variables

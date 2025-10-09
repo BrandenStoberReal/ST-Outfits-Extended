@@ -722,6 +722,9 @@ Only return the formatted sections with cleaned content.`;
 
             if (window.extension_settings?.variables?.global) {
                 window.extension_settings.variables.global[characterSpecificVarName] = instanceValue;
+                
+                // Log the update for debugging
+                console.log(`[OutfitTracker] Updated character-specific variable ${characterSpecificVarName} to ${instanceValue} (from instance ${instanceVarName})`);
             }
         }
 
@@ -735,7 +738,15 @@ Only return the formatted sections with cleaned content.`;
 
             if (window.extension_settings?.variables?.global) {
                 window.extension_settings.variables.global[userVarName] = instanceValue;
+                
+                // Log the update for debugging
+                console.log(`[OutfitTracker] Updated user-specific variable ${userVarName} to ${instanceValue} (from instance ${instanceVarName})`);
             }
+        }
+        
+        // Ensure settings are saved after updating variables
+        if (typeof saveSettingsDebounced === 'function') {
+            saveSettingsDebounced();
         }
     }
 

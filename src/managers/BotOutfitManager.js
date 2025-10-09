@@ -279,6 +279,13 @@ export class BotOutfitManager {
                 this.currentValues[slot] = 'None';
             }
         });
+        
+        // After loading outfit data, trigger the update of character-specific variables
+        // This ensures that when a character is loaded, the character-specific variables 
+        // (like Amelia_bottomwear) are updated to reflect the current instance values
+        if (this.updateCharacterVariablesCallback && typeof this.updateCharacterVariablesCallback === 'function') {
+            this.updateCharacterVariablesCallback();
+        }
     }
     
     // Helper function to get all global variables
