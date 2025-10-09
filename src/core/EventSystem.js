@@ -62,7 +62,88 @@ export function setupEventListeners(botManager, userManager, botPanel, userPanel
         updateForCurrentCharacter(); // Update the character after creating new instance
     });
 
-    // Listen for the first message selected event which is more specific than MESSAGE_RECEIVED
+    // Listen for character message rendered event to handle first message rendering
+    // The CHARACTER_MESSAGE_RENDERED event is emitted with the message ID and type
+    // When type is 'first_message' it indicates the first AI message in a chat was rendered
+    eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, async (messageId, type) => {
+        console.log(`[OutfitTracker] CHARACTER_MESSAGE_RENDERED event fired with message ID: ${messageId}, type: ${type}`);
+        try {
+            if (type === 'first_message') {
+                const context = window.getContext();
+
+                if (context && context.chat && context.chat.length > 0) {
+                    // Find the first AI message in the chat
+                    const aiMessages = context.chat.filter(msg => 
+                        !msg.is_user && !msg.is_system);
+
+                    if (aiMessages.length > 0) {
+                        const firstMessage = aiMessages[0];
+                        
+                        console.log('[OutfitTracker] First message detected on render:', firstMessage);
+
+                        // Create a specific outfit instance based on the first message content
+                        const firstMessageText = firstMessage.mes || '';
+
+                        // Use the same simple hash function as defined in ExtensionCore.js for consistent instance ID generation
+                        let hash = 0;
+                        const str = firstMessageText.substring(0, 100); // Only use first 100 chars to keep ID manageable
+
+                        for (let i = 0; i < str.length; i++) {
+                            const char = str.charCodeAt(i);
+
+                            hash = ((hash << 5) - hash) + char;
+                            hash &= hash; // Convert to 32-bit integer
+                        }
+
+                        // Convert to positive and return string representation
+                        const textHash = Math.abs(hash).toString(36);
+                        const instanceId = `first_msg_${textHash}`;
+
+                        if (botManager) {
+                            // Check if the instance ID is actually changing before updating
+                            const currentInstanceId = botManager.getOutfitInstanceId();
+                            
+                            // Only update if the instance ID is actually changing
+                            if (currentInstanceId !== instanceId) {
+                                // Set the outfit instance ID based on the first message scenario
+                                botManager.setOutfitInstanceId(instanceId);
+                                console.log(`[OutfitTracker] Set bot outfit instance ID after first message render: ${instanceId} (was ${currentInstanceId})`);
+
+                                // Load the outfit data for the new instance
+                                botManager.loadOutfit();
+                            } else {
+                                console.log(`[OutfitTracker] Bot instance ID unchanged, skipping update: ${instanceId}`);
+                            }
+                        }
+
+                        if (userManager) {
+                            // Check if the instance ID is actually changing before updating
+                            const currentUserInstanceId = userManager.getOutfitInstanceId();
+                            
+                            // Only update if the instance ID is actually changing
+                            if (currentUserInstanceId !== instanceId) {
+                                // Also set a corresponding instance ID for the user
+                                userManager.setOutfitInstanceId(instanceId);
+                                console.log(`[OutfitTracker] Set user outfit instance ID after first message render: ${instanceId} (was ${currentUserInstanceId})`);
+
+                                // Load the outfit data for the new instance
+                                userManager.loadOutfit();
+                            } else {
+                                console.log(`[OutfitTracker] User instance ID unchanged, skipping update: ${instanceId}`);
+                            }
+                        }
+
+                        // Use the centralized update function for consistency
+                        await updateForCurrentCharacter();
+
+                        console.log(`[OutfitTracker] Created outfit instances after first message render: ${instanceId}`);
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('[OutfitTracker] Error handling CHARACTER_MESSAGE_RENDERED event:', error);
+        }
+    });
 
 
     // Listen for message swiped event to handle first message changes
