@@ -8,10 +8,10 @@ import { LLMUtility } from '../utils/LLMUtility.js';
 
 
 
-// Import the managers and panels
-import { BotOutfitManager } from '../managers/BotOutfitManager.js';
+// Import the new managers and panels
+import { NewBotOutfitManager } from '../managers/NewBotOutfitManager.js';
 import { BotOutfitPanel } from '../panels/BotOutfitPanel.js';
-import { UserOutfitManager } from '../managers/UserOutfitManager.js';
+import { NewUserOutfitManager } from '../managers/NewUserOutfitManager.js';
 import { UserOutfitPanel } from '../panels/UserOutfitPanel.js';
 
 // Helper function to extract username from message
@@ -121,8 +121,8 @@ export async function initializeExtension() {
         'foot-accessory'
     ];
 
-    const botManager = new BotOutfitManager([...CLOTHING_SLOTS, ...ACCESSORY_SLOTS]);
-    const userManager = new UserOutfitManager([...CLOTHING_SLOTS, ...ACCESSORY_SLOTS]);
+    const botManager = new NewBotOutfitManager([...CLOTHING_SLOTS, ...ACCESSORY_SLOTS]);
+    const userManager = new NewUserOutfitManager([...CLOTHING_SLOTS, ...ACCESSORY_SLOTS]);
     const botPanel = new BotOutfitPanel(botManager, CLOTHING_SLOTS, ACCESSORY_SLOTS, saveSettingsDebounced);
     const userPanel = new UserOutfitPanel(userManager, CLOTHING_SLOTS, ACCESSORY_SLOTS, saveSettingsDebounced);
     const autoOutfitSystem = new AutoOutfitSystem(botManager);
@@ -714,8 +714,8 @@ Only return the formatted sections with cleaned content.`;
 
         // Update bot character-specific variables to point to current instance values
         for (const slot of [...CLOTHING_SLOTS, ...ACCESSORY_SLOTS]) {
-            const instanceVarName = botManager.getVarName(slot);
-            const instanceValue = botManager.getGlobalVariable(instanceVarName);
+            // Use the new instance-based approach
+            const instanceValue = botManager.currentValues[slot];
             
             // Set the old-style character-specific variable that corresponds to the current instance
             const characterSpecificVarName = `${botManager.character.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '')}_${slot}`;
@@ -724,14 +724,14 @@ Only return the formatted sections with cleaned content.`;
                 window.extension_settings.variables.global[characterSpecificVarName] = instanceValue;
                 
                 // Log the update for debugging
-                console.log(`[OutfitTracker] Updated character-specific variable ${characterSpecificVarName} to ${instanceValue} (from instance ${instanceVarName})`);
+                console.log(`[OutfitTracker] Updated character-specific variable ${characterSpecificVarName} to ${instanceValue}`);
             }
         }
 
         // Update user character-specific variables to point to current instance values 
         for (const slot of [...CLOTHING_SLOTS, ...ACCESSORY_SLOTS]) {
-            const instanceVarName = userManager.getVarName(slot);
-            const instanceValue = userManager.getGlobalVariable(instanceVarName);
+            // Use the new instance-based approach
+            const instanceValue = userManager.currentValues[slot];
             
             // Set the old-style user-specific variable that corresponds to the current instance
             const userVarName = `User_${slot}`;
@@ -740,7 +740,20 @@ Only return the formatted sections with cleaned content.`;
                 window.extension_settings.variables.global[userVarName] = instanceValue;
                 
                 // Log the update for debugging
-                console.log(`[OutfitTracker] Updated user-specific variable ${userVarName} to ${instanceValue} (from instance ${instanceVarName})`);
+                console.log(`[OutfitTracker] Updated user-specific variable ${userVarName} to ${instanceValue}`);
+            }
+        }
+        
+        // Also update the global instance pointers for each slot
+        for (const slot of [...CLOTHING_SLOTS, ...ACCESSORY_SLOTS]) {
+            if (botManager.outfitInstanceId) {
+                const varName = `OUTFIT_INST_${botManager.characterId || 'unknown'}_${botManager.outfitInstanceId}_${slot}`;
+                window.extension_settings.variables.global[varName] = botManager.currentValues[slot];
+            }
+            
+            if (userManager.outfitInstanceId) {
+                const varName = `OUTFIT_INST_USER_${userManager.outfitInstanceId}_${slot}`;
+                window.extension_settings.variables.global[varName] = userManager.currentValues[slot];
             }
         }
         
@@ -780,64 +793,27 @@ Only return the formatted sections with cleaned content.`;
     }
     
     // Helper function to generate a stronger hash from text for use as instance ID
-    function generateInstanceIdFromText(text) {
+    async function generateInstanceIdFromText(text) {
         // Use a more robust hashing algorithm using Web Crypto API
         if (typeof crypto !== 'undefined' && crypto.subtle) {
             const encoder = new TextEncoder();
             const data = encoder.encode(text);
             
-            return crypto.subtle.digest('SHA-256', data).then(hashBuffer => {
+            try {
+                const hashBuffer = await crypto.subtle.digest('SHA-256', data);
                 const hashArray = Array.from(new Uint8Array(hashBuffer));
                 const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 
                 // Return first 16 characters for manageable length
                 return hashHex.substring(0, 16);
-            }).catch(err => {
+            } catch (err) {
                 // Fallback to simple hash if crypto fails
                 console.warn('Crypto API not available, falling back to simple hash for instance ID generation', err);
                 return generateInstanceIdFromTextSimple(text);
-            });
+            }
         } 
         // Fallback to simple hash if crypto is not available
         return generateInstanceIdFromTextSimple(text);
-        
-    }
-    
-    // Function to create a unique conversation ID based on character and other identifying factors
-    function generateConversationInstanceId(context, characterId) {
-        if (!context || !characterId) {
-            // If context or characterId is not available, generate a temporary ID
-            return `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        }
-        
-        // Create identifiers using character information
-        const identifiers = [
-            characterId || 'unknown',
-            context.characterId || 'unknown',
-            context.chatId || 'unknown'
-        ];
-        
-        // Check if there are AI messages in the current chat and get the first one
-        if (context.chat && context.chat.length > 0) {
-            const aiMessages = context.chat.filter(msg => !msg.is_user && !msg.is_system);
-
-            if (aiMessages.length > 0) {
-                const firstMessage = aiMessages[0];
-                const firstMessageText = firstMessage.mes || '';
-                
-                // Add first message content to the identifiers for uniqueness
-                identifiers.push(firstMessageText);
-            }
-        }
-        
-        // Combine all identifiers to create a unique string
-        const combinedIdentifiers = identifiers.join('_');
-        
-        // Generate hash from the combined identifiers
-        return generateInstanceIdFromText(combinedIdentifiers).then(hash => {
-            // Return a descriptive instance ID that includes a hash
-            return `conv_${hash}`;
-        });
     }
 
     // Function to wipe all outfit data for all characters
@@ -923,16 +899,14 @@ Only return the formatted sections with cleaned content.`;
 
                     if (slotData) {
                         const formattedSlotName = slot.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.charAt(0).toUpperCase()).replace('underwear', 'Underwear');
-                        // Use the new instance-based variable name if an instance ID is set
-                        // Removed chatId from the format to persist across chat resets
+                        // Use the instance-based variable name if an instance ID is set
                         let varName;
 
                         if (botManager.getOutfitInstanceId() && !botManager.getOutfitInstanceId().startsWith('temp_')) {
-                            varName = `OUTFIT_INST_${botManager.characterId || 'unknown'}_${botManager.getOutfitInstanceId()}_${slotData.name}`;
+                            varName = `OUTFIT_INST_${botManager.characterId || 'unknown'}_${botManager.getOutfitInstanceId}_${slotData.name}`;
                         } else {
                             // If using temporary ID or no ID, fall back to character-based naming
                             const formattedCharacterName = (botManager.character || 'Unknown').replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
-
                             varName = `${formattedCharacterName}_${slotData.name}`;
                         }
                         outfitInfo += `**${formattedSlotName}:** {{getglobalvar::${varName}}}\n`;
@@ -953,7 +927,7 @@ Only return the formatted sections with cleaned content.`;
                     const slotData = botOutfitData.find(data => data.name === slot);
 
                     if (slotData && slotData.value !== 'None' && slotData.value !== '') {
-                        // Fix the eyes accessory typo mentioned in the requirements
+                        // Format the slot name properly
                         let formattedSlotName = slot.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.charAt(0).toUpperCase())
                             .replace(/-/g, ' ')
                             .replace('accessory', 'Accessory');
@@ -962,16 +936,15 @@ Only return the formatted sections with cleaned content.`;
                         if (slot === 'ears-accessory') {
                             formattedSlotName = 'Eyes Accessory';
                         }
-                        // Use the new instance-based variable name if an instance ID is set
-                        // Removed chatId from the format to persist across chat resets
+                        
+                        // Use the instance-based variable name if an instance ID is set
                         let varName;
 
                         if (botManager.getOutfitInstanceId() && !botManager.getOutfitInstanceId().startsWith('temp_')) {
-                            varName = `OUTFIT_INST_${botManager.characterId || 'unknown'}_${botManager.getOutfitInstanceId()}_${slotData.name}`;
+                            varName = `OUTFIT_INST_${botManager.characterId || 'unknown'}_${botManager.getOutfitInstanceId}_${slotData.name}`;
                         } else {
                             // If using temporary ID or no ID, fall back to character-based naming
                             const formattedCharacterName = (botManager.character || 'Unknown').replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
-
                             varName = `${formattedCharacterName}_${slotData.name}`;
                         }
                         outfitInfo += `**${formattedSlotName}:** {{getglobalvar::${varName}}}\n`;
@@ -993,8 +966,14 @@ Only return the formatted sections with cleaned content.`;
 
                     if (slotData) {
                         const formattedSlotName = slot.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.charAt(0).toUpperCase()).replace('underwear', 'Underwear');
-                        // Use the simple variable name for user (persistent across instances)
-                        let varName = `OUTFIT_INST_USER_${slotData.name}`;
+                        // Use the instance-based variable name for user
+                        let varName;
+                        
+                        if (userManager.getOutfitInstanceId()) {
+                            varName = `OUTFIT_INST_USER_${userManager.outfitInstanceId}_${slotData.name}`;
+                        } else {
+                            varName = `OUTFIT_INST_USER_${slotData.name}`;
+                        }
 
                         outfitInfo += `**${formattedSlotName}:** {{getglobalvar::${varName}}}\n`;
                     }
@@ -1014,7 +993,7 @@ Only return the formatted sections with cleaned content.`;
                     const slotData = userOutfitData.find(data => data.name === slot);
 
                     if (slotData && slotData.value !== 'None' && slotData.value !== '') {
-                        // Fix the eyes accessory typo mentioned in the requirements
+                        // Format the slot name properly
                         let formattedSlotName = slot.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.charAt(0).toUpperCase())
                             .replace(/-/g, ' ')
                             .replace('accessory', 'Accessory');
@@ -1023,8 +1002,15 @@ Only return the formatted sections with cleaned content.`;
                         if (slot === 'ears-accessory') {
                             formattedSlotName = 'Eyes Accessory';
                         }
-                        // Use the simple variable name for user (persistent across instances)
-                        let varName = `OUTFIT_INST_USER_${slotData.name}`;
+                        
+                        // Use the instance-based variable name for user
+                        let varName;
+                        
+                        if (userManager.getOutfitInstanceId()) {
+                            varName = `OUTFIT_INST_USER_${userManager.outfitInstanceId}_${slotData.name}`;
+                        } else {
+                            varName = `OUTFIT_INST_USER_${slotData.name}`;
+                        }
 
                         outfitInfo += `**${formattedSlotName}:** {{getglobalvar::${varName}}}\n`;
                     }
@@ -1046,7 +1032,7 @@ Only return the formatted sections with cleaned content.`;
             if (!context || !context.characters || context.characterId === undefined || context.characterId === null) {
                 console.log('[OutfitTracker] Context not ready or no character selected, setting as Unknown');
                 if (botManager) {
-                    botManager.setCharacter('Unknown', null, null);
+                    botManager.setCharacter('Unknown', null);
                 }
                 if (botPanel) {
                     botPanel.updateCharacter('Unknown');
@@ -1060,7 +1046,7 @@ Only return the formatted sections with cleaned content.`;
             if (!character) {
                 console.log('[OutfitTracker] Character not found at index ' + context.characterId + ', setting as Unknown');
                 if (botManager) {
-                    botManager.setCharacter('Unknown', null, null);
+                    botManager.setCharacter('Unknown', null);
                 }
                 if (botPanel) {
                     botPanel.updateCharacter('Unknown');
@@ -1086,7 +1072,7 @@ Only return the formatted sections with cleaned content.`;
                 const tempInstanceId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
                 
                 if (botManager) {
-                    botManager.setCharacter(charName, context.characterId, currentChatId);
+                    botManager.setCharacter(charName, context.characterId);
                     botManager.setOutfitInstanceId(tempInstanceId);
                     // Load the outfit data for the temporary instance
                     await botManager.loadOutfit();
@@ -1122,14 +1108,16 @@ Only return the formatted sections with cleaned content.`;
                         
                         if (refreshedAiMessages.length > 0) {
                             console.log('[OutfitTracker] Found AI messages after delay, updating instance ID');
-                            const refreshedInstanceId = await generateConversationInstanceId(refreshedContext, refreshedContext.characterId);
+                            const firstMessageText = refreshedAiMessages[0].mes || '';
+                            // Generate a hash-based instance ID from the first message
+                            const instanceId = await generateInstanceIdFromText(firstMessageText);
                             
                             if (botManager) {
-                                botManager.setOutfitInstanceId(refreshedInstanceId);
+                                botManager.setOutfitInstanceId(instanceId);
                                 await botManager.loadOutfit();
                             }
                             if (userManager) {
-                                userManager.setOutfitInstanceId(refreshedInstanceId);
+                                userManager.setOutfitInstanceId(instanceId);
                                 await userManager.loadOutfit();
                             }
                             
@@ -1150,13 +1138,15 @@ Only return the formatted sections with cleaned content.`;
                 return; // Exit early since we're handling this case separately
             }
             
-            const instanceId = await generateConversationInstanceId(context, context.characterId);
+            const firstMessageText = aiMessages[0].mes || '';
+            // Generate a hash-based instance ID from the first message
+            const instanceId = await generateInstanceIdFromText(firstMessageText);
 
             if (botManager) {
-                // Update the character with characterId and chatId for proper namespace
-                botManager.setCharacter(charName, context.characterId, currentChatId);
+                // Update the character with characterId for proper namespace
+                botManager.setCharacter(charName, context.characterId);
 
-                // Set the outfit instance ID based on the first message scenario
+                // Set the outfit instance ID based on the first message
                 botManager.setOutfitInstanceId(instanceId);
 
                 // Load the outfit data for the new instance
@@ -1168,7 +1158,7 @@ Only return the formatted sections with cleaned content.`;
 
             // Update the user panel as well when chat changes
             if (userManager) {
-                // Set the outfit instance ID for user based on the same first message scenario
+                // Set the outfit instance ID for user based on the same first message
                 userManager.setOutfitInstanceId(instanceId);
 
                 // Load the outfit data for the new instance
@@ -1206,13 +1196,9 @@ Only return the formatted sections with cleaned content.`;
                     await botManager.loadOutfit();
                     // Ensure that all slots have values (default to 'None' if empty)
                     for (const slot of [...CLOTHING_SLOTS, ...ACCESSORY_SLOTS]) {
-                        const varName = botManager.getVarName(slot);
-                        let value = botManager.getGlobalVariable(varName);
-
+                        const value = botManager.currentValues[slot];
                         if (value === undefined || value === null || value === '') {
-                            value = 'None';
-                            botManager.setGlobalVariable(varName, value);
-                            botManager.currentValues[slot] = value;
+                            botManager.currentValues[slot] = 'None';
                         }
                     }
                 }
@@ -1221,13 +1207,9 @@ Only return the formatted sections with cleaned content.`;
                     await userManager.loadOutfit();
                     // Ensure that all slots have values (default to 'None' if empty)
                     for (const slot of [...CLOTHING_SLOTS, ...ACCESSORY_SLOTS]) {
-                        const varName = userManager.getVarName(slot);
-                        let value = userManager.getGlobalVariable(varName);
-
+                        const value = userManager.currentValues[slot];
                         if (value === undefined || value === null || value === '') {
-                            value = 'None';
-                            userManager.setGlobalVariable(varName, value);
-                            userManager.currentValues[slot] = value;
+                            userManager.currentValues[slot] = 'None';
                         }
                     }
                 }
@@ -1267,6 +1249,99 @@ Only return the formatted sections with cleaned content.`;
         }
     }
 
+    // Function to migrate old outfit data format to new instance-based format
+    function migrateOldOutfitData() {
+        try {
+            console.log('[OutfitTracker] Starting migration of old outfit data to new format...');
+            
+            // Initialize the instances structure if it doesn't exist
+            if (!window.extension_settings.outfit_tracker.instances) {
+                window.extension_settings.outfit_tracker.instances = {};
+            }
+            
+            if (!window.extension_settings.outfit_tracker.user_instances) {
+                window.extension_settings.outfit_tracker.user_instances = {};
+            }
+            
+            const globalVars = window.extension_settings.variables.global || {};
+            
+            // Find all old outfit variables that match the old format
+            const oldBotPattern = /^([A-Za-z0-9_]+)_(headwear|topwear|topunderwear|bottomwear|bottomunderwear|footwear|footunderwear|head-accessory|ears-accessory|eyes-accessory|mouth-accessory|neck-accessory|body-accessory|arms-accessory|hands-accessory|waist-accessory|bottom-accessory|legs-accessory|foot-accessory)$/;
+            const oldInstancePattern = /^OUTFIT_INST_[A-Za-z0-9_]+_([A-Za-z0-9_]+)_(headwear|topwear|topunderwear|bottomwear|bottomunderwear|footwear|footunderwear|head-accessory|ears-accessory|eyes-accessory|mouth-accessory|neck-accessory|body-accessory|arms-accessory|hands-accessory|waist-accessory|bottom-accessory|legs-accessory|foot-accessory)$/;
+            
+            // Process bot outfit variables in old format: characterName_slot
+            for (const [varName, value] of Object.entries(globalVars)) {
+                const botMatch = varName.match(oldBotPattern);
+                if (botMatch) {
+                    const characterName = botMatch[1];
+                    const slot = botMatch[2];
+                    
+                    // For now, assign to a default instance for this character
+                    // In a real scenario, we'd need to figure out which character ID this corresponds to
+                    // For this migration, use a default instance ID
+                    const instanceId = 'default_migration';
+                    
+                    if (!window.extension_settings.outfit_tracker.instances[characterName]) {
+                        window.extension_settings.outfit_tracker.instances[characterName] = {};
+                    }
+                    
+                    if (!window.extension_settings.outfit_tracker.instances[characterName][instanceId]) {
+                        window.extension_settings.outfit_tracker.instances[characterName][instanceId] = { bot: {}, user: {} };
+                    }
+                    
+                    window.extension_settings.outfit_tracker.instances[characterName][instanceId].bot[slot] = value;
+                    console.log(`[OutfitTracker] Migrated bot outfit ${varName} to ${characterName}.${instanceId}.${slot} = ${value}`);
+                }
+                
+                // Process instance-specific bot variables: OUTFIT_INST_charId_instanceId_slot
+                const instanceMatch = varName.match(oldInstancePattern);
+                if (instanceMatch) {
+                    const instanceId = instanceMatch[1];
+                    const slot = instanceMatch[2];
+                    
+                    // Extract character ID from the variable name
+                    // Format is OUTFIT_INST_[charId]_[instanceId]_[slot]
+                    const parts = varName.split('_');
+                    if (parts.length >= 4) {
+                        const charId = parts[2]; // After OUTFIT, INST
+                        
+                        if (!window.extension_settings.outfit_tracker.instances[charId]) {
+                            window.extension_settings.outfit_tracker.instances[charId] = {};
+                        }
+                        
+                        if (!window.extension_settings.outfit_tracker.instances[charId][instanceId]) {
+                            window.extension_settings.outfit_tracker.instances[charId][instanceId] = { bot: {}, user: {} };
+                        }
+                        
+                        window.extension_settings.outfit_tracker.instances[charId][instanceId].bot[slot] = value;
+                        console.log(`[OutfitTracker] Migrated bot instance outfit ${varName} to ${charId}.${instanceId}.${slot} = ${value}`);
+                    }
+                }
+                
+                // Process user outfit variables: User_slot or OUTFIT_INST_USER_slot
+                if (varName.startsWith('User_') || varName.startsWith('OUTFIT_INST_USER_')) {
+                    const slot = varName.startsWith('User_') ? varName.substring(5) : varName.substring(16); // 16 is length of 'OUTFIT_INST_USER_'
+                    
+                    const userInstanceId = 'default_migration';
+                    
+                    if (!window.extension_settings.outfit_tracker.user_instances[userInstanceId]) {
+                        window.extension_settings.outfit_tracker.user_instances[userInstanceId] = {};
+                    }
+                    
+                    window.extension_settings.outfit_tracker.user_instances[userInstanceId][slot] = value;
+                    console.log(`[OutfitTracker] Migrated user outfit ${varName} to user.${userInstanceId}.${slot} = ${value}`);
+                }
+            }
+            
+            console.log('[OutfitTracker] Migration completed.');
+        } catch (error) {
+            console.error('[OutfitTracker] Error during migration:', error);
+        }
+    }
+    
+    // Run migration when initializing
+    migrateOldOutfitData();
+    
     // Function to detect if the user is on a mobile device
     function isMobileDevice() {
         return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
@@ -1293,6 +1368,9 @@ Only return the formatted sections with cleaned content.`;
                     bot: {},
                     user: {}
                 },
+                // New structure for instance-based storage
+                instances: {},
+                user_instances: {},
                 // Default color settings
                 botPanelColors: {
                     primary: 'linear-gradient(135deg, #6a4fc1 0%, #5a49d0 50%, #4a43c0 100%)',

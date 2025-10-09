@@ -185,37 +185,31 @@ export function setupEventListeners(botManager, userManager, botPanel, userPanel
     window._originalClearChat = originalClearChat;
 
     window.clearChat = async function() {
-        // Before clearing the chat, save all outfit data for current character
-        let savedBotOutfits = {};
-        let savedUserOutfits = {};
+        // Before clearing the chat, save the current outfit data for this character and user
+        let savedBotOutfitData = null;
+        let savedUserOutfitData = null;
 
-        if (botManager && botManager.characterId) {
-            // Save all outfit instances for this character to preserve across chat resets
-            // Include both old format (with chatId) and new format (without chatId) variables
-            const allVars = botManager.getAllVariables();
-            const pattern = new RegExp(`^OUTFIT_INST_${botManager.characterId}_`);
+        if (botManager && botManager.characterId && botManager.outfitInstanceId) {
+            // Save the current outfit instance data for this character
+            const instanceKey = botManager.outfitInstanceId;
+            savedBotOutfitData = {
+                characterId: botManager.characterId,
+                instanceId: instanceKey,
+                outfit: { ...botManager.currentValues }  // Copy current values
+            };
 
-            for (const varName in allVars) {
-                if (pattern.test(varName)) {
-                    savedBotOutfits[varName] = allVars[varName];
-                }
-            }
-
-            console.log(`[OutfitTracker] Saved ${Object.keys(savedBotOutfits).length} bot outfit instances before chat clear`);
+            console.log(`[OutfitTracker] Saved bot outfit instance data before chat clear: ${instanceKey}`);
         }
 
-        if (userManager) {
-            // Save all user outfit instances to preserve across chat resets
-            const allVars = userManager.getAllVariables();
-            const pattern = /^OUTFIT_INST_USER_/;
+        if (userManager && userManager.outfitInstanceId) {
+            // Save the current user outfit instance data
+            const instanceKey = userManager.outfitInstanceId;
+            savedUserOutfitData = {
+                instanceId: instanceKey,
+                outfit: { ...userManager.currentValues }  // Copy current values
+            };
 
-            for (const varName in allVars) {
-                if (pattern.test(varName)) {
-                    savedUserOutfits[varName] = allVars[varName];
-                }
-            }
-
-            console.log(`[OutfitTracker] Saved ${Object.keys(savedUserOutfits).length} user outfit instances before chat clear`);
+            console.log(`[OutfitTracker] Saved user outfit instance data before chat clear: ${instanceKey}`);
         }
 
         // First call the original function to clear the chat
@@ -235,45 +229,57 @@ export function setupEventListeners(botManager, userManager, botPanel, userPanel
             }
         }
 
-        // Restore saved outfit data AFTER calling the original function
-        // This ensures that when CHAT_CREATED event fires and temporary instances are created,
-        // the saved data is applied to the new instances properly after they are set up
-        if (botManager && Object.keys(savedBotOutfits).length > 0) {
-            // After chat is cleared, we need to wait a bit for the CHAT_CREATED event to set up new instances
+        // After chat is cleared, update for the current character which will create a new temporary instance
+        // and then restore the saved data to the appropriate instance in the new session
+        setTimeout(() => {
+            // Call updateForCurrentCharacter to set up new temporary instances
+            updateForCurrentCharacter();
+            
+            // After a short delay to let the temporary instances be created, restore the saved data
             setTimeout(() => {
-                // Restore all saved bot outfit instances
-                for (const [varName, value] of Object.entries(savedBotOutfits)) {
-                    botManager.setGlobalVariable(varName, value);
+                // Restore bot outfit data if it was saved
+                if (savedBotOutfitData && botManager) {
+                    // Set the outfit values for the current instance
+                    for (const [slot, value] of Object.entries(savedBotOutfitData.outfit)) {
+                        botManager.currentValues[slot] = value;
+                    }
+                    
+                    // Save the outfit to ensure it's persisted
+                    botManager.saveOutfit();
+                    
+                    // Reload the outfit to make sure UI is updated
+                    botManager.loadOutfit();
+                    
+                    // Update the UI to reflect the restored data
+                    if (botPanel && botPanel.isVisible) {
+                        botPanel.renderContent();
+                    }
+                    
+                    console.log('[OutfitTracker] Restored bot outfit data after chat clear');
                 }
-                // Reload the outfit for the new instances to reflect the restored data
-                botManager.loadOutfit();
-                
-                // Update the UI to reflect the restored data
-                if (botPanel && botPanel.isVisible) {
-                    botPanel.renderContent();
-                }
-                
-                console.log('[OutfitTracker] Restored bot outfit instances after chat clear');
-            }, 100); // Small delay to ensure new instances are set up
-        }
 
-        if (userManager && Object.keys(savedUserOutfits).length > 0) {
-            // Restore all saved user outfit instances
-            setTimeout(() => {
-                for (const [varName, value] of Object.entries(savedUserOutfits)) {
-                    userManager.setGlobalVariable(varName, value);
+                // Restore user outfit data if it was saved
+                if (savedUserOutfitData && userManager) {
+                    // Set the outfit values for the current instance
+                    for (const [slot, value] of Object.entries(savedUserOutfitData.outfit)) {
+                        userManager.currentValues[slot] = value;
+                    }
+                    
+                    // Save the outfit to ensure it's persisted
+                    userManager.saveOutfit();
+                    
+                    // Reload the outfit to make sure UI is updated
+                    userManager.loadOutfit();
+                    
+                    // Update the UI to reflect the restored data
+                    if (userPanel && userPanel.isVisible) {
+                        userPanel.renderContent();
+                    }
+                    
+                    console.log('[OutfitTracker] Restored user outfit data after chat clear');
                 }
-                // Reload the outfit for the new instances to reflect the restored data
-                userManager.loadOutfit();
-                
-                // Update the UI to reflect the restored data
-                if (userPanel && userPanel.isVisible) {
-                    userPanel.renderContent();
-                }
-                
-                console.log('[OutfitTracker] Restored user outfit instances after chat clear');
-            }, 100); // Small delay to ensure new instances are set up
-        }
+            }, 200);  // Delay to ensure temporary instance is created
+        }, 50);  // Delay to ensure chat clear is processed
     };
 
     // Function to clean up old temporary outfit instances periodically
