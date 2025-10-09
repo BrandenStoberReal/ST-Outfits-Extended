@@ -1208,9 +1208,8 @@ Only return the formatted sections with cleaned content.`;
             const aiMessages = context.chat ? context.chat.filter(msg => !msg.is_user && !msg.is_system) : [];
 
             if (aiMessages.length === 0) {
-                console.log('[OutfitTracker] No AI messages found in chat, using temporary instance ID and scheduling refresh');
-                // Use a temporary ID and schedule a refresh after a short delay
-                // This helps with the issue where outfit data doesn't load until swipe occurs
+                console.log('[OutfitTracker] No AI messages found in chat, using temporary instance ID');
+                // Use a temporary ID and handle the update when a first message arrives
                 const tempInstanceId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
                 
                 if (botManager) {
@@ -1241,42 +1240,11 @@ Only return the formatted sections with cleaned content.`;
                     userPanel.renderContent();
                 }
                 
-                // Schedule a refresh after a short delay to get the proper first message
-                setTimeout(async () => {
-                    const refreshedContext = getContext();
-
-                    if (refreshedContext && refreshedContext.chat) {
-                        const refreshedAiMessages = refreshedContext.chat.filter(msg => !msg.is_user && !msg.is_system);
-                        
-                        if (refreshedAiMessages.length > 0) {
-                            console.log('[OutfitTracker] Found AI messages after delay, updating instance ID');
-                            const firstMessageText = refreshedAiMessages[0].mes || '';
-                            // Generate a hash-based instance ID from the first message
-                            const instanceId = await generateInstanceIdFromText(firstMessageText);
-                            
-                            if (botManager) {
-                                botManager.setOutfitInstanceId(instanceId);
-                                await botManager.loadOutfit();
-                            }
-                            if (userManager) {
-                                userManager.setOutfitInstanceId(instanceId);
-                                await userManager.loadOutfit();
-                            }
-                            
-                            // Update panels to reflect the new instance
-                            if (botPanel.renderContent) {
-                                botPanel.renderContent();
-                            }
-                            if (userPanel.renderContent) {
-                                userPanel.renderContent();
-                            }
-                            
-                            // Update character-specific variables to ensure getglobalvar macros work properly
-                            updateCharacterVariables();
-                        }
-                    }
-                }, 500); // Wait 500ms for chat to potentially load fully
+                // Update character-specific variables to ensure getglobalvar macros work properly
+                updateCharacterVariables();
                 
+                // In this situation, we return but the instance ID will be updated when the first message arrives
+                // through other event handlers (like MESSAGE_RECEIVED, MESSAGE_SWIPED, etc.)
                 return; // Exit early since we're handling this case separately
             }
             
@@ -1332,43 +1300,44 @@ Only return the formatted sections with cleaned content.`;
             
             // Another attempt to ensure data is loaded and rendered properly
             // This addresses the specific issue where fields are empty until the first message is swiped
-            setTimeout(async () => {
-                if (botManager) {
-                    // Reload the outfit data to ensure latest values are in place
-                    await botManager.loadOutfit();
-                    // Ensure that all slots have values (default to 'None' if empty)
-                    for (const slot of [...CLOTHING_SLOTS, ...ACCESSORY_SLOTS]) {
-                        const value = botManager.currentValues[slot];
+            // Use dynamic check instead of fixed timeout to ensure instance loading completes
+            await waitForInstanceLoad(botManager, userManager);
+            
+            if (botManager) {
+                // Reload the outfit data to ensure latest values are in place
+                await botManager.loadOutfit();
+                // Ensure that all slots have values (default to 'None' if empty)
+                for (const slot of [...CLOTHING_SLOTS, ...ACCESSORY_SLOTS]) {
+                    const value = botManager.currentValues[slot];
 
-                        if (value === undefined || value === null || value === '') {
-                            botManager.currentValues[slot] = 'None';
-                        }
+                    if (value === undefined || value === null || value === '') {
+                        botManager.currentValues[slot] = 'None';
                     }
                 }
-                if (userManager) {
-                    // Reload the outfit data to ensure latest values are in place
-                    await userManager.loadOutfit();
-                    // Ensure that all slots have values (default to 'None' if empty)
-                    for (const slot of [...CLOTHING_SLOTS, ...ACCESSORY_SLOTS]) {
-                        const value = userManager.currentValues[slot];
+            }
+            if (userManager) {
+                // Reload the outfit data to ensure latest values are in place
+                await userManager.loadOutfit();
+                // Ensure that all slots have values (default to 'None' if empty)
+                for (const slot of [...CLOTHING_SLOTS, ...ACCESSORY_SLOTS]) {
+                    const value = userManager.currentValues[slot];
 
-                        if (value === undefined || value === null || value === '') {
-                            userManager.currentValues[slot] = 'None';
-                        }
+                    if (value === undefined || value === null || value === '') {
+                        userManager.currentValues[slot] = 'None';
                     }
                 }
-                
-                // Force update the panels to show the latest values after loading
-                if (botPanel.renderContent) {
-                    botPanel.renderContent();
-                }
-                if (userPanel.renderContent) {
-                    userPanel.renderContent();
-                }
-                
-                // Update character-specific variables to ensure getglobalvar macros work properly
-                updateCharacterVariables();
-            }, 150); // Slightly longer delay to ensure instance loading completes
+            }
+            
+            // Force update the panels to show the latest values after loading
+            if (botPanel.renderContent) {
+                botPanel.renderContent();
+            }
+            if (userPanel.renderContent) {
+                userPanel.renderContent();
+            }
+            
+            // Update character-specific variables to ensure getglobalvar macros work properly
+            updateCharacterVariables();
 
             // Final attempt to ensure the values are properly populated
             if (botManager && botPanel) {
@@ -1750,4 +1719,36 @@ function cleanupExtension() {
     }
 }
 
-
+// Wait for outfit instances to be properly loaded with a dynamic check instead of fixed timeout
+async function waitForInstanceLoad(botManager, userManager) {
+    const maxWaitTime = 2000; // Maximum wait time of 2 seconds
+    const checkInterval = 50; // Check every 50ms
+    const startTime = Date.now();
+    
+    // Wait for both managers to have loaded their outfits
+    while (Date.now() - startTime < maxWaitTime) {
+        let botReady = true;
+        let userReady = true;
+        
+        if (botManager) {
+            // Check if bot manager has loaded outfit data
+            botReady = botManager.outfitInstanceId !== null && botManager.characterId !== null;
+        }
+        
+        if (userManager) {
+            // Check if user manager has loaded outfit data
+            userReady = userManager.outfitInstanceId !== null;
+        }
+        
+        // If both are ready, exit the loop
+        if (botReady && userReady) {
+            return;
+        }
+        
+        // Wait a short interval before checking again
+        await new Promise(resolve => setTimeout(resolve, checkInterval));
+    }
+    
+    // If we've waited too long, log a warning but continue
+    console.warn('[OutfitTracker] Timed out waiting for instance load, continuing with available data');
+}

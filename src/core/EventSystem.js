@@ -231,16 +231,15 @@ export function setupEventListeners(botManager, userManager, botPanel, userPanel
             }
         }
 
-        // After chat is cleared, update for the current character which will create a new temporary instance
-        // and then restore the saved data to the appropriate instance in the new session
-        // Use Promise-based approach instead of setTimeout to avoid race conditions
-        await new Promise(resolve => setTimeout(resolve, 50)); // Wait a brief moment for the chat to clear
+        // After chat is cleared, wait for the chat to be properly reset before proceeding
+        // Use a dynamic check for chat state instead of fixed timeout
+        await waitForChatReset();
         
         // Call updateForCurrentCharacter and wait for it to complete
         await updateForCurrentCharacter();
         
-        // Small delay to ensure UI is ready after update
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // Wait for UI to be ready by checking for outfit panel availability
+        await waitForUIReady();
         
         // Restore the saved data to the current instances
         // Restore bot outfit data if it was saved
@@ -298,6 +297,49 @@ export function setupEventListeners(botManager, userManager, botPanel, userPanel
         } catch (error) {
             console.error('[OutfitTracker] Error during temp instance cleanup:', error);
         }
+    }
+    
+    // Wait for chat to be properly reset with a dynamic check instead of fixed timeout
+    async function waitForChatReset() {
+        const maxWaitTime = 2000; // Maximum wait time of 2 seconds
+        const checkInterval = 50; // Check every 50ms
+        const startTime = Date.now();
+        
+        // Wait for the chat to be properly initialized
+        while (Date.now() - startTime < maxWaitTime) {
+            const context = window.getContext();
+            if (context && context.chat && Array.isArray(context.chat)) {
+                // Chat is properly initialized, exit the loop
+                return;
+            }
+            // Wait a short interval before checking again
+            await new Promise(resolve => setTimeout(resolve, checkInterval));
+        }
+        
+        // If we've waited too long, log a warning but continue
+        console.warn('[OutfitTracker] Timed out waiting for chat reset, continuing with available context');
+    }
+    
+    // Wait for UI to be ready by checking if outfit panels are available
+    async function waitForUIReady() {
+        const maxWaitTime = 2000; // Maximum wait time of 2 seconds
+        const checkInterval = 50; // Check every 50ms
+        const startTime = Date.now();
+        
+        // Wait for the UI to be ready
+        while (Date.now() - startTime < maxWaitTime) {
+            // Check if both panels exist and are ready
+            if ((botPanel && typeof botPanel.renderContent === 'function') && 
+                (userPanel && typeof userPanel.renderContent === 'function')) {
+                // UI is ready, exit the loop
+                return;
+            }
+            // Wait a short interval before checking again
+            await new Promise(resolve => setTimeout(resolve, checkInterval));
+        }
+        
+        // If we've waited too long, log a warning but continue
+        console.warn('[OutfitTracker] Timed out waiting for UI to be ready, continuing');
     }
 
     // Schedule cleanup of old temporary instances periodically (every 10 minutes)
