@@ -1748,6 +1748,32 @@ async function waitForOutfitLoad(botManager, userManager) {
     const checkInterval = 25; // Check every 25ms
     const startTime = Date.now();
     
+    // Define the slot arrays locally since they're not accessible in this scope
+    const CLOTHING_SLOTS = [
+        'headwear',
+        'topwear',
+        'topunderwear',
+        'bottomwear',
+        'bottomunderwear',
+        'footwear',
+        'footunderwear'
+    ];
+    
+    const ACCESSORY_SLOTS = [
+        'head-accessory',
+        'ears-accessory',
+        'eyes-accessory',
+        'mouth-accessory',
+        'neck-accessory',
+        'body-accessory',
+        'arms-accessory',
+        'hands-accessory',
+        'waist-accessory',
+        'bottom-accessory',
+        'legs-accessory',
+        'foot-accessory'
+    ];
+    
     while (Date.now() - startTime < maxWaitTime) {
         let botDataReady = true;
         let userDataReady = true;
