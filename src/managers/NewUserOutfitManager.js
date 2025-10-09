@@ -59,49 +59,10 @@ export class NewUserOutfitManager {
             return;
         }
 
-        // Get the outfits from extension settings
-        // User outfits are stored in the same structure as bot outfits
-        const allInstances = safeGet(window, 'extension_settings.outfit_tracker.instances', {});
-        let userOutfit = {};
-        
-        // First check if there's outfit data for this specific instance
-        let found = false;
-        for (const [charId, charInstances] of Object.entries(allInstances)) {
-            if (charInstances[this.outfitInstanceId] && charInstances[this.outfitInstanceId].user) {
-                userOutfit = charInstances[this.outfitInstanceId].user;
-                found = true;
-                break;
-            }
-        }
-        
-        // If not found in instance-specific data, look for user-specific data
-        if (!found) {
-            const userInstances = safeGet(window, 'extension_settings.outfit_tracker.user_instances', {});
-            if (userInstances[this.outfitInstanceId]) {
-                userOutfit = userInstances[this.outfitInstanceId];
-                found = true;
-            }
-        }
-        
-        // If still not found, try to find user data from any instance
-        if (!found) {
-            for (const [charId, charInstances] of Object.entries(allInstances)) {
-                for (const [instanceId, instanceData] of Object.entries(charInstances)) {
-                    if (instanceData.user) {
-                        userOutfit = instanceData.user;
-                        found = true;
-                        break;
-                    }
-                }
-                if (found) break;
-            }
-        }
-        
-        // If still not found, try the default user instance structure
-        if (!found) {
-            userOutfit = safeGet(window, `extension_settings.outfit_tracker.instances.user.${this.outfitInstanceId}`, {});
-        }
-        
+        // Get the user outfits from the user_instances structure
+        const userInstances = safeGet(window, 'extension_settings.outfit_tracker.user_instances', {});
+        const userOutfit = userInstances[this.outfitInstanceId] || {};
+
         // Load the slot values
         this.slots.forEach(slot => {
             const value = userOutfit[slot] !== undefined ? userOutfit[slot] : 'None';

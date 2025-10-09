@@ -1189,7 +1189,40 @@ Only return the formatted sections with cleaned content.`;
             
             // Force an immediate render to update UI with the loaded values
             // This should fix the issue where values are empty until swipe occurs
-            setTimeout(() => {
+            if (botPanel.renderContent) {
+                botPanel.renderContent();
+            }
+            if (userPanel.renderContent) {
+                userPanel.renderContent();
+            }
+            
+            // Another attempt to ensure data is loaded and rendered properly
+            // This addresses the specific issue where fields are empty until the first message is swiped
+            setTimeout(async () => {
+                if (botManager) {
+                    // Reload the outfit data to ensure latest values are in place
+                    await botManager.loadOutfit();
+                    // Ensure that all slots have values (default to 'None' if empty)
+                    for (const slot of [...CLOTHING_SLOTS, ...ACCESSORY_SLOTS]) {
+                        const value = botManager.currentValues[slot];
+                        if (value === undefined || value === null || value === '') {
+                            botManager.currentValues[slot] = 'None';
+                        }
+                    }
+                }
+                if (userManager) {
+                    // Reload the outfit data to ensure latest values are in place
+                    await userManager.loadOutfit();
+                    // Ensure that all slots have values (default to 'None' if empty)
+                    for (const slot of [...CLOTHING_SLOTS, ...ACCESSORY_SLOTS]) {
+                        const value = userManager.currentValues[slot];
+                        if (value === undefined || value === null || value === '') {
+                            userManager.currentValues[slot] = 'None';
+                        }
+                    }
+                }
+                
+                // Force update the panels to show the latest values after loading
                 if (botPanel.renderContent) {
                     botPanel.renderContent();
                 }
@@ -1199,7 +1232,7 @@ Only return the formatted sections with cleaned content.`;
                 
                 // Update character-specific variables to ensure getglobalvar macros work properly
                 updateCharacterVariables();
-            }, 30); // Small delay to ensure data is loaded before rendering
+            }, 150); // Slightly longer delay to ensure instance loading completes
 
             // Final attempt to ensure the values are properly populated
             if (botManager && botPanel) {
