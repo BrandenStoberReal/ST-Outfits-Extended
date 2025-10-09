@@ -1210,8 +1210,19 @@ Only return the formatted sections with cleaned content.`;
             } else if (character.first_message) {
                 // If chat history is empty (e.g., on chat reset), use the character's defined first_message.
                 // This resolves the race condition where the chat array isn't populated yet.
-                firstMessageText = character.first_message;
-                console.log('[OutfitTracker] Chat is empty. Generating instanceId from character.first_message.');
+                const rawFirstMessage = character.first_message;
+
+                // CRITICAL: Expand macros (like {{char}}) in the raw message text.
+                // The ID is generated from the rendered message, so we must match it.
+                if (context.replaceMacros && typeof context.replaceMacros === 'function') {
+                    firstMessageText = context.replaceMacros(rawFirstMessage);
+                    console.log('[OutfitTracker] Expanded macros in character.first_message.');
+                } else {
+                    firstMessageText = rawFirstMessage;
+                    console.log('[OutfitTracker] context.replaceMacros not found. Using raw first_message.');
+                }
+                
+                console.log('[OutfitTracker] Chat is empty. Generating instanceId from processed character.first_message.');
             }
 
             if (firstMessageText) {
