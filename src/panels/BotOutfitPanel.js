@@ -707,9 +707,11 @@ INSTRUCTIONS:
                 // Check if this panel's character/outfit instance has changed
                 if (this.outfitManager.characterId && this.outfitManager.outfitInstanceId) {
                     const currentOutfit = state.botInstances[this.outfitManager.characterId]?.[this.outfitManager.outfitInstanceId]?.bot;
+
                     if (currentOutfit) {
                         // Only refresh if the outfit data has actually changed
                         let hasChanged = false;
+
                         for (const [slot, value] of Object.entries(currentOutfit)) {
                             if (this.outfitManager.currentValues[slot] !== value) {
                                 hasChanged = true;
@@ -727,6 +729,7 @@ INSTRUCTIONS:
 
         // Get context to set up event listeners
         const context = window.getContext && window.getContext();
+
         if (context && context.eventSource && context.event_types) {
             const { eventSource, event_types } = context;
 

@@ -444,9 +444,11 @@ export class UserOutfitPanel {
                 // Check if this panel's outfit instance has changed
                 if (this.outfitManager.outfitInstanceId) {
                     const currentUserOutfit = state.userInstances[this.outfitManager.outfitInstanceId];
+
                     if (currentUserOutfit) {
                         // Only refresh if the outfit data has actually changed
                         let hasChanged = false;
+
                         for (const [slot, value] of Object.entries(currentUserOutfit)) {
                             if (this.outfitManager.currentValues[slot] !== value) {
                                 hasChanged = true;
@@ -464,6 +466,7 @@ export class UserOutfitPanel {
 
         // Get context to set up event listeners
         const context = window.getContext && window.getContext();
+
         if (context && context.eventSource && context.event_types) {
             const { eventSource, event_types } = context;
 

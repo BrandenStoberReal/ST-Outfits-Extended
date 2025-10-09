@@ -9,13 +9,14 @@ import { LLMUtility } from '../utils/LLMUtility.js';
 // Import our new store
 import { outfitStore } from '../common/Store.js';
 
-
-
 // Import the new managers and panels
 import { NewBotOutfitManager } from '../managers/NewBotOutfitManager.js';
 import { BotOutfitPanel } from '../panels/BotOutfitPanel.js';
 import { NewUserOutfitManager } from '../managers/NewUserOutfitManager.js';
 import { UserOutfitPanel } from '../panels/UserOutfitPanel.js';
+import { setupEventListeners } from './EventSystem.js';
+import { generateInstanceIdFromText } from '../utils/utility.js';
+
 
 // Helper function to extract username from message
 function extractUserName(mostRecentUserMessage) {
@@ -916,46 +917,6 @@ Only return the formatted sections with cleaned content.`;
         }
     }
 
-    // Fallback function for simple hash
-    function generateInstanceIdFromTextSimple(text) {
-        let hash = 0;
-        const str = text.substring(0, 100); // Only use first 100 chars to keep ID manageable
-
-        for (let i = 0; i < str.length; i++) {
-            const char = str.charCodeAt(i);
-
-            hash = ((hash << 5) - hash) + char;
-            hash &= hash; // Convert to 32-bit integer
-        }
-
-        // Convert to positive and return string representation
-        return Math.abs(hash).toString(36);
-    }
-    
-    // Helper function to generate a stronger hash from text for use as instance ID
-    async function generateInstanceIdFromText(text) {
-        // Use a more robust hashing algorithm using Web Crypto API
-        if (typeof crypto !== 'undefined' && crypto.subtle) {
-            const encoder = new TextEncoder();
-            const data = encoder.encode(text);
-            
-            try {
-                const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-                const hashArray = Array.from(new Uint8Array(hashBuffer));
-                const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-
-                // Return first 16 characters for manageable length
-                return hashHex.substring(0, 16);
-            } catch (err) {
-                // Fallback to simple hash if crypto fails
-                console.warn('Crypto API not available, falling back to simple hash for instance ID generation', err);
-                return generateInstanceIdFromTextSimple(text);
-            }
-        } 
-        // Fallback to simple hash if crypto is not available
-        return generateInstanceIdFromTextSimple(text);
-    }
-
     // Function to wipe all outfit data for all characters
     async function wipeAllOutfits() {
         try {
@@ -1007,6 +968,7 @@ Only return the formatted sections with cleaned content.`;
             if (window.botOutfitManager) {
                 // Reset all slots to 'None' for the current instance
                 const slots = [...CLOTHING_SLOTS, ...ACCESSORY_SLOTS];
+
                 for (const slot of slots) {
                     window.botOutfitManager.currentValues[slot] = 'None';
                 }
@@ -1017,6 +979,7 @@ Only return the formatted sections with cleaned content.`;
             if (window.userOutfitManager) {
                 // Reset all slots to 'None' for the current instance
                 const slots = [...CLOTHING_SLOTS, ...ACCESSORY_SLOTS];
+
                 for (const slot of slots) {
                     window.userOutfitManager.currentValues[slot] = 'None';
                 }
@@ -1096,7 +1059,8 @@ Only return the formatted sections with cleaned content.`;
 
                             varName = `${formattedCharacterName}_${slotData.name}`;
                         }
-                        outfitInfo += `**${formattedSlotName}:** {{getglobalvar::${varName}}}\n`;
+                        outfitInfo += `**${formattedSlotName}:** {{getglobalvar::${varName}}}
+`;
                     }
                 });
             }
@@ -1135,7 +1099,8 @@ Only return the formatted sections with cleaned content.`;
 
                             varName = `${formattedCharacterName}_${slotData.name}`;
                         }
-                        outfitInfo += `**${formattedSlotName}:** {{getglobalvar::${varName}}}\n`;
+                        outfitInfo += `**${formattedSlotName}:** {{getglobalvar::${varName}}}
+`;
                     }
                 });
             }
@@ -1146,7 +1111,7 @@ Only return the formatted sections with cleaned content.`;
             );
 
             if (userHasClothing) {
-                outfitInfo += '\n**{{user}}\'s Current Outfit**\n';
+                outfitInfo += '\n**{{user}}\''s Current Outfit**\n';
 
                 // Add user clothing info
                 CLOTHING_SLOTS.forEach(slot => {
@@ -1163,7 +1128,8 @@ Only return the formatted sections with cleaned content.`;
                             varName = `OUTFIT_INST_USER_${slotData.name}`;
                         }
 
-                        outfitInfo += `**${formattedSlotName}:** {{getglobalvar::${varName}}}\n`;
+                        outfitInfo += `**${formattedSlotName}:** {{getglobalvar::${varName}}}
+`;
                     }
                 });
             }
@@ -1174,7 +1140,7 @@ Only return the formatted sections with cleaned content.`;
             );
 
             if (userHasAccessories) {
-                outfitInfo += '\n**{{user}}\'s Current Accessories**\n';
+                outfitInfo += '\n**{{user}}\''s Current Accessories**\n';
 
                 // Add user accessory info - only include those that are specifically defined (not "None" or empty)
                 ACCESSORY_SLOTS.forEach(slot => {
@@ -1200,7 +1166,8 @@ Only return the formatted sections with cleaned content.`;
                             varName = `OUTFIT_INST_USER_${slotData.name}`;
                         }
 
-                        outfitInfo += `**${formattedSlotName}:** {{getglobalvar::${varName}}}\n`;
+                        outfitInfo += `**${formattedSlotName}:** {{getglobalvar::${varName}}}
+`;
                     }
                 });
             }
@@ -1211,224 +1178,50 @@ Only return the formatted sections with cleaned content.`;
             return ''; // Return empty string if there's an error
         }
     }
-
-    // Track if the outfit has been initialized for the current first message to prevent overwrites
-    let firstMessageInitialized = false;
     
     async function updateForCurrentCharacter() {
         try {
             const context = getContext();
-
-            // Check if context is ready before trying to access character data
             if (!context || !context.characters || context.characterId === undefined || context.characterId === null) {
-                console.log('[OutfitTracker] Context not ready or no character selected, setting as Unknown');
-                if (botManager) {
-                    botManager.setCharacter('Unknown', null);
-                }
-                if (botPanel) {
-                    botPanel.updateCharacter('Unknown');
-                }
+                botManager.setCharacter('Unknown', null);
+                botPanel.updateCharacter('Unknown');
                 return;
             }
 
-            // Make sure the character exists in the characters array
             const character = context.characters[context.characterId];
-
             if (!character) {
-                console.log('[OutfitTracker] Character not found at index ' + context.characterId + ', setting as Unknown');
-                if (botManager) {
-                    botManager.setCharacter('Unknown', null);
-                }
-                if (botPanel) {
-                    botPanel.updateCharacter('Unknown');
-                }
+                botManager.setCharacter('Unknown', null);
+                botPanel.updateCharacter('Unknown');
                 return;
             }
 
             const charName = character.name || 'Unknown';
+            console.log(`[OutfitTracker] Updating character to: ${charName} (ID: ${context.characterId})`);
 
-            console.log('[OutfitTracker] Updating character to: ' + charName + ' (ID: ' + context.characterId + ')');
-
-            // Check if we have a new chat or the same character but different first message
-            const currentChatId = context.chatId;
-
-            // Generate a unique conversation instance ID using the hash function
-            // Check if there are AI messages in context.chat to ensure instance ID is based on actual conversation
             const aiMessages = context.chat ? context.chat.filter(msg => !msg.is_user && !msg.is_system) : [];
+            let instanceId;
 
             if (aiMessages.length === 0) {
                 console.log('[OutfitTracker] No AI messages found in chat, using temporary instance ID');
-                // Use a temporary ID and handle the update when a first message arrives
-                const tempInstanceId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-                
-                if (botManager) {
-                    botManager.setCharacter(charName, context.characterId);
-                    botManager.setOutfitInstanceId(tempInstanceId);
-                    // Load the outfit data for the temporary instance
-                    await botManager.loadOutfit();
-                }
-                if (botPanel) {
-                    botPanel.updateCharacter(charName);
-                }
-
-                if (userManager) {
-                    // Set the outfit instance ID for user based on the same temporary ID
-                    userManager.setOutfitInstanceId(tempInstanceId);
-                    // Load the outfit data for the temporary instance
-                    await userManager.loadOutfit();
-                }
-                if (userPanel) {
-                    userPanel.updateHeader();
-                }
-
-                // Force render to show current values (which might be temporary)
-                if (botPanel.renderContent) {
-                    botPanel.renderContent();
-                }
-                if (userPanel.renderContent) {
-                    userPanel.renderContent();
-                }
-                
-                // Update character-specific variables to ensure getglobalvar macros work properly
-                updateCharacterVariables();
-                
-                // Reset the first message initialized flag since there are no AI messages yet
-                firstMessageInitialized = false;
-                
-                // In this situation, we return but the instance ID will be updated when the first message arrives
-                // through other event handlers (like MESSAGE_RECEIVED, MESSAGE_SWIPED, etc.)
-                return; // Exit early since we're handling this case separately
-            }
-            
-            const firstMessageText = aiMessages[0].mes || '';
-            // Generate a hash-based instance ID from the first message
-            const instanceId = await generateInstanceIdFromText(firstMessageText);
-
-            if (botManager) {
-                // Update the character with characterId for proper namespace
-                botManager.setCharacter(charName, context.characterId);
-
-                // Check if this is the same instance as the first message initialization
-                // to prevent overriding outfit data after it's been properly set
-                const currentInstanceId = botManager.getOutfitInstanceId();
-                
-                // Only update if this is different from the one set by first message render
-                // unless it's a temp ID (which means initialization hasn't happened properly yet)
-                if (currentInstanceId && !currentInstanceId.startsWith('temp_') && firstMessageInitialized) {
-                    // If we've already initialized from first message and current ID is not temp, 
-                    // don't update to avoid overriding manually set outfits
-                    console.log('[OutfitTracker] First message already processed, skipping update to preserve outfit data');
-                    
-                    // Still update the character name in case it changed
-                    botManager.setCharacter(charName, context.characterId);
-                    
-                    // Update UI to reflect current character name if needed
-                    if (botPanel) {
-                        botPanel.updateCharacter(charName);
-                    }
-                    
-                    // Update user panel too
-                    if (userPanel) {
-                        userPanel.updateHeader();
-                    }
-                    
-                    // Just reload existing outfit data and update UI
-                    botManager.loadOutfit();
-                    userManager.loadOutfit();
-                    
-                    if (botPanel.renderContent) {
-                        botPanel.renderContent();
-                    }
-                    if (userPanel.renderContent) {
-                        userPanel.renderContent();
-                    }
-                    
-                    updateCharacterVariables();
-                    
-                    return;
-                }
-
-                // Set the outfit instance ID based on the first message
-                botManager.setOutfitInstanceId(instanceId);
-
-                // Load the outfit data for the new instance
-                await botManager.loadOutfit();
-            }
-            if (botPanel) {
-                botPanel.updateCharacter(charName);
+                instanceId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            } else {
+                const firstMessageText = aiMessages[0].mes || '';
+                instanceId = await generateInstanceIdFromText(firstMessageText);
             }
 
-            // Update the user panel as well when chat changes
-            if (userManager) {
-                // Set the outfit instance ID for user based on the same first message
-                userManager.setOutfitInstanceId(instanceId);
+            botManager.setCharacter(charName, context.characterId);
+            botManager.setOutfitInstanceId(instanceId);
+            await botManager.loadOutfit();
+            botPanel.updateCharacter(charName);
 
-                // Load the outfit data for the new instance
-                await userManager.loadOutfit();
-            }
-            if (userPanel) {
-                userPanel.updateHeader();
-            }
+            userManager.setOutfitInstanceId(instanceId);
+            await userManager.loadOutfit();
+            userPanel.updateHeader();
 
-            // Reload the outfit data to ensure latest values are in place
-            if (botManager) {
-                botManager.loadOutfit();
-                // Ensure that all slots have values (default to 'None' if empty)
-                for (const slot of [...CLOTHING_SLOTS, ...ACCESSORY_SLOTS]) {
-                    const value = botManager.currentValues[slot];
+            botPanel.renderContent();
+            userPanel.renderContent();
 
-                    if (value === undefined || value === null || value === '') {
-                        botManager.currentValues[slot] = 'None';
-                    }
-                }
-            }
-            if (userManager) {
-                userManager.loadOutfit();
-                // Ensure that all slots have values (default to 'None' if empty)
-                for (const slot of [...CLOTHING_SLOTS, ...ACCESSORY_SLOTS]) {
-                    const value = userManager.currentValues[slot];
-
-                    if (value === undefined || value === null || value === '') {
-                        userManager.currentValues[slot] = 'None';
-                    }
-                }
-            }
-            
-            // Use dynamic waiting to ensure outfit managers have loaded data before rendering
-            await waitForOutfitLoad(botManager, userManager);
-            
-            // Force update the panels to show the latest values after loading
-            if (botPanel.renderContent) {
-                botPanel.renderContent();
-            }
-            if (userPanel.renderContent) {
-                userPanel.renderContent();
-            }
-            
-            // Update character-specific variables to ensure getglobalvar macros work properly
             updateCharacterVariables();
-
-            // Final attempt to ensure the values are properly populated
-            if (botManager && botPanel) {
-                // Load the outfit data one more time and update the panel
-                await botManager.loadOutfit();
-                if (botPanel.renderContent) {
-                    botPanel.renderContent();
-                }
-            }
-            if (userManager && userPanel) {
-                // Load the outfit data one more time and update the panel
-                await userManager.loadOutfit();
-                if (userPanel.renderContent) {
-                    userPanel.renderContent();
-                }
-            }
-            
-            // Update character-specific variables to ensure getglobalvar macros work properly
-            updateCharacterVariables();
-            
-            // Mark that first message initialization has been processed
-            firstMessageInitialized = true;
         } catch (error) {
             console.error('[OutfitTracker] Error updating for current character:', error);
         }
@@ -1614,9 +1407,7 @@ Only return the formatted sections with cleaned content.`;
     registerOutfitCommands(importOutfitFromCharacterCard, botManager, userManager, autoOutfitSystem, CLOTHING_SLOTS, ACCESSORY_SLOTS);
 
     // Setup event listeners
-    const { setupEventListeners } = await import('./EventSystem.js');
-
-    setupEventListeners(botManager, userManager, botPanel, userPanel, autoOutfitSystem, updateForCurrentCharacter, CLOTHING_SLOTS, ACCESSORY_SLOTS);
+    setupEventListeners(botManager, userManager, botPanel, userPanel, autoOutfitSystem, updateForCurrentCharacter);
 
     // Create settings UI
     const { createSettingsUI } = await import('./SettingsUI.js');
@@ -1790,78 +1581,3 @@ function cleanupExtension() {
         console.error('[OutfitTracker] Error during extension cleanup:', error);
     }
 }
-
-// Wait for outfit managers to have loaded their data with dynamic checking
-async function waitForOutfitLoad(botManager, userManager) {
-    const maxWaitTime = 2000; // Maximum wait time of 2 seconds
-    const checkInterval = 25; // Check every 25ms
-    const startTime = Date.now();
-    
-    // Define the slot arrays locally since they're not accessible in this scope
-    const CLOTHING_SLOTS = [
-        'headwear',
-        'topwear',
-        'topunderwear',
-        'bottomwear',
-        'bottomunderwear',
-        'footwear',
-        'footunderwear'
-    ];
-    
-    const ACCESSORY_SLOTS = [
-        'head-accessory',
-        'ears-accessory',
-        'eyes-accessory',
-        'mouth-accessory',
-        'neck-accessory',
-        'body-accessory',
-        'arms-accessory',
-        'hands-accessory',
-        'waist-accessory',
-        'bottom-accessory',
-        'legs-accessory',
-        'foot-accessory'
-    ];
-    
-    while (Date.now() - startTime < maxWaitTime) {
-        let botDataReady = true;
-        let userDataReady = true;
-        
-        // Check if bot manager has properly loaded outfit data
-        if (botManager && botManager.outfitInstanceId) {
-            // Check if the bot manager has loaded some values for the current instance
-            const slots = [...CLOTHING_SLOTS, ...ACCESSORY_SLOTS];
-            botDataReady = slots.some(slot => botManager.currentValues[slot] !== undefined && botManager.currentValues[slot] !== null);
-        }
-        
-        // Check if user manager has properly loaded outfit data
-        if (userManager && userManager.outfitInstanceId) {
-            // Check if the user manager has loaded some values for the current instance
-            const slots = [...CLOTHING_SLOTS, ...ACCESSORY_SLOTS];
-            userDataReady = slots.some(slot => userManager.currentValues[slot] !== undefined && userManager.currentValues[slot] !== null);
-        }
-        
-        // If both are ready, exit the loop
-        if (botDataReady && userDataReady) {
-            return;
-        }
-        
-        // Wait a short interval before checking again
-        await new Promise(resolve => setTimeout(resolve, checkInterval));
-    }
-    
-    // If we've waited too long, log a warning but continue
-    console.warn('[OutfitTracker] Timed out waiting for outfit data to load, continuing with available data');
-}
-
-// Function to reset the first message initialization flag
-// This should be called when a new chat is created to allow proper outfit initialization
-function resetFirstMessageInitialized() {
-    firstMessageInitialized = false;
-    console.log('[OutfitTracker] First message initialization flag reset');
-}
-
-// Make the reset function available globally
-window.resetFirstMessageInitialized = resetFirstMessageInitialized;
-
-
