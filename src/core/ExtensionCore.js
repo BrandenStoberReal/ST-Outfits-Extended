@@ -1212,6 +1212,9 @@ Only return the formatted sections with cleaned content.`;
         }
     }
 
+    // Track if the outfit has been initialized for the current first message to prevent overwrites
+    let firstMessageInitialized = false;
+    
     async function updateForCurrentCharacter() {
         try {
             const context = getContext();
@@ -1289,6 +1292,9 @@ Only return the formatted sections with cleaned content.`;
                 // Update character-specific variables to ensure getglobalvar macros work properly
                 updateCharacterVariables();
                 
+                // Reset the first message initialized flag since there are no AI messages yet
+                firstMessageInitialized = false;
+                
                 // In this situation, we return but the instance ID will be updated when the first message arrives
                 // through other event handlers (like MESSAGE_RECEIVED, MESSAGE_SWIPED, etc.)
                 return; // Exit early since we're handling this case separately
@@ -1301,6 +1307,46 @@ Only return the formatted sections with cleaned content.`;
             if (botManager) {
                 // Update the character with characterId for proper namespace
                 botManager.setCharacter(charName, context.characterId);
+
+                // Check if this is the same instance as the first message initialization
+                // to prevent overriding outfit data after it's been properly set
+                const currentInstanceId = botManager.getOutfitInstanceId();
+                
+                // Only update if this is different from the one set by first message render
+                // unless it's a temp ID (which means initialization hasn't happened properly yet)
+                if (currentInstanceId && !currentInstanceId.startsWith('temp_') && firstMessageInitialized) {
+                    // If we've already initialized from first message and current ID is not temp, 
+                    // don't update to avoid overriding manually set outfits
+                    console.log('[OutfitTracker] First message already processed, skipping update to preserve outfit data');
+                    
+                    // Still update the character name in case it changed
+                    botManager.setCharacter(charName, context.characterId);
+                    
+                    // Update UI to reflect current character name if needed
+                    if (botPanel) {
+                        botPanel.updateCharacter(charName);
+                    }
+                    
+                    // Update user panel too
+                    if (userPanel) {
+                        userPanel.updateHeader();
+                    }
+                    
+                    // Just reload existing outfit data and update UI
+                    botManager.loadOutfit();
+                    userManager.loadOutfit();
+                    
+                    if (botPanel.renderContent) {
+                        botPanel.renderContent();
+                    }
+                    if (userPanel.renderContent) {
+                        userPanel.renderContent();
+                    }
+                    
+                    updateCharacterVariables();
+                    
+                    return;
+                }
 
                 // Set the outfit instance ID based on the first message
                 botManager.setOutfitInstanceId(instanceId);
@@ -1380,6 +1426,9 @@ Only return the formatted sections with cleaned content.`;
             
             // Update character-specific variables to ensure getglobalvar macros work properly
             updateCharacterVariables();
+            
+            // Mark that first message initialization has been processed
+            firstMessageInitialized = true;
         } catch (error) {
             console.error('[OutfitTracker] Error updating for current character:', error);
         }
@@ -1804,5 +1853,15 @@ async function waitForOutfitLoad(botManager, userManager) {
     // If we've waited too long, log a warning but continue
     console.warn('[OutfitTracker] Timed out waiting for outfit data to load, continuing with available data');
 }
+
+// Function to reset the first message initialization flag
+// This should be called when a new chat is created to allow proper outfit initialization
+function resetFirstMessageInitialized() {
+    firstMessageInitialized = false;
+    console.log('[OutfitTracker] First message initialization flag reset');
+}
+
+// Make the reset function available globally
+window.resetFirstMessageInitialized = resetFirstMessageInitialized;
 
 
