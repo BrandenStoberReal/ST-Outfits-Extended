@@ -53,23 +53,22 @@ class EventSystem {
     }
 
     handleChatChange() {
-        console.log('[OutfitTracker] CHAT_CHANGED event fired - updating outfit data for character switch');
+        console.log('[OutfitTracker] CHAT_CHANGED event fired - updating outfit data for character switch or chat reset');
         this.updateForCurrentCharacter();
     }
 
     handleChatCreated() {
-        console.log('[OutfitTracker] CHAT_CREATED event fired - creating new outfit instance');
-        const tempInstanceId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-        this.botManager.setOutfitInstanceId(tempInstanceId);
-        this.userManager.setOutfitInstanceId(tempInstanceId);
+        console.log('[OutfitTracker] CHAT_CREATED event fired - updating for new chat session');
         this.updateForCurrentCharacter();
     }
 
     async handleCharacterMessageRendered(messageId, type) {
         if (type === 'first_message') {
             console.log(`[OutfitTracker] CHARACTER_MESSAGE_RENDERED (first_message) event fired with message ID: ${messageId}`);
-            await this.updateForCurrentCharacter();
+            // Add a small delay to ensure the chat context is updated before we access it
+            setTimeout(async () => {
+                await this.updateForCurrentCharacter();
+            }, 100);
         }
     }
 

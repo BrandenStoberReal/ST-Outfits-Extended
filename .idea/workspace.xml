@@ -5,29 +5,14 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="4d2c86ac-6680-44f0-b835-7640f35c4c4b" name="Changes" comment="&#10;Oh god">
-      <change beforePath="$PROJECT_DIR$/.idea/.gitignore" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/ST-Outfits.iml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/codeStyles/Project.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/codeStyles/codeStyleConfig.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.qwen/agents/regex-expert.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.qwen/agents/sillytavern-docs-expert.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/MODULAR_ARCHITECTURE.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/QWEN.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/sillytavern-src/events.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/sillytavern-src/group-chats.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/sillytavern-src/macros.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/sillytavern-src/power-user.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/sillytavern-src/script.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/sillytavern-src/swiped-events.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/sillytavern_source_code_summary.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/exec/Lint.bat" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/manifest.json" beforeDir="false" afterPath="$PROJECT_DIR$/manifest.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/core/AutoOutfitSystem.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/core/AutoOutfitSystem.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/core/EventSystem.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/core/EventSystem.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/core/ExtensionCore.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/core/ExtensionCore.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/panels/BotOutfitPanel.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/panels/BotOutfitPanel.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/panels/UserOutfitPanel.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/panels/UserOutfitPanel.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/core/events.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/core/events.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/managers/NewBotOutfitManager.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/managers/NewBotOutfitManager.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/managers/NewUserOutfitManager.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/managers/NewUserOutfitManager.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/utils/StringProcessor.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/StringProcessor.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/utils/utility.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/utility.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -129,15 +114,7 @@
       <workItem from="1759874390441" duration="33321000" />
       <workItem from="1759926617863" duration="14638000" />
       <workItem from="1759988645747" duration="306000" />
-      <workItem from="1759989267325" duration="10746000" />
-    </task>
-    <task id="LOCAL-00085" summary="Hotfix (17x)">
-      <option name="closed" value="true" />
-      <created>1759894562423</created>
-      <option name="number" value="00085" />
-      <option name="presentableId" value="LOCAL-00085" />
-      <option name="project" value="LOCAL" />
-      <updated>1759894562423</updated>
+      <workItem from="1759989267325" duration="11139000" />
     </task>
     <task id="LOCAL-00086" summary="Hotfix (18x)">
       <option name="closed" value="true" />
@@ -523,7 +500,15 @@
       <option name="project" value="LOCAL" />
       <updated>1759999537922</updated>
     </task>
-    <option name="localTasksCounter" value="134" />
+    <task id="LOCAL-00134" summary="&#10;Oh god">
+      <option name="closed" value="true" />
+      <created>1760000101491</created>
+      <option name="number" value="00134" />
+      <option name="presentableId" value="LOCAL-00134" />
+      <option name="project" value="LOCAL" />
+      <updated>1760000101491</updated>
+    </task>
+    <option name="localTasksCounter" value="135" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
