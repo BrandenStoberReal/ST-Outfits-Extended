@@ -10,6 +10,8 @@ export class UserOutfitPanel {
         this.domElement = null;
         this.currentTab = 'clothing';
         this.saveSettingsDebounced = saveSettingsDebounced;
+        this.eventListeners = []; // Track event listeners for cleanup
+        this.outfitSubscription = null; // Track outfit data subscription
     }
 
     createPanel() {
@@ -363,6 +365,9 @@ export class UserOutfitPanel {
         this.applyPanelColors(); // Apply colors after showing
         this.isVisible = true;
 
+        // Set up dynamic refresh when panel becomes visible
+        this.setupDynamicRefresh();
+
         if (this.domElement) {
             dragElementWithSave($(this.domElement), 'user-outfit-panel');
             // Initialize resizing with appropriate min/max dimensions
@@ -376,7 +381,7 @@ export class UserOutfitPanel {
             }, 10); // Small delay to ensure panel is rendered first
             
             this.domElement.querySelector('#user-outfit-refresh')?.addEventListener('click', () => {
-                this.outfitManager.initializeOutfit();
+                this.outfitManager.loadOutfit();
                 this.renderContent();
             });
 
@@ -402,6 +407,9 @@ export class UserOutfitPanel {
             this.domElement.style.display = 'none';
         }
         this.isVisible = false;
+        
+        // Clean up dynamic refresh when panel is hidden
+        this.cleanupDynamicRefresh();
     }
     
     // Update the header to reflect changes (like new instance ID)
@@ -422,6 +430,85 @@ export class UserOutfitPanel {
                 header.textContent = `Your Outfit${hashDisplay}`;
             }
         }
+    }
+
+    // Set up dynamic refresh listeners when the panel is shown
+    setupDynamicRefresh() {
+        // Clean up any existing listeners first
+        this.cleanupDynamicRefresh();
+
+        // Subscribe to store changes if we have access to the store
+        if (window.outfitStore) {
+            // Listen for changes in user outfit data
+            this.outfitSubscription = window.outfitStore.subscribe((state) => {
+                // Check if this panel's outfit instance has changed
+                if (this.outfitManager.outfitInstanceId) {
+                    const currentUserOutfit = state.userInstances[this.outfitManager.outfitInstanceId];
+                    if (currentUserOutfit) {
+                        // Only refresh if the outfit data has actually changed
+                        let hasChanged = false;
+                        for (const [slot, value] of Object.entries(currentUserOutfit)) {
+                            if (this.outfitManager.currentValues[slot] !== value) {
+                                hasChanged = true;
+                                break;
+                            }
+                        }
+                        
+                        if (hasChanged && this.isVisible) {
+                            this.renderContent();
+                        }
+                    }
+                }
+            });
+        }
+
+        // Get context to set up event listeners
+        const context = window.getContext && window.getContext();
+        if (context && context.eventSource && context.event_types) {
+            const { eventSource, event_types } = context;
+
+            // Listen for chat-related events that might affect outfit data
+            this.eventListeners.push(() => eventSource.on(event_types.CHAT_CHANGED, () => {
+                if (this.isVisible) {
+                    this.renderContent();
+                }
+            }));
+            
+            this.eventListeners.push(() => eventSource.on(event_types.CHAT_ID_CHANGED, () => {
+                if (this.isVisible) {
+                    this.renderContent();
+                }
+            }));
+
+            this.eventListeners.push(() => eventSource.on(event_types.CHAT_CREATED, () => {
+                if (this.isVisible) {
+                    this.renderContent();
+                }
+            }));
+            
+            this.eventListeners.push(() => eventSource.on(event_types.MESSAGE_RECEIVED, () => {
+                if (this.isVisible) {
+                    this.renderContent();
+                }
+            }));
+        }
+    }
+
+    // Clean up dynamic refresh listeners when the panel is hidden
+    cleanupDynamicRefresh() {
+        // Unsubscribe from store changes
+        if (this.outfitSubscription) {
+            this.outfitSubscription();
+            this.outfitSubscription = null;
+        }
+
+        // Remove event listeners
+        this.eventListeners.forEach(unsubscribe => {
+            if (typeof unsubscribe === 'function') {
+                unsubscribe();
+            }
+        });
+        this.eventListeners = [];
     }
 
     // Generate a short identifier from the instance ID
