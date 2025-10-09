@@ -1203,26 +1203,21 @@ Only return the formatted sections with cleaned content.`;
             let firstMessageText = '';
 
             if (aiMessages.length > 0) {
+                // If chat history exists, the instance ID is based on the first AI message in the chat.
+                // This correctly handles scenarios like message swiping where the first message changes.
                 firstMessageText = aiMessages[0].mes || '';
-                console.log('[OutfitTracker DIAGNOSTIC] ID Source: From chat message (aiMessages[0].mes)');
             } else if (character.first_message) {
-                const rawFirstMessage = character.first_message;
-                console.log('[OutfitTracker DIAGNOSTIC] ID Source: From character card (character.first_message)');
-                if (context.replaceMacros && typeof context.replaceMacros === 'function') {
-                    firstMessageText = context.replaceMacros(rawFirstMessage);
-                    console.log('[OutfitTracker DIAGNOSTIC] Macro expansion attempted via context.replaceMacros.');
-                } else {
-                    firstMessageText = rawFirstMessage;
-                    console.log('[OutfitTracker DIAGNOSTIC] Macro expansion NOT attempted.');
-                }
+                // If chat history is empty (e.g., on chat reset), use the character's defined first_message.
+                // CRUCIALLY, we use the raw, un-expanded text to ensure the generated ID is stable and consistent,
+                // as expanding macros at this stage can lead to using stale variable data.
+                firstMessageText = character.first_message;
             }
 
             if (firstMessageText) {
-                console.log(`[OutfitTracker DIAGNOSTIC] Text used for ID generation: "${firstMessageText}"`);
                 instanceId = await generateInstanceIdFromText(firstMessageText);
-                console.log(`[OutfitTracker DIAGNOSTIC] Generated instanceId: "${instanceId}"`);
             } else {
-                console.log('[OutfitTracker DIAGNOSTIC] No first message found. Using temporary instance ID.');
+                // As a last resort (e.g., new character with no first message), create a temporary ID.
+                console.log('[OutfitTracker] No first message found in chat or character definition. Using temporary instance ID.');
                 instanceId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
             }
 
