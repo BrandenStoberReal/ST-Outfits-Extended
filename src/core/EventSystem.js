@@ -253,7 +253,7 @@ export function setupEventListeners(botManager, userManager, botPanel, userPanel
                     botManager.loadOutfit();
                     
                     // Update the UI to reflect the restored data
-                    if (botPanel && botPanel.isVisible) {
+                    if (botPanel) {
                         botPanel.renderContent();
                     }
                     
@@ -274,7 +274,7 @@ export function setupEventListeners(botManager, userManager, botPanel, userPanel
                     userManager.loadOutfit();
                     
                     // Update the UI to reflect the restored data
-                    if (userPanel && userPanel.isVisible) {
+                    if (userPanel) {
                         userPanel.renderContent();
                     }
                     

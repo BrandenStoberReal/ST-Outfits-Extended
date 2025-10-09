@@ -218,49 +218,7 @@ class OutfitStore {
         return this.state.currentChatId;
     }
 
-    // Migration from old storage format
-    migrateFromLegacy(legacySettings) {
-        try {
-            // Migrate instance data
-            if (legacySettings.outfit_tracker?.instances) {
-                this.state.botInstances = { ...legacySettings.outfit_tracker.instances };
-            }
-            
-            if (legacySettings.outfit_tracker?.user_instances) {
-                this.state.userInstances = { ...legacySettings.outfit_tracker.user_instances };
-            }
-            
-            // Migrate presets
-            if (legacySettings.outfit_tracker?.presets) {
-                this.state.presets = { ...legacySettings.outfit_tracker.presets };
-            }
-            
-            // Migrate settings
-            if (legacySettings.outfit_tracker) {
-                // Map relevant settings
-                const relevantSettings = ['autoOpenBot', 'autoOpenUser', 'position', 
-                    'enableSysMessages', 'autoOutfitSystem', 
-                    'autoOutfitPrompt', 'autoOutfitConnectionProfile',
-                    'botPanelColors', 'userPanelColors'];
-                
-                for (const setting of relevantSettings) {
-                    if (legacySettings.outfit_tracker[setting] !== undefined) {
-                        if (setting.includes('PanelColors')) {
-                            this.state.panelSettings[setting] = { ...legacySettings.outfit_tracker[setting] };
-                        } else {
-                            this.state.settings[setting] = legacySettings.outfit_tracker[setting];
-                        }
-                    }
-                }
-            }
-            
-            console.log('[OutfitTracker] Successfully migrated data from legacy format');
-            return true;
-        } catch (error) {
-            console.error('[OutfitTracker] Error migrating legacy data:', error);
-            return false;
-        }
-    }
+
     
     // Persist all data to extension settings for reload persistence
     persistToSettings() {

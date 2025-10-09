@@ -1535,8 +1535,6 @@ Only return the formatted sections with cleaned content.`;
 
         // Load data from settings for reload persistence
         outfitStore.loadDataFromSettings();
-        // Migrate any existing data to our new store
-        outfitStore.migrateFromLegacy(extension_settings.outfit_tracker);
 
         // Only initialize auto outfit system if it loaded successfully
         if (AutoOutfitSystem.name !== 'DummyAutoOutfitSystem') {
