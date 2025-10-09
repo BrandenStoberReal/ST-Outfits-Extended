@@ -60,6 +60,7 @@ class EventSystem {
     handleChatCreated() {
         console.log('[OutfitTracker] CHAT_CREATED event fired - creating new outfit instance');
         const tempInstanceId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
         this.botManager.setOutfitInstanceId(tempInstanceId);
         this.userManager.setOutfitInstanceId(tempInstanceId);
         this.updateForCurrentCharacter();
@@ -75,7 +76,8 @@ class EventSystem {
     async handleMessageSwiped(index) {
         console.log(`[OutfitTracker] MESSAGE_SWIPED event fired with index: ${index}`);
         const chat = this.context.chat;
-        if (!chat || index < 0 || index >= chat.length) return;
+
+        if (!chat || index < 0 || index >= chat.length) {return;}
 
         const swipedMessage = chat[index];
         const aiMessages = chat.filter(msg => !msg.is_user && !msg.is_system);
@@ -93,6 +95,7 @@ class EventSystem {
 
     overrideClearChat() {
         const originalClearChat = window.clearChat;
+
         window._originalClearChat = originalClearChat;
 
         window.clearChat = async (...args) => {
@@ -122,6 +125,7 @@ class EventSystem {
 
     async waitForChatReset(timeout = 2000) {
         const startTime = Date.now();
+
         while (Date.now() - startTime < timeout) {
             if (this.context.chat && this.context.chat.length === 0) {
                 return;
@@ -133,6 +137,7 @@ class EventSystem {
 
     async waitForUIReady(timeout = 2000) {
         const startTime = Date.now();
+
         while (Date.now() - startTime < timeout) {
             if (this.botPanel && this.userPanel) {
                 return;

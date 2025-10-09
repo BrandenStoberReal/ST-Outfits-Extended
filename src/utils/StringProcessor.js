@@ -23,117 +23,114 @@ export function replaceAll(str, searchValue, replaceValue) {
 
 // Function to extract all commands matching the pattern without using regex
 // Looking for patterns like: outfit-system_wear_headwear("Red Baseball Cap")
-export function extractCommands(text) {
-    if (!text || typeof text !== 'string') {return [];}
-    
-    const commands = [];
-    const pattern = 'outfit-system_';
-    let startIndex = 0;
-    
-    while (startIndex < text.length) {
-        const patternIndex = text.indexOf(pattern, startIndex);
+// Helper function to find the closing quote, handling escaped quotes
+function findClosingQuote(text, startIndex) {
+    let i = startIndex;
 
-        if (patternIndex === -1) {break;}
-        
-        // Find the action part (wear, remove, change)
-        const actionStart = patternIndex + pattern.length;
-        const actionEnd = text.indexOf('_', actionStart);
-
-        if (actionEnd === -1) {
-            startIndex = patternIndex + 1;
-            continue;
+    while (i < text.length) {
+        if (text[i] === '"') {
+            return i + 1; // Return the position after the closing quote
         }
-        
-        const action = text.substring(actionStart, actionEnd);
-        
-        // Check if action is valid
-        if (!['wear', 'remove', 'change'].includes(action)) {
-            startIndex = patternIndex + 1;
-            continue;
-        }
-        
-        // Find the slot part (headwear, topwear, etc.)
-        const slotStart = actionEnd + 1;
-        const slotEnd = text.indexOf('(', slotStart);
-
-        if (slotEnd === -1) {
-            startIndex = patternIndex + 1;
-            continue;
-        }
-        
-        const slot = text.substring(slotStart, slotEnd);
-        
-        // Validate basic slot format - we'll allow alphanumeric, dash, and underscore characters
-        // Instead of using a regex, we'll validate character by character
-        let isValidSlot = true;
-
-        for (let i = 0; i < slot.length; i++) {
-            const char = slot[i];
-
-            // Check if the character is alphanumeric, underscore, or dash
-            if (!((char >= 'a' && char <= 'z') || 
-                  (char >= 'A' && char <= 'Z') || 
-                  (char >= '0' && char <= '9') || 
-                  char === '_' || char === '-')) {
-                isValidSlot = false;
-                break;
-            }
-        }
-        
-        if (!isValidSlot) {
-            startIndex = patternIndex + 1;
-            continue;
-        }
-        
-        // Find the closing parenthesis for the command
-        const parenStart = slotEnd;
-        let parenCount = 0;
-        let parenEnd = -1;
-        let i = parenStart;
-        
-        // We need to find the matching closing parenthesis
-        if (text[i] === '(') {
-            parenCount = 1;
+        if (text[i] === '\\' && i + 1 < text.length) {
+            i += 2; // Skip escaped character
+        } else {
             i++;
-            
-            while (i < text.length && parenCount > 0) {
-                if (text[i] === '(') {
-                    parenCount++;
-                } else if (text[i] === ')') {
-                    parenCount--;
-                }
-                // Handle escaped quotes inside the value
-                else if (text[i] === '"') {
-                    i++; // Move to the character after the quote
-                    while (i < text.length && text[i] !== '"') {
-                        if (i < text.length - 1 && text[i] === '\\') {
-                            i += 2; // Skip escape character and the next character
-                        } else {
-                            i++;
-                        }
-                    }
-                    if (i < text.length) {i++;} // Skip the closing quote
-                    continue;
-                }
-                i++;
-            }
-            
-            if (parenCount === 0) {
-                parenEnd = i - 1; // Position at the closing ')'
-            }
         }
-        
-        if (parenEnd === -1) {
-            startIndex = patternIndex + 1;
-            continue;
-        }
-        
-        const fullCommand = text.substring(patternIndex, parenEnd + 1);
-
-        commands.push(fullCommand);
-        startIndex = parenEnd + 1;
     }
-    
+    return text.length; // Return the end of the string if no closing quote is found
+}
+
+function findNextCommand(text, startIndex) {
+    const pattern = 'outfit-system_';
+    const patternIndex = text.indexOf(pattern, startIndex);
+
+    if (patternIndex === -1) {
+        return null;
+    }
+
+    const actionStart = patternIndex + pattern.length;
+    const actionEnd = text.indexOf('_', actionStart);
+
+    if (actionEnd === -1) {
+        return { command: null, nextIndex: patternIndex + 1 };
+    }
+
+    const action = text.substring(actionStart, actionEnd);
+
+    if (!['wear', 'remove', 'change'].includes(action)) {
+        return { command: null, nextIndex: patternIndex + 1 };
+    }
+
+    const slotStart = actionEnd + 1;
+    const slotEnd = text.indexOf('(', slotStart);
+
+    if (slotEnd === -1) {
+        return { command: null, nextIndex: patternIndex + 1 };
+    }
+
+    const slot = text.substring(slotStart, slotEnd);
+
+    if (!/^[a-zA-Z0-9_-]+$/.test(slot)) {
+        return { command: null, nextIndex: patternIndex + 1 };
+    }
+
+    const parenStart = slotEnd;
+    let parenCount = 0;
+    let parenEnd = -1;
+    let i = parenStart;
+
+    if (text[i] === '(') {
+        parenCount = 1;
+        i++;
+
+        while (i < text.length && parenCount > 0) {
+            if (text[i] === '(') {
+                parenCount++;
+            } else if (text[i] === ')') {
+                parenCount--;
+            } else if (text[i] === '"') {
+                i = findClosingQuote(text, i + 1);
+                continue; // Continue to the next character
+            }
+            i++;
+        }
+
+        if (parenCount === 0) {
+            parenEnd = i - 1;
+        }
+    }
+
+    if (parenEnd === -1) {
+        return { command: null, nextIndex: patternIndex + 1 };
+    }
+
+    const fullCommand = text.substring(patternIndex, parenEnd + 1);
+
+    return { command: fullCommand, nextIndex: parenEnd + 1 };
+}
+
+export function extractCommands(text) {
+    if (!text || typeof text !== 'string') {
+        return [];
+    }
+
+    const commands = [];
+    let startIndex = 0;
+
+    while (startIndex < text.length) {
+        const result = findNextCommand(text, startIndex);
+
+        if (!result) {
+            break;
+        }
+
+        if (result.command) {
+            commands.push(result.command);
+        }
+
+        startIndex = result.nextIndex;
+    }
+
     return commands;
 }
 

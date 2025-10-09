@@ -1,5 +1,4 @@
-// Import utility functions for safe object property access
-import { safeGet, safeSet } from '../utils/StringProcessor.js';
+
 import { outfitStore } from '../common/Store.js';
 
 export class NewBotOutfitManager {

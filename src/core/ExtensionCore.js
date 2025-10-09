@@ -1111,7 +1111,7 @@ Only return the formatted sections with cleaned content.`;
             );
 
             if (userHasClothing) {
-                outfitInfo += '\n**{{user}}\''s Current Outfit**\n';
+                outfitInfo += '\n**{{user}}\'s Current Outfit**\n';
 
                 // Add user clothing info
                 CLOTHING_SLOTS.forEach(slot => {
@@ -1140,7 +1140,7 @@ Only return the formatted sections with cleaned content.`;
             );
 
             if (userHasAccessories) {
-                outfitInfo += '\n**{{user}}\''s Current Accessories**\n';
+                outfitInfo += '\n**{{user}}\'s Current Accessories**\n';
 
                 // Add user accessory info - only include those that are specifically defined (not "None" or empty)
                 ACCESSORY_SLOTS.forEach(slot => {
