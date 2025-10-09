@@ -1076,6 +1076,80 @@ Only return the formatted sections with cleaned content.`;
             const currentChatId = context.chatId;
 
             // Generate a unique conversation instance ID using the hash function
+            // Check if there are AI messages in context.chat to ensure instance ID is based on actual conversation
+            const aiMessages = context.chat ? context.chat.filter(msg => !msg.is_user && !msg.is_system) : [];
+
+            if (aiMessages.length === 0) {
+                console.log('[OutfitTracker] No AI messages found in chat, using temporary instance ID and scheduling refresh');
+                // Use a temporary ID and schedule a refresh after a short delay
+                // This helps with the issue where outfit data doesn't load until swipe occurs
+                const tempInstanceId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                
+                if (botManager) {
+                    botManager.setCharacter(charName, context.characterId, currentChatId);
+                    botManager.setOutfitInstanceId(tempInstanceId);
+                    // Load the outfit data for the temporary instance
+                    await botManager.loadOutfit();
+                }
+                if (botPanel) {
+                    botPanel.updateCharacter(charName);
+                }
+
+                if (userManager) {
+                    // Set the outfit instance ID for user based on the same temporary ID
+                    userManager.setOutfitInstanceId(tempInstanceId);
+                    // Load the outfit data for the temporary instance
+                    await userManager.loadOutfit();
+                }
+                if (userPanel) {
+                    userPanel.updateHeader();
+                }
+
+                // Force render to show current values (which might be temporary)
+                if (botPanel.renderContent) {
+                    botPanel.renderContent();
+                }
+                if (userPanel.renderContent) {
+                    userPanel.renderContent();
+                }
+                
+                // Schedule a refresh after a short delay to get the proper first message
+                setTimeout(async () => {
+                    const refreshedContext = getContext();
+
+                    if (refreshedContext && refreshedContext.chat) {
+                        const refreshedAiMessages = refreshedContext.chat.filter(msg => !msg.is_user && !msg.is_system);
+                        
+                        if (refreshedAiMessages.length > 0) {
+                            console.log('[OutfitTracker] Found AI messages after delay, updating instance ID');
+                            const refreshedInstanceId = await generateConversationInstanceId(refreshedContext, refreshedContext.characterId);
+                            
+                            if (botManager) {
+                                botManager.setOutfitInstanceId(refreshedInstanceId);
+                                await botManager.loadOutfit();
+                            }
+                            if (userManager) {
+                                userManager.setOutfitInstanceId(refreshedInstanceId);
+                                await userManager.loadOutfit();
+                            }
+                            
+                            // Update panels to reflect the new instance
+                            if (botPanel.renderContent) {
+                                botPanel.renderContent();
+                            }
+                            if (userPanel.renderContent) {
+                                userPanel.renderContent();
+                            }
+                            
+                            // Update character-specific variables to ensure getglobalvar macros work properly
+                            updateCharacterVariables();
+                        }
+                    }
+                }, 500); // Wait 500ms for chat to potentially load fully
+                
+                return; // Exit early since we're handling this case separately
+            }
+            
             const instanceId = await generateConversationInstanceId(context, context.characterId);
 
             if (botManager) {
