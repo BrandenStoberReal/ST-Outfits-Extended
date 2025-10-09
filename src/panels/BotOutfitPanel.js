@@ -616,9 +616,6 @@ INSTRUCTIONS:
             this.domElement = this.createPanel();
         }
         
-        // Update the header to ensure it has the latest character name and instance ID
-        this.updateCharacter(this.outfitManager.character);
-        
         this.renderContent();
         this.domElement.style.display = 'flex';
         this.applyPanelColors(); // Apply colors after showing
