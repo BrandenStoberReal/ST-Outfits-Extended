@@ -133,8 +133,29 @@ export function setupEventListeners(botManager, userManager, botPanel, userPanel
                             }
                         }
 
-                        // Use the centralized update function for consistency
-                        await updateForCurrentCharacter();
+                        // For first message handling, specifically update the panels with the new outfit data
+                        // Ensure the bot manager has the character name properly set
+                        if (botManager && firstMessage.name) {
+                            botManager.setCharacter(firstMessage.name, context.characterId);
+                        }
+                        
+                        // Load the outfit data to ensure it's fresh
+                        if (botManager) {
+                            botManager.loadOutfit();
+                        }
+                        if (userManager) {
+                            userManager.loadOutfit();
+                        }
+                        
+                        // Update the panels directly to ensure they refresh with the new outfit data
+                        if (botPanel && botPanel.isVisible) {
+                            botPanel.updateCharacter(botManager.character);
+                            botPanel.renderContent();
+                        }
+                        if (userPanel && userPanel.isVisible) {
+                            userPanel.updateHeader();
+                            userPanel.renderContent();
+                        }
 
                         console.log(`[OutfitTracker] Created outfit instances after first message render: ${instanceId}`);
                     }
