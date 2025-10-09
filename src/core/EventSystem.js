@@ -65,10 +65,7 @@ class EventSystem {
     async handleCharacterMessageRendered(messageId, type) {
         if (type === 'first_message') {
             console.log(`[OutfitTracker] CHARACTER_MESSAGE_RENDERED (first_message) event fired with message ID: ${messageId}`);
-            // Add a small delay to ensure the chat context is updated before we access it
-            setTimeout(async () => {
-                await this.updateForCurrentCharacter();
-            }, 100);
+            await this.updateForCurrentCharacter();
         }
     }
 

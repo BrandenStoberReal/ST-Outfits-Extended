@@ -1179,7 +1179,7 @@ Only return the formatted sections with cleaned content.`;
         }
     }
     
-    async function updateForCurrentCharacter() {
+    async function updateForCurrentCharacter(isRetry = false) {
         try {
             const context = getContext();
             if (!context || !context.characters || context.characterId === undefined || context.characterId === null) {
@@ -1196,13 +1196,22 @@ Only return the formatted sections with cleaned content.`;
             }
 
             const charName = character.name || 'Unknown';
-            console.log(`[OutfitTracker] Updating character to: ${charName} (ID: ${context.characterId})`);
-
+            
             const aiMessages = context.chat ? context.chat.filter(msg => !msg.is_user && !msg.is_system) : [];
             let instanceId;
 
+            // If the chat is empty on the first attempt, it's likely a race condition on chat reset.
+            // Wait a moment and retry once to allow the chat context to populate.
+            if (aiMessages.length === 0 && !isRetry) {
+                console.log('[OutfitTracker] Chat is empty on initial update. Retrying in 250ms to resolve potential race condition.');
+                setTimeout(() => updateForCurrentCharacter(true), 250);
+                return; // Exit the current execution and let the retry handle it
+            }
+
+            console.log(`[OutfitTracker] Updating character to: ${charName} (ID: ${context.characterId})`);
+
             if (aiMessages.length === 0) {
-                console.log('[OutfitTracker] No AI messages found in chat, using temporary instance ID');
+                console.log('[OutfitTracker] No AI messages found in chat after retry, using temporary instance ID');
                 instanceId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
             } else {
                 const firstMessageText = aiMessages[0].mes || '';
