@@ -50,6 +50,8 @@ Users can save, load, and manage outfit presets for both character and user outf
 ### Context Injection
 The extension automatically injects current outfit information into the conversation context using the `generate_interceptor` function. Outfit information appears in the format:
 
+⚠️ **Important Scope Note:** The `<BOT>` placeholder replacement and global variable processing (`{{getglobalvar::*}}`) only works in conversation context and generated responses, NOT in character card fields (description, personality, scenario, etc.). For character card fields, SillyTavern's core macro system handles replacement, which processes `{{char}}`, `{{user}}`, etc., but not the extension's custom macros. Global variables will only work in character cards if SillyTavern's core macro system is configured to process them.
+
 ```
 **<BOT>'s Current Outfit**
 **Headwear:** Red Baseball Cap

@@ -164,7 +164,11 @@ If you need to manually reference outfit variables in your character card or pro
 
 Write `<BOT>` for character's outfit. Instead of `<BOT>` you can also write a character's own name such as `{{getglobalvar::Emma_headwear}}`. If you set Emma's headwear as "Red Baseball Hat" then if you write `{{getglobalvar::Emma_headwear}}` to somewhere, it will appear as "Red Baseball Hat". You can simply write `<BOT>` instead of "Emma" and it'll automatically replace `<BOT>` with name of current active character. These variable macros work just like how `{{user}}` or `{{char}}` macros work.
 
+⚠️ **Important:** The `<BOT>` placeholder in outfit display text is automatically replaced with the actual character's name during context injection. The global variable format `{{getglobalvar::<BOT>_slot}}` uses `<BOT>` as a placeholder that gets replaced with the character name during processing.
+
 💡 **User's variable names are always the same. They always use "User_" regardless of your persona name.**
+
+⚠️ **Important Scope Note:** The `<BOT>` placeholder replacement and global variable processing (`{{getglobalvar::*}}`) only works in conversation context and generated responses, NOT in character card fields (description, personality, scenario, etc.). For character card fields, SillyTavern's core macro system handles replacement, which processes `{{char}}`, `{{user}}`, etc., but not the extension's custom macros. Global variables will only work in character cards if SillyTavern's core macro system is configured to process them.
 
 Additionally, the system now features an intelligent macro resolution that automatically maps these familiar variable formats to context-specific outfit instances. This means that when you use `{{getglobalvar::<BOT>_headwear}}` or a character-specific variable like `{{getglobalvar::Emma_headwear}}`, the system automatically resolves it to the appropriate outfit instance for the current conversation context. This ensures that outfits are properly tracked and maintained across different scenarios and conversation threads.
 

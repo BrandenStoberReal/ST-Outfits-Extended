@@ -11,7 +11,13 @@ export class BotOutfitManager {
         this.chatId = null;
         this.currentValues = {};
         this.outfitInstanceId = null; // New: unique identifier for the outfit instance
+        this.updateCharacterVariablesCallback = null; // Callback to update character variables
         this.slots.forEach(slot => { this.currentValues[slot] = ''; });
+    }
+
+    // Method to set the callback for updating character variables
+    setUpdateCharacterVariablesCallback(callback) {
+        this.updateCharacterVariablesCallback = callback;
     }
 
     setCharacter(name, characterId = null, chatId = null) {
@@ -307,6 +313,11 @@ export class BotOutfitManager {
                 window.extension_settings.variables = { global: {} };
             }
             window.extension_settings.variables.global[name] = value;
+
+            // Call the callback if it's set to update character variables
+            if (this.updateCharacterVariablesCallback && typeof this.updateCharacterVariablesCallback === 'function') {
+                this.updateCharacterVariablesCallback();
+            }
         } catch (error) {
             console.error('[BotOutfitManager] Error setting global variable:', name, value, error);
         }

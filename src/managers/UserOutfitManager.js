@@ -6,11 +6,17 @@ export class UserOutfitManager {
         this.slots = slots;
         this.currentValues = {};
         this.outfitInstanceId = null; // New: unique identifier for the outfit instance
+        this.updateCharacterVariablesCallback = null; // Callback to update character variables
         // Initialize currentValues to ensure we have all slots defined
         this.slots.forEach(slot => {
             this.currentValues[slot] = 'None';
         });
         this.initializeOutfit();
+    }
+
+    // Method to set the callback for updating character variables
+    setUpdateCharacterVariablesCallback(callback) {
+        this.updateCharacterVariablesCallback = callback;
     }
 
     // New method: set outfit instance ID
@@ -117,6 +123,11 @@ export class UserOutfitManager {
                 window.extension_settings.variables = { global: {} };
             }
             window.extension_settings.variables.global[name] = value;
+
+            // Call the callback if it's set to update character variables
+            if (this.updateCharacterVariablesCallback && typeof this.updateCharacterVariablesCallback === 'function') {
+                this.updateCharacterVariablesCallback();
+            }
         } catch (error) {
             console.error('[UserOutfitManager] Error setting global variable:', name, value, error);
         }

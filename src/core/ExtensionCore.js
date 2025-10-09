@@ -127,6 +127,10 @@ export async function initializeExtension() {
     const userPanel = new UserOutfitPanel(userManager, CLOTHING_SLOTS, ACCESSORY_SLOTS, saveSettingsDebounced);
     const autoOutfitSystem = new AutoOutfitSystem(botManager);
 
+    // Set the callback to update character variables when outfit values change
+    botManager.setUpdateCharacterVariablesCallback(updateCharacterVariables);
+    userManager.setUpdateCharacterVariablesCallback(updateCharacterVariables);
+
     // Store panels globally for access in other functions
     window.botOutfitPanel = botPanel;
     window.userOutfitPanel = userPanel;
@@ -631,28 +635,63 @@ Only return the formatted sections with cleaned content.`;
                         slot = varName.substring(normalizedBotName.length + 1);
                     }
 
-                    // Try to get the value using both formats to ensure compatibility
-                    const originalFormatVarName = `${botCharacterName}_${slot}`;
-                    const normalizedFormatVarName = `${normalizedBotName}_${slot}`;
+                    // Check if the slot is a valid outfit slot
+                    if ([...CLOTHING_SLOTS, ...ACCESSORY_SLOTS].includes(slot)) {
+                        // Get the value from the current instance's variable
+                        // This ensures the macro returns the value from the current conversation instance
+                        const instanceVarName = botManager.getVarName(slot);
 
-                    // Check both possible formats in global variables
-                    if (window.extension_settings.variables.global &&
-                        window.extension_settings.variables.global[originalFormatVarName] !== undefined) {
-                        value = window.extension_settings.variables.global[originalFormatVarName];
-                    } else if (window.extension_settings.variables.global &&
-                        window.extension_settings.variables.global[normalizedFormatVarName] !== undefined) {
-                        value = window.extension_settings.variables.global[normalizedFormatVarName];
+                        if (window.extension_settings.variables.global &&
+                            window.extension_settings.variables.global[instanceVarName] !== undefined) {
+                            value = window.extension_settings.variables.global[instanceVarName];
+                        } else {
+                            // If not found in instance variable, return 'None'
+                            value = 'None';
+                        }
+                    } else {
+                        // If slot name is not valid, try the old format as a fallback
+                        const originalFormatVarName = `${botCharacterName}_${slot}`;
+                        const normalizedFormatVarName = `${normalizedBotName}_${slot}`;
+
+                        if (window.extension_settings.variables.global &&
+                            window.extension_settings.variables.global[originalFormatVarName] !== undefined) {
+                            value = window.extension_settings.variables.global[originalFormatVarName];
+                        } else if (window.extension_settings.variables.global &&
+                            window.extension_settings.variables.global[normalizedFormatVarName] !== undefined) {
+                            value = window.extension_settings.variables.global[normalizedFormatVarName];
+                        }
                     }
                 }
                 // Check if it's a user variable
-                else if (varName.startsWith('User_')) {
-                    try {
+                else if (varName.startsWith('User_') || varName.startsWith(`${userName}_`)) {
+                    // Extract slot name after the prefix
+                    let slot = '';
+
+                    if (varName.startsWith('User_')) {
+                        slot = varName.substring('User_'.length);
+                    } else if (varName.startsWith(`${userName}_`)) {
+                        slot = varName.substring(`${userName}_`.length);
+                    }
+
+                    // Check if the slot is a valid outfit slot
+                    if ([...CLOTHING_SLOTS, ...ACCESSORY_SLOTS].includes(slot)) {
+                        // Get the value from the user's current instance variable
+                        // This ensures the macro returns the value from the current conversation instance
+                        const instanceVarName = userManager.getVarName(slot);
+
+                        if (window.extension_settings.variables.global &&
+                            window.extension_settings.variables.global[instanceVarName] !== undefined) {
+                            value = window.extension_settings.variables.global[instanceVarName];
+                        } else {
+                            // If not found in instance variable, return 'None'
+                            value = 'None';
+                        }
+                    } else {
+                        // If slot name is not valid, try the old format as a fallback
                         if (window.extension_settings.variables.global &&
                             window.extension_settings.variables.global[`${varName}`] !== undefined) {
                             value = window.extension_settings.variables.global[`${varName}`];
                         }
-                    } catch (error) {
-                        console.warn('Could not access user outfit manager for macro replacement:', error);
                     }
                 }
 
@@ -664,6 +703,40 @@ Only return the formatted sections with cleaned content.`;
         }
 
         return processedText;
+    }
+
+    // Function to update character-specific global variables to point to current instance values
+    function updateCharacterVariables() {
+        if (!botManager || !userManager) {
+            console.warn('[OutfitTracker] Managers not available for updating character variables');
+            return;
+        }
+
+        // Update bot character-specific variables to point to current instance values
+        for (const slot of [...CLOTHING_SLOTS, ...ACCESSORY_SLOTS]) {
+            const instanceVarName = botManager.getVarName(slot);
+            const instanceValue = botManager.getGlobalVariable(instanceVarName);
+            
+            // Set the old-style character-specific variable that corresponds to the current instance
+            const characterSpecificVarName = `${botManager.character.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '')}_${slot}`;
+
+            if (window.extension_settings?.variables?.global) {
+                window.extension_settings.variables.global[characterSpecificVarName] = instanceValue;
+            }
+        }
+
+        // Update user character-specific variables to point to current instance values 
+        for (const slot of [...CLOTHING_SLOTS, ...ACCESSORY_SLOTS]) {
+            const instanceVarName = userManager.getVarName(slot);
+            const instanceValue = userManager.getGlobalVariable(instanceVarName);
+            
+            // Set the old-style user-specific variable that corresponds to the current instance
+            const userVarName = `User_${slot}`;
+
+            if (window.extension_settings?.variables?.global) {
+                window.extension_settings.variables.global[userVarName] = instanceValue;
+            }
+        }
     }
 
     // Function to update the panel styles with the saved color preferences
@@ -1081,6 +1154,9 @@ Only return the formatted sections with cleaned content.`;
                 if (userPanel.renderContent) {
                     userPanel.renderContent();
                 }
+                
+                // Update character-specific variables to ensure getglobalvar macros work properly
+                updateCharacterVariables();
             }, 150); // Slightly longer delay to ensure instance loading completes
 
             // Final attempt to ensure the values are properly populated
@@ -1098,6 +1174,9 @@ Only return the formatted sections with cleaned content.`;
                     userPanel.renderContent();
                 }
             }
+            
+            // Update character-specific variables to ensure getglobalvar macros work properly
+            updateCharacterVariables();
         } catch (error) {
             console.error('[OutfitTracker] Error updating for current character:', error);
         }
@@ -1286,13 +1365,14 @@ Only return the formatted sections with cleaned content.`;
     // Make the status indicators function available globally
     globalThis.getOutfitExtensionStatus = function() {
         const status = {
-            core: !!(window.botOutfitPanel && window.userOutfitPanel && window.extension_settings?.outfit_tracker),
+            core: Boolean(window.botOutfitPanel && window.userOutfitPanel && window.extension_settings?.outfit_tracker),
             autoOutfit: window.autoOutfitSystem ? window.autoOutfitSystem.getStatus() : null,
             botPanel: window.botOutfitPanel ? { isVisible: window.botOutfitPanel.isVisible } : null,
             userPanel: window.userOutfitPanel ? { isVisible: window.userOutfitPanel.isVisible } : null,
-            events: !!(window.getContext && window.getContext()?.eventSource),
-            managers: !!(window.botOutfitPanel?.outfitManager && window.userOutfitPanel?.outfitManager)
+            events: Boolean(window.getContext && window.getContext()?.eventSource),
+            managers: Boolean(window.botOutfitPanel?.outfitManager && window.userOutfitPanel?.outfitManager)
         };
+
         return status;
     };
     

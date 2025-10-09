@@ -180,6 +180,7 @@ export function setupEventListeners(botManager, userManager, botPanel, userPanel
     // Hook into the clear chat functionality by overriding the clearChat function
     // This will be called when the user clears the current chat
     const originalClearChat = window.clearChat;
+
     // Store the original function to be able to restore it later
     window._originalClearChat = originalClearChat;
 

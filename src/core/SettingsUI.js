@@ -251,6 +251,7 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem) {
             // Check if auto outfit system is available and enabled
             if (window.autoOutfitSystem) {
                 const autoOutfitStatus = window.autoOutfitSystem.getStatus();
+
                 if (autoOutfitStatus.enabled) {
                     $('#status-auto-outfit').removeClass('status-loading').addClass('status-active').text('Active');
                 } else {
