@@ -39,6 +39,37 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem) {
                 <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
             </div>
             <div class="inline-drawer-content">
+                <!-- Status Indicators Section -->
+                <div class="setting-group">
+                    <h4>Extension Status</h4>
+                    <div class="status-indicators">
+                        <div class="status-row">
+                            <span class="status-label">Core Extension:</span>
+                            <span id="status-core" class="status-indicator status-loading">Loading...</span>
+                        </div>
+                        <div class="status-row">
+                            <span class="status-label">Auto Outfit System:</span>
+                            <span id="status-auto-outfit" class="status-indicator status-loading">Loading...</span>
+                        </div>
+                        <div class="status-row">
+                            <span class="status-label">Character Panel:</span>
+                            <span id="status-bot-panel" class="status-indicator status-loading">Loading...</span>
+                        </div>
+                        <div class="status-row">
+                            <span class="status-label">User Panel:</span>
+                            <span id="status-user-panel" class="status-indicator status-loading">Loading...</span>
+                        </div>
+                        <div class="status-row">
+                            <span class="status-label">Event System:</span>
+                            <span id="status-events" class="status-indicator status-loading">Loading...</span>
+                        </div>
+                        <div class="status-row">
+                            <span class="status-label">Outfit Managers:</span>
+                            <span id="status-managers" class="status-indicator status-loading">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+                
                 <div class="setting-group">
                     <h4>General Settings</h4>
                     
@@ -150,6 +181,137 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem) {
 
     $('#extensions_settings').append(settingsHtml);
 
+    // Update status indicators after settings are loaded
+    function updateStatusIndicators() {
+        if (typeof window.getOutfitExtensionStatus === 'function') {
+            const status = window.getOutfitExtensionStatus();
+            
+            // Update core extension status
+            if (status.core) {
+                $('#status-core').removeClass('status-loading').addClass('status-active').text('Active');
+            } else {
+                $('#status-core').removeClass('status-loading').addClass('status-inactive').text('Inactive');
+            }
+            
+            // Update auto outfit system status
+            if (status.autoOutfit) {
+                if (status.autoOutfit.enabled) {
+                    $('#status-auto-outfit').removeClass('status-loading').addClass('status-active').text('Active');
+                } else {
+                    $('#status-auto-outfit').removeClass('status-loading').addClass('status-inactive').text('Inactive');
+                }
+            } else {
+                $('#status-auto-outfit').removeClass('status-loading').addClass('status-inactive').text('Not Available');
+            }
+            
+            // Update bot panel status
+            if (status.botPanel) {
+                if (status.botPanel.isVisible) {
+                    $('#status-bot-panel').removeClass('status-loading').addClass('status-active').text('Visible');
+                } else {
+                    $('#status-bot-panel').removeClass('status-loading').addClass('status-inactive').text('Hidden');
+                }
+            } else {
+                $('#status-bot-panel').removeClass('status-loading').addClass('status-inactive').text('Not Loaded');
+            }
+            
+            // Update user panel status
+            if (status.userPanel) {
+                if (status.userPanel.isVisible) {
+                    $('#status-user-panel').removeClass('status-loading').addClass('status-active').text('Visible');
+                } else {
+                    $('#status-user-panel').removeClass('status-loading').addClass('status-inactive').text('Hidden');
+                }
+            } else {
+                $('#status-user-panel').removeClass('status-loading').addClass('status-inactive').text('Not Loaded');
+            }
+            
+            // Update event system status
+            if (status.events) {
+                $('#status-events').removeClass('status-loading').addClass('status-active').text('Active');
+            } else {
+                $('#status-events').removeClass('status-loading').addClass('status-warning').text('Limited');
+            }
+            
+            // Update outfit managers status
+            if (status.managers) {
+                $('#status-managers').removeClass('status-loading').addClass('status-active').text('Active');
+            } else {
+                $('#status-managers').removeClass('status-loading').addClass('status-inactive').text('Inactive');
+            }
+        } else {
+            // Fallback to direct checking
+            // Check if the extension is properly loaded
+            if (window.botOutfitPanel && window.userOutfitPanel && window.extension_settings?.outfit_tracker) {
+                $('#status-core').removeClass('status-loading').addClass('status-active').text('Active');
+            } else {
+                $('#status-core').removeClass('status-loading').addClass('status-inactive').text('Inactive');
+            }
+            
+            // Check if auto outfit system is available and enabled
+            if (window.autoOutfitSystem) {
+                const autoOutfitStatus = window.autoOutfitSystem.getStatus();
+                if (autoOutfitStatus.enabled) {
+                    $('#status-auto-outfit').removeClass('status-loading').addClass('status-active').text('Active');
+                } else {
+                    $('#status-auto-outfit').removeClass('status-loading').addClass('status-inactive').text('Inactive');
+                }
+            } else {
+                $('#status-auto-outfit').removeClass('status-loading').addClass('status-inactive').text('Not Available');
+            }
+            
+            // Check bot panel status
+            if (window.botOutfitPanel) {
+                if (window.botOutfitPanel.isVisible) {
+                    $('#status-bot-panel').removeClass('status-loading').addClass('status-active').text('Visible');
+                } else {
+                    $('#status-bot-panel').removeClass('status-loading').addClass('status-inactive').text('Hidden');
+                }
+            } else {
+                $('#status-bot-panel').removeClass('status-loading').addClass('status-inactive').text('Not Loaded');
+            }
+            
+            // Check user panel status
+            if (window.userOutfitPanel) {
+                if (window.userOutfitPanel.isVisible) {
+                    $('#status-user-panel').removeClass('status-loading').addClass('status-active').text('Visible');
+                } else {
+                    $('#status-user-panel').removeClass('status-loading').addClass('status-inactive').text('Hidden');
+                }
+            } else {
+                $('#status-user-panel').removeClass('status-loading').addClass('status-inactive').text('Not Loaded');
+            }
+            
+            // Check event system status (check if event listeners were set up)
+            if (window.getContext && window.getContext()?.eventSource) {
+                $('#status-events').removeClass('status-loading').addClass('status-active').text('Active');
+            } else {
+                $('#status-events').removeClass('status-loading').addClass('status-warning').text('Limited');
+            }
+            
+            // Check outfit managers status
+            if (window.botOutfitPanel?.outfitManager && window.userOutfitPanel?.outfitManager) {
+                $('#status-managers').removeClass('status-loading').addClass('status-active').text('Active');
+            } else {
+                $('#status-managers').removeClass('status-loading').addClass('status-inactive').text('Inactive');
+            }
+        }
+    }
+
+    // Update status indicators when the drawer is opened
+    $('.inline-drawer-toggle').on('click', function() {
+        setTimeout(updateStatusIndicators, 100); // Small delay to ensure UI is fully loaded
+    });
+
+    // Function to update status indicators periodically
+    function periodicallyUpdateStatusIndicators() {
+        updateStatusIndicators();
+        setTimeout(periodicallyUpdateStatusIndicators, 10000); // Update every 10 seconds
+    }
+
+    // Start periodic updates after a short delay
+    setTimeout(periodicallyUpdateStatusIndicators, 2000);
+
     // Helper function to convert hex color to rgba
     function hexToRgba(hex, opacity) {
         // Expand shorthand form (e.g. "03F") to full form (e.g. "0033FF")
@@ -164,6 +326,58 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem) {
         return result ?
             `rgba(${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}, ${opacity})` :
             'rgba(0, 0, 0, 0.4)'; // default fallback
+    }
+
+    // Update status indicators when panel visibility changes
+    // We need to hook into panel show/hide methods to update status immediately
+    if (window.botOutfitPanel) {
+        const originalBotShow = window.botOutfitPanel.show;
+        const originalBotHide = window.botOutfitPanel.hide;
+
+        window.botOutfitPanel.show = function() {
+            originalBotShow.call(this);
+            // Update status after the panel is shown
+            setTimeout(() => {
+                if (window.botOutfitPanel) {
+                    $('#status-bot-panel').removeClass('status-loading status-inactive').addClass('status-active').text('Visible');
+                }
+            }, 100);
+        };
+
+        window.botOutfitPanel.hide = function() {
+            originalBotHide.call(this);
+            // Update status after the panel is hidden
+            setTimeout(() => {
+                if (window.botOutfitPanel) {
+                    $('#status-bot-panel').removeClass('status-loading status-active').addClass('status-inactive').text('Hidden');
+                }
+            }, 100);
+        };
+    }
+
+    if (window.userOutfitPanel) {
+        const originalUserShow = window.userOutfitPanel.show;
+        const originalUserHide = window.userOutfitPanel.hide;
+
+        window.userOutfitPanel.show = function() {
+            originalUserShow.call(this);
+            // Update status after the panel is shown
+            setTimeout(() => {
+                if (window.userOutfitPanel) {
+                    $('#status-user-panel').removeClass('status-loading status-inactive').addClass('status-active').text('Visible');
+                }
+            }, 100);
+        };
+
+        window.userOutfitPanel.hide = function() {
+            originalUserHide.call(this);
+            // Update status after the panel is hidden
+            setTimeout(() => {
+                if (window.userOutfitPanel) {
+                    $('#status-user-panel').removeClass('status-loading status-active').addClass('status-inactive').text('Hidden');
+                }
+            }, 100);
+        };
     }
 
     // Helper function to extract hex color from gradient string

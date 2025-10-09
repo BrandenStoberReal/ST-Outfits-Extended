@@ -724,6 +724,60 @@
     line-height: 1.4 !important;
 }
 
+/* Status indicators styling */
+.status-indicators {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.status-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    border-bottom: 1px solid #000000;
+}
+
+.status-label {
+    flex: 1;
+    color: #ffffff;
+    font-size: 0.95em;
+    font-weight: bold;
+    min-width: 130px;
+}
+
+.status-indicator {
+    flex: 1;
+    text-align: right;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: bold;
+    font-size: 0.9em;
+    min-width: 80px;
+    text-align: center;
+}
+
+.status-loading {
+    background: #333333;
+    color: #cccccc;
+}
+
+.status-active {
+    background: #2e7d32;
+    color: #ffffff;
+}
+
+.status-inactive {
+    background: #d32f2f;
+    color: #ffffff;
+}
+
+.status-warning {
+    background: #ff8f00;
+    color: #ffffff;
+}
+
 
 
 

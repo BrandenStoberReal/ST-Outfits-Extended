@@ -1283,6 +1283,19 @@ Only return the formatted sections with cleaned content.`;
     // Make the macro replacement function available globally
     globalThis.replaceOutfitMacrosInText = replaceOutfitMacrosInText;
     
+    // Make the status indicators function available globally
+    globalThis.getOutfitExtensionStatus = function() {
+        const status = {
+            core: !!(window.botOutfitPanel && window.userOutfitPanel && window.extension_settings?.outfit_tracker),
+            autoOutfit: window.autoOutfitSystem ? window.autoOutfitSystem.getStatus() : null,
+            botPanel: window.botOutfitPanel ? { isVisible: window.botOutfitPanel.isVisible } : null,
+            userPanel: window.userOutfitPanel ? { isVisible: window.userOutfitPanel.isVisible } : null,
+            events: !!(window.getContext && window.getContext()?.eventSource),
+            managers: !!(window.botOutfitPanel?.outfitManager && window.userOutfitPanel?.outfitManager)
+        };
+        return status;
+    };
+    
 }
 
 // Cleanup function to remove global variables and event listeners
