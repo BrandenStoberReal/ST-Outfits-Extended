@@ -123,49 +123,44 @@ export function setupEventListeners(botManager, userManager, botPanel, userPanel
                     }
 
                     if (botManager) {
-                        // Check if the instance ID is actually changing before updating
+                        // Always update the instance ID and load outfit data
+                        // even if it's the same, to ensure proper loading
                         const currentInstanceId = botManager.getOutfitInstanceId();
                         
-                        // Only update if the instance ID is actually changing
-                        if (currentInstanceId !== instanceId) {
-                            // Set the outfit instance ID based on the first message scenario
-                            botManager.setOutfitInstanceId(instanceId);
-                            console.log(`[OutfitTracker] Set bot outfit instance ID after swipe: ${instanceId} (was ${currentInstanceId})`);
+                        // Set the outfit instance ID based on the first message
+                        botManager.setOutfitInstanceId(instanceId);
+                        console.log(`[OutfitTracker] Set bot outfit instance ID after swipe: ${instanceId} (was ${currentInstanceId})`);
 
-                            // Load the outfit data for the new instance
-                            botManager.loadOutfit();
-                        } else {
-                            console.log(`[OutfitTracker] Bot instance ID unchanged, skipping update: ${instanceId}`);
-                        }
+                        // Load the outfit data for the new instance
+                        await botManager.loadOutfit();
                     }
 
                     if (userManager) {
-                        // Check if the instance ID is actually changing before updating
+                        // Always update the instance ID and load outfit data
+                        // even if it's the same, to ensure proper loading
                         const currentUserInstanceId = userManager.getOutfitInstanceId();
                         
-                        // Only update if the instance ID is actually changing
-                        if (currentUserInstanceId !== instanceId) {
-                            // Also set a corresponding instance ID for the user
-                            userManager.setOutfitInstanceId(instanceId);
-                            console.log(`[OutfitTracker] Set user outfit instance ID after swipe: ${instanceId} (was ${currentUserInstanceId})`);
+                        // Set the outfit instance ID for the user
+                        userManager.setOutfitInstanceId(instanceId);
+                        console.log(`[OutfitTracker] Set user outfit instance ID after swipe: ${instanceId} (was ${currentUserInstanceId})`);
 
-                            // Load the outfit data for the new instance
-                            userManager.loadOutfit();
-                        } else {
-                            console.log(`[OutfitTracker] User instance ID unchanged, skipping update: ${instanceId}`);
+                        // Load the outfit data for the new instance
+                        await userManager.loadOutfit();
+                    }
+
+                    // Use a small delay to ensure outfit data is fully loaded before updating UI
+                    setTimeout(() => {
+                        // Update the panels to reflect the new instance
+                        if (botPanel && botPanel.isVisible) {
+                            botPanel.updateCharacter(botManager.character);
+                            botPanel.renderContent();
                         }
-                    }
 
-                    // Update the panels to reflect the new instance
-                    if (botPanel && botPanel.isVisible) {
-                        botPanel.updateCharacter(botManager.character);
-                        botPanel.renderContent();
-                    }
-
-                    if (userPanel && userPanel.isVisible) {
-                        userPanel.updateHeader();
-                        userPanel.renderContent();
-                    }
+                        if (userPanel && userPanel.isVisible) {
+                            userPanel.updateHeader();
+                            userPanel.renderContent();
+                        }
+                    }, 50); // Small delay to ensure data is loaded before rendering
 
                     console.log(`[OutfitTracker] Created outfit instances after first message swipe: ${instanceId}`);
                 } else {

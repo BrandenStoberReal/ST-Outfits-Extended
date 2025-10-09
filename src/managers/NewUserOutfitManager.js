@@ -403,4 +403,38 @@ export class NewUserOutfitManager {
         }
         return Object.keys(presets);
     }
+    
+    // Load default outfit for the current instance
+    async loadDefaultOutfit(instanceId = null) {
+        // Use either the provided instanceId or the current one
+        const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
+        
+        const presets = safeGet(window, `extension_settings.outfit_tracker.presets.user.${actualInstanceId}`);
+
+        if (!presets || !presets['default']) {
+            return `[Outfit System] No default outfit set for user (instance: ${actualInstanceId}).`;
+        }
+        
+        const preset = presets['default'];
+        let changed = false;
+        
+        for (const [slot, value] of Object.entries(preset)) {
+            if (this.slots.includes(slot) && this.currentValues[slot] !== value) {
+                await this.setOutfitItem(slot, value);
+                changed = true;
+            }
+        }
+        
+        for (const slot of this.slots) {
+            if (!Object.prototype.hasOwnProperty.call(preset, slot) && this.currentValues[slot] !== 'None') {
+                await this.setOutfitItem(slot, 'None');
+                changed = true;
+            }
+        }
+        
+        if (changed) {
+            return `You changed into your default outfit (instance: ${actualInstanceId}).`;
+        }
+        return `You were already wearing your default outfit (instance: ${actualInstanceId}).`;
+    }
 }
