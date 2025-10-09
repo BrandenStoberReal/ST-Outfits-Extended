@@ -470,18 +470,24 @@ export class UserOutfitPanel {
             // Listen for chat-related events that might affect outfit data
             this.eventListeners.push(() => eventSource.on(event_types.CHAT_CHANGED, () => {
                 if (this.isVisible) {
+                    this.outfitManager.loadOutfit();
+                    this.updateHeader();
                     this.renderContent();
                 }
             }));
             
             this.eventListeners.push(() => eventSource.on(event_types.CHAT_ID_CHANGED, () => {
                 if (this.isVisible) {
+                    this.outfitManager.loadOutfit();
+                    this.updateHeader();
                     this.renderContent();
                 }
             }));
 
             this.eventListeners.push(() => eventSource.on(event_types.CHAT_CREATED, () => {
                 if (this.isVisible) {
+                    this.outfitManager.loadOutfit();
+                    this.updateHeader();
                     this.renderContent();
                 }
             }));
