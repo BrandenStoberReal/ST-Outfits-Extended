@@ -2,13 +2,14 @@ import { extensionEventBus, EXTENSION_EVENTS } from './events.js';
 
 
 class EventSystem {
-    constructor(botManager, userManager, botPanel, userPanel, autoOutfitSystem, updateForCurrentCharacter) {
+    constructor(botManager, userManager, botPanel, userPanel, autoOutfitSystem, updateForCurrentCharacter, converter) {
         this.botManager = botManager;
         this.userManager = userManager;
         this.botPanel = botPanel;
         this.userPanel = userPanel;
         this.autoOutfitSystem = autoOutfitSystem;
         this.updateForCurrentCharacter = updateForCurrentCharacter;
+        this.converter = converter;
         this.context = null;
 
         this.initialize();
@@ -123,7 +124,12 @@ class EventSystem {
                 if (mesId !== -1) {
                     const messageElement = document.querySelector(`.mes[mesid="${mesId}"] .mes_text`);
                     if (messageElement) {
-                        messageElement.textContent = processedMessage;
+                        if (this.converter) {
+                            const html = this.converter.makeHtml(processedMessage);
+                            messageElement.innerHTML = html;
+                        } else {
+                            messageElement.textContent = processedMessage;
+                        }
                     }
                 }
                 window.saveChatDebounced();
