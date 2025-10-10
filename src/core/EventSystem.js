@@ -122,6 +122,8 @@ class EventSystem {
                 // Save the chat and wait for it to complete, then reload the chat.
                 // This ensures the change is persisted and then correctly rendered.
                 await window.saveChatDebounced();
+                // Add a delay to ensure the debounced save has time to execute before reloading.
+                await new Promise(resolve => setTimeout(resolve, 1500));
                 window.reloadCurrentChat();
 
                 console.log('[OutfitTracker] Macros in the first message have been replaced.');
