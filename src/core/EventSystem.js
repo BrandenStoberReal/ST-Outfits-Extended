@@ -2,7 +2,7 @@ import { extensionEventBus, EXTENSION_EVENTS } from './events.js';
 
 
 class EventSystem {
-    constructor(botManager, userManager, botPanel, userPanel, autoOutfitSystem, updateForCurrentCharacter, converter) {
+    constructor(botManager, userManager, botPanel, userPanel, autoOutfitSystem, updateForCurrentCharacter, converter, processMacrosInFirstMessage) {
         this.botManager = botManager;
         this.userManager = userManager;
         this.botPanel = botPanel;
@@ -10,6 +10,7 @@ class EventSystem {
         this.autoOutfitSystem = autoOutfitSystem;
         this.updateForCurrentCharacter = updateForCurrentCharacter;
         this.converter = converter;
+        this.processMacrosInFirstMessage = processMacrosInFirstMessage; // Store the new function
         this.context = null;
 
         this.initialize();
@@ -83,7 +84,7 @@ class EventSystem {
         if (aiMessages.length === 1 && !data.is_user) {
             console.log('[OutfitTracker] First AI message received, processing macros and updating outfit instance.');
             await this.updateForCurrentCharacter();
-            await this.replaceMacrosInFirstMessage();
+            await this.processMacrosInFirstMessage(); // Call the new function
         }
     }
 
@@ -99,60 +100,11 @@ class EventSystem {
         if (aiMessages.length > 0 && chat[index] === aiMessages[0]) {
             console.log('[OutfitTracker] First message was swiped, processing macros and updating outfit instance.');
             await this.updateForCurrentCharacter();
-            await this.replaceMacrosInFirstMessage();
+            await this.processMacrosInFirstMessage(); // Call the new function
         }
     }
 
-    async replaceMacrosInFirstMessage() {
-        const chat = this.context.chat;
 
-        if (!chat || chat.length === 0) {
-            return;
-        }
-    
-        const aiMessages = chat.filter(msg => !msg.is_user && !msg.is_system);
-        const firstMessage = aiMessages.length > 0 ? aiMessages[0] : null;
-    
-        if (firstMessage && typeof globalThis.replaceOutfitMacrosInText === 'function') {
-            const originalMessage = firstMessage.mes;
-            const processedMessage = globalThis.replaceOutfitMacrosInText(originalMessage);
-    
-            if (originalMessage !== processedMessage) {
-                firstMessage.mes = processedMessage;
-                
-                // This is the editing approach.
-                // We will update the DOM directly.
-                const mesId = this.context.chat.indexOf(firstMessage);
-                if (mesId !== -1) {
-                    const messageElement = document.querySelector(`.mes[mesid="${mesId}"] .mes_text`);
-                    if (messageElement) {
-                        if (this.converter) {
-                            let html = this.converter.makeHtml(processedMessage);
-
-                            // Create a temporary div to parse the html
-                            const tempDiv = document.createElement('div');
-                            tempDiv.innerHTML = html;
-
-                            // Find all blockquote elements and style them
-                            const blockquotes = tempDiv.querySelectorAll('blockquote');
-                            blockquotes.forEach(bq => {
-                                bq.style.color = 'orange';
-                            });
-
-                            // Get the modified html
-                            const modifiedHtml = tempDiv.innerHTML;
-                            messageElement.innerHTML = modifiedHtml;
-                        } else {
-                            messageElement.textContent = processedMessage;
-                        }
-                    }
-                }
-                window.saveChatDebounced();
-
-                console.log('[OutfitTracker] Macros in the first message have been replaced.');
-            }
-        }
-    }
 
     handleContextUpdate() {
         this.updateForCurrentCharacter();
@@ -235,6 +187,6 @@ class EventSystem {
     }
 }
 
-export function setupEventListeners(...args) {
-    return new EventSystem(...args);
+export function setupEventListeners(botManager, userManager, botPanel, userPanel, autoOutfitSystem, updateForCurrentCharacter, converter, processMacrosInFirstMessage) {
+    return new EventSystem(botManager, userManager, botPanel, userPanel, autoOutfitSystem, updateForCurrentCharacter, converter, processMacrosInFirstMessage);
 }

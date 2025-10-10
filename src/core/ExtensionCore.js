@@ -771,7 +771,13 @@ Only return the formatted sections with cleaned content.`;
             if (aiMessages.length > 0) {
                 // If chat history exists, the instance ID is based on the first AI message in the chat.
                 // This correctly handles scenarios like message swiping where the first message changes.
-                firstMessageText = aiMessages[0].mes || '';
+                const firstMessage = aiMessages[0];
+
+                if (firstMessage.swipes && firstMessage.swipes.length > firstMessage.swipe_id) {
+                    firstMessageText = firstMessage.swipes[firstMessage.swipe_id] || '';
+                } else {
+                    firstMessageText = firstMessage.mes || '';
+                }
             } else if (character.first_message) {
                 // If chat history is empty (e.g., on chat reset), use the character's defined first_message.
                 // CRUCIALLY, we use the raw, un-expanded text to ensure the generated ID is stable and consistent,
@@ -984,8 +990,27 @@ Only return the formatted sections with cleaned content.`;
 
     registerOutfitCommands(importOutfitFromCharacterCard, botManager, userManager, autoOutfitSystem, CLOTHING_SLOTS, ACCESSORY_SLOTS);
 
+    // Function to process macros in the first message of a chat
+    function processMacrosInFirstMessage() {
+        try {
+            const context = getContext();
+
+            if (context && context.chat) {
+                const firstBotMessage = context.chat.find(message => !message.is_user && !message.is_system);
+
+                if (firstBotMessage) {
+                    // Replace macros in the first bot message
+                    firstBotMessage.mes = replaceOutfitMacrosInText(firstBotMessage.mes);
+                }
+            }
+        } catch (error) {
+            console.error('[OutfitTracker] Error processing macros in first message:', error);
+        }
+    }
+
     // Setup event listeners
-    setupEventListeners(botManager, userManager, botPanel, userPanel, autoOutfitSystem, updateForCurrentCharacter, converter);
+    setupEventListeners(botManager, userManager, botPanel, userPanel, autoOutfitSystem, updateForCurrentCharacter, converter, processMacrosInFirstMessage);
+
 
     // Create settings UI
     const { createSettingsUI } = await import('./SettingsUI.js');

@@ -26,53 +26,71 @@ class CustomMacroSystem {
     }
 
     /**
-     * Replace all custom macros in text with current outfit values
-     * @param {string} text - The text containing macros to replace
-     * @returns {string} - Text with macros replaced by current values
+     * Replace all custom macros in text with current outfit values.
+     * @param {string} text - The text containing macros to replace.
+     * @returns {string} - Text with macros replaced by current values.
      */
     replaceMacrosInText(text) {
         if (!text || typeof text !== 'string') {
             return text;
         }
 
-        let processedText = text;
-
         try {
-            // Find all macro matches
-            const matches = [...processedText.matchAll(this.macroPattern)];
-            
-            // Process matches in reverse order to avoid index shifting issues
-            for (let i = matches.length - 1; i >= 0; i--) {
-                const match = matches[i];
-                const fullMatch = match[0];
-                const macroType = match[1]; // 'char', 'bot', 'user', or specific character name
-                const slotName = match[2]; // The slot name like 'topwear'
-
-                let replacementValue = 'None';
-
-                // Handle different macro types
+            return text.replace(this.macroPattern, (fullMatch, macroType, slotName) => {
+                // Handle slot-based macros like {{char_topwear}}
                 if (slotName && this.allSlots.includes(slotName)) {
-                    // This is a slot macro like {{char_topwear}} or {{user_topwear}}
-                    if (macroType === 'char' || macroType === 'bot' || macroType === 'user') {
-                        replacementValue = this.getCurrentSlotValue(macroType, slotName);
-                    } else if (macroType) {
-                        // This is a character-specific macro like {{Emma_topwear}}
-                        // For now, treat character-specific macros similarly to 'char'
-                        replacementValue = this.getCurrentSlotValue('char', slotName);
-                    }
-                } else if (macroType === 'user') {
-                    // This is a simple {{user}} macro - get the current user name
-                    replacementValue = this.getCurrentUserName();
+                    if (macroType === 'char' || macroType === 'bot') {
+                        return this.getCurrentSlotValue('char', slotName);
+                    } else if (macroType === 'user') {
+                        return this.getCurrentSlotValue('user', slotName);
+                    } 
+                    // Handle character-specific macros like {{Amelia_topwear}}
+                    return this.getCurrentSlotValue('char', slotName, macroType);
+                    
                 }
 
-                // Replace the macro with the actual value
-                processedText = processedText.replace(new RegExp(escapeRegExp(fullMatch), 'g'), replacementValue);
-            }
+                // Handle simple macros like {{user}} and {{char}}
+                if (macroType === 'user') {
+                    return this.getCurrentUserName();
+                }
+                if (macroType === 'char' || macroType === 'bot') {
+                    return this.getCurrentCharName();
+                }
+
+                // If no match, return the original macro text
+                return fullMatch;
+            });
         } catch (error) {
             console.error('Error replacing custom macros in text:', error);
+            return text;
         }
+    }
 
-        return processedText;
+    /**
+     * Get the current character name for {{char}} macros.
+     * @returns {string} - The current character name.
+     */
+    getCurrentCharName() {
+        try {
+            const context = window.getContext ? window.getContext() : null;
+            
+            if (context && context.chat) {
+                const charMessages = context.chat.filter(message => !message.is_user && !message.is_system);
+
+                if (charMessages.length > 0) {
+                    const mostRecentCharMessage = charMessages[charMessages.length - 1];
+                    
+                    if (mostRecentCharMessage && mostRecentCharMessage.name) {
+                        return mostRecentCharMessage.name;
+                    }
+                }
+            }
+
+            return typeof window.name2 !== 'undefined' ? window.name2 : 'Character';
+        } catch (error) {
+            console.error('Error getting character name:', error);
+            return 'Character';
+        }
     }
 
     /**
@@ -81,14 +99,29 @@ class CustomMacroSystem {
      * @param {string} slotName - The slot name (e.g., 'topwear')
      * @returns {string} - The current value for the slot
      */
-    getCurrentSlotValue(macroType, slotName) {
+    getCurrentSlotValue(macroType, slotName, characterName = null) {
         if (!this.allSlots.includes(slotName)) {
             return 'None';
         }
 
         try {
             const state = outfitStore.getState();
-            const characterId = state.currentCharacterId;
+            let charId = state.currentCharacterId;
+
+            if (characterName) {
+                const context = window.getContext ? window.getContext() : null;
+
+                if (context && context.characters) {
+                    const character = context.characters.find(c => c.name === characterName);
+
+                    if (character) {
+                        charId = character.id;
+                    } else {
+                        return 'None'; // Character not found
+                    }
+                }
+            }
+
             const instanceId = state.currentOutfitInstanceId;
 
             if (!instanceId) {
@@ -96,8 +129,8 @@ class CustomMacroSystem {
             }
 
             if (macroType === 'char' || macroType === 'bot') {
-                if (characterId) {
-                    const outfitData = outfitStore.getBotOutfit(characterId, instanceId);
+                if (charId) {
+                    const outfitData = outfitStore.getBotOutfit(charId, instanceId);
 
                     return outfitData[slotName] || 'None';
                 }
