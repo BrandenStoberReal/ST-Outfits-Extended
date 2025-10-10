@@ -1,6 +1,6 @@
 // Import modules from SillyTavern core - using 6-level parent path
 import { getContext, extension_settings } from '../../../../../../scripts/extensions.js';
-import { saveSettingsDebounced, converter } from '../../../../../../script.js';
+import { saveSettingsDebounced } from '../../../../../../script.js';
 
 // Import the extractMacros, replaceAll, safeGet functions from StringProcessor
 import { extractMacros, replaceAll, safeGet } from '../utils/StringProcessor.js';
@@ -985,7 +985,7 @@ Only return the formatted sections with cleaned content.`;
     registerOutfitCommands(importOutfitFromCharacterCard, botManager, userManager, autoOutfitSystem, CLOTHING_SLOTS, ACCESSORY_SLOTS);
 
     // Setup event listeners
-    setupEventListeners(botManager, userManager, botPanel, userPanel, autoOutfitSystem, updateForCurrentCharacter, converter);
+    setupEventListeners(botManager, userManager, botPanel, userPanel, autoOutfitSystem, updateForCurrentCharacter);
 
     // Create settings UI
     const { createSettingsUI } = await import('./SettingsUI.js');

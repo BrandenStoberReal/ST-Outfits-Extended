@@ -2,14 +2,13 @@ import { extensionEventBus, EXTENSION_EVENTS } from './events.js';
 
 
 class EventSystem {
-    constructor(botManager, userManager, botPanel, userPanel, autoOutfitSystem, updateForCurrentCharacter, converter) {
+    constructor(botManager, userManager, botPanel, userPanel, autoOutfitSystem, updateForCurrentCharacter) {
         this.botManager = botManager;
         this.userManager = userManager;
         this.botPanel = botPanel;
         this.userPanel = userPanel;
         this.autoOutfitSystem = autoOutfitSystem;
         this.updateForCurrentCharacter = updateForCurrentCharacter;
-        this.converter = converter;
         this.context = null;
 
         this.initialize();
@@ -119,20 +118,12 @@ class EventSystem {
     
             if (originalMessage !== processedMessage) {
                 firstMessage.mes = processedMessage;
-                // After modifying the message, we need to tell SillyTavern to update the UI
-                const mesId = this.context.chat.indexOf(firstMessage);
-                if (mesId !== -1) {
-                    const messageElement = document.querySelector(`.mes[mesid="${mesId}"] .mes_text`);
-                    if (messageElement) {
-                        if (this.converter) {
-                            const html = this.converter.makeHtml(processedMessage);
-                            messageElement.innerHTML = html;
-                        } else {
-                            messageElement.textContent = processedMessage;
-                        }
-                    }
-                }
-                window.saveChatDebounced();
+                
+                // Save the chat and wait for it to complete, then reload the chat.
+                // This ensures the change is persisted and then correctly rendered.
+                await window.saveChatDebounced();
+                window.reloadCurrentChat();
+
                 console.log('[OutfitTracker] Macros in the first message have been replaced.');
             }
         }
