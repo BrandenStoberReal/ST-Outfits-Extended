@@ -2,13 +2,14 @@ import { extensionEventBus, EXTENSION_EVENTS } from './events.js';
 
 
 class EventSystem {
-    constructor(botManager, userManager, botPanel, userPanel, autoOutfitSystem, updateForCurrentCharacter) {
+    constructor(botManager, userManager, botPanel, userPanel, autoOutfitSystem, updateForCurrentCharacter, converter) {
         this.botManager = botManager;
         this.userManager = userManager;
         this.botPanel = botPanel;
         this.userPanel = userPanel;
         this.autoOutfitSystem = autoOutfitSystem;
         this.updateForCurrentCharacter = updateForCurrentCharacter;
+        this.converter = converter;
         this.context = null;
 
         this.initialize();
@@ -119,12 +120,34 @@ class EventSystem {
             if (originalMessage !== processedMessage) {
                 firstMessage.mes = processedMessage;
                 
-                // Save the chat and wait for it to complete, then reload the chat.
-                // This ensures the change is persisted and then correctly rendered.
-                await window.saveChatDebounced();
-                // Add a delay to ensure the debounced save has time to execute before reloading.
-                await new Promise(resolve => setTimeout(resolve, 1500));
-                window.reloadCurrentChat();
+                // This is the editing approach.
+                // We will update the DOM directly.
+                const mesId = this.context.chat.indexOf(firstMessage);
+                if (mesId !== -1) {
+                    const messageElement = document.querySelector(`.mes[mesid="${mesId}"] .mes_text`);
+                    if (messageElement) {
+                        if (this.converter) {
+                            let html = this.converter.makeHtml(processedMessage);
+
+                            // Create a temporary div to parse the html
+                            const tempDiv = document.createElement('div');
+                            tempDiv.innerHTML = html;
+
+                            // Find all blockquote elements and style them
+                            const blockquotes = tempDiv.querySelectorAll('blockquote');
+                            blockquotes.forEach(bq => {
+                                bq.style.color = 'orange';
+                            });
+
+                            // Get the modified html
+                            const modifiedHtml = tempDiv.innerHTML;
+                            messageElement.innerHTML = modifiedHtml;
+                        } else {
+                            messageElement.textContent = processedMessage;
+                        }
+                    }
+                }
+                window.saveChatDebounced();
 
                 console.log('[OutfitTracker] Macros in the first message have been replaced.');
             }
