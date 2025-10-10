@@ -12,16 +12,71 @@ function generateInstanceIdFromTextSimple(text) {
 }
 
 /**
+ * Normalizes text by removing outfit variable values to ensure consistent instance IDs
+ * even when dynamic variables change.
+ * @param {string} text - The input text.
+ * @returns {string} The normalized text with outfit variable values removed.
+ */
+function normalizeTextForInstanceId(text) {
+    if (!text || typeof text !== 'string') {
+        return text;
+    }
+    
+    let normalizedText = text;
+    
+    // Remove any outfit-related terms with their values
+    // This is a simple string replacement approach
+    const outfitPhrases = [
+        'wearing', 'wears', 'has on', 'is in', 'puts on', 'puts', 'removes', 'took off', 
+        'dons', 'donning', 'doffing', 'doffed', 'dressed in', 'clothed in', 'adorned with'
+    ];
+    
+    outfitPhrases.forEach(phrase => {
+        let startIndex = 0;
+
+        while (startIndex < normalizedText.length) {
+            const phraseIndex = normalizedText.toLowerCase().indexOf(phrase.toLowerCase(), startIndex);
+
+            if (phraseIndex === -1) {break;}
+            
+            // Find the end of this phrase's associated content (until punctuation or end of sentence)
+            let contentEnd = phraseIndex + phrase.length;
+
+            while (contentEnd < normalizedText.length && 
+                   !['.', '!', '?', ';', '\n', '\r', ','].includes(normalizedText[contentEnd])) {
+                contentEnd++;
+            }
+            
+            // Replace the entire phrase and its content with a normalized version
+            const replacement = `${phrase} [ITEM]`;
+
+            normalizedText = normalizedText.substring(0, phraseIndex) + 
+                            replacement + 
+                            normalizedText.substring(contentEnd);
+            
+            // Update start index to continue after the replacement
+            startIndex = phraseIndex + replacement.length;
+        }
+    });
+    
+    return normalizedText;
+}
+
+/**
  * Generates a unique instance ID from a given text.
  * Uses the Web Crypto API for a robust hash, with a fallback to a simple hash function.
+ * Normalizes the text to ensure consistent instance IDs even when dynamic variables change.
  * @param {string} text - The input text.
  * @returns {Promise<string>} A promise that resolves to the instance ID.
  */
 export async function generateInstanceIdFromText(text) {
+    // Normalize the text to remove dynamic outfit variable values
+    const normalizedText = normalizeTextForInstanceId(text);
+    
     if (typeof crypto !== 'undefined' && crypto.subtle) {
         try {
             const encoder = new TextEncoder();
-            const data = encoder.encode(text);
+            const data = encoder.encode(normalizedText);
             const hashBuffer = await crypto.subtle.digest('SHA-256', data);
             const hashArray = Array.from(new Uint8Array(hashBuffer));
             const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
@@ -29,9 +84,9 @@ export async function generateInstanceIdFromText(text) {
             return hashHex.substring(0, 16);
         } catch (err) {
             console.warn('Crypto API not available, falling back to simple hash for instance ID generation', err);
-            return generateInstanceIdFromTextSimple(text);
+            return generateInstanceIdFromTextSimple(normalizedText);
         }
     } else {
-        return generateInstanceIdFromTextSimple(text);
+        return generateInstanceIdFromTextSimple(normalizedText);
     }
 }
