@@ -1179,6 +1179,104 @@ Only return the formatted sections with cleaned content.`;
         }
     }
     
+    // Function to normalize the first message by replacing current outfit values with placeholders
+    // This ensures consistent instance IDs even when dynamic variables change
+    function normalizeMessageForInstanceId(message, characterId, characterName) {
+        if (!message || typeof message !== 'string') {
+            return message;
+        }
+        
+        let normalizedMessage = message;
+        
+        // Define all outfit slots
+        const CLOTHING_SLOTS = [
+            'headwear',
+            'topwear', 
+            'topunderwear',
+            'bottomwear',
+            'bottomunderwear', 
+            'footwear',
+            'footunderwear'
+        ];
+
+        const ACCESSORY_SLOTS = [
+            'head-accessory',
+            'ears-accessory', 
+            'eyes-accessory',
+            'mouth-accessory',
+            'neck-accessory',
+            'body-accessory',
+            'arms-accessory',
+            'hands-accessory',
+            'waist-accessory',
+            'bottom-accessory',
+            'legs-accessory',
+            'foot-accessory'
+        ];
+
+        const ALL_OUTFIT_SLOTS = [...CLOTHING_SLOTS, ...ACCESSORY_SLOTS];
+        
+        // Get all existing outfit instances for this character to find all possible values to normalize
+        if (outfitStore.getState().botInstances && outfitStore.getState().botInstances[characterId]) {
+            // Enumerate through all instances and their outfit values for this character
+            for (const [instanceId, instanceData] of Object.entries(outfitStore.getState().botInstances[characterId])) {
+                if (instanceData && instanceData.bot) {
+                    // For each slot, replace its current value in the message
+                    for (const [slot, value] of Object.entries(instanceData.bot)) {
+                        if (value && value !== 'None') {
+                            // Replace all instances of this value in the message with a placeholder
+                            normalizedMessage = normalizedMessage.split(value).join('[OUTFIT_VALUE]');
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Also check user outfit instances
+        if (outfitStore.getState().userInstances) {
+            // Enumerate through all user outfit instances and their values
+            for (const [instanceId, instanceData] of Object.entries(outfitStore.getState().userInstances)) {
+                if (instanceData) {
+                    // For each slot, replace its current value in the message
+                    for (const [slot, value] of Object.entries(instanceData)) {
+                        if (value && value !== 'None') {
+                            // Replace all instances of this value in the message with a placeholder
+                            normalizedMessage = normalizedMessage.split(value).join('[OUTFIT_VALUE]');
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Also check for any currently set variable values that might be outfit-related
+        if (window.extension_settings?.variables?.global) {
+            const globalVars = window.extension_settings.variables.global;
+            
+            // Look for any variable values that match outfit slot patterns and replace them
+            for (const [varName, varValue] of Object.entries(globalVars)) {
+                if (varValue && typeof varValue === 'string' && varValue !== 'None') {
+                    // Check if this variable name contains an outfit slot
+                    const containsOutfitSlot = ALL_OUTFIT_SLOTS.some(slot => {
+                        const slotUnderscore = slot.replace('-', '_');
+
+                        return varName.endsWith(`_${slotUnderscore}`) || 
+                               varName.includes(`_${slotUnderscore}_`) || 
+                               varName.startsWith(`OUTFIT_INST_${characterId}_`) && varName.endsWith(`_${slotUnderscore}`) ||
+                               varName.startsWith('User_') && varName.endsWith(`_${slotUnderscore}`) ||
+                               varName.startsWith('OUTFIT_INST_USER_') && varName.endsWith(`_${slotUnderscore}`);
+                    });
+                    
+                    if (containsOutfitSlot) {
+                        // Replace the value in the message with a placeholder
+                        normalizedMessage = normalizedMessage.split(varValue).join('[OUTFIT_VALUE]');
+                    }
+                }
+            }
+        }
+        
+        return normalizedMessage;
+    }
+    
     async function updateForCurrentCharacter() {
         try {
             const context = getContext();
@@ -1217,8 +1315,24 @@ Only return the formatted sections with cleaned content.`;
             }
 
             if (firstMessageText) {
-                const cleanedMessage = removeMacros(firstMessageText);
-                instanceId = await generateInstanceIdFromText(cleanedMessage);
+                // The core issue: we can't detect the original macros because they're already replaced
+                // by the time we see the message, so we need to normalize the message by removing
+                // current outfit variable values to ensure consistent instance IDs.
+                
+                // Normalize the message by replacing current outfit values with placeholders
+                const normalizedMessage = normalizeMessageForInstanceId(firstMessageText, context.characterId, charName);
+                
+                // Generate the instance ID based on the normalized message content
+                const currentMessageInstanceId = await generateInstanceIdFromText(normalizedMessage);
+                
+                // Check if we already have an outfit stored for this character and instance ID
+                if (outfitStore.getBotOutfit(context.characterId, currentMessageInstanceId)) {
+                    instanceId = currentMessageInstanceId;
+                } else {
+                    // If no exact match, we have a new conversation or a modified message.
+                    // Use the instance ID generated from the normalized content.
+                    instanceId = currentMessageInstanceId;
+                }
             } else {
                 // As a last resort (e.g., new character with no first message), create a temporary ID.
                 console.log('[OutfitTracker] No first message found in chat or character definition. Using temporary instance ID.');

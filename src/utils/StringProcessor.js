@@ -246,6 +246,50 @@ export function removeMacros(text) {
         return text;
     }
 
-    // Remove {{...}} and <...> patterns
-    return text.replace(/\{\{.*?}}/g, '').replace(/<.*?>/g, '');
+    let result = text;
+    
+    // Remove {{getglobalvar::...}} patterns iteratively without regex
+    let startIndex = 0;
+
+    while (startIndex < result.length) {
+        const openIdx = result.indexOf('{{', startIndex);
+
+        if (openIdx === -1) {break;}
+        
+        const closeIdx = result.indexOf('}}', openIdx);
+
+        if (closeIdx === -1) {break;}
+        
+        // Check if this is a getglobalvar pattern
+        const content = result.substring(openIdx + 2, closeIdx); // Get content between {{
+
+        if (content.startsWith('getglobalvar::')) {
+            // Remove the entire {{getglobalvar::...}} pattern
+            result = result.substring(0, openIdx) + result.substring(closeIdx + 2);
+            // Don't advance startIndex since we modified the string
+            startIndex = openIdx;
+        } else {
+            // Not a getglobalvar macro, continue to next
+            startIndex = closeIdx + 2;
+        }
+    }
+    
+    // Remove <...> patterns iteratively without regex
+    startIndex = 0;
+    while (startIndex < result.length) {
+        const openIdx = result.indexOf('<', startIndex);
+
+        if (openIdx === -1) {break;}
+        
+        const closeIdx = result.indexOf('>', openIdx);
+
+        if (closeIdx === -1) {break;}
+        
+        // Remove the entire <...> pattern
+        result = result.substring(0, openIdx) + result.substring(closeIdx + 1);
+        // Don't advance startIndex since we modified the string
+        startIndex = openIdx;
+    }
+    
+    return result;
 }
