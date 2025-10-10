@@ -547,63 +547,9 @@ Only return the formatted sections with cleaned content.`;
             return text;
         }
 
-        // Use the new macro processor to handle custom {{char_topwear}} style macros
-        let processedText = customMacroSystem.replaceMacrosInText(text);
-
-        try {
-            // Get the current bot character name
-            const context = getContext();
-            let botCharacterName = 'Unknown';
-
-            // Get the user's persona name using the current chat personas
-            let userName = 'User'; // Default fallback
-
-            // Get the current persona name from the active chat
-            if (context && context.chat) {
-                // Filter messages that are from the user to get their avatars
-                const userMessages = context.chat.filter(message => message.is_user);
-
-                if (userMessages.length > 0) {
-                    // Get the most recent user message to determine current persona
-                    const mostRecentUserMessage = userMessages[userMessages.length - 1];
-                    
-                    // Extract username using helper function
-                    userName = extractUserName(mostRecentUserMessage);
-                }
-            }
-
-            // Fallback: try the old power_user method if we still don't have a name
-            if (userName === 'User') {
-                if (typeof window.power_user !== 'undefined' && window.power_user && window.power_user.personas && typeof window.user_avatar !== 'undefined' && window.user_avatar) {
-                    // Get the name from the mapping of avatar to name
-                    const personaName = window.power_user.personas[window.user_avatar];
-
-                    // If we found the persona in the mapping, use it; otherwise fall back to name1 or 'User'
-                    userName = personaName || (typeof window.name1 !== 'undefined' ? window.name1 : 'User');
-                }
-                // Fallback to name1 if the above method doesn't work
-                else if (typeof window.name1 !== 'undefined' && window.name1) {
-                    userName = window.name1;
-                }
-            }
-
-            if (context && context.characters && context.characterId !== undefined && context.characterId !== null) {
-                const character = context.characters[context.characterId];
-
-                if (character && character.name) {
-                    botCharacterName = character.name;
-                }
-            }
-
-            // Replace all <BOT> instances with the actual character name
-            processedText = replaceAll(processedText, '<BOT>', botCharacterName);
-            // Replace {{user}} with the current active persona name
-            processedText = replaceAll(processedText, '{{user}}', userName);
-        } catch (error) {
-            console.error('Error replacing outfit macros in text:', error);
-        }
-
-        return processedText;
+        // Use the new macro processor to handle all outfit-related macros
+        // This includes {{char_slot}}, {{user_slot}}, {{user}}, and {{char}}
+        return customMacroSystem.replaceMacrosInText(text);
     }
     
 

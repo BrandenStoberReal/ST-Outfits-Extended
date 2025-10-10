@@ -8,7 +8,7 @@ import { outfitStore } from '../common/Store.js';
 class CustomMacroSystem {
     constructor() {
         // Define the macro pattern for {{char_slotname}} and {{user_slotname}}
-        this.macroPattern = /\{\{(\w+)(?:_(\w+(?:-\w+)*))?\}\}/g;
+        this.macroPattern = /\{\{(?:([^_]+)_)?(\w+(?:-\w+)*)\}\}/g;
         
         // Define valid slot names
         this.clothingSlots = [
@@ -36,17 +36,33 @@ class CustomMacroSystem {
         }
 
         try {
-            return text.replace(this.macroPattern, (fullMatch, macroType, slotName) => {
-                // Handle slot-based macros like {{char_topwear}}
-                if (slotName && this.allSlots.includes(slotName)) {
+            return text.replace(this.macroPattern, (fullMatch, part1, part2) => {
+                let macroType, slotName;
+
+                // Determine if we have a specific character macro or a generic one
+                if (part2 && this.allSlots.includes(part2)) {
+                    macroType = part1 || 'char';
+                    slotName = part2;
+                } else if (this.allSlots.includes(part1)) {
+                    macroType = 'char';
+                    slotName = part1;
+                } else if (part1 && !part2) {
+                    macroType = part1;
+                    slotName = null;
+                } else {
+                    return fullMatch; // No valid macro found
+                }
+
+                // Handle slot-based macros
+                if (slotName) {
                     if (macroType === 'char' || macroType === 'bot') {
                         return this.getCurrentSlotValue('char', slotName);
                     } else if (macroType === 'user') {
                         return this.getCurrentSlotValue('user', slotName);
-                    } 
-                    // Handle character-specific macros like {{Amelia_topwear}}
-                    return this.getCurrentSlotValue('char', slotName, macroType);
-                    
+                    } else {
+                        // Handle character-specific macros like {{Amelia_topwear}}
+                        return this.getCurrentSlotValue('char', slotName, macroType);
+                    }
                 }
 
                 // Handle simple macros like {{user}} and {{char}}
@@ -110,12 +126,10 @@ class CustomMacroSystem {
 
             if (characterName) {
                 const context = window.getContext ? window.getContext() : null;
-
                 if (context && context.characters) {
                     const character = context.characters.find(c => c.name === characterName);
-
                     if (character) {
-                        charId = character.id;
+                        charId = context.characters.indexOf(character);
                     } else {
                         return 'None'; // Character not found
                     }
@@ -199,10 +213,25 @@ class CustomMacroSystem {
         const matches = [...text.matchAll(this.macroPattern)];
 
         for (const match of matches) {
+            let type, slot;
+
+            if (match[2] && this.allSlots.includes(match[2])) {
+                type = match[1] || 'char';
+                slot = match[2];
+            } else if (this.allSlots.includes(match[1])) {
+                type = 'char';
+                slot = match[1];
+            } else if (match[1] && !match[2]) {
+                type = match[1];
+                slot = null;
+            } else {
+                continue; // No valid macro found
+            }
+
             macros.push({
                 fullMatch: match[0],
-                type: match[1],
-                slot: match[2],
+                type: type,
+                slot: slot,
                 startIndex: match.index
             });
         }
@@ -232,7 +261,7 @@ class CustomMacroSystem {
             );
 
             if (botHasClothing) {
-                outfitInfo += '\n**<BOT>\'s Current Outfit**\n';
+                outfitInfo += '\n**{{char}}\'s Current Outfit**\n';
 
                 // Add clothing info using custom macros
                 this.clothingSlots.forEach(slot => {
@@ -255,7 +284,7 @@ class CustomMacroSystem {
             );
 
             if (botHasAccessories) {
-                outfitInfo += '\n**<BOT>\'s Current Accessories**\n';
+                outfitInfo += '\n**{{char}}\'s Current Accessories**\n';
 
                 // Add accessory info using custom macros
                 this.accessorySlots.forEach(slot => {
