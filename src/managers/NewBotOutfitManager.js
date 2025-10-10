@@ -8,16 +8,13 @@ export class NewBotOutfitManager {
         this.characterId = null;
         this.currentValues = {};
         this.outfitInstanceId = null;
-        this.updateCharacterVariablesCallback = null; // Callback to update character variables
+
         this.slots.forEach(slot => { 
             this.currentValues[slot] = 'None'; 
         });
     }
 
-    // Method to set the callback for updating character variables
-    setUpdateCharacterVariablesCallback(callback) {
-        this.updateCharacterVariablesCallback = callback;
-    }
+
 
     setCharacter(name, characterId = null) {
         if (name === this.character) { return; }
@@ -68,12 +65,6 @@ export class NewBotOutfitManager {
             // Set all slots to 'None' as default
             this.slots.forEach(slot => {
                 this.currentValues[slot] = 'None';
-                // Set in extension settings as well for compatibility
-                const varName = this.getVarName(slot);
-
-                if (varName) {
-                    this.setGlobalVariable(varName, 'None');
-                }
             });
             return;
         }
@@ -86,22 +77,7 @@ export class NewBotOutfitManager {
             const value = instanceOutfits[slot] !== undefined ? instanceOutfits[slot] : 'None';
 
             this.currentValues[slot] = value;
-            
-            // Also update the global variable with the instance-specific name for compatibility
-            const varName = this.getVarName(slot);
-
-            if (varName) {
-                this.setGlobalVariable(varName, value);
-            }
         });
-        
-        // Update the global instance pointer
-        this.updateGlobalInstancePointer();
-        
-        // Trigger callback to update character variables
-        if (this.updateCharacterVariablesCallback && typeof this.updateCharacterVariablesCallback === 'function') {
-            this.updateCharacterVariablesCallback();
-        }
     }
     
     // Save outfit to the store
@@ -121,48 +97,11 @@ export class NewBotOutfitManager {
         // Save to the store
         outfitStore.setBotOutfit(this.characterId, this.outfitInstanceId, botOutfit);
         
-        // Also update the global variables for this instance for compatibility
-        for (const slot of this.slots) {
-            const varName = this.getVarName(slot);
-
-            if (varName) {
-                this.setGlobalVariable(varName, botOutfit[slot]);
-            }
-        }
-        
         // Persist settings to ensure data is saved for reload
         outfitStore.saveSettings();
     }
     
-    // Update the global pointer to the current instance
-    updateGlobalInstancePointer() {
-        if (!this.characterId || !this.outfitInstanceId) {
-            window.currentBotOutfitInstance = null;
-            return;
-        }
-        
-        const instanceOutfits = outfitStore.getBotOutfit(this.characterId, this.outfitInstanceId);
 
-        window.currentBotOutfitInstance = instanceOutfits;
-    }
-
-    setGlobalVariable(name, value) {
-        try {
-            // Store in extension settings which is where SillyTavern expects global variables
-            if (!window.extension_settings?.variables) {
-                if (!window.extension_settings) { window.extension_settings = {}; }
-                window.extension_settings.variables = { global: {} };
-            }
-            window.extension_settings.variables.global[name] = value;
-
-            // Call the callback if it's set to update character variables
-            if (this.updateCharacterVariablesCallback && typeof this.updateCharacterVariablesCallback === 'function') {
-                this.updateCharacterVariablesCallback();
-            }
-        } catch (error) {
-            console.error('[NewBotOutfitManager] Error setting global variable:', name, value, error);
-        }
-    }
 
     async setOutfitItem(slot, value) {
         // Validate inputs
@@ -199,16 +138,6 @@ export class NewBotOutfitManager {
             // Save the entire outfit to persist the change
             this.saveOutfit();
         }
-        
-        // Update the instance-specific global variable too
-        const varName = this.getVarName(slot);
-
-        if (varName) {
-            this.setGlobalVariable(varName, value);
-        }
-        
-        // Update the global instance pointer
-        this.updateGlobalInstancePointer();
 
         if (previousValue === 'None' && value !== 'None') {
             return `${this.character} put on ${value}.`;

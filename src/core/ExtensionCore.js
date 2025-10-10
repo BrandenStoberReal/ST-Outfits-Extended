@@ -3,8 +3,11 @@ import { getContext, extension_settings } from '../../../../../../scripts/extens
 import { saveSettingsDebounced } from '../../../../../../script.js';
 
 // Import the extractMacros, replaceAll, safeGet functions from StringProcessor
-import { extractMacros, replaceAll, safeGet, removeMacros } from '../utils/StringProcessor.js';
+import { extractMacros, replaceAll, safeGet } from '../utils/StringProcessor.js';
 import { LLMUtility } from '../utils/LLMUtility.js';
+
+// Import our new macro processor
+import { customMacroSystem } from '../utils/CustomMacroSystem.js';
 
 // Import our new store
 import { outfitStore } from '../common/Store.js';
@@ -131,9 +134,7 @@ export async function initializeExtension() {
     const userPanel = new UserOutfitPanel(userManager, CLOTHING_SLOTS, ACCESSORY_SLOTS, saveSettingsDebounced);
     const autoOutfitSystem = new AutoOutfitSystem(botManager);
 
-    // Set the callback to update character variables when outfit values change
-    botManager.setUpdateCharacterVariablesCallback(updateCharacterVariables);
-    userManager.setUpdateCharacterVariablesCallback(updateCharacterVariables);
+
 
     // Store panels globally for access in other functions
     window.botOutfitPanel = botPanel;
@@ -540,13 +541,14 @@ Only return the formatted sections with cleaned content.`;
 
 
 
-    // Define a function to replace outfit-related macros in text without using regex
+    // Define a function to replace outfit-related macros in text using the new custom macro system
     function replaceOutfitMacrosInText(text) {
         if (!text || typeof text !== 'string') {
             return text;
         }
 
-        let processedText = text;
+        // Use the new macro processor to handle custom {{char_topwear}} style macros
+        let processedText = customMacroSystem.replaceMacrosInText(text);
 
         try {
             // Get the current bot character name
@@ -597,116 +599,6 @@ Only return the formatted sections with cleaned content.`;
             processedText = replaceAll(processedText, '<BOT>', botCharacterName);
             // Replace {{user}} with the current active persona name
             processedText = replaceAll(processedText, '{{user}}', userName);
-
-            // Normalize character name for variable access (replace spaces with underscores)
-            const normalizedBotName = botCharacterName.replace(/\s+/g, '_');
-
-            // Extract all macros from the text using the same function as in AutoOutfitSystem
-            const macros = extractMacros(processedText);
-
-            // Process each macro and replace with actual values in reverse order
-            // to prevent index shifting issues when replacing
-            for (let i = macros.length - 1; i >= 0; i--) {
-                const { fullMacro, varName } = macros[i];
-
-                let value = 'None'; // Default value if not found
-
-                // Check for global outfit macro patterns like bot_currentOutfit_Headwear
-                if (varName.startsWith('bot_currentOutfit_') || varName.startsWith('user_currentOutfit_')) {
-                    // Extract the slot name from after the prefix
-                    let slotName = varName.substring(varName.lastIndexOf('_') + 1);
-
-                    // Normalize the slot name to match the internal format if necessary
-                    slotName = slotName.toLowerCase();
-                    // Check if it's a clothing slot or accessory slot
-                    if ([...CLOTHING_SLOTS, ...ACCESSORY_SLOTS].includes(slotName)) {
-                        if (varName.startsWith('bot_currentOutfit_')) {
-                            // Get the bot manager's current outfit value for this slot
-                            if (botManager && botManager.currentValues && botManager.currentValues[slotName] !== undefined) {
-                                value = botManager.currentValues[slotName];
-                            }
-                        } else if (varName.startsWith('user_currentOutfit_')) {
-                            // Get the user manager's current outfit value for this slot
-                            if (userManager && userManager.currentValues && userManager.currentValues[slotName] !== undefined) {
-                                value = userManager.currentValues[slotName];
-                            }
-                        }
-                    }
-                }
-                // Check if it's a character-specific variable (checking multiple possible formats)
-                else if (varName.startsWith(`${botCharacterName}_`) || varName.startsWith(`${normalizedBotName}_`)) {
-                    // Extract slot name after the character name prefix
-                    let slot;
-
-                    if (varName.startsWith(`${botCharacterName}_`)) {
-                        slot = varName.substring(botCharacterName.length + 1);
-                    } else if (varName.startsWith(`${normalizedBotName}_`)) {
-                        slot = varName.substring(normalizedBotName.length + 1);
-                    }
-
-                    // Check if the slot is a valid outfit slot
-                    if ([...CLOTHING_SLOTS, ...ACCESSORY_SLOTS].includes(slot)) {
-                        // Get the value from the current instance's variable
-                        // This ensures the macro returns the value from the current conversation instance
-                        const instanceVarName = botManager.getVarName(slot);
-
-                        if (window.extension_settings.variables.global &&
-                            window.extension_settings.variables.global[instanceVarName] !== undefined) {
-                            value = window.extension_settings.variables.global[instanceVarName];
-                        } else {
-                            // If not found in instance variable, return 'None'
-                            value = 'None';
-                        }
-                    } else {
-                        // If slot name is not valid, try the old format as a fallback
-                        const originalFormatVarName = `${botCharacterName}_${slot}`;
-                        const normalizedFormatVarName = `${normalizedBotName}_${slot}`;
-
-                        if (window.extension_settings.variables.global &&
-                            window.extension_settings.variables.global[originalFormatVarName] !== undefined) {
-                            value = window.extension_settings.variables.global[originalFormatVarName];
-                        } else if (window.extension_settings.variables.global &&
-                            window.extension_settings.variables.global[normalizedFormatVarName] !== undefined) {
-                            value = window.extension_settings.variables.global[normalizedFormatVarName];
-                        }
-                    }
-                }
-                // Check if it's a user variable
-                else if (varName.startsWith('User_') || varName.startsWith(`${userName}_`)) {
-                    // Extract slot name after the prefix
-                    let slot = '';
-
-                    if (varName.startsWith('User_')) {
-                        slot = varName.substring('User_'.length);
-                    } else if (varName.startsWith(`${userName}_`)) {
-                        slot = varName.substring(`${userName}_`.length);
-                    }
-
-                    // Check if the slot is a valid outfit slot
-                    if ([...CLOTHING_SLOTS, ...ACCESSORY_SLOTS].includes(slot)) {
-                        // Get the value from the user's current instance variable
-                        // This ensures the macro returns the value from the current conversation instance
-                        const instanceVarName = userManager.getVarName(slot);
-
-                        if (window.extension_settings.variables.global &&
-                            window.extension_settings.variables.global[instanceVarName] !== undefined) {
-                            value = window.extension_settings.variables.global[instanceVarName];
-                        } else {
-                            // If not found in instance variable, return 'None'
-                            value = 'None';
-                        }
-                    } else {
-                        // If slot name is not valid, try the old format as a fallback
-                        if (window.extension_settings.variables.global &&
-                            window.extension_settings.variables.global[`${varName}`] !== undefined) {
-                            value = window.extension_settings.variables.global[`${varName}`];
-                        }
-                    }
-                }
-
-                // Replace the macro with the actual value
-                processedText = replaceAll(processedText, fullMacro, value);
-            }
         } catch (error) {
             console.error('Error replacing outfit macros in text:', error);
         }
@@ -714,183 +606,6 @@ Only return the formatted sections with cleaned content.`;
         return processedText;
     }
     
-    // New global variable system for current instance data
-    // This system provides access to current instance outfit values without needing to know the specific instance ID
-    function setupNewGlobalVariableSystem() {
-        // This function sets up a new system for global variables that reference the current instance
-        if (!window.extension_settings?.variables?.global) {
-            window.extension_settings.variables = { global: {} };
-        }
-
-        // Define a function to get the current instance data for the bot
-        const getCurrentBotOutfit = () => {
-            if (!botManager || !botManager.outfitInstanceId) {
-                return {};
-            }
-            
-            return outfitStore.getBotOutfit(botManager.characterId || 'unknown', botManager.outfitInstanceId);
-        };
-
-        // Define a function to get the current instance data for the user
-        const getCurrentUserOutfit = () => {
-            if (!userManager || !userManager.outfitInstanceId) {
-                return {};
-            }
-            
-            return outfitStore.getUserOutfit(userManager.outfitInstanceId);
-        };
-
-        // Function to update global variables with current instance values
-        function updateGlobalInstanceVariables() {
-            const context = getContext();
-
-            if (!context) {return;}
-
-            // Get current character and user names
-            let botCharacterName = 'Unknown';
-            let userName = 'User';
-
-            if (context && context.characters && context.characterId !== undefined && context.characterId !== null) {
-                const character = context.characters[context.characterId];
-
-                if (character && character.name) {
-                    botCharacterName = character.name;
-                }
-            }
-
-            // Get user name from chat
-            if (context && context.chat) {
-                const userMessages = context.chat.filter(message => message.is_user);
-
-                if (userMessages.length > 0) {
-                    const mostRecentUserMessage = userMessages[userMessages.length - 1];
-
-                    userName = extractUserName(mostRecentUserMessage) || userName;
-                }
-            }
-
-            // Get current outfit data
-            const currentBotOutfit = getCurrentBotOutfit();
-            const currentUserOutfit = getCurrentUserOutfit();
-
-            // Update global variables for each slot with current instance values
-            [...CLOTHING_SLOTS, ...ACCESSORY_SLOTS].forEach(slot => {
-                // Bot slots: <characterName>_<slot>
-                const botVarName = `${botCharacterName.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '')}_${slot}`;
-
-                window.extension_settings.variables.global[botVarName] = currentBotOutfit[slot] || 'None';
-
-                // User slots: User_<slot>
-                const userVarName = `User_${slot}`;
-
-                window.extension_settings.variables.global[userVarName] = currentUserOutfit[slot] || 'None';
-
-                // Instance-specific variables (for compatibility with older system)
-                if (botManager.outfitInstanceId) {
-                    const botInstanceVarName = `OUTFIT_INST_${botManager.characterId || 'unknown'}_${botManager.outfitInstanceId}_${slot}`;
-
-                    window.extension_settings.variables.global[botInstanceVarName] = currentBotOutfit[slot] || 'None';
-                }
-
-                if (userManager.outfitInstanceId) {
-                    const userInstanceVarName = `OUTFIT_INST_USER_${userManager.outfitInstanceId}_${slot}`;
-
-                    window.extension_settings.variables.global[userInstanceVarName] = currentUserOutfit[slot] || 'None';
-                }
-            });
-
-            // Save settings to persist the variables
-            if (typeof window.saveSettingsDebounced === 'function') {
-                window.saveSettingsDebounced();
-            }
-        }
-
-        // Update global variables when outfit changes
-        botManager.setUpdateCharacterVariablesCallback(updateGlobalInstanceVariables);
-        userManager.setUpdateCharacterVariablesCallback(updateGlobalInstanceVariables);
-
-        // Update global variables initially and whenever context changes
-        updateGlobalInstanceVariables();
-
-        // Return the function so it can be called when needed
-        return updateGlobalInstanceVariables;
-    }
-
-    // Setup the new global variable system after managers are initialized
-    const updateGlobalInstanceVariables = setupNewGlobalVariableSystem();
-
-    // Function to update character-specific global variables to point to current instance values
-    function updateCharacterVariables() {
-        if (!botManager || !userManager) {
-            console.warn('[OutfitTracker] Managers not available for updating character variables');
-            return;
-        }
-
-        // Update bot character-specific variables to point to current instance values
-        for (const slot of [...CLOTHING_SLOTS, ...ACCESSORY_SLOTS]) {
-            // Use the new instance-based approach
-            const instanceValue = botManager.currentValues[slot];
-            
-            // Set the old-style character-specific variable that corresponds to the current instance
-            const characterSpecificVarName = `${botManager.character.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '')}_${slot}`;
-
-            if (window.extension_settings?.variables?.global) {
-                window.extension_settings.variables.global[characterSpecificVarName] = instanceValue;
-                
-                // Log the update for debugging
-                console.log(`[OutfitTracker] Updated character-specific variable ${characterSpecificVarName} to ${instanceValue}`);
-            }
-        }
-
-        // Update user character-specific variables to point to current instance values 
-        for (const slot of [...CLOTHING_SLOTS, ...ACCESSORY_SLOTS]) {
-            // Use the new instance-based approach
-            const instanceValue = userManager.currentValues[slot];
-            
-            // Set the old-style user-specific variable that corresponds to the current instance
-            const userVarName = `User_${slot}`;
-
-            if (window.extension_settings?.variables?.global) {
-                window.extension_settings.variables.global[userVarName] = instanceValue;
-                
-                // Log the update for debugging
-                console.log(`[OutfitTracker] Updated user-specific variable ${userVarName} to ${instanceValue}`);
-            }
-        }
-        
-        // Also update the global instance pointers for each slot
-        for (const slot of [...CLOTHING_SLOTS, ...ACCESSORY_SLOTS]) {
-            if (botManager.outfitInstanceId) {
-                const varName = `OUTFIT_INST_${botManager.characterId || 'unknown'}_${botManager.outfitInstanceId}_${slot}`;
-
-                window.extension_settings.variables.global[varName] = botManager.currentValues[slot];
-            }
-            
-            if (userManager.outfitInstanceId) {
-                const varName = `OUTFIT_INST_USER_${userManager.outfitInstanceId}_${slot}`;
-
-                window.extension_settings.variables.global[varName] = userManager.currentValues[slot];
-            }
-        }
-        
-        // Update the global instance pointers
-        if (botManager.outfitInstanceId) {
-            botManager.updateGlobalInstancePointer();
-        }
-        if (userManager.outfitInstanceId) {
-            userManager.updateGlobalInstancePointer();
-        }
-        
-        // Also update using the new global variable system
-        if (typeof updateGlobalInstanceVariables === 'function') {
-            updateGlobalInstanceVariables();
-        }
-        
-        // Ensure settings are saved after updating variables
-        if (typeof saveSettingsDebounced === 'function') {
-            saveSettingsDebounced();
-        }
-    }
 
     // Function to update the panel styles with the saved color preferences
     function updatePanelStyles() {
@@ -1023,160 +738,8 @@ Only return the formatted sections with cleaned content.`;
     // Add the function to global scope so it can be accessed by the settings UI
     globalThis.wipeAllOutfits = wipeAllOutfits;
 
-    // Format the outfit info according to the required format
     function getOutfitInfoString() {
-        try {
-            // Get current outfit data from the bot manager
-            const botOutfitData = botManager && botManager.getOutfitData ?
-                botManager.getOutfitData([...CLOTHING_SLOTS, ...ACCESSORY_SLOTS]) : [];
-            const userOutfitData = userManager && userManager.getOutfitData ?
-                userManager.getOutfitData([...CLOTHING_SLOTS, ...ACCESSORY_SLOTS]) : [];
-
-            let outfitInfo = '';
-
-            // Check if bot has any non-empty clothing items before adding the bot clothing section
-            const botHasClothing = botOutfitData.some(data =>
-                CLOTHING_SLOTS.includes(data.name) && data.value !== 'None' && data.value !== ''
-            );
-
-            if (botHasClothing) {
-                outfitInfo += '\n**<BOT>\'s Current Outfit**\n';
-
-                // Add clothing info
-                CLOTHING_SLOTS.forEach(slot => {
-                    const slotData = botOutfitData.find(data => data.name === slot);
-
-                    if (slotData) {
-                        const formattedSlotName = slot.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.charAt(0).toUpperCase()).replace('underwear', 'Underwear');
-                        // Use the instance-based variable name if an instance ID is set
-                        let varName;
-
-                        if (botManager.getOutfitInstanceId() && !botManager.getOutfitInstanceId().startsWith('temp_')) {
-                            varName = `OUTFIT_INST_${botManager.characterId || 'unknown'}_${botManager.getOutfitInstanceId}_${slotData.name}`;
-                        } else {
-                            // If using temporary ID or no ID, fall back to character-based naming
-                            const formattedCharacterName = (botManager.character || 'Unknown').replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
-
-                            varName = `${formattedCharacterName}_${slotData.name}`;
-                        }
-                        outfitInfo += `**${formattedSlotName}:** {{getglobalvar::${varName}}}
-`;
-                    }
-                });
-            }
-
-            // Check if bot has any non-empty accessories before adding the accessories section
-            const botHasAccessories = botOutfitData.some(data =>
-                ACCESSORY_SLOTS.includes(data.name) && data.value !== 'None' && data.value !== ''
-            );
-
-            if (botHasAccessories) {
-                outfitInfo += '\n**<BOT>\'s Current Accessories**\n';
-
-                // Add accessory info - only include those that are specifically defined (not "None" or empty)
-                ACCESSORY_SLOTS.forEach(slot => {
-                    const slotData = botOutfitData.find(data => data.name === slot);
-
-                    if (slotData && slotData.value !== 'None' && slotData.value !== '') {
-                        // Format the slot name properly
-                        let formattedSlotName = slot.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.charAt(0).toUpperCase())
-                            .replace(/-/g, ' ')
-                            .replace('accessory', 'Accessory');
-
-                        // Fix the typo: "Eyes Accessory" should come from "ears-accessory" according to the requirement example
-                        if (slot === 'ears-accessory') {
-                            formattedSlotName = 'Eyes Accessory';
-                        }
-                        
-                        // Use the instance-based variable name if an instance ID is set
-                        let varName;
-
-                        if (botManager.getOutfitInstanceId() && !botManager.getOutfitInstanceId().startsWith('temp_')) {
-                            varName = `OUTFIT_INST_${botManager.characterId || 'unknown'}_${botManager.getOutfitInstanceId}_${slotData.name}`;
-                        } else {
-                            // If using temporary ID or no ID, fall back to character-based naming
-                            const formattedCharacterName = (botManager.character || 'Unknown').replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
-
-                            varName = `${formattedCharacterName}_${slotData.name}`;
-                        }
-                        outfitInfo += `**${formattedSlotName}:** {{getglobalvar::${varName}}}
-`;
-                    }
-                });
-            }
-
-            // Check if user has any non-empty clothing items before adding the user clothing section
-            const userHasClothing = userOutfitData.some(data =>
-                CLOTHING_SLOTS.includes(data.name) && data.value !== 'None' && data.value !== ''
-            );
-
-            if (userHasClothing) {
-                outfitInfo += '\n**{{user}}\'s Current Outfit**\n';
-
-                // Add user clothing info
-                CLOTHING_SLOTS.forEach(slot => {
-                    const slotData = userOutfitData.find(data => data.name === slot);
-
-                    if (slotData) {
-                        const formattedSlotName = slot.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.charAt(0).toUpperCase()).replace('underwear', 'Underwear');
-                        // Use the instance-based variable name for user
-                        let varName;
-                        
-                        if (userManager.getOutfitInstanceId()) {
-                            varName = `OUTFIT_INST_USER_${userManager.outfitInstanceId}_${slotData.name}`;
-                        } else {
-                            varName = `OUTFIT_INST_USER_${slotData.name}`;
-                        }
-
-                        outfitInfo += `**${formattedSlotName}:** {{getglobalvar::${varName}}}
-`;
-                    }
-                });
-            }
-
-            // Check if user has any non-empty accessories before adding the accessories section
-            const userHasAccessories = userOutfitData.some(data =>
-                ACCESSORY_SLOTS.includes(data.name) && data.value !== 'None' && data.value !== ''
-            );
-
-            if (userHasAccessories) {
-                outfitInfo += '\n**{{user}}\'s Current Accessories**\n';
-
-                // Add user accessory info - only include those that are specifically defined (not "None" or empty)
-                ACCESSORY_SLOTS.forEach(slot => {
-                    const slotData = userOutfitData.find(data => data.name === slot);
-
-                    if (slotData && slotData.value !== 'None' && slotData.value !== '') {
-                        // Format the slot name properly
-                        let formattedSlotName = slot.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.charAt(0).toUpperCase())
-                            .replace(/-/g, ' ')
-                            .replace('accessory', 'Accessory');
-
-                        // Fix the typo: "Eyes Accessory" should come from "ears-accessory" according to the requirement example
-                        if (slot === 'ears-accessory') {
-                            formattedSlotName = 'Eyes Accessory';
-                        }
-                        
-                        // Use the instance-based variable name for user
-                        let varName;
-                        
-                        if (userManager.getOutfitInstanceId()) {
-                            varName = `OUTFIT_INST_USER_${userManager.outfitInstanceId}_${slotData.name}`;
-                        } else {
-                            varName = `OUTFIT_INST_USER_${slotData.name}`;
-                        }
-
-                        outfitInfo += `**${formattedSlotName}:** {{getglobalvar::${varName}}}
-`;
-                    }
-                });
-            }
-
-            return outfitInfo;
-        } catch (error) {
-            console.error('[OutfitTracker] Error generating outfit info string:', error);
-            return ''; // Return empty string if there's an error
-        }
+        return customMacroSystem.generateOutfitInfoString(botManager, userManager);
     }
     
     async function updateForCurrentCharacter() {
@@ -1217,8 +780,7 @@ Only return the formatted sections with cleaned content.`;
             }
 
             if (firstMessageText) {
-                const cleanedMessage = removeMacros(firstMessageText);
-                instanceId = await generateInstanceIdFromText(cleanedMessage);
+                instanceId = await generateInstanceIdFromText(firstMessageText);
             } else {
                 // As a last resort (e.g., new character with no first message), create a temporary ID.
                 console.log('[OutfitTracker] No first message found in chat or character definition. Using temporary instance ID.');
@@ -1237,7 +799,7 @@ Only return the formatted sections with cleaned content.`;
             botPanel.renderContent();
             userPanel.renderContent();
 
-            updateCharacterVariables();
+
         } catch (error) {
             console.error('[OutfitTracker] Error updating for current character:', error);
         }
