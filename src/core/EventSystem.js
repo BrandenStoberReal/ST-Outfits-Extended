@@ -119,7 +119,14 @@ class EventSystem {
             if (originalMessage !== processedMessage) {
                 firstMessage.mes = processedMessage;
                 // After modifying the message, we need to tell SillyTavern to update the UI
-                this.context.forceRefreshChat();
+                const mesId = this.context.chat.indexOf(firstMessage);
+                if (mesId !== -1) {
+                    const messageElement = document.querySelector(`.mes[mesid="${mesId}"] .mes_text`);
+                    if (messageElement) {
+                        messageElement.textContent = processedMessage;
+                    }
+                }
+                window.saveChatDebounced();
                 console.log('[OutfitTracker] Macros in the first message have been replaced.');
             }
         }
