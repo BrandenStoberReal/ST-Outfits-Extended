@@ -75,28 +75,53 @@ class EventSystem {
     }
 
     async handleMessageReceived(data) {
-        // Check if the message is the first AI message
-        const aiMessages = this.context.chat.filter(msg => !msg.is_user && !msg.is_system);
-
-        if (aiMessages.length === 0 && !data.is_user) {
-            console.log('[OutfitTracker] First AI message received, updating outfit instance');
+        const chat = this.context.chat;
+        const aiMessages = chat.filter(msg => !msg.is_user && !msg.is_system);
+    
+        // Check if this is the first AI message in a new chat
+        if (aiMessages.length === 1 && !data.is_user) {
+            console.log('[OutfitTracker] First AI message received, processing macros and updating outfit instance.');
             await this.updateForCurrentCharacter();
+            await this.replaceMacrosInFirstMessage();
         }
     }
 
     async handleMessageSwiped(index) {
         console.log(`[OutfitTracker] MESSAGE_SWIPED event fired with index: ${index}`);
         const chat = this.context.chat;
+    
+        if (!chat || index < 0 || index >= chat.length) { return; }
+    
+        // Check if the swiped message is the first message
+        const aiMessages = chat.filter(msg => !msg.is_user && !msg.is_system);
 
-        if (!chat || index < 0 || index >= chat.length) {return;}
+        if (aiMessages.length > 0 && chat[index] === aiMessages[0]) {
+            console.log('[OutfitTracker] First message was swiped, processing macros and updating outfit instance.');
+            await this.updateForCurrentCharacter();
+            await this.replaceMacrosInFirstMessage();
+        }
+    }
 
-        const swipedMessage = chat[index];
+    async replaceMacrosInFirstMessage() {
+        const chat = this.context.chat;
+
+        if (!chat || chat.length === 0) {
+            return;
+        }
+    
         const aiMessages = chat.filter(msg => !msg.is_user && !msg.is_system);
         const firstMessage = aiMessages.length > 0 ? aiMessages[0] : null;
-
-        if (firstMessage && swipedMessage.mes === firstMessage.mes) {
-            console.log('[OutfitTracker] First message was swiped, updating outfit instance');
-            await this.updateForCurrentCharacter();
+    
+        if (firstMessage && typeof globalThis.replaceOutfitMacrosInText === 'function') {
+            const originalMessage = firstMessage.mes;
+            const processedMessage = globalThis.replaceOutfitMacrosInText(originalMessage);
+    
+            if (originalMessage !== processedMessage) {
+                firstMessage.mes = processedMessage;
+                // After modifying the message, we need to tell SillyTavern to update the UI
+                this.context.forceRefreshChat();
+                console.log('[OutfitTracker] Macros in the first message have been replaced.');
+            }
         }
     }
 
