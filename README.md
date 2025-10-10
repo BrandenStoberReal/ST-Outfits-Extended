@@ -237,5 +237,12 @@ src/
 
 A path configuration module (`src/config/paths.js`) centralizes path definitions for improved maintainability.
 
+### Developer Documentation
+
+For more detailed information about the internal systems, please see the following documentation:
+
+-   **[Auto Outfit System](src/core/README.md)**: Describes the system for automatically detecting and applying outfit changes.
+-   **[Custom Macro System](src/utils/README.md)**: Explains the custom macro format and how it's used to inject outfit data.
+
 ## License
 Creative Commons Zero

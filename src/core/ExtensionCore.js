@@ -1085,6 +1085,22 @@ Only return the formatted sections with cleaned content.`;
 
     // Make the macro replacement function available globally
     globalThis.replaceOutfitMacrosInText = replaceOutfitMacrosInText;
+
+    // Monkey-patch the global replaceMacros function to include our custom macro replacement
+    if (window.replaceMacros) {
+        const originalReplaceMacros = window.replaceMacros;
+
+        window.replaceMacros = function(text, isSystem) {
+            // Call the original function first
+            let processedText = originalReplaceMacros(text, isSystem);
+
+            // Then, call our custom macro replacement function
+            processedText = replaceOutfitMacrosInText(processedText);
+            return processedText;
+        };
+        // Store the original function for cleanup
+        window._originalReplaceMacros = originalReplaceMacros;
+    }
     
     // Make the status indicators function available globally
     globalThis.getOutfitExtensionStatus = function() {
@@ -1140,6 +1156,12 @@ function cleanupExtension() {
             delete globalThis.outfitTrackerInterceptor;
         }
         
+        // Restore the original replaceMacros function if we monkey-patched it
+        if (window._originalReplaceMacros) {
+            window.replaceMacros = window._originalReplaceMacros;
+            delete window._originalReplaceMacros;
+        }
+
         if (globalThis.replaceOutfitMacrosInText) {
             delete globalThis.replaceOutfitMacrosInText;
         }
