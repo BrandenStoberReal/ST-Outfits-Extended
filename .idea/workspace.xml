@@ -4,25 +4,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="4d2c86ac-6680-44f0-b835-7640f35c4c4b" name="Changes" comment="&#10;Oh god">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/index.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/manifest.json" beforeDir="false" afterPath="$PROJECT_DIR$/manifest.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/common/Store.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/common/Store.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/common/shared.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/common/shared.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/config/paths.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/config/paths.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/core/AutoOutfitSystem.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/core/AutoOutfitSystem.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/core/EventSystem.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/core/EventSystem.js" afterDir="false" />
+    <list default="true" id="4d2c86ac-6680-44f0-b835-7640f35c4c4b" name="Changes" comment="Ship of theseus">
       <change beforePath="$PROJECT_DIR$/src/core/ExtensionCore.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/core/ExtensionCore.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/core/OutfitCommands.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/core/OutfitCommands.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/core/SettingsUI.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/core/SettingsUI.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/core/events.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/core/events.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/managers/NewBotOutfitManager.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/managers/NewBotOutfitManager.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/managers/NewUserOutfitManager.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/managers/NewUserOutfitManager.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/panels/BotOutfitPanel.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/panels/BotOutfitPanel.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/panels/UserOutfitPanel.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/panels/UserOutfitPanel.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/utils/LLMUtility.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/LLMUtility.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/utils/StringProcessor.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/StringProcessor.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/utils/utility.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/utility.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -127,15 +110,7 @@
       <workItem from="1759926617863" duration="14638000" />
       <workItem from="1759988645747" duration="306000" />
       <workItem from="1759989267325" duration="13324000" />
-      <workItem from="1760104088143" duration="3650000" />
-    </task>
-    <task id="LOCAL-00097" summary="Hotfix (30x)">
-      <option name="closed" value="true" />
-      <created>1759901250237</created>
-      <option name="number" value="00097" />
-      <option name="presentableId" value="LOCAL-00097" />
-      <option name="project" value="LOCAL" />
-      <updated>1759901250237</updated>
+      <workItem from="1760104088143" duration="4282000" />
     </task>
     <task id="LOCAL-00098" summary="Hotfix (30x)">
       <option name="closed" value="true" />
@@ -521,7 +496,15 @@
       <option name="project" value="LOCAL" />
       <updated>1760002424978</updated>
     </task>
-    <option name="localTasksCounter" value="146" />
+    <task id="LOCAL-00146" summary="Ship of theseus">
+      <option name="closed" value="true" />
+      <created>1760107752376</created>
+      <option name="number" value="00146" />
+      <option name="presentableId" value="LOCAL-00146" />
+      <option name="project" value="LOCAL" />
+      <updated>1760107752377</updated>
+    </task>
+    <option name="localTasksCounter" value="147" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -539,7 +522,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Hotfix (23x)" />
     <MESSAGE value="Hotfix (24x)" />
     <MESSAGE value="Hotfix (25x)" />
     <MESSAGE value="Hotfix (26x)" />
@@ -564,6 +546,7 @@
     <MESSAGE value="Its 4am oh god I have class" />
     <MESSAGE value="I am sorry professor callahan" />
     <MESSAGE value="&#10;Oh god" />
-    <option name="LAST_COMMIT_MESSAGE" value="&#10;Oh god" />
+    <MESSAGE value="Ship of theseus" />
+    <option name="LAST_COMMIT_MESSAGE" value="Ship of theseus" />
   </component>
 </project>

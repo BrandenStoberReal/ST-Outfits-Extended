@@ -1,31 +1,3 @@
-// Define outfit slots for normalization
-const CLOTHING_SLOTS = [
-    'headwear',
-    'topwear', 
-    'topunderwear',
-    'bottomwear',
-    'bottomunderwear', 
-    'footwear',
-    'footunderwear'
-];
-
-const ACCESSORY_SLOTS = [
-    'head-accessory',
-    'ears-accessory', 
-    'eyes-accessory',
-    'mouth-accessory',
-    'neck-accessory',
-    'body-accessory',
-    'arms-accessory',
-    'hands-accessory',
-    'waist-accessory',
-    'bottom-accessory',
-    'legs-accessory',
-    'foot-accessory'
-];
-
-const ALL_OUTFIT_SLOTS = [...CLOTHING_SLOTS, ...ACCESSORY_SLOTS];
-
 function generateInstanceIdFromTextSimple(text) {
     let hash = 0;
     const str = text.substring(0, 100);
