@@ -300,4 +300,72 @@ export class NewBotOutfitManager {
         }
         return Object.keys(presets);
     }
+    
+    // Load default outfit for the current instance
+    async loadDefaultOutfit(instanceId = null) {
+        // Use either the provided instanceId or the current one
+        const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
+        
+        const { bot: presets } = outfitStore.getPresets(this.character, actualInstanceId);
+
+        if (!presets || !presets['default']) {
+            return `[Outfit System] No default outfit set for ${this.character} (instance: ${actualInstanceId}).`;
+        }
+        
+        const preset = presets['default'];
+        let changed = false;
+        
+        for (const [slot, value] of Object.entries(preset)) {
+            if (this.slots.includes(slot) && this.currentValues[slot] !== value) {
+                await this.setOutfitItem(slot, value);
+                changed = true;
+            }
+        }
+        
+        for (const slot of this.slots) {
+            if (!Object.prototype.hasOwnProperty.call(preset, slot) && this.currentValues[slot] !== 'None') {
+                await this.setOutfitItem(slot, 'None');
+                changed = true;
+            }
+        }
+        
+        if (changed) {
+            return `${this.character} changed into the default outfit (instance: ${actualInstanceId}).`;
+        }
+        return `${this.character} was already wearing the default outfit (instance: ${actualInstanceId}).`;
+    }
+    
+    // Overwrite an existing preset with current outfit
+    overwritePreset(presetName, instanceId = null) {
+        // Validate the preset name
+        if (!presetName || typeof presetName !== 'string' || presetName.trim() === '') {
+            console.error('[NewBotOutfitManager] Invalid preset name provided');
+            return '[Outfit System] Invalid preset name provided.';
+        }
+        
+        // Use either the provided instanceId or the current one
+        const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
+        
+        // Check if preset exists
+        const { bot: presets } = outfitStore.getPresets(this.character, actualInstanceId);
+
+        if (!presets || !presets[presetName]) {
+            return `[Outfit System] Preset "${presetName}" does not exist for instance ${actualInstanceId}. Cannot overwrite.`;
+        }
+        
+        // Create preset data for all slots
+        const presetData = {};
+
+        this.slots.forEach(slot => {
+            presetData[slot] = this.currentValues[slot];
+        });
+        
+        // Save to the store (this will overwrite the existing preset)
+        outfitStore.savePreset(this.character, actualInstanceId, presetName, presetData, 'bot');
+        
+        if (outfitStore.getSetting('enableSysMessages')) {
+            return `Overwrote "${presetName}" outfit for ${this.character} (instance: ${actualInstanceId}).`;
+        }
+        return '';
+    }
 }

@@ -2,7 +2,7 @@
 import { replaceAll as replaceAllStr, extractCommands, extractMacros, safeGet } from '../utils/StringProcessor.js';
 
 // Import LLM utility for outfit generation
-import { LLMUtility } from '../utils/LLMUtility.js';
+import { generateOutfitFromLLM } from '../services/LLMService.js';
 
 
 
@@ -211,45 +211,33 @@ NOTES:
             throw new Error('No valid messages to process');
         }
 
-        // Replace macros in the system prompt before sending to the AI
         const processedSystemPrompt = this.replaceMacrosInPrompt(this.systemPrompt);
         const promptText = `${processedSystemPrompt}\n\nRecent Messages:\n${recentMessages}\n\nOutput:`;
-        
-        console.log('[AutoOutfitSystem] Generating outfit commands with unified LLM utility...');
-        
-        try {
-            const context = window.getContext();
 
-            if (!context) {
-                throw new Error('Context not available for LLM generation');
-            }
-            
-            const result = await LLMUtility.generateWithProfile(
-                promptText,
-                'You are an outfit change detection system. Analyze the conversation and output outfit commands when clothing changes occur.',
-                context,
-                this.connectionProfile
+        console.log('[AutoOutfitSystem] Generating outfit commands with LLMService...');
+
+        try {
+            const result = await generateOutfitFromLLM(
+                { prompt: promptText },
+                this
             );
-            
+
             console.log('[AutoOutfitSystem] Generated result:', result);
-            
+
             const commands = this.parseGeneratedText(result);
-            
+
             if (commands.length > 0) {
                 console.log(`[AutoOutfitSystem] Found ${commands.length} commands, processing...`);
                 await this.processCommandBatch(commands);
             } else {
                 console.log('[AutoOutfitSystem] No outfit commands found in response');
-                // Don't show a warning for empty responses when there are no changes - this is normal
                 if (result.trim() !== '[none]') {
-                    // Only show the warning if the LLM didn't return an explicit "no changes" message
                     this.showPopup('LLM could not parse any clothing data from the character.', 'warning');
                 }
             }
-            
         } catch (error) {
-            console.error('[AutoOutfitSystem] Generation failed, trying fallback:', error);
-            await this.tryFallbackGeneration(promptText);
+            console.error('[AutoOutfitSystem] Generation failed:', error);
+            throw error;
         }
     }
 
@@ -322,56 +310,6 @@ NOTES:
             console.error('[AutoOutfitSystem] Error in replaceMacrosInPrompt:', error);
             // Return the original prompt if processing fails
             return prompt;
-        }
-    }
-
-    async tryFallbackGeneration(originalPromptText) {
-        // Process the prompt to replace any macros (though they should already be replaced, 
-        // this is a safety measure)
-        const processedPromptText = this.replaceMacrosInPrompt(originalPromptText);
-        
-        try {
-            const context = window.getContext();
-            let result;
-            
-            if (context.generateQuietPrompt) {
-                result = await LLMUtility.generateWithProfile(
-                    processedPromptText,
-                    'You are an outfit change detection system. Analyze the conversation and output outfit commands when clothing changes occur.',
-                    context,
-                    this.connectionProfile
-                );
-            } else if (context.generateRaw) {
-                // Try standard generateRaw as a fallback if generateQuietPrompt is not available
-                result = await LLMUtility.generateWithProfile(
-                    processedPromptText,
-                    'You are an outfit change detection system. Analyze the conversation and output outfit commands when clothing changes occur.',
-                    context,
-                    this.connectionProfile
-                );
-            } else {
-                // If neither method is available, use the connection profile method
-                result = await this.generateWithProfile(processedPromptText);
-            }
-            
-            console.log('[AutoOutfitSystem] Fallback result:', result);
-            
-            const commands = this.parseGeneratedText(result);
-            
-            if (commands.length > 0) {
-                await this.processCommandBatch(commands);
-            } else {
-                console.log('[AutoOutfitSystem] No outfit commands found in fallback response');
-                // Don't show a warning for empty responses when there are no changes - this is normal
-                if (result.trim() !== '[none]') {
-                    // Only show the warning if the LLM didn't return an explicit "no changes" message
-                    this.showPopup('LLM could not parse any clothing data from the character.', 'warning');
-                }
-            }
-            
-        } catch (fallbackError) {
-            console.error('[AutoOutfitSystem] Fallback generation also failed:', fallbackError);
-            throw new Error(`Both generation methods failed: ${fallbackError.message}`);
         }
     }
 
@@ -722,21 +660,6 @@ NOTES:
 
     
 
-
-    // Helper method to generate with a specific connection profile
-    async generateWithProfile(originalPromptText) {
-        // Process the prompt to replace any macros (though they should already be replaced, 
-        // this is a safety measure)
-        const processedPromptText = this.replaceMacrosInPrompt(originalPromptText);
-        
-        // Use the unified LLM utility with profile
-        return LLMUtility.generateWithProfile(
-            processedPromptText,
-            'You are an outfit change detection system. Analyze the conversation and output outfit commands when clothing changes occur.',
-            window.getContext(),
-            this.connectionProfile
-        );
-    }
 
     // Helper function to extract username from message
     extractUserName(mostRecentUserMessage) {

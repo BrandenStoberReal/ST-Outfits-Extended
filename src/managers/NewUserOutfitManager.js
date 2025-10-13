@@ -313,4 +313,38 @@ export class NewUserOutfitManager {
         }
         return `You were already wearing your default outfit (instance: ${actualInstanceId}).`;
     }
+    
+    // Overwrite an existing preset with current outfit
+    overwritePreset(presetName, instanceId = null) {
+        // Validate the preset name
+        if (!presetName || typeof presetName !== 'string' || presetName.trim() === '') {
+            console.error('[NewUserOutfitManager] Invalid preset name provided');
+            return '[Outfit System] Invalid preset name provided.';
+        }
+        
+        // Use either the provided instanceId or the current one
+        const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
+        
+        // Check if preset exists
+        const { user: presets } = outfitStore.getPresets('user', actualInstanceId);
+
+        if (!presets || !presets[presetName]) {
+            return `[Outfit System] Preset "${presetName}" does not exist for user (instance: ${actualInstanceId}). Cannot overwrite.`;
+        }
+        
+        // Create preset data for all slots
+        const presetData = {};
+
+        this.slots.forEach(slot => {
+            presetData[slot] = this.currentValues[slot];
+        });
+        
+        // Save to the store (this will overwrite the existing preset)
+        outfitStore.savePreset('user', actualInstanceId, presetName, presetData, 'user');
+        
+        if (outfitStore.getSetting('enableSysMessages')) {
+            return `Overwrote your "${presetName}" outfit (instance: ${actualInstanceId}).`;
+        }
+        return '';
+    }
 }

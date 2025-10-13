@@ -59,10 +59,10 @@ class CustomMacroSystem {
                         return this.getCurrentSlotValue('char', slotName);
                     } else if (macroType === 'user') {
                         return this.getCurrentSlotValue('user', slotName);
-                    } else {
-                        // Handle character-specific macros like {{Amelia_topwear}}
-                        return this.getCurrentSlotValue('char', slotName, macroType);
-                    }
+                    } 
+                    // Handle character-specific macros like {{Amelia_topwear}}
+                    return this.getCurrentSlotValue('char', slotName, macroType);
+                    
                 }
 
                 // Handle simple macros like {{user}} and {{char}}
@@ -126,8 +126,10 @@ class CustomMacroSystem {
 
             if (characterName) {
                 const context = window.getContext ? window.getContext() : null;
+
                 if (context && context.characters) {
                     const character = context.characters.find(c => c.name === characterName);
+
                     if (character) {
                         charId = context.characters.indexOf(character);
                     } else {
@@ -357,10 +359,6 @@ class CustomMacroSystem {
     }
 }
 
-// Helper function to escape special regex characters
-function escapeRegExp(string) {
-    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
 
 // Create a single instance of the custom macro system
 const customMacroSystem = new CustomMacroSystem();

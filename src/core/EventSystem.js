@@ -2,15 +2,15 @@ import { extensionEventBus, EXTENSION_EVENTS } from './events.js';
 
 
 class EventSystem {
-    constructor(botManager, userManager, botPanel, userPanel, autoOutfitSystem, updateForCurrentCharacter, converter, processMacrosInFirstMessage) {
-        this.botManager = botManager;
-        this.userManager = userManager;
-        this.botPanel = botPanel;
-        this.userPanel = userPanel;
-        this.autoOutfitSystem = autoOutfitSystem;
-        this.updateForCurrentCharacter = updateForCurrentCharacter;
-        this.converter = converter;
-        this.processMacrosInFirstMessage = processMacrosInFirstMessage; // Store the new function
+    constructor(context) {
+        this.botManager = context.botManager;
+        this.userManager = context.userManager;
+        this.botPanel = context.botPanel;
+        this.userPanel = context.userPanel;
+        this.autoOutfitSystem = context.autoOutfitSystem;
+        this.updateForCurrentCharacter = context.updateForCurrentCharacter;
+        this.converter = context.converter;
+        this.processMacrosInFirstMessage = context.processMacrosInFirstMessage;
         this.context = null;
 
         this.initialize();
@@ -99,8 +99,12 @@ class EventSystem {
 
         if (aiMessages.length > 0 && chat[index] === aiMessages[0]) {
             console.log('[OutfitTracker] First message was swiped, processing macros and updating outfit instance.');
-            await this.updateForCurrentCharacter();
-            await this.processMacrosInFirstMessage(); // Call the new function
+            
+            // Use a timeout to ensure the swipe is fully processed before updating
+            setTimeout(async () => {
+                await this.updateForCurrentCharacter();
+                await this.processMacrosInFirstMessage();
+            }, 100); // 100ms delay
         }
     }
 
@@ -128,7 +132,16 @@ class EventSystem {
             }
 
             // Call the original function
-            return originalRestart.apply(this, args);
+            const result = originalRestart.apply(this, args);
+
+            // After the original function completes, update the character and macros
+            // Use a timeout to ensure the chat is cleared before we update
+            setTimeout(async () => {
+                await this.updateForCurrentCharacter();
+                await this.processMacrosInFirstMessage();
+            }, 100); // 100ms delay
+
+            return result;
         };
     }
 
@@ -159,6 +172,9 @@ class EventSystem {
                 this.userPanel.renderContent();
             }
             console.log('[OutfitTracker] Restored outfits after chat clear.');
+
+            // Process macros in the first message after restoring outfits
+            await this.processMacrosInFirstMessage();
         };
     }
 
@@ -187,6 +203,6 @@ class EventSystem {
     }
 }
 
-export function setupEventListeners(botManager, userManager, botPanel, userPanel, autoOutfitSystem, updateForCurrentCharacter, converter, processMacrosInFirstMessage) {
-    return new EventSystem(botManager, userManager, botPanel, userPanel, autoOutfitSystem, updateForCurrentCharacter, converter, processMacrosInFirstMessage);
+export function setupEventListeners(context) {
+    return new EventSystem(context);
 }
