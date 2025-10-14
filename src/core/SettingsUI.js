@@ -560,8 +560,8 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem) {
         return value.toUpperCase();
     }
 
-    // Update quote color when settings change
-    $(document).on('change input', '#quote-color-input', function() {
+    // Update quote color when text input changes (with validation)
+    $(document).on('change', '#quote-color-input', function() {
         let colorValue = $(this).val();
         
         // Validate and normalize the color value
@@ -582,31 +582,36 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem) {
         registerQuotesColorExtension(window.extension_settings[MODULE_NAME].quoteColor);
     });
 
-    // Update quote color picker when color picker changes
+    // Real-time update for both color picker and text input
     $('#quote-color-picker').on('input', function() {
         const hexColor = $(this).val();
 
-        $('#quote-color-input').val(hexColor);
-        window.extension_settings[MODULE_NAME].quoteColor = hexColor;
+        // Validate the hex color from the picker
+        const validatedColor = isValidHexColor(hexColor) ? normalizeHexColor(hexColor) : 
+            window.extension_settings[MODULE_NAME].quoteColor || '#FFA500';
+
+        $('#quote-color-input').val(validatedColor); // Update text input
+        $('#quote-color-picker').val(validatedColor); // Ensure picker shows valid color
+        window.extension_settings[MODULE_NAME].quoteColor = validatedColor;
         window.saveSettingsDebounced();
         registerQuotesColorExtension(window.extension_settings[MODULE_NAME].quoteColor);
     });
 
-    // Also handle the input event (to catch when users type)
+    // Real-time update when typing in text input (without validation until change)
     $('#quote-color-input').on('input', function() {
         let colorValue = $(this).val();
         
-        // Validate and normalize the color value
-        if (isValidHexColor(colorValue)) {
+        // Only validate if it looks like a potentially valid hex
+        if (colorValue && isValidHexColor(colorValue)) {
             colorValue = normalizeHexColor(colorValue);
             $('#quote-color-input').val(colorValue); // Update input to show normalized value
             $('#quote-color-picker').val(colorValue); // Keep color picker in sync
-        } else {
-            // If not a valid hex, don't update the global value yet
-            // Only update after validation in the change event
         }
+        // If invalid, we don't update the settings until the 'change' event
         
+        // Always update the settings value and save for real-time updates
         window.extension_settings[MODULE_NAME].quoteColor = colorValue;
+        window.saveSettingsDebounced();
         registerQuotesColorExtension(window.extension_settings[MODULE_NAME].quoteColor);
     });
 
