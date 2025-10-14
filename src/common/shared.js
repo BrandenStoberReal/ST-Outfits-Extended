@@ -117,9 +117,9 @@ export function resizeElement(element, storageKey) {
         const width = originalWidth + (e.pageX - originalMouseX);
         const height = originalHeight + (e.pageY - originalMouseY);
         
-        // Set minimum size to prevent the element from becoming too small
-        const newWidth = Math.max(200, width);
-        const newHeight = Math.max(150, height);
+        // Set minimum and maximum sizes to prevent the element from becoming too small or too large
+        const newWidth = Math.max(200, Math.min(width, window.innerWidth - 50));
+        const newHeight = Math.max(150, Math.min(height, window.innerHeight - 50));
         
         $element.css({
             width: newWidth + 'px',
