@@ -5,8 +5,10 @@ export function dragElementWithSave(element, storageKey) {
     
     // Try to restore previous position
     const savedPosition = localStorage.getItem(`outfitPanel_${storageKey}_position`);
+
     if (savedPosition) {
         const position = JSON.parse(savedPosition);
+
         $element.css({
             top: position.top + 'px',
             left: position.left + 'px'
@@ -21,6 +23,7 @@ export function dragElementWithSave(element, storageKey) {
 
     // Get the element that will be used for moving (header)
     const $header = $element.find('.panel-header, .dialogHeader, .title, h2, h3').first();
+
     if ($header.length) {
         // When the header is clicked, assign the event handlers
         $header.on('mousedown', dragMouseDown);
@@ -67,6 +70,7 @@ export function dragElementWithSave(element, storageKey) {
             top: parseInt($element.css('top')) || 0,
             left: parseInt($element.css('left')) || 0
         };
+
         localStorage.setItem(`outfitPanel_${storageKey}_position`, JSON.stringify(position));
     }
 }
@@ -78,8 +82,10 @@ export function resizeElement(element, storageKey) {
     
     // Try to restore previous size
     const savedSize = localStorage.getItem(`outfitPanel_${storageKey}_size`);
+
     if (savedSize) {
         const size = JSON.parse(savedSize);
+
         $element.css({
             width: size.width + 'px',
             height: size.height + 'px'
@@ -88,6 +94,7 @@ export function resizeElement(element, storageKey) {
 
     // Create a resize handle
     let $resizeHandle = $element.find('.resize-handle');
+
     if (!$resizeHandle.length) {
         $resizeHandle = $('<div class="resize-handle" style="position: absolute; right: 0; bottom: 0; width: 10px; height: 10px; cursor: se-resize; background: rgba(0,0,0,0.2);"></div>');
         $element.append($resizeHandle);
@@ -129,6 +136,7 @@ export function resizeElement(element, storageKey) {
             width: parseFloat($element.outerWidth()),
             height: parseFloat($element.outerHeight())
         };
+
         localStorage.setItem(`outfitPanel_${storageKey}_size`, JSON.stringify(size));
     }
 }
