@@ -560,59 +560,63 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem) {
         return value.toUpperCase();
     }
 
-    // Update quote color when text input changes (with validation)
-    $(document).on('change', '#quote-color-input', function() {
-        let colorValue = $(this).val();
-        
+    // Function to update quote color settings and refresh the extension
+    function updateQuoteColorSetting(colorValue) {
         // Validate and normalize the color value
         if (isValidHexColor(colorValue)) {
             colorValue = normalizeHexColor(colorValue);
             $('#quote-color-input').val(colorValue); // Update input to show normalized value
             $('#quote-color-picker').val(colorValue); // Keep color picker in sync
+            
+            // Update the settings and save
+            window.extension_settings[MODULE_NAME].quoteColor = colorValue;
+            window.saveSettingsDebounced();
+            
+            // Refresh the quotes color extension with the new color
+            registerQuotesColorExtension(window.extension_settings[MODULE_NAME].quoteColor);
         } else {
             // If not a valid hex, revert to the last valid value
-            colorValue = window.extension_settings[MODULE_NAME].quoteColor || '#FFA500';
-            $(this).val(colorValue); // Update input to show valid value
-            $('#quote-color-picker').val(colorValue); // Keep color picker in sync
+            const lastValidColor = window.extension_settings[MODULE_NAME].quoteColor || '#FFA500';
+
+            $('#quote-color-input').val(lastValidColor); // Update input to show valid value
+            $('#quote-color-picker').val(lastValidColor); // Keep color picker in sync
             toastr.warning('Please enter a valid hex color code (e.g., #FFA500)', 'Invalid Color Format');
         }
-        
-        window.extension_settings[MODULE_NAME].quoteColor = colorValue;
-        window.saveSettingsDebounced();
-        registerQuotesColorExtension(window.extension_settings[MODULE_NAME].quoteColor);
+    }
+
+    // Update quote color when text input changes
+    $(document).on('change', '#quote-color-input', function() {
+        const colorValue = $(this).val();
+
+        updateQuoteColorSetting(colorValue);
     });
 
-    // Real-time update for both color picker and text input
+    // Real-time update for color picker
     $('#quote-color-picker').on('input', function() {
-        const hexColor = $(this).val();
+        const colorValue = $(this).val();
 
-        // Validate the hex color from the picker
-        const validatedColor = isValidHexColor(hexColor) ? normalizeHexColor(hexColor) : 
-            window.extension_settings[MODULE_NAME].quoteColor || '#FFA500';
-
-        $('#quote-color-input').val(validatedColor); // Update text input
-        $('#quote-color-picker').val(validatedColor); // Ensure picker shows valid color
-        window.extension_settings[MODULE_NAME].quoteColor = validatedColor;
-        window.saveSettingsDebounced();
-        registerQuotesColorExtension(window.extension_settings[MODULE_NAME].quoteColor);
+        updateQuoteColorSetting(colorValue);
     });
 
-    // Real-time update when typing in text input (without validation until change)
+    // Real-time update when typing in text input (with immediate validation)
     $('#quote-color-input').on('input', function() {
-        let colorValue = $(this).val();
+        const colorValue = $(this).val();
         
         // Only validate if it looks like a potentially valid hex
         if (colorValue && isValidHexColor(colorValue)) {
-            colorValue = normalizeHexColor(colorValue);
-            $('#quote-color-input').val(colorValue); // Update input to show normalized value
-            $('#quote-color-picker').val(colorValue); // Keep color picker in sync
+            const normalizedColor = normalizeHexColor(colorValue);
+
+            $('#quote-color-input').val(normalizedColor); // Update input to show normalized value
+            $('#quote-color-picker').val(normalizedColor); // Keep color picker in sync
+            
+            // Update the settings and save immediately
+            window.extension_settings[MODULE_NAME].quoteColor = normalizedColor;
+            window.saveSettingsDebounced();
+            
+            // Refresh the quotes color extension with the new color
+            registerQuotesColorExtension(window.extension_settings[MODULE_NAME].quoteColor);
         }
-        // If invalid, we don't update the settings until the 'change' event
-        
-        // Always update the settings value and save for real-time updates
-        window.extension_settings[MODULE_NAME].quoteColor = colorValue;
-        window.saveSettingsDebounced();
-        registerQuotesColorExtension(window.extension_settings[MODULE_NAME].quoteColor);
+        // If invalid, we don't update the settings until the 'change' event (when user finishes typing)
     });
 
     // Update panel colors when settings change
