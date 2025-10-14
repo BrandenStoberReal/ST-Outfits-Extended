@@ -61,7 +61,8 @@ export async function updateForCurrentCharacter(botManager, userManager, botPane
         userManager.loadOutfit();
         
         if (userPanel) {
-            userPanel.updateCharacter('User');
+            // Update the header to reflect any changes (like new instance ID)
+            userPanel.updateHeader();
         }
         
         // Update the outfit store with current context
