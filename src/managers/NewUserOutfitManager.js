@@ -7,11 +7,30 @@ export class NewUserOutfitManager {
         this.slots = slots;
         this.currentValues = {};
         this.outfitInstanceId = null;
+        this.character = 'User'; // Default character name for user manager
 
         // Initialize currentValues to ensure we have all slots defined
         this.slots.forEach(slot => {
             this.currentValues[slot] = 'None';
         });
+    }
+
+
+    setCharacter(name, characterId = null) {
+        // For user manager, we don't really need characterId since user outfits are shared
+        // across conversations, but we'll keep the same interface as bot manager
+        if (name === this.character) { return; }
+        
+        // Validate the character name
+        if (!name || typeof name !== 'string') {
+            console.warn('[NewUserOutfitManager] Invalid character name provided, using "User"');
+            name = 'User';
+        }
+        
+        this.character = name;
+        
+        // Load outfit data for the user
+        this.loadOutfit();
     }
 
 

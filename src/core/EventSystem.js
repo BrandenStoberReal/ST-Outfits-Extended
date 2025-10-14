@@ -82,6 +82,46 @@ class EventSystem {
         // The update is now reliably handled by the MESSAGE_RECEIVED event.
     }
 
+    updateMessageElementContent(messageIndex, newContent) {
+        try {
+            // Get all message elements in the chat using the 'mes' CSS class
+            const messageElements = document.querySelectorAll('#chat .mes');
+            
+            // Access the specific message element by index (should match chat array order)
+            if (messageElements[messageIndex]) {
+                // Find the text content area within the message element (has class 'mes_text')
+                const textElement = messageElements[messageIndex].querySelector('.mes_text');
+
+                if (textElement) {
+                    // Use showdown library to render markdown content properly
+                    if (window.SillyTavern && window.SillyTavern.libs && window.SillyTavern.libs.showdown) {
+                        const converter = new window.SillyTavern.libs.showdown.Converter();
+                        // Ensure the output is safe by sanitizing it with DOMPurify if available
+                        let htmlContent = converter.makeHtml(newContent);
+                        
+                        // Sanitize the HTML content if DOMPurify is available
+                        if (window.SillyTavern.libs && window.SillyTavern.libs.DOMPurify) {
+                            htmlContent = window.SillyTavern.libs.DOMPurify.sanitize(htmlContent);
+                        }
+                        
+                        textElement.innerHTML = htmlContent;
+                    } else {
+                        // Fallback to direct innerHTML if showdown is not available
+                        textElement.innerHTML = newContent;
+                    }
+                    
+                    // Optionally trigger content updated event to ensure 
+                    // any other extensions or ST features are aware of the change
+                    textElement.dispatchEvent(new CustomEvent('contentUpdated', {
+                        detail: { content: newContent }
+                    }));
+                }
+            }
+        } catch (error) {
+            console.error('Error updating message DOM element:', error);
+        }
+    }
+
     async handleMessageReceived(data) {
         const chat = this.context.chat;
         const aiMessages = chat.filter(msg => !msg.is_user && !msg.is_system);
@@ -97,9 +137,22 @@ class EventSystem {
         // Process macro replacements in messages
         try {
             if (data && data.mes) {
+                // Store original content for comparison
+                const originalContent = data.mes;
+                
                 // Give a small delay to ensure outfit data is properly loaded
                 // before replacing macros in the message
                 data.mes = this.replaceOutfitMacrosInText(data.mes);
+                
+                // Update the DOM element if content changed
+                if (originalContent !== data.mes) {
+                    // Find the message index in the chat to update the DOM
+                    const messageIndex = this.context.chat.indexOf(data);
+
+                    if (messageIndex !== -1) {
+                        this.updateMessageElementContent(messageIndex, data.mes);
+                    }
+                }
             }
         } catch (error) {
             console.error('Error processing message for macros:', error);
@@ -146,9 +199,18 @@ class EventSystem {
             
             if (context && context.chat) {
                 // Process all messages in the chat, not just the first one
-                for (const message of context.chat) {
+                for (let i = 0; i < context.chat.length; i++) {
+                    const message = context.chat[i];
+
                     if (message.mes && typeof message.mes === 'string') {
+                        const originalMes = message.mes;
+
                         message.mes = this.replaceOutfitMacrosInText(message.mes);
+                        
+                        // Only update DOM if the content actually changed
+                        if (originalMes !== message.mes) {
+                            this.updateMessageElementContent(i, message.mes);
+                        }
                     }
                 }
             }

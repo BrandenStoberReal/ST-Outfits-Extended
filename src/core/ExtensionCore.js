@@ -214,9 +214,59 @@ export async function initializeExtension() {
                     userManager.setOutfitInstanceId(instanceId);
 
                     // Update the message data with macro replacements (after instance ID is set)
+                    const originalMes = firstBotMessage.mes;
                     const processedText = customMacroSystem.replaceMacrosInText(firstBotMessage.mes);
 
                     firstBotMessage.mes = processedText;
+                    
+                    // Update the DOM element if content changed
+                    if (originalMes !== processedText) {
+                        const messageIndex = context.chat.indexOf(firstBotMessage);
+
+                        if (messageIndex !== -1) {
+                            // Need to update the DOM element that displays this message
+                            // Using the same approach as in EventSystem
+                            setTimeout(() => {
+                                try {
+                                    // Get all message elements in the chat using the 'mes' CSS class
+                                    const messageElements = document.querySelectorAll('#chat .mes');
+                                    
+                                    // Access the specific message element by index (should match chat array order)
+                                    if (messageElements[messageIndex]) {
+                                        // Find the text content area within the message element (has class 'mes_text')
+                                        const textElement = messageElements[messageIndex].querySelector('.mes_text');
+
+                                        if (textElement) {
+                                            // Use showdown library to render markdown content properly
+                                            if (window.SillyTavern && window.SillyTavern.libs && window.SillyTavern.libs.showdown) {
+                                                const converter = new window.SillyTavern.libs.showdown.Converter();
+                                                // Ensure the output is safe by sanitizing it with DOMPurify if available
+                                                let htmlContent = converter.makeHtml(processedText);
+                                                
+                                                // Sanitize the HTML content if DOMPurify is available
+                                                if (window.SillyTavern.libs && window.SillyTavern.libs.DOMPurify) {
+                                                    htmlContent = window.SillyTavern.libs.DOMPurify.sanitize(htmlContent);
+                                                }
+                                                
+                                                textElement.innerHTML = htmlContent;
+                                            } else {
+                                                // Fallback to direct innerHTML if showdown is not available
+                                                textElement.innerHTML = processedText;
+                                            }
+                                            
+                                            // Optionally trigger content updated event to ensure 
+                                            // any other extensions or ST features are aware of the change
+                                            textElement.dispatchEvent(new CustomEvent('contentUpdated', {
+                                                detail: { content: processedText }
+                                            }));
+                                        }
+                                    }
+                                } catch (domError) {
+                                    console.error('Error updating first message DOM element:', domError);
+                                }
+                            }, 100); // Small delay to ensure DOM is ready
+                        }
+                    }
                 }
             }
         } catch (error) {
