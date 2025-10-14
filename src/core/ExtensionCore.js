@@ -14,8 +14,8 @@ import { generateInstanceIdFromText } from '../utils/utility.js';
 // Import store
 import { outfitStore } from '../common/Store.js';
 
-// Import Showdown extension for orange quotes
-import { registerQuotesOrangeExtension, markdownQuotesOrangeExt } from '../../scripts/showdown-quotes-orange.js';
+// Import Showdown extension for colored quotes
+import { registerQuotesColorExtension, markdownQuotesColorExt } from '../../scripts/showdown-quotes-orange.js';
 
 // Import managers and panels
 import { NewBotOutfitManager } from '../managers/NewBotOutfitManager.js';
@@ -243,7 +243,8 @@ export async function initializeExtension() {
                                             // Use showdown with SillyTavern's configurations if available
                                             if (window.SillyTavern && window.SillyTavern.libs && window.SillyTavern.libs.showdown) {
                                                 // Create a new converter with all required extensions
-                                                const extensions = [markdownQuotesOrangeExt()];
+                                                const quoteColor = extension_settings.outfit_tracker?.quoteColor || 'orange';
+                                                const extensions = [markdownQuotesColorExt(quoteColor)];
                                                 
                                                 // Add native SillyTavern extensions if available
                                                 if (window.SillyTavern.libs.showdown.extension) {
@@ -312,8 +313,10 @@ export async function initializeExtension() {
 
     createSettingsUI(AutoOutfitSystem, autoOutfitSystem);
 
-    // Register the showdown extension for orange quotes
-    registerQuotesOrangeExtension();
+    // Register the showdown extension for colored quotes (using color from settings with default orange)
+    const quoteColor = extension_settings.outfit_tracker?.quoteColor || 'orange';
+
+    registerQuotesColorExtension(quoteColor);
 
     updatePanelStyles();
 

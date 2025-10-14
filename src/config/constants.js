@@ -32,7 +32,8 @@ export const DEFAULT_SETTINGS = {
     enableSysMessages: true,
     autoOutfitSystem: false,
     autoOutfitPrompt: '',
-    autoOutfitConnectionProfile: null
+    autoOutfitConnectionProfile: null,
+    quoteColor: 'orange'
 };
 
 export const OUTFIT_COMMANDS = {

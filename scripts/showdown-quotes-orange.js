@@ -1,35 +1,35 @@
-// Showdown extension that highlights quoted text in orange
-export const markdownQuotesOrangeExt = () => {
+// Showdown extension that highlights quoted text in a user-specified color
+export const markdownQuotesColorExt = (color = 'orange') => {
     try {
         return [{
             type: 'output',
             filter: function (html) {
                 // Non-regex approach: find and replace quoted text with corresponding opening and closing characters
-                return processQuotesInHtml(html);
+                return processQuotesInHtml(html, color);
             }
         }];
     } catch (e) {
-        console.error('Error in Showdown-quotes-orange extension:', e);
+        console.error('Error in Showdown-quotes-color extension:', e);
         return [];
     }
 };
 
 // Helper function to process quotes without using regex
-function processQuotesInHtml(html) {
+function processQuotesInHtml(html, color) {
     // Process the HTML content to find quoted text with matching opening and closing quotes
-    // We'll look for matched pairs of quotes and apply orange styling to the content between them
+    // We'll look for matched pairs of quotes and apply styling in the specified color
     
     // Process double quotes
-    let result = processQuoteType(html, '"', '"');
+    let result = processQuoteType(html, '"', '"', color);
     // Then process HTML entity quotes
-    result = processQuoteType(result, '&quot;', '&quot;');
+    result = processQuoteType(result, '&quot;', '&quot;', color);
     // Then process single quotes on the result, but be more careful about them
-    result = processSingleQuotes(result);
+    result = processSingleQuotes(result, color);
     
     return result;
 }
 
-function processQuoteType(html, openQuote, closeQuote) {
+function processQuoteType(html, openQuote, closeQuote, color) {
     const result = [];
     let i = 0;
     let pos = 0;
@@ -72,8 +72,8 @@ function processQuoteType(html, openQuote, closeQuote) {
             continue;
         }
         
-        // Add the entire quoted text (including quotes) wrapped in orange span
-        result.push(`<span style="color: orange; font-weight: 500;">${html.substring(openIndex, closeIndex + closeQuote.length)}</span>`);
+        // Add the entire quoted text (including quotes) wrapped in colored span
+        result.push(`<span style="color: ${color}; font-weight: 500;">${html.substring(openIndex, closeIndex + closeQuote.length)}</span>`);
         
         // Move position past the closing quote
         pos = closeIndex + closeQuote.length;
@@ -84,7 +84,7 @@ function processQuoteType(html, openQuote, closeQuote) {
 }
 
 // Special function to handle single quotes more carefully (to avoid possessives)
-function processSingleQuotes(html) {
+function processSingleQuotes(html, color) {
     const result = [];
     let i = 0;
     let pos = 0;
@@ -118,8 +118,8 @@ function processSingleQuotes(html) {
             continue;
         }
         
-        // Add the entire quoted text (including quotes) wrapped in orange span
-        result.push(`<span style="color: orange; font-weight: 500;">${html.substring(openIndex, closeIndex + 1)}</span>`);
+        // Add the entire quoted text (including quotes) wrapped in colored span
+        result.push(`<span style="color: ${color}; font-weight: 500;">${html.substring(openIndex, closeIndex + 1)}</span>`);
         
         // Move position past the closing quote
         pos = closeIndex + 1;
@@ -199,11 +199,19 @@ function findMatchingSingleQuote(html, startPos) {
 }
 
 // Function to register the extension with the global converter
-export function registerQuotesOrangeExtension() {
+export function registerQuotesColorExtension(color = 'orange') {
     if (window.SillyTavern && window.SillyTavern.libs && window.SillyTavern.libs.showdown) {
         // Add the extension to the showdown library
-        window.SillyTavern.libs.showdown.extension('quotes-orange', markdownQuotesOrangeExt);
+        window.SillyTavern.libs.showdown.extension('quotes-color', () => markdownQuotesColorExt(color));
     } else {
-        console.warn('SillyTavern showdown library not found, quotes orange extension will not be registered');
+        console.warn('SillyTavern showdown library not found, quotes color extension will not be registered');
     }
 }
+
+// Make the function globally accessible so it can be called from the settings UI
+if (typeof window !== 'undefined' && window) {
+    window.registerQuotesColorExtension = registerQuotesColorExtension;
+}
+
+// Export the function with the original name for backward compatibility
+export const markdownQuotesOrangeExt = (color = 'orange') => markdownQuotesColorExt(color);

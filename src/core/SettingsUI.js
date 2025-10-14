@@ -90,6 +90,14 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem) {
                         <input type="checkbox" id="outfit-auto-user"
                                ${window.extension_settings[MODULE_NAME].autoOpenUser ? 'checked' : ''}>
                     </div>
+                    
+                    <div class="flex-container setting-row">
+                        <label for="quote-color-picker">Quote Highlight Color:</label>
+                        <div class="color-input-wrapper">
+                            <input type="color" id="quote-color-picker" value="${window.extension_settings[MODULE_NAME].quoteColor || 'orange'}">
+                            <input type="text" id="quote-color-input" value="${window.extension_settings[MODULE_NAME].quoteColor || 'orange'}">
+                        </div>
+                    </div>
                 </div>
                 
                 <!-- Panel Colors Customization Section -->
@@ -466,6 +474,19 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem) {
         }
     }
 
+    // Helper function to convert rgb/rgba to hex
+    function rgbToHex(rgb) {
+        const match = rgb.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*[\d.]+)?\)$/);
+
+        if (!match) {return '#000000';} // Return black for invalid input
+        
+        const r = parseInt(match[1]).toString(16).padStart(2, '0');
+        const g = parseInt(match[2]).toString(16).padStart(2, '0');
+        const b = parseInt(match[3]).toString(16).padStart(2, '0');
+        
+        return `#${r}${g}${b}`;
+    }
+
     // Function to update settings and apply colors
     function updateColorSettingsAndApply() {
         // Update the extension settings with new color values
@@ -501,6 +522,36 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem) {
         window.extension_settings[MODULE_NAME].autoOpenBot = $('#outfit-auto-bot').prop('checked');
         window.extension_settings[MODULE_NAME].autoOpenUser = $('#outfit-auto-user').prop('checked');
         window.saveSettingsDebounced();
+    });
+
+    // Update quote color when settings change
+    $(document).on('change input', '#quote-color-input', function() {
+        window.extension_settings[MODULE_NAME].quoteColor = $(this).val();
+        window.saveSettingsDebounced();
+        registerQuotesColorExtension(window.extension_settings[MODULE_NAME].quoteColor);
+    });
+
+    // Update quote color picker when color picker changes
+    $('#quote-color-picker').on('input', function() {
+        const hexColor = $(this).val();
+
+        $('#quote-color-input').val(hexColor);
+        window.extension_settings[MODULE_NAME].quoteColor = hexColor;
+        window.saveSettingsDebounced();
+        registerQuotesColorExtension(window.extension_settings[MODULE_NAME].quoteColor);
+    });
+
+    // Update quote color text when picker changes
+    $('#quote-color-input').on('input', function() {
+        const colorValue = $(this).val();
+
+        $('#quote-color-picker').val(colorValue.startsWith('#') ? colorValue : 
+            (colorValue.startsWith('rgb') ? 
+                rgbToHex(colorValue) : 
+                (colorValue === 'orange' ? '#ffa500' : '#000000')));
+        window.extension_settings[MODULE_NAME].quoteColor = colorValue;
+        window.saveSettingsDebounced();
+        registerQuotesColorExtension(window.extension_settings[MODULE_NAME].quoteColor);
     });
 
     // Update panel colors when settings change
