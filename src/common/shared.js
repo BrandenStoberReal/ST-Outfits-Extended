@@ -117,9 +117,14 @@ export function resizeElement(element, storageKey) {
         const width = originalWidth + (e.pageX - originalMouseX);
         const height = originalHeight + (e.pageY - originalMouseY);
         
+        // Calculate the maximum width and height based on current position to stay within viewport
+        const elementRect = $element[0].getBoundingClientRect();
+        const maxWidth = window.innerWidth - elementRect.left - 10; // 10px margin from right edge
+        const maxHeight = window.innerHeight - elementRect.top - 10; // 10px margin from bottom edge
+        
         // Set minimum and maximum sizes to prevent the element from becoming too small or too large
-        const newWidth = Math.max(200, Math.min(width, window.innerWidth - 50));
-        const newHeight = Math.max(150, Math.min(height, window.innerHeight - 50));
+        const newWidth = Math.max(200, Math.min(width, maxWidth));
+        const newHeight = Math.max(150, Math.min(height, maxHeight));
         
         $element.css({
             width: newWidth + 'px',
