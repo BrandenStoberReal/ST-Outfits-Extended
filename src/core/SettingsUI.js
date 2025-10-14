@@ -94,8 +94,8 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem) {
                     <div class="flex-container setting-row">
                         <label for="quote-color-picker">Quote Highlight Color:</label>
                         <div class="color-input-wrapper">
-                            <input type="color" id="quote-color-picker" value="${window.extension_settings[MODULE_NAME].quoteColor || 'orange'}">
-                            <input type="text" id="quote-color-input" value="${window.extension_settings[MODULE_NAME].quoteColor || 'orange'}">
+                            <input type="color" id="quote-color-picker" value="${window.extension_settings[MODULE_NAME].quoteColor || '#FFA500'}">
+                            <input type="text" id="quote-color-input" value="${window.extension_settings[MODULE_NAME].quoteColor || '#FFA500'}">
                         </div>
                     </div>
                 </div>
@@ -545,10 +545,7 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem) {
     $('#quote-color-input').on('input', function() {
         const colorValue = $(this).val();
 
-        $('#quote-color-picker').val(colorValue.startsWith('#') ? colorValue : 
-            (colorValue.startsWith('rgb') ? 
-                rgbToHex(colorValue) : 
-                (colorValue === 'orange' ? '#ffa500' : '#000000')));
+        $('#quote-color-picker').val(colorValue);
         window.extension_settings[MODULE_NAME].quoteColor = colorValue;
         window.saveSettingsDebounced();
         registerQuotesColorExtension(window.extension_settings[MODULE_NAME].quoteColor);

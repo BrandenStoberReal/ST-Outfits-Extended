@@ -1,5 +1,5 @@
 // Showdown extension that highlights quoted text in a user-specified color
-export const markdownQuotesColorExt = (color = 'orange') => {
+export const markdownQuotesColorExt = (color = '#FFA500') => {
     try {
         return [{
             type: 'output',
@@ -199,7 +199,7 @@ function findMatchingSingleQuote(html, startPos) {
 }
 
 // Function to register the extension with the global converter
-export function registerQuotesColorExtension(color = 'orange') {
+export function registerQuotesColorExtension(color = '#FFA500') {
     if (window.SillyTavern && window.SillyTavern.libs && window.SillyTavern.libs.showdown) {
         // Add the extension to the showdown library
         window.SillyTavern.libs.showdown.extension('quotes-color', () => markdownQuotesColorExt(color));
@@ -214,4 +214,4 @@ if (typeof window !== 'undefined' && window) {
 }
 
 // Export the function with the original name for backward compatibility
-export const markdownQuotesOrangeExt = (color = 'orange') => markdownQuotesColorExt(color);
+export const markdownQuotesOrangeExt = (color = '#FFA500') => markdownQuotesColorExt(color);

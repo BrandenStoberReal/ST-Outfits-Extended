@@ -33,7 +33,7 @@ export const DEFAULT_SETTINGS = {
     autoOutfitSystem: false,
     autoOutfitPrompt: '',
     autoOutfitConnectionProfile: null,
-    quoteColor: 'orange'
+    quoteColor: '#FFA500'
 };
 
 export const OUTFIT_COMMANDS = {

@@ -243,7 +243,7 @@ export async function initializeExtension() {
                                             // Use showdown with SillyTavern's configurations if available
                                             if (window.SillyTavern && window.SillyTavern.libs && window.SillyTavern.libs.showdown) {
                                                 // Create a new converter with all required extensions
-                                                const quoteColor = extension_settings.outfit_tracker?.quoteColor || 'orange';
+                                                const quoteColor = extension_settings.outfit_tracker?.quoteColor || '#FFA500';
                                                 const extensions = [markdownQuotesColorExt(quoteColor)];
                                                 
                                                 // Add native SillyTavern extensions if available
@@ -314,7 +314,7 @@ export async function initializeExtension() {
     createSettingsUI(AutoOutfitSystem, autoOutfitSystem);
 
     // Register the showdown extension for colored quotes (using color from settings with default orange)
-    const quoteColor = extension_settings.outfit_tracker?.quoteColor || 'orange';
+    const quoteColor = extension_settings.outfit_tracker?.quoteColor || '#FFA500';
 
     registerQuotesColorExtension(quoteColor);
 

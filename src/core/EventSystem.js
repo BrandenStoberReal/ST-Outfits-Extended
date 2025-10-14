@@ -97,7 +97,7 @@ class EventSystem {
                     // Use showdown with SillyTavern's configurations if available
                     if (window.SillyTavern && window.SillyTavern.libs && window.SillyTavern.libs.showdown) {
                         // Create a new converter with all required extensions
-                        const quoteColor = window.extension_settings.outfit_tracker?.quoteColor || 'orange';
+                        const quoteColor = window.extension_settings.outfit_tracker?.quoteColor || '#FFA500';
                         const extensions = [markdownQuotesOrangeExt(quoteColor)];
                         
                         // Add native SillyTavern extensions if available
