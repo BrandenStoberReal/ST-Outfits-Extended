@@ -14,6 +14,9 @@ import { generateInstanceIdFromText } from '../utils/utility.js';
 // Import store
 import { outfitStore } from '../common/Store.js';
 
+// Import Showdown extension for orange quotes
+import { registerQuotesOrangeExtension, markdownQuotesOrangeExt } from '../../scripts/showdown-quotes-orange.js';
+
 // Import managers and panels
 import { NewBotOutfitManager } from '../managers/NewBotOutfitManager.js';
 import { BotOutfitPanel } from '../panels/BotOutfitPanel.js';
@@ -237,10 +240,37 @@ export async function initializeExtension() {
                                         const textElement = messageElements[messageIndex].querySelector('.mes_text');
 
                                         if (textElement) {
-                                            // Use showdown library to render markdown content properly
+                                            // Use showdown with SillyTavern's configurations if available
                                             if (window.SillyTavern && window.SillyTavern.libs && window.SillyTavern.libs.showdown) {
-                                                const converter = new window.SillyTavern.libs.showdown.Converter();
-                                                // Ensure the output is safe by sanitizing it with DOMPurify if available
+                                                // Create a new converter with all required extensions
+                                                const extensions = [markdownQuotesOrangeExt()];
+                                                
+                                                // Add native SillyTavern extensions if available
+                                                if (window.SillyTavern.libs.showdown.extension) {
+                                                    // Try to get existing extensions
+                                                    try {
+                                                        // Get the markdown exclusion extension if available
+                                                        if (typeof window.SillyTavern.libs.showdown.extensions['markdown-exclusion'] !== 'undefined') {
+                                                            extensions.push(window.SillyTavern.libs.showdown.extensions['markdown-exclusion']);
+                                                        }
+                                                        // Get the underscore extension if available
+                                                        if (typeof window.SillyTavern.libs.showdown.extensions['markdown-underscore'] !== 'undefined') {
+                                                            extensions.push(window.SillyTavern.libs.showdown.extensions['markdown-underscore']);
+                                                        }
+                                                    } catch (e) {
+                                                        console.debug('Could not add some native SillyTavern extensions:', e);
+                                                    }
+                                                }
+                                                
+                                                const converter = new window.SillyTavern.libs.showdown.Converter({
+                                                    extensions: extensions
+                                                });
+
+                                                // Set options to match SillyTavern's formatting
+                                                converter.setFlavor('github');
+                                                converter.setOption('simpleLineBreaks', true);
+                                                converter.setOption('strikethrough', true);
+                                                
                                                 let htmlContent = converter.makeHtml(processedText);
                                                 
                                                 // Sanitize the HTML content if DOMPurify is available
@@ -281,6 +311,9 @@ export async function initializeExtension() {
     });
 
     createSettingsUI(AutoOutfitSystem, autoOutfitSystem);
+
+    // Register the showdown extension for orange quotes
+    registerQuotesOrangeExtension();
 
     updatePanelStyles();
 

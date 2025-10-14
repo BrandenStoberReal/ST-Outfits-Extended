@@ -1,5 +1,6 @@
 import { extensionEventBus, EXTENSION_EVENTS } from './events.js';
 import { customMacroSystem } from '../utils/CustomMacroSystem.js';
+import { markdownQuotesOrangeExt } from '../../scripts/showdown-quotes-orange.js';
 
 
 class EventSystem {
@@ -93,10 +94,37 @@ class EventSystem {
                 const textElement = messageElements[messageIndex].querySelector('.mes_text');
 
                 if (textElement) {
-                    // Use showdown library to render markdown content properly
+                    // Use showdown with SillyTavern's configurations if available
                     if (window.SillyTavern && window.SillyTavern.libs && window.SillyTavern.libs.showdown) {
-                        const converter = new window.SillyTavern.libs.showdown.Converter();
-                        // Ensure the output is safe by sanitizing it with DOMPurify if available
+                        // Create a new converter with all required extensions
+                        const extensions = [markdownQuotesOrangeExt()];
+                        
+                        // Add native SillyTavern extensions if available
+                        if (window.SillyTavern.libs.showdown.extension) {
+                            // Try to get existing extensions
+                            try {
+                                // Get the markdown exclusion extension if available
+                                if (typeof window.SillyTavern.libs.showdown.extensions['markdown-exclusion'] !== 'undefined') {
+                                    extensions.push(window.SillyTavern.libs.showdown.extensions['markdown-exclusion']);
+                                }
+                                // Get the underscore extension if available
+                                if (typeof window.SillyTavern.libs.showdown.extensions['markdown-underscore'] !== 'undefined') {
+                                    extensions.push(window.SillyTavern.libs.showdown.extensions['markdown-underscore']);
+                                }
+                            } catch (e) {
+                                console.debug('Could not add some native SillyTavern extensions:', e);
+                            }
+                        }
+                        
+                        const converter = new window.SillyTavern.libs.showdown.Converter({
+                            extensions: extensions
+                        });
+
+                        // Set options to match SillyTavern's formatting
+                        converter.setFlavor('github');
+                        converter.setOption('simpleLineBreaks', true);
+                        converter.setOption('strikethrough', true);
+                        
                         let htmlContent = converter.makeHtml(newContent);
                         
                         // Sanitize the HTML content if DOMPurify is available
