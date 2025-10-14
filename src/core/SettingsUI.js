@@ -94,8 +94,8 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem) {
                     <div class="flex-container setting-row">
                         <label for="quote-color-picker">Quote Highlight Color:</label>
                         <div class="color-input-wrapper">
-                            <input type="color" id="quote-color-picker" value="${window.extension_settings[MODULE_NAME].quoteColor || '#FFA500'}">
-                            <input type="text" id="quote-color-input" value="${window.extension_settings[MODULE_NAME].quoteColor || '#FFA500'}">
+                            <input type="color" id="quote-color-picker" value="${normalizeHexColor(window.extension_settings[MODULE_NAME].quoteColor || '#FFA500')}">
+                            <input type="text" id="quote-color-input" value="${normalizeHexColor(window.extension_settings[MODULE_NAME].quoteColor || '#FFA500')}">
                         </div>
                     </div>
                 </div>
@@ -524,9 +524,60 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem) {
         window.saveSettingsDebounced();
     });
 
+    // Helper function to validate hex color
+    function isValidHexColor(value) {
+        // Check if the value is a valid hex color (with or without #)
+        const hexColorRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
+
+        if (hexColorRegex.test(value)) {
+            return true;
+        }
+        
+        // Check if it's a valid hex color without the # prefix
+        const hexColorWithoutHashRegex = /^([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
+
+        if (hexColorWithoutHashRegex.test(value)) {
+            return true;
+        }
+        
+        return false;
+    }
+    
+    // Helper function to normalize hex color (ensure it has # prefix and is 6 digits)
+    function normalizeHexColor(value) {
+        if (!value) {return '#FFA500';} // Default to orange if no value
+        
+        // If it doesn't start with #, add it
+        if (!value.startsWith('#')) {
+            value = '#' + value;
+        }
+        
+        // If it's a 3-digit hex, convert to 6-digit
+        if (value.length === 4) { // # + 3 digits
+            value = '#' + value[1] + value[1] + value[2] + value[2] + value[3] + value[3];
+        }
+        
+        return value.toUpperCase();
+    }
+
     // Update quote color when settings change
     $(document).on('change input', '#quote-color-input', function() {
-        window.extension_settings[MODULE_NAME].quoteColor = $(this).val();
+        let colorValue = $(this).val();
+        
+        // Validate and normalize the color value
+        if (isValidHexColor(colorValue)) {
+            colorValue = normalizeHexColor(colorValue);
+            $('#quote-color-input').val(colorValue); // Update input to show normalized value
+            $('#quote-color-picker').val(colorValue); // Keep color picker in sync
+        } else {
+            // If not a valid hex, revert to the last valid value
+            colorValue = window.extension_settings[MODULE_NAME].quoteColor || '#FFA500';
+            $(this).val(colorValue); // Update input to show valid value
+            $('#quote-color-picker').val(colorValue); // Keep color picker in sync
+            toastr.warning('Please enter a valid hex color code (e.g., #FFA500)', 'Invalid Color Format');
+        }
+        
+        window.extension_settings[MODULE_NAME].quoteColor = colorValue;
         window.saveSettingsDebounced();
         registerQuotesColorExtension(window.extension_settings[MODULE_NAME].quoteColor);
     });
@@ -541,18 +592,53 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem) {
         registerQuotesColorExtension(window.extension_settings[MODULE_NAME].quoteColor);
     });
 
-    // Update quote color text when picker changes
+    // Also handle the input event (to catch when users type)
     $('#quote-color-input').on('input', function() {
-        const colorValue = $(this).val();
-
-        $('#quote-color-picker').val(colorValue);
+        let colorValue = $(this).val();
+        
+        // Validate and normalize the color value
+        if (isValidHexColor(colorValue)) {
+            colorValue = normalizeHexColor(colorValue);
+            $('#quote-color-input').val(colorValue); // Update input to show normalized value
+            $('#quote-color-picker').val(colorValue); // Keep color picker in sync
+        } else {
+            // If not a valid hex, don't update the global value yet
+            // Only update after validation in the change event
+        }
+        
         window.extension_settings[MODULE_NAME].quoteColor = colorValue;
-        window.saveSettingsDebounced();
         registerQuotesColorExtension(window.extension_settings[MODULE_NAME].quoteColor);
     });
 
     // Update panel colors when settings change
     $(document).on('input', '#bot-panel-primary-color, #bot-panel-border-color, #bot-panel-shadow-color, #user-panel-primary-color, #user-panel-border-color, #user-panel-shadow-color', function() {
+        // Get the current input element
+        const $currentInput = $(this);
+        const colorValue = $currentInput.val();
+        
+        // For non-hex colors (like gradients or rgba), don't validate
+        // Only validate if it looks like a hex color
+        const isHexColor = /^#?([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(colorValue.replace(/\s/g, ''));
+        
+        if (isHexColor) {
+            // If it doesn't start with #, add it
+            let normalizedValue = colorValue;
+
+            if (!colorValue.startsWith('#')) {
+                normalizedValue = '#' + colorValue;
+                $currentInput.val(normalizedValue);
+            }
+            
+            // Convert 3-digit hex to 6-digit if needed
+            if (normalizedValue.length === 4) { // # + 3 digits
+                normalizedValue = '#' + normalizedValue[1] + normalizedValue[1] + normalizedValue[2] + normalizedValue[2] + normalizedValue[3] + normalizedValue[3];
+                $currentInput.val(normalizedValue);
+            }
+            
+            // Update the input to show the normalized value
+            $currentInput.val(normalizedValue.toUpperCase());
+        }
+        
         updateColorSettingsAndApply();
     });
 
