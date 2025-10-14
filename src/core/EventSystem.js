@@ -89,6 +89,7 @@ class EventSystem {
         // Check if this is the first AI message in a new chat
         if (aiMessages.length === 1 && !data.is_user) {
             console.log('[OutfitTracker] First AI message received, processing macros and updating outfit instance.');
+            // Ensure outfit data is loaded before processing macros
             await this.updateForCurrentCharacter();
             await this.processMacrosInFirstMessage(); // Call the new function
         }
@@ -96,6 +97,8 @@ class EventSystem {
         // Process macro replacements in messages
         try {
             if (data && data.mes) {
+                // Give a small delay to ensure outfit data is properly loaded
+                // before replacing macros in the message
                 data.mes = this.replaceOutfitMacrosInText(data.mes);
             }
         } catch (error) {
@@ -124,9 +127,33 @@ class EventSystem {
             
             // Use a timeout to ensure the swipe is fully processed before updating
             setTimeout(async () => {
+                // Ensure the outfit data is properly loaded before processing macros
                 await this.updateForCurrentCharacter();
+                
+                // Then process the first message again with updated outfit data
                 await this.processMacrosInFirstMessage();
+                
+                // Also process all existing messages to ensure macros are updated after swipe
+                await this.processAllMessagesForMacros();
             }, 100); // 100ms delay
+        }
+    }
+    
+    // Function to process all messages in the current chat for macro replacement
+    async processAllMessagesForMacros() {
+        try {
+            const context = this.context;
+            
+            if (context && context.chat) {
+                // Process all messages in the chat, not just the first one
+                for (const message of context.chat) {
+                    if (message.mes && typeof message.mes === 'string') {
+                        message.mes = this.replaceOutfitMacrosInText(message.mes);
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('[OutfitTracker] Error processing all messages for macros:', error);
         }
     }
 
@@ -159,8 +186,14 @@ class EventSystem {
             // After the original function completes, update the character and macros
             // Use a timeout to ensure the chat is cleared before we update
             setTimeout(async () => {
+                // Ensure outfit data is loaded for the current character
                 await this.updateForCurrentCharacter();
+                
+                // Process first message as needed
                 await this.processMacrosInFirstMessage();
+                
+                // Process all existing messages to ensure macros are updated after reset
+                await this.processAllMessagesForMacros();
             }, 100); // 100ms delay
 
             return result;
@@ -197,6 +230,9 @@ class EventSystem {
 
             // Process macros in the first message after restoring outfits
             await this.processMacrosInFirstMessage();
+            
+            // Also process all existing messages to ensure macros are updated after clear
+            await this.processAllMessagesForMacros();
         };
     }
 

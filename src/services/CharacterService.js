@@ -9,14 +9,15 @@ function refreshMacroProcessing() {
     try {
         // If there's a custom macro system reference in the global context, use it
         if (window.customMacroSystem && typeof window.customMacroSystem.replaceMacrosInText === 'function') {
-            // Process first message if needed
+            // Process all messages in the chat to ensure macros are updated
             const context = window.getContext();
 
             if (context && context.chat && context.chat.length > 0) {
-                const firstBotMessage = context.chat.find(message => !message.is_user && !message.is_system);
-
-                if (firstBotMessage && firstBotMessage.mes) {
-                    firstBotMessage.mes = window.customMacroSystem.replaceMacrosInText(firstBotMessage.mes);
+                // Process all messages in the chat, not just the first one
+                for (const message of context.chat) {
+                    if (message.mes && typeof message.mes === 'string') {
+                        message.mes = window.customMacroSystem.replaceMacrosInText(message.mes);
+                    }
                 }
             }
         }

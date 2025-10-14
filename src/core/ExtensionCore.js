@@ -190,7 +190,7 @@ export async function initializeExtension() {
 
                 if (firstBotMessage) {
                     // Update the message data with macro replacements
-                    const processedText = replaceOutfitMacrosInText(firstBotMessage.mes);
+                    const processedText = customMacroSystem.replaceMacrosInText(firstBotMessage.mes);
 
                     firstBotMessage.mes = processedText;
                 }
