@@ -24,7 +24,7 @@ import { setupEventListeners } from './EventSystem.js';
 import { registerOutfitCommands } from './OutfitCommands.js';
 import { createSettingsUI } from './SettingsUI.js';
 import { initSettings } from './settings.js';
-import { CLOTHING_SLOTS, ACCESSORY_SLOTS } from '../config/constants.js';
+import { CLOTHING_SLOTS, ACCESSORY_SLOTS, ALL_SLOTS } from '../config/constants.js';
 
 // Import AutoOutfitSystem with error handling
 let AutoOutfitSystem;
@@ -111,8 +111,8 @@ export async function initializeExtension() {
 
     const MODULE_NAME = 'outfit_tracker';
 
-    const botManager = new NewBotOutfitManager([...CLOTHING_SLOTS, ...ACCESSORY_SLOTS]);
-    const userManager = new NewUserOutfitManager([...CLOTHING_SLOTS, ...ACCESSORY_SLOTS]);
+    const botManager = new NewBotOutfitManager(ALL_SLOTS);
+    const userManager = new NewUserOutfitManager(ALL_SLOTS);
     const botPanel = new BotOutfitPanel(botManager, CLOTHING_SLOTS, ACCESSORY_SLOTS, saveSettingsDebounced);
     const userPanel = new UserOutfitPanel(userManager, CLOTHING_SLOTS, ACCESSORY_SLOTS, saveSettingsDebounced);
     const autoOutfitSystem = new AutoOutfitSystem(botManager);
@@ -125,15 +125,13 @@ export async function initializeExtension() {
     outfitStore.setPanelRef('user', userPanel);
     outfitStore.setAutoOutfitSystem(autoOutfitSystem);
 
-    extension_api.wipeAllOutfits = () => wipeAllOutfits(CLOTHING_SLOTS, ACCESSORY_SLOTS);
-
-
-    function replaceOutfitMacrosInText(text) {
+    extension_api.wipeAllOutfits = () => wipeAllOutfits();
+    extension_api.replaceOutfitMacrosInText = (text) => {
         if (!text || typeof text !== 'string') {
             return text;
         }
         return customMacroSystem.replaceMacrosInText(text);
-    }
+    };
 
     function updatePanelStyles() {
         if (window.botOutfitPanel) {window.botOutfitPanel.applyPanelColors();}
@@ -147,7 +145,7 @@ export async function initializeExtension() {
 
     initSettings(autoOutfitSystem, AutoOutfitSystem);
 
-    registerOutfitCommands(botManager, userManager, autoOutfitSystem, CLOTHING_SLOTS, ACCESSORY_SLOTS);
+    registerOutfitCommands(botManager, userManager, autoOutfitSystem);
 
     function processMacrosInFirstMessage() {
         try {
@@ -157,7 +155,10 @@ export async function initializeExtension() {
                 const firstBotMessage = context.chat.find(message => !message.is_user && !message.is_system);
 
                 if (firstBotMessage) {
-                    firstBotMessage.mes = replaceOutfitMacrosInText(firstBotMessage.mes);
+                    // Update the message data with macro replacements
+                    const processedText = replaceOutfitMacrosInText(firstBotMessage.mes);
+
+                    firstBotMessage.mes = processedText;
                 }
             }
         } catch (error) {

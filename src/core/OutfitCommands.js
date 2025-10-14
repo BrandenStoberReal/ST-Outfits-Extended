@@ -1,25 +1,7 @@
 import { importOutfitFromCharacterCard } from '../services/LLMService.js';
+import { CLOTHING_SLOTS, ACCESSORY_SLOTS } from '../config/constants.js';
 
-export async function registerOutfitCommands(botManager, userManager, autoOutfitSystem, CLOTHING_SLOTS, ACCESSORY_SLOTS) {
-    // If CLOTHING_SLOTS or ACCESSORY_SLOTS are not provided, import them
-    if (!CLOTHING_SLOTS || !ACCESSORY_SLOTS) {
-        try {
-            const constants = await import('../config/constants.js');
-
-            CLOTHING_SLOTS = constants.CLOTHING_SLOTS;
-            ACCESSORY_SLOTS = constants.ACCESSORY_SLOTS;
-        } catch (error) {
-            console.error('Failed to import constants:', error);
-            // Fallback to default values
-            CLOTHING_SLOTS = [
-                'headwear', 'topwear', 'topunderwear', 'bottomwear', 'bottomunderwear', 'footwear', 'footunderwear'
-            ];
-            ACCESSORY_SLOTS = [
-                'head-accessory', 'ears-accessory', 'eyes-accessory', 'mouth-accessory', 'neck-accessory', 'body-accessory',
-                'arms-accessory', 'hands-accessory', 'waist-accessory', 'bottom-accessory', 'legs-accessory', 'foot-accessory'
-            ];
-        }
-    }
+export async function registerOutfitCommands(botManager, userManager, autoOutfitSystem) {
     // Check if new slash command system is available in SillyTavern
     const hasSlashCommands = typeof window.SlashCommandParser !== 'undefined' && 
                              typeof window.SlashCommand !== 'undefined' &&

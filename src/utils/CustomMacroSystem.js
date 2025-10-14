@@ -4,25 +4,13 @@
  */
 
 import { outfitStore } from '../common/Store.js';
+import { CLOTHING_SLOTS, ACCESSORY_SLOTS } from '../config/constants.js';
 
 class CustomMacroSystem {
     constructor() {
-        // Define the macro pattern for {{char_slotname}} and {{user_slotname}}
-        this.macroPattern = /\{\{(?:([^_]+)_)?(\w+(?:-\w+)*)\}\}/g;
-        
-        // Define valid slot names
-        this.clothingSlots = [
-            'headwear', 'topwear', 'topunderwear', 'bottomwear',
-            'bottomunderwear', 'footwear', 'footunderwear'
-        ];
-        
-        this.accessorySlots = [
-            'head-accessory', 'ears-accessory', 'eyes-accessory', 'mouth-accessory',
-            'neck-accessory', 'body-accessory', 'arms-accessory', 'hands-accessory',
-            'waist-accessory', 'bottom-accessory', 'legs-accessory', 'foot-accessory'
-        ];
-        
-        this.allSlots = [...this.clothingSlots, ...this.accessorySlots];
+        this.clothingSlots = CLOTHING_SLOTS;
+        this.accessorySlots = ACCESSORY_SLOTS;
+        this.allSlots = [...CLOTHING_SLOTS, ...ACCESSORY_SLOTS];
     }
 
     /**
@@ -36,46 +24,100 @@ class CustomMacroSystem {
         }
 
         try {
-            return text.replace(this.macroPattern, (fullMatch, part1, part2) => {
+            let result = text;
+            let index = 0;
+
+            while (index < result.length) {
+                const openIdx = result.indexOf('{{', index);
+
+                if (openIdx === -1) {
+                    break; // No more potential macros
+                }
+
+                const closeIdx = result.indexOf('}}', openIdx);
+
+                if (closeIdx === -1) {
+                    break; // Malformed macro, no closing brackets
+                }
+
+                const macroContent = result.substring(openIdx + 2, closeIdx);
+                const macroWithBrackets = '{{' + macroContent + '}}';
+
+                // Split by underscore to identify potential prefix_slot pattern
+                const parts = macroContent.split('_');
                 let macroType, slotName;
 
-                // Determine if we have a specific character macro or a generic one
-                if (part2 && this.allSlots.includes(part2)) {
-                    macroType = part1 || 'char';
-                    slotName = part2;
-                } else if (this.allSlots.includes(part1)) {
-                    macroType = 'char';
-                    slotName = part1;
-                } else if (part1 && !part2) {
-                    macroType = part1;
-                    slotName = null;
+                if (parts.length === 1) {
+                    // Simple macro like {{topwear}} or {{user}} or {{char}}
+                    const singlePart = parts[0];
+
+                    if (this.allSlots.includes(singlePart)) {
+                        // It's a slot-based macro with default 'char' type
+                        macroType = 'char';
+                        slotName = singlePart;
+                    } else if (singlePart === 'user' || singlePart === 'char' || singlePart === 'bot') {
+                        // Simple type macro
+                        macroType = singlePart;
+                        slotName = null;
+                    } else {
+                        // Not a valid macro, continue to next
+                        index = closeIdx + 2;
+                        continue;
+                    }
                 } else {
-                    return fullMatch; // No valid macro found
+                    // prefix_slot format like {{char_topwear}} or {{Emma_topwear}}
+                    const prefix = parts[0];
+                    const potentialSlot = parts.slice(1).join('_'); // Handle slots with hyphens like 'head-accessory'
+
+                    if (this.allSlots.includes(potentialSlot)) {
+                        macroType = prefix;
+                        slotName = potentialSlot;
+                    } else {
+                        // Check if it's just a character-specific slot (without type prefix)
+                        // e.g., {{Amelia_topwear}}
+                        const tempPrefix = parts.slice(0, parts.length - 1).join('_');
+                        const tempSlot = parts[parts.length - 1];
+                        
+                        if (this.allSlots.includes(tempSlot)) {
+                            macroType = tempPrefix;
+                            slotName = tempSlot;
+                        } else {
+                            // Not a valid macro, continue to next
+                            index = closeIdx + 2;
+                            continue;
+                        }
+                    }
                 }
 
-                // Handle slot-based macros
+                // Process the macro
+                let replacementValue = macroWithBrackets; // Default to original if not valid
+
                 if (slotName) {
                     if (macroType === 'char' || macroType === 'bot') {
-                        return this.getCurrentSlotValue('char', slotName);
+                        replacementValue = this.getCurrentSlotValue('char', slotName);
                     } else if (macroType === 'user') {
-                        return this.getCurrentSlotValue('user', slotName);
-                    } 
-                    // Handle character-specific macros like {{Amelia_topwear}}
-                    return this.getCurrentSlotValue('char', slotName, macroType);
-                    
+                        replacementValue = this.getCurrentSlotValue('user', slotName);
+                    } else {
+                        // Handle character-specific macros like {{Amelia_topwear}}
+                        replacementValue = this.getCurrentSlotValue('char', slotName, macroType);
+                    }
+                } else {
+                    // Handle simple macros like {{user}} and {{char}}
+                    if (macroType === 'user') {
+                        replacementValue = this.getCurrentUserName();
+                    } else if (macroType === 'char' || macroType === 'bot') {
+                        replacementValue = this.getCurrentCharName();
+                    }
                 }
 
-                // Handle simple macros like {{user}} and {{char}}
-                if (macroType === 'user') {
-                    return this.getCurrentUserName();
-                }
-                if (macroType === 'char' || macroType === 'bot') {
-                    return this.getCurrentCharName();
-                }
+                // Replace the macro with its value
+                result = result.substring(0, openIdx) + replacementValue + result.substring(closeIdx + 2);
+                
+                // Move index to the start of the replacement to handle overlapping replacements
+                index = openIdx + replacementValue.length;
+            }
 
-                // If no match, return the original macro text
-                return fullMatch;
-            });
+            return result;
         } catch (error) {
             console.error('Error replacing custom macros in text:', error);
             return text;
@@ -212,30 +254,78 @@ class CustomMacroSystem {
         }
 
         const macros = [];
-        const matches = [...text.matchAll(this.macroPattern)];
+        let index = 0;
 
-        for (const match of matches) {
-            let type, slot;
+        while (index < text.length) {
+            const openIdx = text.indexOf('{{', index);
 
-            if (match[2] && this.allSlots.includes(match[2])) {
-                type = match[1] || 'char';
-                slot = match[2];
-            } else if (this.allSlots.includes(match[1])) {
-                type = 'char';
-                slot = match[1];
-            } else if (match[1] && !match[2]) {
-                type = match[1];
-                slot = null;
+            if (openIdx === -1) {
+                break; // No more potential macros
+            }
+
+            const closeIdx = text.indexOf('}}', openIdx);
+
+            if (closeIdx === -1) {
+                break; // Malformed macro, no closing brackets
+            }
+
+            const macroContent = text.substring(openIdx + 2, closeIdx);
+            const fullMatch = '{{' + macroContent + '}}';
+
+            // Split by underscore to identify potential prefix_slot pattern
+            const parts = macroContent.split('_');
+            let macroType, slot;
+
+            if (parts.length === 1) {
+                // Simple macro like {{topwear}} or {{user}} or {{char}}
+                const singlePart = parts[0];
+
+                if (this.allSlots.includes(singlePart)) {
+                    // It's a slot-based macro with default 'char' type
+                    macroType = 'char';
+                    slot = singlePart;
+                } else if (singlePart === 'user' || singlePart === 'char' || singlePart === 'bot') {
+                    // Simple type macro
+                    macroType = singlePart;
+                    slot = null;
+                } else {
+                    // Not a valid macro, continue to next
+                    index = closeIdx + 2;
+                    continue;
+                }
             } else {
-                continue; // No valid macro found
+                // prefix_slot format like {{char_topwear}} or {{Emma_topwear}}
+                const prefix = parts[0];
+                const potentialSlot = parts.slice(1).join('_'); // Handle slots with hyphens like 'head-accessory'
+
+                if (this.allSlots.includes(potentialSlot)) {
+                    macroType = prefix;
+                    slot = potentialSlot;
+                } else {
+                    // Check if it's just a character-specific slot (without type prefix)
+                    // e.g., {{Amelia_topwear}}
+                    const tempPrefix = parts.slice(0, parts.length - 1).join('_');
+                    const tempSlot = parts[parts.length - 1];
+                    
+                    if (this.allSlots.includes(tempSlot)) {
+                        macroType = tempPrefix;
+                        slot = tempSlot;
+                    } else {
+                        // Not a valid macro, continue to next
+                        index = closeIdx + 2;
+                        continue;
+                    }
+                }
             }
 
             macros.push({
-                fullMatch: match[0],
-                type: type,
+                fullMatch: fullMatch,
+                type: macroType,
                 slot: slot,
-                startIndex: match.index
+                startIndex: openIdx
             });
+
+            index = closeIdx + 2;
         }
 
         return macros;

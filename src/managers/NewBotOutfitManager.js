@@ -1,8 +1,9 @@
 
 import { outfitStore } from '../common/Store.js';
+import { ALL_SLOTS } from '../config/constants.js';
 
 export class NewBotOutfitManager {
-    constructor(slots) {
+    constructor(slots = ALL_SLOTS) {
         this.slots = slots;
         this.character = 'Unknown';
         this.characterId = null;

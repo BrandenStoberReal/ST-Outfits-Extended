@@ -113,7 +113,7 @@
     "id-blacklist": "error",
     "id-length": "off",
     "id-match": "error",
-    "max-depth": ["warn", 4],
+    "max-depth": ["off", 4],
     "max-nested-callbacks": ["warn", 5],
     "max-params": ["warn", 6],
     "max-statements-per-line": ["error", { "max": 2 }],

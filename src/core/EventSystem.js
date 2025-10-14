@@ -1,4 +1,5 @@
 import { extensionEventBus, EXTENSION_EVENTS } from './events.js';
+import { customMacroSystem } from '../utils/CustomMacroSystem.js';
 
 
 class EventSystem {
@@ -64,6 +65,11 @@ class EventSystem {
         if (chat && chat.length > 0) {
             console.log('[OutfitTracker] CHAT_CHANGED event fired with populated chat - updating for character switch');
             this.updateForCurrentCharacter();
+            
+            // Process macros in the first message after character switch
+            setTimeout(async () => {
+                await this.processMacrosInFirstMessage();
+            }, 100); // Small delay to ensure character data is updated
         } else {
             console.log('[OutfitTracker] CHAT_CHANGED event fired with empty chat - likely a reset, skipping update and waiting for message render.');
         }
@@ -86,6 +92,22 @@ class EventSystem {
             await this.updateForCurrentCharacter();
             await this.processMacrosInFirstMessage(); // Call the new function
         }
+        
+        // Process macro replacements in messages
+        try {
+            if (data && data.mes) {
+                data.mes = this.replaceOutfitMacrosInText(data.mes);
+            }
+        } catch (error) {
+            console.error('Error processing message for macros:', error);
+        }
+    }
+    
+    replaceOutfitMacrosInText(text) {
+        if (!text || typeof text !== 'string') {
+            return text;
+        }
+        return customMacroSystem.replaceMacrosInText(text);
     }
 
     async handleMessageSwiped(index) {

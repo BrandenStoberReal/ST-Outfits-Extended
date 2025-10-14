@@ -1,8 +1,9 @@
 
 import { outfitStore } from '../common/Store.js';
+import { ALL_SLOTS } from '../config/constants.js';
 
 export class NewUserOutfitManager {
-    constructor(slots) {
+    constructor(slots = ALL_SLOTS) {
         this.slots = slots;
         this.currentValues = {};
         this.outfitInstanceId = null;
