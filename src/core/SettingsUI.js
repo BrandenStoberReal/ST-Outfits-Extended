@@ -291,6 +291,7 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem) {
                 
                 // Check event system status (check if event listeners were set up)
                 const context = window.getContext ? window.getContext() : null;
+
                 if (context && context.eventSource) {
                     $('#status-events').removeClass('status-loading').addClass('status-active').text('Active');
                 } else {

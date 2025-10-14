@@ -150,8 +150,8 @@ export async function initializeExtension() {
                 },
                 events: true, // Event system is initialized if we're here
                 managers: {
-                    bot: !!botManager,
-                    user: !!userManager
+                    bot: Boolean(botManager),
+                    user: Boolean(userManager)
                 }
             };
         } catch (error) {
