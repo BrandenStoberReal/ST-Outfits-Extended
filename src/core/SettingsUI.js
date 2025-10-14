@@ -241,60 +241,79 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem) {
             }
         } else {
             // Fallback to direct checking
-            // Check if the extension is properly loaded
-            if (window.botOutfitPanel && window.userOutfitPanel && window.extension_settings?.outfit_tracker) {
-                $('#status-core').removeClass('status-loading').addClass('status-active').text('Active');
-            } else {
-                $('#status-core').removeClass('status-loading').addClass('status-inactive').text('Inactive');
-            }
-            
-            // Check if auto outfit system is available and enabled
-            if (window.autoOutfitSystem) {
-                const autoOutfitStatus = window.autoOutfitSystem.getStatus();
+            try {
+                // Check if the extension is properly loaded
+                if (window.outfitTracker && window.extension_settings?.outfit_tracker) {
+                    $('#status-core').removeClass('status-loading').addClass('status-active').text('Active');
+                } else {
+                    $('#status-core').removeClass('status-loading').addClass('status-inactive').text('Inactive');
+                }
+                
+                // Check if auto outfit system is available and enabled
+                if (window.outfitTracker?.autoOutfitSystem) {
+                    const autoOutfitSystem = window.outfitTracker.autoOutfitSystem;
+                    const autoOutfitStatus = typeof autoOutfitSystem.getStatus === 'function' 
+                        ? autoOutfitSystem.getStatus() 
+                        : null;
 
-                if (autoOutfitStatus.enabled) {
-                    $('#status-auto-outfit').removeClass('status-loading').addClass('status-active').text('Active');
+                    if (autoOutfitStatus && autoOutfitStatus.enabled) {
+                        $('#status-auto-outfit').removeClass('status-loading').addClass('status-active').text('Active');
+                    } else if (autoOutfitStatus) {
+                        $('#status-auto-outfit').removeClass('status-loading').addClass('status-inactive').text('Inactive');
+                    } else {
+                        $('#status-auto-outfit').removeClass('status-loading').addClass('status-inactive').text('Not Available');
+                    }
                 } else {
-                    $('#status-auto-outfit').removeClass('status-loading').addClass('status-inactive').text('Inactive');
+                    $('#status-auto-outfit').removeClass('status-loading').addClass('status-inactive').text('Not Available');
                 }
-            } else {
-                $('#status-auto-outfit').removeClass('status-loading').addClass('status-inactive').text('Not Available');
-            }
-            
-            // Check bot panel status
-            if (window.botOutfitPanel) {
-                if (window.botOutfitPanel.isVisible) {
-                    $('#status-bot-panel').removeClass('status-loading').addClass('status-active').text('Visible');
+                
+                // Check bot panel status
+                if (window.outfitTracker?.botOutfitPanel) {
+                    if (window.outfitTracker.botOutfitPanel.isVisible) {
+                        $('#status-bot-panel').removeClass('status-loading').addClass('status-active').text('Visible');
+                    } else {
+                        $('#status-bot-panel').removeClass('status-loading').addClass('status-inactive').text('Hidden');
+                    }
                 } else {
-                    $('#status-bot-panel').removeClass('status-loading').addClass('status-inactive').text('Hidden');
+                    $('#status-bot-panel').removeClass('status-loading').addClass('status-inactive').text('Not Loaded');
                 }
-            } else {
-                $('#status-bot-panel').removeClass('status-loading').addClass('status-inactive').text('Not Loaded');
-            }
-            
-            // Check user panel status
-            if (window.userOutfitPanel) {
-                if (window.userOutfitPanel.isVisible) {
-                    $('#status-user-panel').removeClass('status-loading').addClass('status-active').text('Visible');
+                
+                // Check user panel status
+                if (window.outfitTracker?.userOutfitPanel) {
+                    if (window.outfitTracker.userOutfitPanel.isVisible) {
+                        $('#status-user-panel').removeClass('status-loading').addClass('status-active').text('Visible');
+                    } else {
+                        $('#status-user-panel').removeClass('status-loading').addClass('status-inactive').text('Hidden');
+                    }
                 } else {
-                    $('#status-user-panel').removeClass('status-loading').addClass('status-inactive').text('Hidden');
+                    $('#status-user-panel').removeClass('status-loading').addClass('status-inactive').text('Not Loaded');
                 }
-            } else {
-                $('#status-user-panel').removeClass('status-loading').addClass('status-inactive').text('Not Loaded');
-            }
-            
-            // Check event system status (check if event listeners were set up)
-            if (window.getContext && window.getContext()?.eventSource) {
-                $('#status-events').removeClass('status-loading').addClass('status-active').text('Active');
-            } else {
-                $('#status-events').removeClass('status-loading').addClass('status-warning').text('Limited');
-            }
-            
-            // Check outfit managers status
-            if (window.botOutfitPanel?.outfitManager && window.userOutfitPanel?.outfitManager) {
-                $('#status-managers').removeClass('status-loading').addClass('status-active').text('Active');
-            } else {
-                $('#status-managers').removeClass('status-loading').addClass('status-inactive').text('Inactive');
+                
+                // Check event system status (check if event listeners were set up)
+                const context = window.getContext ? window.getContext() : null;
+                if (context && context.eventSource) {
+                    $('#status-events').removeClass('status-loading').addClass('status-active').text('Active');
+                } else {
+                    $('#status-events').removeClass('status-loading').addClass('status-warning').text('Limited');
+                }
+                
+                // Check outfit managers status
+                if (window.outfitTracker?.botOutfitPanel?.outfitManager && 
+                    window.outfitTracker?.userOutfitPanel?.outfitManager) {
+                    $('#status-managers').removeClass('status-loading').addClass('status-active').text('Active');
+                } else {
+                    $('#status-managers').removeClass('status-loading').addClass('status-inactive').text('Inactive');
+                }
+            } catch (error) {
+                console.error('[OutfitTracker] Error in fallback status check:', error);
+                
+                // Set all statuses to error state
+                $('#status-core').removeClass('status-loading').addClass('status-error').text('Error');
+                $('#status-auto-outfit').removeClass('status-loading').addClass('status-error').text('Error');
+                $('#status-bot-panel').removeClass('status-loading').addClass('status-error').text('Error');
+                $('#status-user-panel').removeClass('status-loading').addClass('status-error').text('Error');
+                $('#status-events').removeClass('status-loading').addClass('status-error').text('Error');
+                $('#status-managers').removeClass('status-loading').addClass('status-error').text('Error');
             }
         }
     }

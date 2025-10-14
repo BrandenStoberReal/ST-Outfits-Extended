@@ -152,6 +152,31 @@ class CustomMacroSystem {
     }
 
     /**
+     * Helper function to replace all occurrences of a substring without using regex
+     * @param {string} str - The original string
+     * @param {string} searchValue - The value to search for
+     * @param {string} replaceValue - The value to replace with
+     * @returns {string} - The resulting string with replacements made
+     */
+    replaceAll(str, searchValue, replaceValue) {
+        if (!searchValue) {return str;}
+        
+        // Prevent infinite loops when the replacement value contains the search value
+        if (searchValue === replaceValue) {return str;}
+        
+        let result = str;
+        let index = result.indexOf(searchValue);
+        
+        while (index !== -1) {
+            result = result.substring(0, index) + replaceValue + result.substring(index + searchValue.length);
+            // Move past the replacement value to prevent infinite loops
+            index = result.indexOf(searchValue, index + replaceValue.length);
+        }
+        
+        return result;
+    }
+
+    /**
      * Get the current value for a specific slot
      * @param {string} macroType - 'char', 'bot', or 'user'
      * @param {string} slotName - The slot name (e.g., 'topwear')

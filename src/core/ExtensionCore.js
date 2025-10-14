@@ -132,6 +132,40 @@ export async function initializeExtension() {
         }
         return customMacroSystem.replaceMacrosInText(text);
     };
+    
+    extension_api.getOutfitExtensionStatus = () => {
+        try {
+            const autoOutfitStatus = autoOutfitSystem && typeof autoOutfitSystem.getStatus === 'function' 
+                ? autoOutfitSystem.getStatus() 
+                : null;
+                
+            return {
+                core: true, // Extension is loaded if this function exists
+                autoOutfit: autoOutfitStatus,
+                botPanel: {
+                    isVisible: botPanel && botPanel.isVisible
+                },
+                userPanel: {
+                    isVisible: userPanel && userPanel.isVisible
+                },
+                events: true, // Event system is initialized if we're here
+                managers: {
+                    bot: !!botManager,
+                    user: !!userManager
+                }
+            };
+        } catch (error) {
+            console.error('[OutfitTracker] Error getting extension status:', error);
+            return {
+                core: false,
+                autoOutfit: null,
+                botPanel: { isVisible: false },
+                userPanel: { isVisible: false },
+                events: false,
+                managers: { bot: false, user: false }
+            };
+        }
+    };
 
     function updatePanelStyles() {
         if (window.botOutfitPanel) {window.botOutfitPanel.applyPanelColors();}
