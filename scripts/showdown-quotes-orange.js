@@ -72,10 +72,8 @@ function processQuoteType(html, openQuote, closeQuote) {
             continue;
         }
         
-        // Add the opening quote + the quoted content wrapped in orange span + closing quote
-        result.push(openQuote);
-        result.push(`<span style="color: orange; font-weight: 500;">${html.substring(quoteStart, closeIndex)}</span>`);
-        result.push(closeQuote);
+        // Add the entire quoted text (including quotes) wrapped in orange span
+        result.push(`<span style="color: orange; font-weight: 500;">${html.substring(openIndex, closeIndex + closeQuote.length)}</span>`);
         
         // Move position past the closing quote
         pos = closeIndex + closeQuote.length;
@@ -120,10 +118,8 @@ function processSingleQuotes(html) {
             continue;
         }
         
-        // Add the opening quote + the quoted content wrapped in orange span + closing quote
-        result.push("'");
-        result.push(`<span style="color: orange; font-weight: 500;">${html.substring(quoteStart, closeIndex)}</span>`);
-        result.push("'");
+        // Add the entire quoted text (including quotes) wrapped in orange span
+        result.push(`<span style="color: orange; font-weight: 500;">${html.substring(openIndex, closeIndex + 1)}</span>`);
         
         // Move position past the closing quote
         pos = closeIndex + 1;
