@@ -317,6 +317,33 @@ export async function initializeExtension() {
     const quoteColor = extension_settings.outfit_tracker?.quoteColor || '#FFA500';
 
     registerQuotesColorExtension(quoteColor);
+    
+    // Make quote color management functions available globally for the settings UI
+    if (typeof window !== 'undefined' && window) {
+        window.updateQuoteColorSetting = (newColor) => {
+            try {
+                // Update the settings with the new color
+                extension_settings.outfit_tracker.quoteColor = newColor;
+                
+                // Save the settings
+                window.saveSettingsDebounced();
+                
+                // Re-register the extension with the new color
+                registerQuotesColorExtension(newColor);
+                
+                console.log(`[OutfitTracker] Quote color updated to ${newColor}`);
+                
+                return true;
+            } catch (error) {
+                console.error('[OutfitTracker] Error updating quote color:', error);
+                return false;
+            }
+        };
+        
+        window.getQuoteColorSetting = () => {
+            return extension_settings.outfit_tracker?.quoteColor || '#FFA500';
+        };
+    }
 
     updatePanelStyles();
 

@@ -208,9 +208,11 @@ export function registerQuotesColorExtension(color = '#FFA500') {
     }
 }
 
-// Make the function globally accessible so it can be called from the settings UI
+// Make the functions globally accessible so they can be called from the settings UI
 if (typeof window !== 'undefined' && window) {
     window.registerQuotesColorExtension = registerQuotesColorExtension;
+    window.markdownQuotesOrangeExt = markdownQuotesOrangeExt;
+    window.markdownQuotesColorExt = markdownQuotesColorExt;
 }
 
 // Export the function with the original name for backward compatibility

@@ -560,27 +560,118 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem) {
         return value.toUpperCase();
     }
 
+    // Function to get current quote color from settings
+    function getCurrentQuoteColor() {
+        return window.extension_settings[MODULE_NAME].quoteColor || '#FFA500';
+    }
+
     // Function to update quote color settings and refresh the extension
-    function updateQuoteColorSetting(colorValue) {
-        // Validate and normalize the color value
+    function updateQuoteColorSetting(colorValue, saveToSettings = true) {
+        let normalizedColor = colorValue;
+        
+        // Validate and normalize the color value if needed
         if (isValidHexColor(colorValue)) {
-            colorValue = normalizeHexColor(colorValue);
-            $('#quote-color-input').val(colorValue); // Update input to show normalized value
-            $('#quote-color-picker').val(colorValue); // Keep color picker in sync
-            
+            normalizedColor = normalizeHexColor(colorValue);
+        } else {
+            // If not valid, use the last saved color
+            normalizedColor = getCurrentQuoteColor();
+            $('#quote-color-input').val(normalizedColor); // Update input to show valid value
+            $('#quote-color-picker').val(normalizedColor); // Keep color picker in sync
+            if (colorValue && colorValue.trim() !== '') {
+                toastr.warning('Please enter a valid hex color code (e.g., #FFA500)', 'Invalid Color Format');
+            }
+            return; // Don't proceed if the input was invalid
+        }
+
+        // Update UI elements
+        $('#quote-color-input').val(normalizedColor); // Update input to show normalized value
+        $('#quote-color-picker').val(normalizedColor); // Keep color picker in sync
+
+        // Only save to settings if requested (for UI updates vs actual changes)
+        if (saveToSettings) {
             // Update the settings and save
-            window.extension_settings[MODULE_NAME].quoteColor = colorValue;
+            window.extension_settings[MODULE_NAME].quoteColor = normalizedColor;
             window.saveSettingsDebounced();
             
             // Refresh the quotes color extension with the new color
-            registerQuotesColorExtension(window.extension_settings[MODULE_NAME].quoteColor);
-        } else {
-            // If not a valid hex, revert to the last valid value
-            const lastValidColor = window.extension_settings[MODULE_NAME].quoteColor || '#FFA500';
+            registerQuotesColorExtension(normalizedColor);
+            
+            // Re-render all existing messages to apply the new color
+            reapplyQuoteColorsToExistingMessages();
+        }
+    }
 
-            $('#quote-color-input').val(lastValidColor); // Update input to show valid value
-            $('#quote-color-picker').val(lastValidColor); // Keep color picker in sync
-            toastr.warning('Please enter a valid hex color code (e.g., #FFA500)', 'Invalid Color Format');
+    // Function to reapply quote colors to existing messages in the chat
+    function reapplyQuoteColorsToExistingMessages() {
+        try {
+            // Get the context and check if chat exists
+            const context = window.getContext ? window.getContext() : null;
+
+            if (!context || !context.chat) {
+                return;
+            }
+
+            // Get all message elements in the chat
+            const messageElements = document.querySelectorAll('#chat .mes .mes_text');
+            
+            // Process each message to apply the new quote color
+            messageElements.forEach((textElement, index) => {
+                const originalContent = context.chat[index]?.mes;
+                
+                if (originalContent && textElement) {
+                    // Use showdown with SillyTavern's configurations if available
+                    if (window.SillyTavern && window.SillyTavern.libs && window.SillyTavern.libs.showdown) {
+                        // Create a new converter with all required extensions, including the updated quote color
+                        const quoteColor = getCurrentQuoteColor();
+                        const extensions = [window.markdownQuotesOrangeExt ? window.markdownQuotesOrangeExt(quoteColor) : markdownQuotesColorExt(quoteColor)];
+                        
+                        // Add native SillyTavern extensions if available
+                        if (window.SillyTavern.libs.showdown.extension) {
+                            try {
+                                // Get the markdown exclusion extension if available
+                                if (typeof window.SillyTavern.libs.showdown.extensions['markdown-exclusion'] !== 'undefined') {
+                                    extensions.push(window.SillyTavern.libs.showdown.extensions['markdown-exclusion']);
+                                }
+                                // Get the underscore extension if available
+                                if (typeof window.SillyTavern.libs.showdown.extensions['markdown-underscore'] !== 'undefined') {
+                                    extensions.push(window.SillyTavern.libs.showdown.extensions['markdown-underscore']);
+                                }
+                            } catch (e) {
+                                console.debug('Could not add some native SillyTavern extensions:', e);
+                            }
+                        }
+                        
+                        const converter = new window.SillyTavern.libs.showdown.Converter({
+                            extensions: extensions
+                        });
+
+                        // Set options to match SillyTavern's formatting
+                        converter.setFlavor('github');
+                        converter.setOption('simpleLineBreaks', true);
+                        converter.setOption('strikethrough', true);
+                        
+                        let htmlContent = converter.makeHtml(originalContent);
+                        
+                        // Sanitize the HTML content if DOMPurify is available
+                        if (window.SillyTavern.libs && window.SillyTavern.libs.DOMPurify) {
+                            htmlContent = window.SillyTavern.libs.DOMPurify.sanitize(htmlContent);
+                        }
+                        
+                        textElement.innerHTML = htmlContent;
+                    } else {
+                        // If showdown is not available, try to manually update the quotes with the color
+                        // This is a fallback that just injects the new color into existing spans
+                        const quoteColor = getCurrentQuoteColor();
+
+                        textElement.innerHTML = textElement.innerHTML.replace(
+                            /<span style="color: #[0-9A-Fa-f]{6}; font-weight: 500;">/g,
+                            `<span style="color: ${quoteColor}; font-weight: 500;">`
+                        );
+                    }
+                }
+            });
+        } catch (error) {
+            console.error('Error reapplying quote colors to existing messages:', error);
         }
     }
 
@@ -588,35 +679,21 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem) {
     $(document).on('change', '#quote-color-input', function() {
         const colorValue = $(this).val();
 
-        updateQuoteColorSetting(colorValue);
+        updateQuoteColorSetting(colorValue, true); // Save to settings
     });
 
     // Real-time update for color picker
     $('#quote-color-picker').on('input', function() {
         const colorValue = $(this).val();
 
-        updateQuoteColorSetting(colorValue);
+        updateQuoteColorSetting(colorValue, true); // Save to settings
     });
 
-    // Real-time update when typing in text input (with immediate validation)
+    // Update when typing in text input (with validation)
     $('#quote-color-input').on('input', function() {
         const colorValue = $(this).val();
-        
-        // Only validate if it looks like a potentially valid hex
-        if (colorValue && isValidHexColor(colorValue)) {
-            const normalizedColor = normalizeHexColor(colorValue);
 
-            $('#quote-color-input').val(normalizedColor); // Update input to show normalized value
-            $('#quote-color-picker').val(normalizedColor); // Keep color picker in sync
-            
-            // Update the settings and save immediately
-            window.extension_settings[MODULE_NAME].quoteColor = normalizedColor;
-            window.saveSettingsDebounced();
-            
-            // Refresh the quotes color extension with the new color
-            registerQuotesColorExtension(window.extension_settings[MODULE_NAME].quoteColor);
-        }
-        // If invalid, we don't update the settings until the 'change' event (when user finishes typing)
+        updateQuoteColorSetting(colorValue, false); // Don't save to settings yet, just update UI
     });
 
     // Update panel colors when settings change
