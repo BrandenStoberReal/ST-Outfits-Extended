@@ -9,6 +9,7 @@ import { updateForCurrentCharacter } from '../services/CharacterService.js';
 // Import utilities
 import { customMacroSystem } from '../utils/CustomMacroSystem.js';
 import { extension_api } from '../common/shared.js';
+import { generateInstanceIdFromText } from '../utils/utility.js';
 
 // Import store
 import { outfitStore } from '../common/Store.js';
@@ -181,7 +182,7 @@ export async function initializeExtension() {
 
     registerOutfitCommands(botManager, userManager, autoOutfitSystem);
 
-    function processMacrosInFirstMessage() {
+    async function processMacrosInFirstMessage() {
         try {
             const context = getContext();
 
@@ -189,7 +190,30 @@ export async function initializeExtension() {
                 const firstBotMessage = context.chat.find(message => !message.is_user && !message.is_system);
 
                 if (firstBotMessage) {
-                    // Update the message data with macro replacements
+                    // Generate and set instance ID based on the original first message content (before macro processing)
+                    // This ensures different conversations have different outfit instances and the ID remains stable
+                    // regardless of what the macros evaluate to
+                    let instanceId = await generateInstanceIdFromText(firstBotMessage.mes);
+                    
+                    // Update managers with character info before setting instance ID
+                    // This ensures that the managers have the correct character information
+                    if (context.characters && context.characterId !== undefined && context.characterId !== null) {
+                        const currentChar = context.characters[context.characterId];
+
+                        if (currentChar && currentChar.name) {
+                            botManager.setCharacter(currentChar.name, context.characterId.toString());
+                        }
+                    }
+
+                    // Set the instance ID in the store for global access
+                    outfitStore.setCurrentInstanceId(instanceId);
+                    
+                    // Set the instance ID in both bot and user managers to ensure
+                    // they are working with the correct instance
+                    botManager.setOutfitInstanceId(instanceId);
+                    userManager.setOutfitInstanceId(instanceId);
+
+                    // Update the message data with macro replacements (after instance ID is set)
                     const processedText = customMacroSystem.replaceMacrosInText(firstBotMessage.mes);
 
                     firstBotMessage.mes = processedText;

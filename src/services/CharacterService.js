@@ -43,8 +43,7 @@ export async function updateForCurrentCharacter(botManager, userManager, botPane
             const currentChar = context.characters[context.characterId];
 
             if (currentChar && currentChar.name) {
-                botManager.setCharacter(currentChar.name);
-                botManager.setCharacterId(context.characterId.toString());
+                botManager.setCharacter(currentChar.name, context.characterId.toString());
             }
         }
         

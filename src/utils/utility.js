@@ -12,10 +12,10 @@ function generateInstanceIdFromTextSimple(text) {
 }
 
 /**
- * Normalizes text by removing outfit variable values to ensure consistent instance IDs
+ * Normalizes text by removing macro values to ensure consistent instance IDs
  * even when dynamic variables change.
  * @param {string} text - The input text.
- * @returns {string} The normalized text with outfit variable values removed.
+ * @returns {string} The normalized text with macro values replaced by consistent placeholders.
  */
 function normalizeTextForInstanceId(text) {
     if (!text || typeof text !== 'string') {
@@ -24,7 +24,49 @@ function normalizeTextForInstanceId(text) {
     
     let normalizedText = text;
     
-    // Remove any outfit-related terms with their values
+    // Replace all macro patterns (like {{getglobalvar::Emma_headwear}} or {{char_topwear}} or {{user_neck-accessory}})
+    // with consistent placeholders to ensure stable instance IDs regardless of dynamic content
+    
+    // First, find and replace all macro patterns with consistent placeholders
+    let index = 0;
+
+    while (index < normalizedText.length) {
+        const openIdx = normalizedText.indexOf('{{', index);
+
+        if (openIdx === -1) {
+            break; // No more potential macros
+        }
+
+        const closeIdx = normalizedText.indexOf('}}', openIdx);
+
+        if (closeIdx === -1) {
+            break; // Malformed macro, no closing brackets
+        }
+
+        const macroContent = normalizedText.substring(openIdx + 2, closeIdx);
+        
+        // Check if it looks like an outfit macro (contains underscore and a slot name)
+        if (macroContent.includes('_')) {
+            // This is likely an outfit macro, replace with a stable placeholder
+            const parts = macroContent.split('_');
+            const slotName = parts.slice(1).join('_'); // Handle slots with hyphens like 'head-accessory'
+            
+            // Replace the entire macro with a normalized version
+            const placeholder = `{{${parts[0]}_${slotName}}}`; // Keep the prefix and slot but normalize the value
+
+            normalizedText = normalizedText.substring(0, openIdx) + 
+                            placeholder + 
+                            normalizedText.substring(closeIdx + 2);
+            
+            // Move index to just after the replacement
+            index = openIdx + placeholder.length;
+        } else {
+            // Not an outfit macro, continue to next
+            index = closeIdx + 2;
+        }
+    }
+    
+    // Also remove any outfit-related terms with their values to ensure consistent instance IDs
     // This is a simple string replacement approach
     const outfitPhrases = [
         'wearing', 'wears', 'has on', 'is in', 'puts on', 'puts', 'removes', 'took off', 
