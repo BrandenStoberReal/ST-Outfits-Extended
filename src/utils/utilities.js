@@ -123,8 +123,30 @@ function normalizeTextForInstanceId(text) {
     if (!text || typeof text !== 'string') {
         return '';
     }
-    // This regex removes the content inside the macros, leaving the braces.
-    return text.replace(/\{\{.*?\}\}/g, '{{}}');
+    
+    let result = text;
+    let startIndex = 0;
+
+    while (startIndex < result.length) {
+        const openIdx = result.indexOf('{{', startIndex);
+
+        if (openIdx === -1) {
+            break;
+        }
+        
+        const closeIdx = result.indexOf('}}', openIdx);
+
+        if (closeIdx === -1) {
+            break;
+        }
+        
+        // Replace the entire {{...}} pattern with {{}}
+        result = result.substring(0, openIdx) + '{{}}' + result.substring(closeIdx + 2);
+        // Advance startIndex to the next position after the replacement
+        startIndex = openIdx + '{{}}'.length;
+    }
+    
+    return result;
 }
 
 /**
