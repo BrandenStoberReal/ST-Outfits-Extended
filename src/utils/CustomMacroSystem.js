@@ -50,6 +50,7 @@ class CustomMacroSystem {
             if (context && context.chat) {
                 for (let i = context.chat.length - 1; i >= 0; i--) {
                     const message = context.chat[i];
+
                     if (!message.is_user && !message.is_system && message.name) {
                         return message.name;
                     }
@@ -81,8 +82,10 @@ class CustomMacroSystem {
 
             if (characterName) {
                 const context = window.getContext ? window.getContext() : null;
+
                 if (context && context.characters) {
                     const character = context.characters.find(c => c.name === characterName);
+
                     if (character) {
                         charId = context.characters.indexOf(character);
                     } else {
@@ -100,10 +103,12 @@ class CustomMacroSystem {
             if (macroType === 'char' || macroType === 'bot') {
                 if (charId !== null && charId !== undefined) {
                     const outfitData = outfitStore.getBotOutfit(charId, instanceId);
+
                     return outfitData[slotName] || 'None';
                 }
             } else if (macroType === 'user') {
                 const outfitData = outfitStore.getUserOutfit(instanceId);
+
                 return outfitData[slotName] || 'None';
             }
         } catch (error) {
@@ -124,6 +129,7 @@ class CustomMacroSystem {
             if (context && context.chat) {
                 for (let i = context.chat.length - 1; i >= 0; i--) {
                     const message = context.chat[i];
+
                     if (message.is_user && message.name) {
                         return message.name;
                     }
@@ -133,6 +139,7 @@ class CustomMacroSystem {
             if (typeof window.power_user !== 'undefined' && window.power_user && 
                 typeof window.user_avatar !== 'undefined' && window.user_avatar) {
                 const personaName = window.power_user.personas[window.user_avatar];
+
                 return personaName || 'User';
             }
 
@@ -158,10 +165,12 @@ class CustomMacroSystem {
 
         while (index < text.length) {
             const openIdx = text.indexOf('{{', index);
-            if (openIdx === -1) break;
+
+            if (openIdx === -1) {break;}
 
             const closeIdx = text.indexOf('}}', openIdx);
-            if (closeIdx === -1) break;
+
+            if (closeIdx === -1) {break;}
 
             const macroContent = text.substring(openIdx + 2, closeIdx);
             const fullMatch = `{{${macroContent}}}`;
@@ -171,6 +180,7 @@ class CustomMacroSystem {
 
             if (parts.length === 1) {
                 const singlePart = parts[0];
+
                 if (this.allSlots.includes(singlePart)) {
                     macroType = 'char';
                     slot = singlePart;
@@ -234,15 +244,69 @@ class CustomMacroSystem {
 
     _formatOutfitSection(entity, sectionTitle, slots, outfitData, macroPrefix) {
         const hasItems = outfitData.some(data => slots.includes(data.name) && data.value !== 'None' && data.value !== '');
-        if (!hasItems) return '';
+
+        if (!hasItems) {return '';}
 
         let section = `\n**${entity}'s Current ${sectionTitle}**\n`;
+
         slots.forEach(slot => {
             const slotData = outfitData.find(data => data.name === slot);
+
             if (slotData && slotData.value !== 'None' && slotData.value !== '') {
                 const formattedSlotName = slot.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).replace(/-/g, ' ');
+
                 section += `**${formattedSlotName}:** {{${macroPrefix}_${slotData.name}}}\n`;
             }
         });
         return section;
     }
+
+    /**
+     * Replace all custom macros in text with their actual values
+     * @param {string} text - The text to process
+     * @returns {string} - The processed text with macros replaced
+     */
+    replaceMacrosInText(text) {
+        if (!text || typeof text !== 'string') {
+            return text;
+        }
+
+        // Extract all custom macros from the text
+        const macros = this.extractCustomMacros(text);
+        
+        // Process macros in reverse order to avoid index shifting issues
+        let result = text;
+
+        for (let i = macros.length - 1; i >= 0; i--) {
+            const macro = macros[i];
+            let replacement;
+
+            if (macro.slot) {
+                // This is a slot-based macro like {{char_topwear}} or {{user_headwear}}
+                replacement = this.getCurrentSlotValue(macro.type, macro.slot);
+            } else {
+                // This is a name-based macro like {{char}} or {{user}}
+                if (macro.type === 'char' || macro.type === 'bot') {
+                    replacement = this.getCurrentCharName();
+                } else if (macro.type === 'user') {
+                    replacement = this.getCurrentUserName();
+                } else {
+                    // This could be a character-specific macro like {{Emma_topwear}}
+                    // where macro.type would be the character name and we would need to use getCurrentSlotValue
+                    // with the character name parameter, but since there's no slot, return the character name
+                    replacement = macro.type;
+                }
+            }
+
+            // Replace the macro in the text
+            result = result.substring(0, macro.startIndex) + 
+                    replacement + 
+                    result.substring(macro.startIndex + macro.fullMatch.length);
+        }
+
+        return result;
+    }
+}
+
+// Create and export a single instance of the CustomMacroSystem
+export const customMacroSystem = new CustomMacroSystem();

@@ -39,11 +39,16 @@ async function processMacrosInFirstMessage() {
         const firstBotMessage = context.chat.find(message => !message.is_user && !message.is_system);
 
         if (firstBotMessage) {
+            // Use the existing cleanOutfitMacrosFromText function to remove macro patterns
+            const processedMessage = cleanOutfitMacrosFromText(firstBotMessage.mes);
+            
             // Collect all possible outfit values for this character to remove from the message before hashing
+            // This includes values from all known outfit instances and presets for this character
             const outfitValues = getAllOutfitValuesForCharacter(context.characterId);
             
-            // Generate instance ID with outfit values removed
-            const instanceId = await generateInstanceIdFromText(firstBotMessage.mes, outfitValues);
+            // Generate instance ID with outfit values removed from the processed message
+            // This ensures consistent instance IDs even when outfit values change
+            const instanceId = await generateInstanceIdFromText(processedMessage, outfitValues);
 
             outfitStore.setCurrentInstanceId(instanceId);
         }
