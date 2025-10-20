@@ -2,23 +2,13 @@
  * Utility functions for Outfit Tracker Extension
  */
 
-/**
- * Generates a short identifier from an ID
- * @param {string} id - The ID to shorten
- * @param {number} maxLength - Maximum length for the shortened ID (default: 8)
- * @returns {string} - The shortened ID
- */
 export function generateShortId(id, maxLength = 8) {
     if (!id) {return '';}
-    
-    // If the ID is already a short identifier, return it
     if (id.startsWith('temp_')) {return 'temp';}
     
-    // Create a simple short identifier by taking up to maxLength characters of the ID
-    // but only alphanumeric characters for better readability
     const cleanId = id.replace(/[^a-zA-Z0-9]/g, '');
-    
-    return cleanId.substring(0, maxLength);
+
+    return cleanId.substring(0, maxLength) || id.substring(0, maxLength);
 }
 
 /**
@@ -30,7 +20,7 @@ export function generateMessageHash(text) {
     if (!text) {return '';}
     
     let hash = 0;
-    const str = text.substring(0, 100); // Only use first 100 chars to keep ID manageable
+    const str = text.substring(0, 100);
     
     for (let i = 0; i < str.length; i++) {
         const char = str.charCodeAt(i);
@@ -39,7 +29,6 @@ export function generateMessageHash(text) {
         hash &= hash; // Convert to 32-bit integer
     }
     
-    // Convert to positive and return 8-character string representation
     return Math.abs(hash).toString(36).substring(0, 8).padEnd(8, '0');
 }
 
@@ -71,22 +60,30 @@ export function isValidSlot(slotName, allSlots) {
  */
 export function safeGet(obj, path, defaultValue = null) {
     try {
-        const keys = path.split('.');
-        let result = obj;
-        
-        for (const key of keys) {
-            if (result === null || result === undefined) {
-                return defaultValue;
-            }
-            result = result[key];
-        }
-        
-        return result !== undefined ? result : defaultValue;
+        return path.split('.').reduce((acc, key) => acc && acc[key], obj) || defaultValue;
     } catch (error) {
         console.error(`Error in safeGet for path "${path}":`, error);
         return defaultValue;
     }
 }
+
+const slotNameMap = {
+    'topunderwear': 'Top Underwear / Inner Top',
+    'bottomunderwear': 'Bottom Underwear / Inner Bottom',
+    'footunderwear': 'Foot Underwear / Socks',
+    'head-accessory': 'Head Accessory',
+    'ears-accessory': 'Ears Accessory',
+    'eyes-accessory': 'Eyes Accessory',
+    'mouth-accessory': 'Mouth Accessory',
+    'neck-accessory': 'Neck Accessory',
+    'body-accessory': 'Body Accessory',
+    'arms-accessory': 'Arms Accessory',
+    'hands-accessory': 'Hands Accessory',
+    'waist-accessory': 'Waist Accessory',
+    'bottom-accessory': 'Bottom Accessory',
+    'legs-accessory': 'Legs Accessory',
+    'foot-accessory': 'Foot Accessory'
+};
 
 /**
  * Formats a slot name for display
@@ -94,34 +91,97 @@ export function safeGet(obj, path, defaultValue = null) {
  * @returns {string} - The formatted slot name
  */
 export function formatSlotName(slotName) {
-    // First do some special replacements for confusing terms
-    let formattedName = slotName;
-    
-    // Replace confusing slot names with more descriptive equivalents
-    formattedName = formattedName
-        .replace('topunderwear', 'Top Underwear / Inner Top')
-        .replace('bottomunderwear', 'Bottom Underwear / Inner Bottom')
-        .replace('footunderwear', 'Foot Underwear / Socks');
+    if (slotNameMap[slotName]) {
+        return slotNameMap[slotName];
+    }
 
-    // Make accessory labels more descriptive
-    formattedName = formattedName
-        .replace('head-accessory', 'Head Accessory')
-        .replace('ears-accessory', 'Ears Accessory')
-        .replace('eyes-accessory', 'Eyes Accessory')
-        .replace('mouth-accessory', 'Mouth Accessory')
-        .replace('neck-accessory', 'Neck Accessory')
-        .replace('body-accessory', 'Body Accessory')
-        .replace('arms-accessory', 'Arms Accessory')
-        .replace('hands-accessory', 'Hands Accessory')
-        .replace('waist-accessory', 'Waist Accessory')
-        .replace('bottom-accessory', 'Bottom Accessory')
-        .replace('legs-accessory', 'Legs Accessory')
-        .replace('foot-accessory', 'Foot Accessory');
-
-    // Then apply general formatting
-    return formattedName
+    return slotName
         .replace(/([a-z])([A-Z])/g, '$1 $2')
         .replace(/^./, str => str.toUpperCase())
         .replace(/-/g, ' ')
         .replace('underwear', 'Underwear');
+}
+
+function generateInstanceIdFromTextSimple(text) {
+    let hash = 0;
+
+    for (let i = 0; i < text.length; i++) {
+        const char = text.charCodeAt(i);
+
+        hash = ((hash << 5) - hash) + char;
+        hash |= 0; // Convert to 32-bit integer
+    }
+    return Math.abs(hash).toString(36);
+}
+
+/**
+ * Normalizes text by removing macro values to ensure consistent instance IDs.
+ * @param {string} text - The input text.
+ * @returns {string} The normalized text.
+ */
+function normalizeTextForInstanceId(text) {
+    if (!text || typeof text !== 'string') {
+        return '';
+    }
+    // This regex removes the content inside the macros, leaving the braces.
+    return text.replace(/\{\{.*?\}\}/g, '{{}}');
+}
+
+/**
+ * Generates a unique instance ID from a given text.
+ * @param {string} text - The input text.
+ * @param {Array<string>} [valuesToRemove] - Optional array of values to remove from the text before hashing.
+ * @returns {Promise<string>} A promise that resolves to the instance ID.
+ */
+export async function generateInstanceIdFromText(text, valuesToRemove = null) {
+    let processedText = text;
+    
+    // If specific values to remove are provided, remove them from the text
+    if (valuesToRemove && Array.isArray(valuesToRemove)) {
+        valuesToRemove.forEach(value => {
+            if (value && typeof value === 'string') {
+                // Remove the value case-insensitively
+                let tempText = processedText;
+                let lowerTempText = tempText.toLowerCase();
+                let lowerValue = value.toLowerCase();
+                
+                let startIndex = 0;
+
+                while ((startIndex = lowerTempText.indexOf(lowerValue, startIndex)) !== -1) {
+                    // Check if it's a complete word match to avoid partial replacements
+                    const endIndex = startIndex + lowerValue.length;
+                    
+                    // Check if it's surrounded by word boundaries
+                    const beforeChar = startIndex > 0 ? lowerTempText.charAt(startIndex - 1) : ' ';
+                    const afterChar = endIndex < lowerTempText.length ? lowerTempText.charAt(endIndex) : ' ';
+                    
+                    if ((beforeChar === ' ' || beforeChar === '.' || beforeChar === ',' || beforeChar === '"' || beforeChar === '\'' || beforeChar === '(' || beforeChar === '[') &&
+                        (afterChar === ' ' || afterChar === '.' || afterChar === ',' || afterChar === '"' || afterChar === '\'' || afterChar === ')' || afterChar === ']')) {
+                        processedText = processedText.substring(0, startIndex) + '[OUTFIT_REMOVED]' + processedText.substring(endIndex);
+                        lowerTempText = processedText.toLowerCase();
+                    }
+                    
+                    startIndex = endIndex;
+                }
+            }
+        });
+    }
+    
+    const normalizedText = normalizeTextForInstanceId(processedText);
+    
+    if (typeof crypto !== 'undefined' && crypto.subtle) {
+        try {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(normalizedText);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 16);
+        } catch (err) {
+            console.warn('Crypto API failed, falling back to simple hash for instance ID generation', err);
+            return generateInstanceIdFromTextSimple(normalizedText);
+        }
+    } else {
+        return generateInstanceIdFromTextSimple(normalizedText);
+    }
 }

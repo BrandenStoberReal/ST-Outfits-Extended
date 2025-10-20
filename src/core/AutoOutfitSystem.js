@@ -1,18 +1,13 @@
-// Import various string processing utilities
-import { replaceAll as replaceAllStr, extractCommands, extractMacros, safeGet } from '../utils/StringProcessor.js';
-
-// Import LLM utility for outfit generation
+import { extractCommands } from '../utils/StringProcessor.js';
 import { generateOutfitFromLLM } from '../services/LLMService.js';
-
-
+import { customMacroSystem } from '../utils/CustomMacroSystem.js';
 
 export class AutoOutfitSystem {
     constructor(outfitManager) {
         this.outfitManager = outfitManager;
         this.isEnabled = false;
         this.systemPrompt = this.getDefaultPrompt();
-        this.connectionProfile = null; // Store connection profile for alternative LLM
-        // Removed regex commandPattern - now using extractCommands function
+        this.connectionProfile = null;
         this.isProcessing = false;
         this.consecutiveFailures = 0;
         this.maxConsecutiveFailures = 5;
@@ -23,11 +18,7 @@ export class AutoOutfitSystem {
         this.commandQueue = [];
         this.isProcessingQueue = false;
         this.processingTimeout = null;
-        
-        // Track initialization state
         this.appInitialized = false;
-        
-        // Add a timestamp to track when the last successful processing occurred
         this.lastSuccessfulProcessing = null;
     }
 
@@ -35,9 +26,9 @@ export class AutoOutfitSystem {
         return `Analyze the recent conversation for any mentions of the character putting on, wearing, removing, or changing clothing items or accessories.
         
 CONTEXT:
-Current outfit for <BOT>:
-{{getglobalvar::<BOT>_headwear}} | {{getglobalvar::<BOT>_topwear}} | {{getglobalvar::<BOT>_topunderwear}} | {{getglobalvar::<BOT>_bottomwear}} | {{getglobalvar::<BOT>_bottomunderwear}} | {{getglobalvar::<BOT>_footwear}} | {{getglobalvar::<BOT>_footunderwear}}
-Accessories: {{getglobalvar::<BOT>_head-accessory}} | {{getglobalvar::<BOT>_ears-accessory}} | {{getglobalvar::<BOT>_eyes-accessory}} | {{getglobalvar::<BOT>_mouth-accessory}} | {{getglobalvar::<BOT>_neck-accessory}} | {{getglobalvar::<BOT>_body-accessory}} | {{getglobalvar::<BOT>_arms-accessory}} | {{getglobalvar::<BOT>_hands-accessory}} | {{getglobalvar::<BOT>_waist-accessory}} | {{getglobalvar::<BOT>_bottom-accessory}} | {{getglobalvar::<BOT>_legs-accessory}} | {{getglobalvar::<BOT>_foot-accessory}}
+Current outfit for {{char}}:
+{{char_headwear}} | {{char_topwear}} | {{char_topunderwear}} | {{char_bottomwear}} | {{char_bottomunderwear}} | {{char_footwear}} | {{char_footunderwear}}
+Accessories: {{char_head-accessory}} | {{char_ears-accessory}} | {{char_eyes-accessory}} | {{char_mouth-accessory}} | {{char_neck-accessory}} | {{char_body-accessory}} | {{char_arms-accessory}} | {{char_hands-accessory}} | {{char_waist-accessory}} | {{char_bottom-accessory}} | {{char_legs-accessory}} | {{char_foot-accessory}}
 
 TASK:
 If clothing/accessory changes occur, output only outfit-system commands (one per line) in this exact format:
@@ -87,26 +78,18 @@ NOTES:
             }
             
             const { eventSource, event_types } = context;
-            
-            // Use MESSAGE_RECEIVED instead of CHARACTER_MESSAGE_RENDERED
-            // This event fires when new messages are added to chat (before rendering)
+
             this.eventHandler = (data) => {
-                // Only process AI messages (not user messages) and only after app is initialized
-                if (this.isEnabled && !this.isProcessing && this.appInitialized && 
-                    data && !data.is_user) {
+                if (this.isEnabled && !this.isProcessing && this.appInitialized && data && !data.is_user) {
                     console.log('[AutoOutfitSystem] New AI message received, processing...');
-                    // Clear any existing timeout to prevent multiple simultaneous processing
-                    if (this.processingTimeout) {
-                        clearTimeout(this.processingTimeout);
-                    }
+                    if (this.processingTimeout) {clearTimeout(this.processingTimeout);}
                     
-                    // Add a delay before processing to ensure message is fully rendered
                     this.processingTimeout = setTimeout(() => {
                         this.processOutfitCommands().catch(error => {
                             console.error('Auto outfit processing failed:', error);
                             this.consecutiveFailures++;
                         });
-                    }, 1000); // Shorter delay since we're processing earlier
+                    }, 1000);
                 }
             };
             
@@ -126,7 +109,6 @@ NOTES:
                     context.eventSource.off(context.event_types.MESSAGE_RECEIVED, this.eventHandler);
                 }
                 this.eventHandler = null;
-                // Clear any pending timeout
                 if (this.processingTimeout) {
                     clearTimeout(this.processingTimeout);
                     this.processingTimeout = null;
@@ -138,7 +120,6 @@ NOTES:
         }
     }
 
-    // Mark app as initialized to prevent processing of existing messages
     markAppInitialized() {
         if (!this.appInitialized) {
             this.appInitialized = true;
@@ -158,7 +139,6 @@ NOTES:
             return;
         }
         
-        // Check if the outfit manager is properly initialized
         if (!this.outfitManager || !this.outfitManager.setCharacter) {
             console.error('[AutoOutfitSystem] Outfit manager not properly initialized');
             return;
@@ -169,7 +149,6 @@ NOTES:
         
         try {
             await this.processWithRetry();
-            // Record the successful processing time
             this.lastSuccessfulProcessing = new Date();
         } catch (error) {
             console.error('Outfit command processing failed after retries:', error);
@@ -184,21 +163,17 @@ NOTES:
         while (this.currentRetryCount < this.maxRetries) {
             try {
                 this.showPopup(`Checking for outfit changes... (Attempt ${this.currentRetryCount + 1}/${this.maxRetries})`, 'info');
-                
                 await this.executeGenCommand();
-                
                 this.consecutiveFailures = 0;
                 this.showPopup('Outfit check completed.', 'success');
-                return; // Success!
-                
+                return;
             } catch (error) {
                 this.currentRetryCount++;
-                
                 if (this.currentRetryCount < this.maxRetries) {
                     console.log(`[AutoOutfitSystem] Attempt ${this.currentRetryCount} failed, retrying in ${this.retryDelay}ms...`, error);
                     await this.delay(this.retryDelay);
                 } else {
-                    throw error; // All retries exhausted
+                    throw error;
                 }
             }
         }
@@ -217,10 +192,7 @@ NOTES:
         console.log('[AutoOutfitSystem] Generating outfit commands with LLMService...');
 
         try {
-            const result = await generateOutfitFromLLM(
-                { prompt: promptText },
-                this
-            );
+            const result = await generateOutfitFromLLM({ prompt: promptText }, this);
 
             console.log('[AutoOutfitSystem] Generated result:', result);
 
@@ -242,89 +214,16 @@ NOTES:
     }
 
     replaceMacrosInPrompt(prompt) {
-        try {
-            // Get current character name from the outfit manager
-            const characterName = this.outfitManager.character || '<BOT>';
-            // Normalize the character name to create the proper variable name format
-            const normalizedCharName = characterName.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
-
-            // Replace all <BOT> instances with the actual character name
-            let processedPrompt = replaceAllStr(prompt, '<BOT>', characterName);
-            
-            // Replace {{user}} with the current active persona name
-            // Get the current persona name from the active chat
-            const userName = this.getUserName();
-            
-            processedPrompt = replaceAllStr(processedPrompt, '{{user}}', userName);
-
-            // Extract all macros from the prompt
-            const macros = extractMacros(processedPrompt);
-            
-            // Process each macro and replace with actual values
-            for (const { fullMacro, varName } of macros) {
-                let value = 'None'; // Default value if not found
-
-                // Check if it's a character-specific variable (checking multiple possible formats)
-                if (varName.startsWith(`${characterName}_`) || varName.startsWith(`${normalizedCharName}_`)) {
-                    // Extract slot name after the character name prefix
-                    let slot;
-
-                    if (varName.startsWith(`${characterName}_`)) {
-                        slot = varName.substring(characterName.length + 1);
-                    } else if (varName.startsWith(`${normalizedCharName}_`)) {
-                        slot = varName.substring(normalizedCharName.length + 1);
-                    }
-                    
-                    // Try to get the value using both formats to ensure compatibility
-                    const originalFormatVarName = `${characterName}_${slot}`;
-                    const normalizedFormatVarName = `${normalizedCharName}_${slot}`;
-                    
-                    // Use safeGet to access global variables
-                    const globalVars = safeGet(window, 'extension_settings.variables.global', {});
-                    
-                    if (globalVars[originalFormatVarName] !== undefined) {
-                        value = globalVars[originalFormatVarName];
-                    } else if (globalVars[normalizedFormatVarName] !== undefined) {
-                        value = globalVars[normalizedFormatVarName];
-                    }
-                }
-                // Check if it's a user variable
-                else if (varName.startsWith('User_')) {
-                    try {
-                        const globalVars = safeGet(window, 'extension_settings.variables.global', {});
-
-                        if (globalVars[varName] !== undefined) {
-                            value = globalVars[varName];
-                        }
-                    } catch (error) {
-                        console.warn('Could not access global variables for macro replacement:', error);
-                    }
-                }
-                
-                // Replace the macro with the actual value
-                processedPrompt = replaceAllStr(processedPrompt, fullMacro, value);
-            }
-            
-            return processedPrompt;
-        } catch (error) {
-            console.error('[AutoOutfitSystem] Error in replaceMacrosInPrompt:', error);
-            // Return the original prompt if processing fails
-            return prompt;
-        }
+        return customMacroSystem.replaceMacrosInText(prompt);
     }
 
     parseGeneratedText(text) {
-        if (!text) {return [];}
-        
-        // Check if the text is just "[none]" (meaning no changes detected)
-        if (text.trim() === '[none]') {
-            console.log('[AutoOutfitSystem] No outfit changes detected by LLM');
+        if (!text || text.trim() === '[none]') {
             return [];
         }
         
-        // Use the non-regex function to extract commands
         const commands = extractCommands(text);
-        
+
         console.log(`[AutoOutfitSystem] Found ${commands.length} commands:`, commands);
         return commands;
     }
@@ -356,8 +255,6 @@ NOTES:
         }
         
         if (successfulCommands.length > 0 && window.extension_settings?.outfit_tracker?.enableSysMessages) {
-            console.log(`[AutoOutfitSystem] Showing ${successfulCommands.length} popup messages`);
-            
             const messagesByCharacter = {};
 
             successfulCommands.forEach(({ message }) => {
@@ -370,11 +267,7 @@ NOTES:
             });
             
             for (const [charName, messages] of Object.entries(messagesByCharacter)) {
-                if (messages.length === 1) {
-                    this.showPopup(messages[0], 'info');
-                } else {
-                    this.showPopup(`${charName} made multiple outfit changes.`, 'info');
-                }
+                this.showPopup(messages.length === 1 ? messages[0] : `${charName} made multiple outfit changes.`, 'info');
                 await this.delay(1000);
             }
             
@@ -390,75 +283,20 @@ NOTES:
 
     async processSingleCommand(command) {
         try {
-            // Non-regex approach to parse command
-            if (!command.startsWith('outfit-system_')) {
+            const commandRegex = /^outfit-system_(wear|remove|change)_([a-zA-Z0-9_-]+)\((?:"(.*?)")?\)$/;
+            const match = command.match(commandRegex);
+
+            if (!match) {
                 throw new Error(`Invalid command format: ${command}`);
             }
-            
-            // Extract the action part
-            const actionStart = 'outfit-system_'.length;
-            const actionEnd = command.indexOf('_', actionStart);
 
-            if (actionEnd === -1) {
-                throw new Error(`Invalid command format: ${command}`);
-            }
-            
-            const action = command.substring(actionStart, actionEnd);
+            const [, action, slot, value] = match;
+            const cleanValue = value !== undefined ? value.replace(/"/g, '').trim() : '';
 
-            if (!['wear', 'remove', 'change'].includes(action)) {
-                throw new Error(`Invalid action: ${action}. Valid actions: wear, remove, change`);
-            }
-            
-            // Extract the slot part
-            const slotStart = actionEnd + 1;
-            const slotEnd = command.indexOf('(', slotStart);
-
-            if (slotEnd === -1) {
-                throw new Error(`Invalid command format: ${command}`);
-            }
-            
-            const slot = command.substring(slotStart, slotEnd);
-            
-            // Extract the value part
-            const valueStart = slotEnd + 1;
-            let value = '';
-            
-            if (command.charAt(valueStart) === '"') { // If value is quoted
-                const quoteStart = valueStart + 1;
-                let i = quoteStart;
-                let escaped = false;
-                
-                while (i < command.length - 1) {
-                    const char = command.charAt(i);
-                    
-                    if (escaped) {
-                        value += char;
-                        escaped = false;
-                    } else if (char === '\\') {
-                        escaped = true;
-                    } else if (char === '"') {
-                        break; // Found closing quote
-                    } else {
-                        value += char;
-                    }
-                    
-                    i++;
-                }
-            } else {
-                // Value is not quoted, extract until closing parenthesis
-                const closingParen = command.indexOf(')', valueStart);
-
-                if (closingParen !== -1) {
-                    value = command.substring(valueStart, closingParen);
-                }
-            }
-            
-            const cleanValue = value.replace(/"/g, '').trim();
-            
             console.log(`[AutoOutfitSystem] Processing: ${action} ${slot} "${cleanValue}"`);
-            
+
             const message = await this.executeCommand(action, slot, cleanValue);
-            
+
             return {
                 success: true,
                 command,
@@ -467,7 +305,6 @@ NOTES:
                 slot,
                 value: cleanValue
             };
-            
         } catch (error) {
             return {
                 success: false,
@@ -479,7 +316,7 @@ NOTES:
 
     async executeCommand(action, slot, value) {
         const validSlots = [...this.outfitManager.slots];
-        
+
         if (!validSlots.includes(slot)) {
             throw new Error(`Invalid slot: ${slot}. Valid slots: ${validSlots.join(', ')}`);
         }
@@ -508,30 +345,18 @@ NOTES:
     getLastMessages(count = 3) {
         try {
             const context = window.getContext();
-            const chat = safeGet(context, 'chat');
+            const chat = context?.chat;
             
             if (!chat || !Array.isArray(chat) || chat.length === 0) {
-                console.log('[AutoOutfitSystem] No chat or empty chat array');
                 return '';
             }
             
-            const validMessages = chat.filter(msg => 
-                msg && typeof msg === 'object' && 
-                typeof msg.mes === 'string' && 
-                typeof msg.is_user === 'boolean'
-            );
-            
-            if (validMessages.length === 0) {
-                console.log('[AutoOutfitSystem] No valid messages found');
-                return '';
-            }
-            
-            const recentMessages = validMessages.slice(-count);
+            return chat.slice(-count).map(msg => {
+                if (!msg || typeof msg.mes !== 'string') {return '';}
+                const prefix = msg.is_user ? 'User' : (msg.name || 'AI');
 
-            return recentMessages.map(msg => 
-                `${msg.is_user ? 'User' : (safeGet(msg, 'name', 'AI'))}: ${safeGet(msg, 'mes', '')}`
-            ).join('\n');
-            
+                return `${prefix}: ${msg.mes}`;
+            }).join('\n');
         } catch (error) {
             console.error('Error getting last messages:', error);
             return '';
@@ -545,20 +370,8 @@ NOTES:
                     timeOut: type === 'error' ? 5000 : 3000,
                     extendedTimeOut: type === 'error' ? 10000 : 5000
                 };
-                
-                switch(type) {
-                case 'error':
-                    toastr.error(message, 'Outfit System', options);
-                    break;
-                case 'warning':
-                    toastr.warning(message, 'Outfit System', options);
-                    break;
-                case 'success':
-                    toastr.success(message, 'Outfit System', options);
-                    break;
-                default:
-                    toastr.info(message, 'Outfit System', options);
-                }
+
+                toastr[type](message, 'Outfit System', options);
             }
         } catch (error) {
             console.error('Failed to show popup:', error);
@@ -600,47 +413,12 @@ NOTES:
         return '[Outfit System] System prompt updated.';
     }
 
-    // Method to get the processed system prompt with macros replaced
     getProcessedSystemPrompt() {
         return this.replaceMacrosInPrompt(this.systemPrompt);
     }
     
-    // Helper method to get the current user's name
     getUserName() {
-        // Default fallback
-        let userName = 'User';
-        
-        // Get the context and try to extract persona from the current chat
-        const context = window.getContext ? window.getContext() : null;
-
-        if (context && safeGet(context, 'chat')) {
-            // Filter messages that are from the user to get their avatars
-            const userMessages = safeGet(context, 'chat', []).filter(message => message.is_user);
-            
-            if (userMessages.length > 0) {
-                // Get the most recent user message to determine current persona
-                const mostRecentUserMessage = userMessages[userMessages.length - 1];
-                
-                userName = this.extractUserName(mostRecentUserMessage);
-            }
-        }
-        
-        // Fallback: try the old power_user method if we still don't have a name
-        if (userName === 'User') {
-            if (typeof window.power_user !== 'undefined' && window.power_user && window.power_user.personas && 
-                typeof window.user_avatar !== 'undefined' && window.user_avatar) {
-                // Get the name from the mapping of avatar to name
-                const personaName = window.power_user.personas[window.user_avatar];
-                
-                // If we found the persona in the mapping, use it; otherwise fall back to name1 or 'User'
-                userName = personaName || (typeof window.name1 !== 'undefined' ? window.name1 : 'User');
-            } else if (typeof window.name1 !== 'undefined' && window.name1) {
-                // Fallback to window.name1 if the above method doesn't work
-                userName = window.name1;
-            }
-        }
-        
-        return userName;
+        return customMacroSystem.getCurrentUserName();
     }
 
     resetToDefaultPrompt() {
@@ -656,38 +434,4 @@ NOTES:
     getConnectionProfile() {
         return this.connectionProfile;
     }
-    
-
-    
-
-
-    // Helper function to extract username from message
-    extractUserName(mostRecentUserMessage) {
-        let userName = null;
-        
-        // If the message has a force_avatar property (used for personas), extract the name
-        if (mostRecentUserMessage.force_avatar) {
-            // Extract the persona name from the avatar path
-            const USER_AVATAR_PATH = 'useravatars/';
-
-            if (typeof mostRecentUserMessage.force_avatar === 'string' && 
-                mostRecentUserMessage.force_avatar.startsWith(USER_AVATAR_PATH)) {
-                userName = mostRecentUserMessage.force_avatar.replace(USER_AVATAR_PATH, '');
-                
-                // Remove file extension if present
-                const lastDotIndex = userName.lastIndexOf('.');
-
-                if (lastDotIndex > 0) {
-                    userName = userName.substring(0, lastDotIndex);
-                }
-            }
-        } else if (mostRecentUserMessage.name) {
-            // If force_avatar doesn't exist, try to get name from the message itself
-            userName = mostRecentUserMessage.name;
-        }
-        
-        return userName;
-    }
-
-
 }

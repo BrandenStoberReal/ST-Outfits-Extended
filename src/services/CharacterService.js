@@ -7,18 +7,29 @@
  */
 function refreshMacroProcessing() {
     try {
-        // If there's a custom macro system reference in the global context, use it
         if (window.customMacroSystem && typeof window.customMacroSystem.replaceMacrosInText === 'function') {
-            // Process all messages in the chat to ensure macros are updated
             const context = window.getContext();
 
-            if (context && context.chat && context.chat.length > 0) {
-                // Process all messages in the chat, not just the first one
-                for (const message of context.chat) {
-                    if (message.mes && typeof message.mes === 'string') {
+            if (context && context.chat) {
+                const visibleMessages = Array.from(document.querySelectorAll('#chat .mes'));
+
+                visibleMessages.forEach(messageElement => {
+                    const messageIndex = Array.from(messageElement.parentElement.children).indexOf(messageElement);
+                    const message = context.chat[messageIndex];
+
+                    if (message && message.mes && typeof message.mes === 'string') {
+                        const originalMes = message.mes;
+
                         message.mes = window.customMacroSystem.replaceMacrosInText(message.mes);
+                        if (originalMes !== message.mes) {
+                            const textElement = messageElement.querySelector('.mes_text');
+
+                            if (textElement) {
+                                textElement.innerHTML = message.mes;
+                            }
+                        }
                     }
-                }
+                });
             }
         }
     } catch (error) {

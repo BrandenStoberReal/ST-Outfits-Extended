@@ -638,9 +638,10 @@ registerMacro('fizz', 'buzz');
 registerMacro('tomorrow', () => {
 return new Date(Date.now() + 24 * 60 * 60 * 1000).toLocaleDateString();
 });
-
+```
 When a custom macro is no longer needed, remove it using the unregisterMacro() function:
 
+```js
 const { unregisterMacro } = SillyTavern.getContext();
 
 // Unregister the 'fizz' macro

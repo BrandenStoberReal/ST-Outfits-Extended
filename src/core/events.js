@@ -3,7 +3,8 @@ export const EXTENSION_EVENTS = {
     CONTEXT_UPDATED: 'outfit-tracker-context-updated',
     OUTFIT_CHANGED: 'outfit-tracker-outfit-changed',
     PRESET_LOADED: 'outfit-tracker-preset-loaded',
-    PANEL_VISIBILITY_CHANGED: 'outfit-tracker-panel-visibility-changed'
+    PANEL_VISIBILITY_CHANGED: 'outfit-tracker-panel-visibility-changed',
+    CHAT_CLEARED: 'outfit-tracker-chat-cleared'
 };
 
 // Simple event bus implementation

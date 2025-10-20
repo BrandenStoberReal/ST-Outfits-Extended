@@ -1,36 +1,22 @@
-// Import modules from SillyTavern core
 import { getContext, extension_settings } from '../../../../../../scripts/extensions.js';
-import { saveSettingsDebounced, converter } from '../../../../../../script.js';
-
-// Import services
+import { saveSettingsDebounced } from '../../../../../../script.js';
 import { wipeAllOutfits } from '../services/DataService.js';
 import { updateForCurrentCharacter } from '../services/CharacterService.js';
-
-// Import utilities
 import { customMacroSystem } from '../utils/CustomMacroSystem.js';
 import { extension_api } from '../common/shared.js';
-import { generateInstanceIdFromText } from '../utils/utility.js';
-
-// Import store
+import { generateInstanceIdFromText } from '../utils/utilities.js';
 import { outfitStore } from '../common/Store.js';
-
-// Import Showdown extension for colored quotes
-import { registerQuotesColorExtension, markdownQuotesColorExt } from '../../scripts/showdown-quotes-orange.js';
-
-// Import managers and panels
+import { registerQuotesColorExtension } from '../../scripts/showdown-quotes-orange.js';
 import { NewBotOutfitManager } from '../managers/NewBotOutfitManager.js';
 import { BotOutfitPanel } from '../panels/BotOutfitPanel.js';
 import { NewUserOutfitManager } from '../managers/NewUserOutfitManager.js';
 import { UserOutfitPanel } from '../panels/UserOutfitPanel.js';
-
-// Import core components
 import { setupEventListeners } from './EventSystem.js';
 import { registerOutfitCommands } from './OutfitCommands.js';
 import { createSettingsUI } from './SettingsUI.js';
 import { initSettings } from './settings.js';
 import { CLOTHING_SLOTS, ACCESSORY_SLOTS, ALL_SLOTS } from '../config/constants.js';
 
-// Import AutoOutfitSystem with error handling
 let AutoOutfitSystem;
 
 async function loadAutoOutfitSystem() {
@@ -40,67 +26,256 @@ async function loadAutoOutfitSystem() {
         AutoOutfitSystem = autoOutfitModule.AutoOutfitSystem;
     } catch (error) {
         console.error('[OutfitTracker] Failed to load AutoOutfitSystem:', error);
-        AutoOutfitSystem = class DummyAutoOutfitSystem {
-            constructor(outfitManager) {
-                this.outfitManager = outfitManager;
-                this.isEnabled = false;
-                this.systemPrompt = 'Dummy system prompt for outfit detection';
-                this.connectionProfile = null;
-                console.warn('[OutfitTracker] AutoOutfitSystem failed to load, using dummy implementation.');
-            }
-
-            enable() {
-                this.isEnabled = true;
-                console.warn('[OutfitTracker] Dummy AutoOutfitSystem enabled (no actual functionality)');
-                return '[Outfit System] Auto outfit updates enabled (dummy implementation).';
-            }
-
-            disable() {
-                this.isEnabled = false;
-                console.warn('[OutfitTracker] Dummy AutoOutfitSystem disabled');
-                return '[Outfit System] Auto outfit updates disabled (dummy implementation).';
-            }
-
-            setPrompt(prompt) {
-                this.systemPrompt = prompt;
-                console.warn('[OutfitTracker] Dummy AutoOutfitSystem prompt updated');
-            }
-
-            setConnectionProfile(profile) {
-                this.connectionProfile = profile;
-                console.warn('[OutfitTracker] Dummy AutoOutfitSystem connection profile updated');
-            }
-
-            getConnectionProfile() {
-                return this.connectionProfile;
-            }
-
-            async manualTrigger() {
-                console.warn('[OutfitTracker] Manual trigger called on dummy AutoOutfitSystem (no action taken)');
-            }
-
-            getStatus() {
-                return {
-                    enabled: this.isEnabled,
-                    hasPrompt: Boolean(this.systemPrompt),
-                    isProcessing: false,
-                    error: 'AutoOutfitSystem module failed to load'
-                };
-            }
-
-            markAppInitialized() {
-                console.warn('[OutfitTracker] Dummy AutoOutfitSystem marked as initialized');
-            }
-        };
+        AutoOutfitSystem = class DummyAutoOutfitSystem {};
     }
 }
 
-console.log('[OutfitTracker] Starting extension loading...');
+async function processMacrosInFirstMessage() {
+    try {
+        const context = getContext();
 
-/**
- * Initializes the Outfit Tracker extension.
- * This function is called by SillyTavern when the extension is loaded.
- */
+        if (!context || !context.chat) {return;}
+
+        const firstBotMessage = context.chat.find(message => !message.is_user && !message.is_system);
+
+        if (firstBotMessage) {
+            // Collect all possible outfit values for this character to remove from the message before hashing
+            const outfitValues = getAllOutfitValuesForCharacter(context.characterId);
+            
+            // Generate instance ID with outfit values removed
+            const instanceId = await generateInstanceIdFromText(firstBotMessage.mes, outfitValues);
+
+            outfitStore.setCurrentInstanceId(instanceId);
+        }
+    } catch (error) {
+        console.error('[OutfitTracker] Error processing macros in first message:', error);
+    }
+}
+
+// Function to get all outfit values for a character across all instances
+function getAllOutfitValuesForCharacter(characterId) {
+    if (!characterId) {return [];}
+    
+    const actualCharacterId = characterId.toString();
+    const state = outfitStore.getState();
+    const outfitValues = new Set();
+    
+    // Look through bot outfits for this character
+    if (state.botOutfits && state.botOutfits[actualCharacterId]) {
+        Object.values(state.botOutfits[actualCharacterId]).forEach(outfit => {
+            if (outfit) {
+                Object.values(outfit).forEach(value => {
+                    if (value && typeof value === 'string' && value !== 'None') {
+                        outfitValues.add(value);
+                    }
+                });
+            }
+        });
+    }
+    
+    // Look through presets for this character
+    if (state.presets && state.presets.bot) {
+        Object.keys(state.presets.bot).forEach(key => {
+            if (key.startsWith(actualCharacterId + '_')) { // Character-specific instance
+                const presets = state.presets.bot[key];
+
+                if (presets) {
+                    Object.values(presets).forEach(preset => {
+                        if (preset) {
+                            Object.values(preset).forEach(value => {
+                                if (value && typeof value === 'string' && value !== 'None') {
+                                    outfitValues.add(value);
+                                }
+                            });
+                        }
+                    });
+                }
+            }
+        });
+    }
+    
+    return Array.from(outfitValues);
+}
+
+// Function to clean outfit-related values from text for consistent instance ID generation
+function cleanOutfitMacrosFromText(text) {
+    if (!text || typeof text !== 'string') {return text || '';}
+    
+    // First, remove any outfit-related macros like {{char_slot}}, {{user_slot}}, etc.
+    let cleanedText = text.replace(/\{\{(?:char_|user_|[A-Za-z0-9_]+_)[a-z0-9_\-]+\}\}/g, '{{}}');
+    
+    // Get the current character ID to identify which outfits to look for
+    const context = getContext();
+
+    if (!context || !context.characterId) {
+        return cleanedText;
+    }
+    
+    const characterId = context.characterId.toString();
+    
+    // Get all possible outfit values from the outfit store for this character across all instances
+    const state = outfitStore.getState();
+    
+    // Collect all unique outfit values for this character across all instances
+    const outfitValues = new Set();
+    
+    // Look through bot outfits for this character
+    if (state.botOutfits && state.botOutfits[characterId]) {
+        Object.values(state.botOutfits[characterId]).forEach(outfit => {
+            if (outfit) {
+                Object.values(outfit).forEach(value => {
+                    if (value && typeof value === 'string' && value !== 'None') {
+                        outfitValues.add(value);
+                    }
+                });
+            }
+        });
+    }
+    
+    // Look through presets for this character
+    if (state.presets && state.presets.bot) {
+        Object.keys(state.presets.bot).forEach(key => {
+            if (key.startsWith(characterId + '_')) { // Character-specific instance
+                const presets = state.presets.bot[key];
+
+                if (presets) {
+                    Object.values(presets).forEach(preset => {
+                        if (preset) {
+                            Object.values(preset).forEach(value => {
+                                if (value && typeof value === 'string' && value !== 'None') {
+                                    outfitValues.add(value);
+                                }
+                            });
+                        }
+                    });
+                }
+            }
+        });
+    }
+    
+    // Remove each outfit value from the text if it exists
+    // Process in reverse length order to handle longer items first (avoid substring issues)
+    const sortedValues = Array.from(outfitValues).sort((a, b) => b.length - a.length);
+    
+    let resultText = cleanedText;
+
+    sortedValues.forEach(outfitValue => {
+        if (outfitValue && typeof outfitValue === 'string') {
+            // Replace case-insensitive occurrences of the outfit value in the text
+            // Use a simple string replacement approach to avoid regex complexity
+            let tempText = resultText;
+            let lowerTempText = tempText.toLowerCase();
+            let lowerOutfitValue = outfitValue.toLowerCase();
+            
+            let startIndex = 0;
+
+            while ((startIndex = lowerTempText.indexOf(lowerOutfitValue, startIndex)) !== -1) {
+                // Verify it's a complete word match to avoid partial replacements
+                const endIndex = startIndex + lowerOutfitValue.length;
+                
+                // Check if it's a complete word (surrounded by word boundaries or punctuation)
+                const beforeChar = startIndex > 0 ? lowerTempText.charAt(startIndex - 1) : ' ';
+                const afterChar = endIndex < lowerTempText.length ? lowerTempText.charAt(endIndex) : ' ';
+                
+                // Replace if surrounded by spaces/punctuation or at text boundaries
+                if ((beforeChar === ' ' || beforeChar === '.' || beforeChar === ',' || beforeChar === '"' || beforeChar === '\'' || beforeChar === '(' || beforeChar === '[') &&
+                    (afterChar === ' ' || afterChar === '.' || afterChar === ',' || afterChar === '"' || afterChar === '\'' || afterChar === ')' || afterChar === ']')) {
+                    resultText = resultText.substring(0, startIndex) + '[OUTFIT_REMOVED]' + resultText.substring(endIndex);
+                    lowerTempText = resultText.toLowerCase();
+                }
+                
+                startIndex = endIndex;
+            }
+        }
+    });
+    
+    return resultText;
+}
+
+function setupApi(botManager, userManager, botPanel, userPanel, autoOutfitSystem) {
+    extension_api.botOutfitPanel = botPanel;
+    extension_api.userOutfitPanel = userPanel;
+    extension_api.autoOutfitSystem = autoOutfitSystem;
+    extension_api.wipeAllOutfits = () => wipeAllOutfits();
+    extension_api.getOutfitExtensionStatus = () => ({
+        core: true,
+        autoOutfit: autoOutfitSystem?.getStatus(),
+        botPanel: { isVisible: botPanel?.isVisible },
+        userPanel: { isVisible: userPanel?.isVisible },
+        events: true,
+        managers: { bot: Boolean(botManager), user: Boolean(userManager) },
+    });
+    extension_api.updateQuoteColorSetting = (newColor) => {
+        try {
+            extension_settings.outfit_tracker.quoteColor = newColor;
+            saveSettingsDebounced();
+            registerQuotesColorExtension(newColor);
+            console.log(`[OutfitTracker] Quote color updated to ${newColor}`);
+            return true;
+        } catch (error) {
+            console.error('[OutfitTracker] Error updating quote color:', error);
+            return false;
+        }
+    };
+    extension_api.getQuoteColorSetting = () => extension_settings.outfit_tracker?.quoteColor || '#FFA500';
+    globalThis.outfitTracker = extension_api;
+}
+
+function updatePanelStyles() {
+    if (window.botOutfitPanel) {window.botOutfitPanel.applyPanelColors();}
+    if (window.userOutfitPanel) {window.userOutfitPanel.applyPanelColors();}
+}
+
+function isMobileDevice() {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+        window.innerWidth <= 768 || ('ontouchstart' in window) || (navigator.maxTouchPoints > 1);
+}
+
+// Define the interceptor function to inject outfit information into the context
+globalThis.outfitTrackerInterceptor = async function(chat, contextSize, abort, type) {
+    try {
+        // Create a temporary reference to the managers using the panel references
+        const botPanel = window.botOutfitPanel;
+        const userPanel = window.userOutfitPanel;
+
+        if (!botPanel || !userPanel) {
+            // If panels aren't available yet, store the reference and try later
+            console.warn('[OutfitTracker] Panels not available for interceptor, deferring injection');
+            return;
+        }
+
+        const botManager = botPanel.outfitManager;
+        const userManager = userPanel.outfitManager;
+
+        if (!botManager || !userManager) {
+            console.warn('[OutfitTracker] Managers not available for interceptor');
+            return;
+        }
+
+        // Generate outfit information string using the custom macro system
+        const outfitInfoString = customMacroSystem.generateOutfitInfoString(botManager, userManager);
+
+        // Only inject if there's actual outfit information to add
+        if (outfitInfoString && outfitInfoString.trim()) {
+            // Create a new message object for the outfit information
+            const outfitInjection = {
+                is_user: false,
+                is_system: true,
+                name: 'Outfit Info',
+                send_date: new Date().toISOString(),
+                mes: outfitInfoString,
+                extra: { outfit_injection: true }
+            };
+
+            // Insert the outfit information before the last message in the chat
+            // This ensures it's included in the context without disrupting the conversation flow
+            chat.splice(chat.length - 1, 0, outfitInjection);
+        }
+    } catch (error) {
+        console.error('[OutfitTracker] Error in interceptor:', error);
+    }
+};
+
 export async function initializeExtension() {
     await loadAutoOutfitSystem();
 
@@ -121,229 +296,29 @@ export async function initializeExtension() {
     const userPanel = new UserOutfitPanel(userManager, CLOTHING_SLOTS, ACCESSORY_SLOTS, saveSettingsDebounced);
     const autoOutfitSystem = new AutoOutfitSystem(botManager);
 
-    extension_api.botOutfitPanel = botPanel;
-    extension_api.userOutfitPanel = userPanel;
-    extension_api.autoOutfitSystem = autoOutfitSystem;
+    // Set global references for the interceptor function to access
+    window.botOutfitPanel = botPanel;
+    window.userOutfitPanel = userPanel;
 
     outfitStore.setPanelRef('bot', botPanel);
     outfitStore.setPanelRef('user', userPanel);
     outfitStore.setAutoOutfitSystem(autoOutfitSystem);
 
-    extension_api.wipeAllOutfits = () => wipeAllOutfits();
-    extension_api.replaceOutfitMacrosInText = (text) => {
-        if (!text || typeof text !== 'string') {
-            return text;
-        }
-        return customMacroSystem.replaceMacrosInText(text);
-    };
-    
-    extension_api.getOutfitExtensionStatus = () => {
-        try {
-            const autoOutfitStatus = autoOutfitSystem && typeof autoOutfitSystem.getStatus === 'function' 
-                ? autoOutfitSystem.getStatus() 
-                : null;
-                
-            return {
-                core: true, // Extension is loaded if this function exists
-                autoOutfit: autoOutfitStatus,
-                botPanel: {
-                    isVisible: botPanel && botPanel.isVisible
-                },
-                userPanel: {
-                    isVisible: userPanel && userPanel.isVisible
-                },
-                events: true, // Event system is initialized if we're here
-                managers: {
-                    bot: Boolean(botManager),
-                    user: Boolean(userManager)
-                }
-            };
-        } catch (error) {
-            console.error('[OutfitTracker] Error getting extension status:', error);
-            return {
-                core: false,
-                autoOutfit: null,
-                botPanel: { isVisible: false },
-                userPanel: { isVisible: false },
-                events: false,
-                managers: { bot: false, user: false }
-            };
-        }
-    };
-
-    function updatePanelStyles() {
-        if (window.botOutfitPanel) {window.botOutfitPanel.applyPanelColors();}
-        if (window.userOutfitPanel) {window.userOutfitPanel.applyPanelColors();}
-    }
-
-    function isMobileDevice() {
-        return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-            window.innerWidth <= 768 || ('ontouchstart' in window) || (navigator.maxTouchPoints > 1);
-    }
-
+    setupApi(botManager, userManager, botPanel, userPanel, autoOutfitSystem);
     initSettings(autoOutfitSystem, AutoOutfitSystem);
-
     registerOutfitCommands(botManager, userManager, autoOutfitSystem);
-
-    async function processMacrosInFirstMessage() {
-        try {
-            const context = getContext();
-
-            if (context && context.chat) {
-                const firstBotMessage = context.chat.find(message => !message.is_user && !message.is_system);
-
-                if (firstBotMessage) {
-                    // Generate and set instance ID based on the original first message content (before macro processing)
-                    // This ensures different conversations have different outfit instances and the ID remains stable
-                    // regardless of what the macros evaluate to
-                    let instanceId = await generateInstanceIdFromText(firstBotMessage.mes);
-                    
-                    // Update managers with character info before setting instance ID
-                    // This ensures that the managers have the correct character information
-                    if (context.characters && context.characterId !== undefined && context.characterId !== null) {
-                        const currentChar = context.characters[context.characterId];
-
-                        if (currentChar && currentChar.name) {
-                            botManager.setCharacter(currentChar.name, context.characterId.toString());
-                        }
-                    }
-
-                    // Set the instance ID in the store for global access
-                    outfitStore.setCurrentInstanceId(instanceId);
-                    
-                    // Set the instance ID in both bot and user managers to ensure
-                    // they are working with the correct instance
-                    botManager.setOutfitInstanceId(instanceId);
-                    userManager.setOutfitInstanceId(instanceId);
-
-                    // Update the message data with macro replacements (after instance ID is set)
-                    const originalMes = firstBotMessage.mes;
-                    const processedText = customMacroSystem.replaceMacrosInText(firstBotMessage.mes);
-
-                    firstBotMessage.mes = processedText;
-                    
-                    // Update the DOM element if content changed
-                    if (originalMes !== processedText) {
-                        const messageIndex = context.chat.indexOf(firstBotMessage);
-
-                        if (messageIndex !== -1) {
-                            // Need to update the DOM element that displays this message
-                            // Using the same approach as in EventSystem
-                            setTimeout(() => {
-                                try {
-                                    // Get all message elements in the chat using the 'mes' CSS class
-                                    const messageElements = document.querySelectorAll('#chat .mes');
-                                    
-                                    // Access the specific message element by index (should match chat array order)
-                                    if (messageElements[messageIndex]) {
-                                        // Find the text content area within the message element (has class 'mes_text')
-                                        const textElement = messageElements[messageIndex].querySelector('.mes_text');
-
-                                        if (textElement) {
-                                            // Use showdown with SillyTavern's configurations if available
-                                            if (window.SillyTavern && window.SillyTavern.libs && window.SillyTavern.libs.showdown) {
-                                                // Create a new converter with all required extensions
-                                                const quoteColor = extension_settings.outfit_tracker?.quoteColor || '#FFA500';
-                                                const extensions = [markdownQuotesColorExt(quoteColor)];
-                                                
-                                                // Add native SillyTavern extensions if available
-                                                if (window.SillyTavern.libs.showdown.extension) {
-                                                    // Try to get existing extensions
-                                                    try {
-                                                        // Get the markdown exclusion extension if available
-                                                        if (typeof window.SillyTavern.libs.showdown.extensions['markdown-exclusion'] !== 'undefined') {
-                                                            extensions.push(window.SillyTavern.libs.showdown.extensions['markdown-exclusion']);
-                                                        }
-                                                        // Get the underscore extension if available
-                                                        if (typeof window.SillyTavern.libs.showdown.extensions['markdown-underscore'] !== 'undefined') {
-                                                            extensions.push(window.SillyTavern.libs.showdown.extensions['markdown-underscore']);
-                                                        }
-                                                    } catch (e) {
-                                                        console.debug('Could not add some native SillyTavern extensions:', e);
-                                                    }
-                                                }
-                                                
-                                                const converter = new window.SillyTavern.libs.showdown.Converter({
-                                                    extensions: extensions
-                                                });
-
-                                                // Set options to match SillyTavern's formatting
-                                                converter.setFlavor('github');
-                                                converter.setOption('simpleLineBreaks', true);
-                                                converter.setOption('strikethrough', true);
-                                                
-                                                let htmlContent = converter.makeHtml(processedText);
-                                                
-                                                // Sanitize the HTML content if DOMPurify is available
-                                                if (window.SillyTavern.libs && window.SillyTavern.libs.DOMPurify) {
-                                                    htmlContent = window.SillyTavern.libs.DOMPurify.sanitize(htmlContent);
-                                                }
-                                                
-                                                textElement.innerHTML = htmlContent;
-                                            } else {
-                                                // Fallback to direct innerHTML if showdown is not available
-                                                textElement.innerHTML = processedText;
-                                            }
-                                            
-                                            // Optionally trigger content updated event to ensure 
-                                            // any other extensions or ST features are aware of the change
-                                            textElement.dispatchEvent(new CustomEvent('contentUpdated', {
-                                                detail: { content: processedText }
-                                            }));
-                                        }
-                                    }
-                                } catch (domError) {
-                                    console.error('Error updating first message DOM element:', domError);
-                                }
-                            }, 100); // Small delay to ensure DOM is ready
-                        }
-                    }
-                }
-            }
-        } catch (error) {
-            console.error('[OutfitTracker] Error processing macros in first message:', error);
-        }
-    }
+    customMacroSystem.registerMacros();
+    createSettingsUI(AutoOutfitSystem, autoOutfitSystem);
 
     setupEventListeners({
         botManager, userManager, botPanel, userPanel, autoOutfitSystem,
         updateForCurrentCharacter: () => updateForCurrentCharacter(botManager, userManager, botPanel, userPanel),
-        converter, processMacrosInFirstMessage
+        processMacrosInFirstMessage,
     });
 
-    createSettingsUI(AutoOutfitSystem, autoOutfitSystem);
-
-    // Register the showdown extension for colored quotes (using color from settings with default orange)
     const quoteColor = extension_settings.outfit_tracker?.quoteColor || '#FFA500';
 
     registerQuotesColorExtension(quoteColor);
-    
-    // Make quote color management functions available globally for the settings UI
-    if (typeof window !== 'undefined' && window) {
-        window.updateQuoteColorSetting = (newColor) => {
-            try {
-                // Update the settings with the new color
-                extension_settings.outfit_tracker.quoteColor = newColor;
-                
-                // Save the settings
-                window.saveSettingsDebounced();
-                
-                // Re-register the extension with the new color
-                registerQuotesColorExtension(newColor);
-                
-                console.log(`[OutfitTracker] Quote color updated to ${newColor}`);
-                
-                return true;
-            } catch (error) {
-                console.error('[OutfitTracker] Error updating quote color:', error);
-                return false;
-            }
-        };
-        
-        window.getQuoteColorSetting = () => {
-            return extension_settings.outfit_tracker?.quoteColor || '#FFA500';
-        };
-    }
 
     updatePanelStyles();
 
@@ -354,6 +329,4 @@ export async function initializeExtension() {
         setTimeout(() => userPanel.show(), 1000);
     }
     setTimeout(updatePanelStyles, 1500);
-
-    globalThis.outfitTracker = extension_api;
 }

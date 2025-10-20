@@ -134,43 +134,6 @@ export function extractCommands(text) {
     return commands;
 }
 
-// Function to extract all macro patterns without using regex
-// Looking for patterns like: {{getglobalvar::<BOT>_headwear}} or {{getglobalvar::Emma_headwear}}
-export function extractMacros(text) {
-    if (!text || typeof text !== 'string') {return [];}
-    
-    const macros = [];
-    const startPattern = '{{getglobalvar::';
-    const endPattern = '}}';
-    let startIndex = 0;
-    
-    while (startIndex < text.length) {
-        const startIdx = text.indexOf(startPattern, startIndex);
-
-        if (startIdx === -1) {break;}
-        
-        const endIdx = text.indexOf(endPattern, startIdx + startPattern.length);
-
-        if (endIdx === -1) {
-            // No closing tag found, invalid macro format
-            startIndex = startIdx + 1;
-            continue;
-        }
-        
-        const fullMacro = text.substring(startIdx, endIdx + 2);
-        const varName = text.substring(startIdx + startPattern.length, endIdx);
-        
-        macros.push({
-            fullMacro,
-            varName
-        });
-        
-        startIndex = endIdx + 2;
-    }
-    
-    return macros;
-}
-
 // Function to extract multiple values from a text without using regex
 export function extractValues(text, startMarker, endMarker) {
     if (!text || typeof text !== 'string') {return [];}
@@ -248,7 +211,7 @@ export function removeMacros(text) {
 
     let result = text;
     
-    // Remove {{getglobalvar::...}} patterns iteratively without regex
+    // Remove {{...}} patterns iteratively without regex
     let startIndex = 0;
 
     while (startIndex < result.length) {
@@ -260,18 +223,10 @@ export function removeMacros(text) {
 
         if (closeIdx === -1) {break;}
         
-        // Check if this is a getglobalvar pattern
-        const content = result.substring(openIdx + 2, closeIdx); // Get content between {{
-
-        if (content.startsWith('getglobalvar::')) {
-            // Remove the entire {{getglobalvar::...}} pattern
-            result = result.substring(0, openIdx) + result.substring(closeIdx + 2);
-            // Don't advance startIndex since we modified the string
-            startIndex = openIdx;
-        } else {
-            // Not a getglobalvar macro, continue to next
-            startIndex = closeIdx + 2;
-        }
+        // Remove the entire {{...}} pattern
+        result = result.substring(0, openIdx) + result.substring(closeIdx + 2);
+        // Don't advance startIndex since we modified the string
+        startIndex = openIdx;
     }
     
     // Remove <...> patterns iteratively without regex
