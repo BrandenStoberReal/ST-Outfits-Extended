@@ -102,18 +102,141 @@ function getAllOutfitValuesForCharacter(characterId) {
     return Array.from(outfitValues);
 }
 
+// Helper function to check if a string contains only alphanumeric characters and underscores
+function isAlphaNumericWithUnderscores(str) {
+    if (!str || typeof str !== 'string') {
+        return false;
+    }
+    
+    for (let i = 0; i < str.length; i++) {
+        const char = str[i];
+        const code = char.charCodeAt(0);
+        
+        // Check if character is uppercase letter (A-Z)
+        if (code >= 65 && code <= 90) {continue;}
+        // Check if character is lowercase letter (a-z)
+        if (code >= 97 && code <= 122) {continue;}
+        // Check if character is digit (0-9)
+        if (code >= 48 && code <= 57) {continue;}
+        // Check if character is underscore (_)
+        if (code === 95) {continue;}
+        
+        // If character is none of the above, it's invalid
+        return false;
+    }
+    
+    return true;
+}
+
+// Helper function to check if a string contains only lowercase alphanumeric characters, underscores, and hyphens
+function isLowerAlphaNumericWithUnderscoresAndHyphens(str) {
+    if (!str || typeof str !== 'string') {
+        return false;
+    }
+    
+    for (let i = 0; i < str.length; i++) {
+        const char = str[i];
+        const code = char.charCodeAt(0);
+        
+        // Check if character is lowercase letter (a-z)
+        if (code >= 97 && code <= 122) {continue;}
+        // Check if character is digit (0-9)
+        if (code >= 48 && code <= 57) {continue;}
+        // Check if character is underscore (_)
+        if (code === 95) {continue;}
+        // Check if character is hyphen (-)
+        if (code === 45) {continue;}
+        
+        // If character is none of the above, it's invalid
+        return false;
+    }
+    
+    return true;
+}
+
+// Helper function to check if user agent contains mobile device indicators
+function isMobileUserAgent(userAgent) {
+    const mobileIndicators = [
+        'android',
+        'webos', 
+        'iphone',
+        'ipad',
+        'ipod',
+        'blackberry',
+        'iemobile',
+        'opera mini'
+    ];
+    
+    const lowerUserAgent = userAgent.toLowerCase();
+    
+    for (let i = 0; i < mobileIndicators.length; i++) {
+        if (lowerUserAgent.includes(mobileIndicators[i])) {
+            return true;
+        }
+    }
+    
+    return false;
+}
+
 // Function to clean outfit-related values from text for consistent instance ID generation
 function cleanOutfitMacrosFromText(text) {
     if (!text || typeof text !== 'string') {return text || '';}
     
     // First, remove any outfit-related macros like {{char_slot}}, {{user_slot}}, etc.
-    let cleanedText = text.replace(/\{\{(?:char_|user_|[A-Za-z0-9_]+_)[a-z0-9_\-]+\}\}/g, '{{}}');
+    // Find and remove all occurrences of the pattern {{prefix_slotname}}
+    let resultText = text;
+    let startIndex = 0;
+    
+    // Remove macro patterns without regex
+    while (startIndex < resultText.length) {
+        const openIdx = resultText.indexOf('{{', startIndex);
+        
+        if (openIdx === -1) {
+            // No more macro opening found
+            break;
+        }
+        
+        const endIdx = resultText.indexOf('}}', openIdx);
+        
+        if (endIdx === -1) {
+            // No closing found for this opening, stop processing
+            break;
+        }
+        
+        // Extract the content between {{ and }}
+        const macroContent = resultText.substring(openIdx + 2, endIdx);
+        
+        // Check if it matches the pattern: prefix followed by an underscore and a slot name
+        // Look for underscore in the macro content
+        const underscoreIndex = macroContent.indexOf('_');
+        
+        if (underscoreIndex !== -1) {
+            // Extract prefix and suffix
+            const prefix = macroContent.substring(0, underscoreIndex);
+            const suffix = macroContent.substring(underscoreIndex + 1);
+            
+            // Check if the prefix is 'char', 'user', or an alphanumeric sequence followed by underscore
+            const isPrefixValid = prefix === 'char' || prefix === 'user' || isAlphaNumericWithUnderscores(prefix);
+            // Check if the suffix looks like a valid slot name (alphanumeric, underscore, hyphen)
+            const isSuffixValid = isLowerAlphaNumericWithUnderscoresAndHyphens(suffix);
+            
+            if (isPrefixValid && isSuffixValid) {
+                // This is a valid macro pattern, replace it with {{}}
+                resultText = resultText.substring(0, openIdx) + '{{}}' + resultText.substring(endIdx + 2);
+                // Start the next search right after the replacement
+                startIndex = openIdx + 2; // Position after the replacement '{{}}' - actually 3 positions ahead but we'll start at openIdx + 2
+                continue;
+            }
+        }
+        
+        startIndex = endIdx + 2; // Move past the current closing braces
+    }
     
     // Get the current character ID to identify which outfits to look for
     const context = getContext();
 
     if (!context || !context.characterId) {
-        return cleanedText;
+        return resultText;
     }
     
     const characterId = context.characterId.toString();
@@ -162,39 +285,50 @@ function cleanOutfitMacrosFromText(text) {
     // Process in reverse length order to handle longer items first (avoid substring issues)
     const sortedValues = Array.from(outfitValues).sort((a, b) => b.length - a.length);
     
-    let resultText = cleanedText;
+    let workingText = resultText;
 
     sortedValues.forEach(outfitValue => {
         if (outfitValue && typeof outfitValue === 'string') {
             // Replace case-insensitive occurrences of the outfit value in the text
             // Use a simple string replacement approach to avoid regex complexity
-            let tempText = resultText;
+            let tempText = workingText;
             let lowerTempText = tempText.toLowerCase();
             let lowerOutfitValue = outfitValue.toLowerCase();
             
-            let startIndex = 0;
+            let searchStart = 0;
 
-            while ((startIndex = lowerTempText.indexOf(lowerOutfitValue, startIndex)) !== -1) {
+            while ((searchStart = lowerTempText.indexOf(lowerOutfitValue, searchStart)) !== -1) {
                 // Verify it's a complete word match to avoid partial replacements
-                const endIndex = startIndex + lowerOutfitValue.length;
+                const endIndex = searchStart + lowerOutfitValue.length;
                 
                 // Check if it's a complete word (surrounded by word boundaries or punctuation)
-                const beforeChar = startIndex > 0 ? lowerTempText.charAt(startIndex - 1) : ' ';
+                const beforeChar = searchStart > 0 ? lowerTempText.charAt(searchStart - 1) : ' ';
                 const afterChar = endIndex < lowerTempText.length ? lowerTempText.charAt(endIndex) : ' ';
                 
                 // Replace if surrounded by spaces/punctuation or at text boundaries
-                if ((beforeChar === ' ' || beforeChar === '.' || beforeChar === ',' || beforeChar === '"' || beforeChar === '\'' || beforeChar === '(' || beforeChar === '[') &&
-                    (afterChar === ' ' || afterChar === '.' || afterChar === ',' || afterChar === '"' || afterChar === '\'' || afterChar === ')' || afterChar === ']')) {
-                    resultText = resultText.substring(0, startIndex) + '[OUTFIT_REMOVED]' + resultText.substring(endIndex);
-                    lowerTempText = resultText.toLowerCase();
-                }
+                const isWordBoundary = (beforeChar === ' ' || beforeChar === '.' || beforeChar === ',' || 
+                                      beforeChar === '"' || beforeChar === '\'' || 
+                                      beforeChar === '(' || beforeChar === '[' || 
+                                      beforeChar === '\n' || beforeChar === '\t') &&
+                                     (afterChar === ' ' || afterChar === '.' || afterChar === ',' || 
+                                      afterChar === '"' || afterChar === '\'' || 
+                                      afterChar === ')' || afterChar === ']' || 
+                                      afterChar === '\n' || afterChar === '\t');
                 
-                startIndex = endIndex;
+                if (isWordBoundary) {
+                    workingText = workingText.substring(0, searchStart) + '[OUTFIT_REMOVED]' + workingText.substring(endIndex);
+                    lowerTempText = workingText.toLowerCase();
+                    // Update searchStart to point to the end of the replacement to continue searching
+                    searchStart += '[OUTFIT_REMOVED]'.length;
+                } else {
+                    // Move to the next position after the current match
+                    searchStart = endIndex;
+                }
             }
         }
     });
     
-    return resultText;
+    return workingText;
 }
 
 function setupApi(botManager, userManager, botPanel, userPanel, autoOutfitSystem) {
@@ -232,8 +366,9 @@ function updatePanelStyles() {
 }
 
 function isMobileDevice() {
-    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-        window.innerWidth <= 768 || ('ontouchstart' in window) || (navigator.maxTouchPoints > 1);
+    const userAgent = navigator.userAgent.toLowerCase();
+
+    return isMobileUserAgent(userAgent) || window.innerWidth <= 768 || ('ontouchstart' in window) || (navigator.maxTouchPoints > 1);
 }
 
 // Define the interceptor function to inject outfit information into the context

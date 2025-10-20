@@ -76,7 +76,7 @@ async function processSingleCommand(command, botManager) {
             }
         }
         
-        const cleanValue = value.replace(/"/g, '').trim();
+        const cleanValue = value.split('"').join('').trim();
         
         console.log(`[LLMService] Processing: ${action} ${slot} "${cleanValue}"`);
         

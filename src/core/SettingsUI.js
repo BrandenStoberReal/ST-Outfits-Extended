@@ -344,17 +344,32 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem) {
     // Helper function to convert hex color to rgba
     function hexToRgba(hex, opacity) {
         // Expand shorthand form (e.g. "03F") to full form (e.g. "0033FF")
-        var shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
+        if (hex.length === 4 || (hex.length === 5 && hex.startsWith('#'))) {
+            // Check if it matches the pattern of a shorthand hex (e.g., #03F or 03F)
+            const hexVal = hex.startsWith('#') ? hex.substring(1) : hex;
+            const isValid = /^[a-fA-F0-9]{3}$/.test(hexVal);
+            
+            if (isValid) {
+                const r = hexVal[0];
+                const g = hexVal[1];
+                const b = hexVal[2];
 
-        hex = hex.replace(shorthandRegex, function(m, r, g, b) {
-            return r + r + g + g + b + b;
-        });
+                hex = `#${r}${r}${g}${g}${b}${b}`;
+            }
+        }
 
-        var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        // Now parse the full hex format
+        const hexWithoutHash = hex.startsWith('#') ? hex.substring(1) : hex;
 
-        return result ?
-            `rgba(${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}, ${opacity})` :
-            'rgba(0, 0, 0, 0.4)'; // default fallback
+        if (hexWithoutHash.length === 6) {
+            const r = parseInt(hexWithoutHash.substring(0, 2), 16);
+            const g = parseInt(hexWithoutHash.substring(2, 4), 16);
+            const b = parseInt(hexWithoutHash.substring(4, 6), 16);
+            
+            return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+        }
+
+        return 'rgba(0, 0, 0, 0.4)'; // default fallback
     }
 
     // Update status indicators when panel visibility changes
@@ -411,10 +426,51 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem) {
 
     // Helper function to extract hex color from gradient string
     function extractHexFromGradient(gradientStr) {
-        // Match hex color in gradient string
-        const match = gradientStr.match(/#([a-fA-F0-9]{6})/);
+        // Find hex color in gradient string
+        const startIndex = gradientStr.indexOf('#');
 
-        return match ? match[0] : '#6a4fc1'; // Default color if not found
+        if (startIndex === -1) {
+            return '#6a4fc1'; // Default color if no # found
+        }
+
+        // Extract potential hex color (# + 6 characters)
+        if (startIndex + 7 <= gradientStr.length) {
+            const potentialHex = gradientStr.substr(startIndex, 7); // Get # + 6 characters
+            
+            // Check if it's a valid hex color: starts with # and has 6 valid hex characters
+            if (potentialHex.length === 7 && isValidHexColor(potentialHex)) {
+                return potentialHex;
+            }
+        }
+
+        // If not found at first position or not valid, scan the entire string for a hex color
+        for (let i = startIndex; i < gradientStr.length - 6; i++) {
+            if (gradientStr[i] === '#') {
+                const potentialHex = gradientStr.substr(i, 7);
+
+                if (isValidHexColor(potentialHex)) {
+                    return potentialHex;
+                }
+            }
+        }
+
+        return '#6a4fc1'; // Default color if not found
+    }
+
+    // Helper function to validate hex color format
+    function isValidHexColor(hex) {
+        if (hex[0] !== '#' || hex.length !== 7) {
+            return false;
+        }
+        
+        for (let i = 1; i < 7; i++) {
+            const char = hex[i].toLowerCase();
+
+            if (!((char >= '0' && char <= '9') || (char >= 'a' && char <= 'f'))) {
+                return false;
+            }
+        }
+        return true;
     }
 
     // Function to update the color pickers based on text input values
@@ -434,12 +490,12 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem) {
 
         const botShadowText = $('#bot-panel-shadow-color').val();
         // Extract hex from rgba if possible
-        const rgbaMatch = botShadowText.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,s*[\d.]+)?\)/);
+        const rgbaMatch = extractRgbaValues(botShadowText);
 
         if (rgbaMatch) {
-            const r = parseInt(rgbaMatch[1]).toString(16).padStart(2, '0');
-            const g = parseInt(rgbaMatch[2]).toString(16).padStart(2, '0');
-            const b = parseInt(rgbaMatch[3]).toString(16).padStart(2, '0');
+            const r = parseInt(rgbaMatch.r).toString(16).padStart(2, '0');
+            const g = parseInt(rgbaMatch.g).toString(16).padStart(2, '0');
+            const b = parseInt(rgbaMatch.b).toString(16).padStart(2, '0');
 
             $('#bot-panel-shadow-color-picker').val(`#${r}${g}${b}`);
         } else {
@@ -461,12 +517,12 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem) {
 
         const userShadowText = $('#user-panel-shadow-color').val();
         // Extract hex from rgba if possible
-        const userRgbaMatch = userShadowText.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,s*[\d.]+)?\)/);
+        const userRgbaMatch = extractRgbaValues(userShadowText);
 
         if (userRgbaMatch) {
-            const r = parseInt(userRgbaMatch[1]).toString(16).padStart(2, '0');
-            const g = parseInt(userRgbaMatch[2]).toString(16).padStart(2, '0');
-            const b = parseInt(userRgbaMatch[3]).toString(16).padStart(2, '0');
+            const r = parseInt(userRgbaMatch.r).toString(16).padStart(2, '0');
+            const g = parseInt(userRgbaMatch.g).toString(16).padStart(2, '0');
+            const b = parseInt(userRgbaMatch.b).toString(16).padStart(2, '0');
 
             $('#user-panel-shadow-color-picker').val(`#${r}${g}${b}`);
         } else {
@@ -476,15 +532,117 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem) {
 
     // Helper function to convert rgb/rgba to hex
     function rgbToHex(rgb) {
-        const match = rgb.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*[\d.]+)?\)$/);
+        const rgbaValues = extractRgbaValues(rgb);
 
-        if (!match) {return '#000000';} // Return black for invalid input
+        if (!rgbaValues) {return '#000000';} // Return black for invalid input
         
-        const r = parseInt(match[1]).toString(16).padStart(2, '0');
-        const g = parseInt(match[2]).toString(16).padStart(2, '0');
-        const b = parseInt(match[3]).toString(16).padStart(2, '0');
+        const r = parseInt(rgbaValues.r).toString(16).padStart(2, '0');
+        const g = parseInt(rgbaValues.g).toString(16).padStart(2, '0');
+        const b = parseInt(rgbaValues.b).toString(16).padStart(2, '0');
         
         return `#${r}${g}${b}`;
+    }
+
+    // Helper function to validate hex color without regex
+    function isValidHexColorNoRegex(value) {
+        if (!value || typeof value !== 'string') {
+            return false;
+        }
+
+        // Remove the # prefix if present
+        if (value.startsWith('#')) {
+            value = value.substring(1);
+        }
+
+        // Check if it's 3 or 6 characters long
+        if (value.length !== 3 && value.length !== 6) {
+            return false;
+        }
+
+        // Check if all characters are valid hex digits (0-9, A-F, a-f)
+        for (let i = 0; i < value.length; i++) {
+            const char = value[i];
+            const code = char.charCodeAt(0);
+
+            // Check if character is digit (0-9)
+            if (code >= 48 && code <= 57) {
+                continue;
+            }
+            // Check if character is uppercase letter A-F
+            if (code >= 65 && code <= 70) {
+                continue;
+            }
+            // Check if character is lowercase letter a-f
+            if (code >= 97 && code <= 102) {
+                continue;
+            }
+
+            // If character is none of the above, it's invalid
+            return false;
+        }
+
+        return true;
+    }
+
+    // Helper function to extract rgba values without regex
+    function extractRgbaValues(str) {
+        // Check if the string starts with rgba( or rgb(
+        if (!str || typeof str !== 'string') {
+            return null;
+        }
+        
+        let startIndex = -1;
+
+        if (str.toLowerCase().startsWith('rgba(')) {
+            startIndex = 5; // Length of 'rgba('
+        } else if (str.toLowerCase().startsWith('rgb(')) {
+            startIndex = 4; // Length of 'rgb('
+        } else {
+            return null; // Not an rgba/rgb string
+        }
+        
+        // Extract the content inside the parentheses
+        const endIndex = str.indexOf(')', startIndex);
+
+        if (endIndex === -1) {
+            return null; // No closing parenthesis found
+        }
+        
+        const content = str.substring(startIndex, endIndex);
+        
+        // Split by comma and trim whitespace to get the values
+        const parts = content.split(',').map(part => part.trim());
+        
+        // Check if we have the right number of parts (at least 3 for rgb, up to 4 for rgba)
+        if (parts.length < 3 || parts.length > 4) {
+            return null;
+        }
+        
+        // Validate and parse the first three values (r, g, b)
+        const r = parseInt(parts[0]);
+        const g = parseInt(parts[1]);
+        const b = parseInt(parts[2]);
+        
+        // Validate that the values are valid numbers in the range 0-255
+        if (isNaN(r) || isNaN(g) || isNaN(b) || r < 0 || r > 255 || g < 0 || g > 255 || b < 0 || b > 255) {
+            return null;
+        }
+        
+        // If we have 4 parts, validate the alpha as well
+        if (parts.length === 4) {
+            const a = parseFloat(parts[3]);
+
+            if (isNaN(a) || a < 0 || a > 1) {
+                return null;
+            }
+        }
+        
+        // Return the rgba values as an object
+        return {
+            r: r,
+            g: g,
+            b: b
+        };
     }
 
     // Function to update settings and apply colors
@@ -704,7 +862,8 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem) {
         
         // For non-hex colors (like gradients or rgba), don't validate
         // Only validate if it looks like a hex color
-        const isHexColor = /^#?([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(colorValue.replace(/\s/g, ''));
+        const colorValueNoSpaces = colorValue.split(' ').join('').split('\t').join('').split('\n').join('').split('\r').join('');
+        const isHexColor = isValidHexColorNoRegex(colorValueNoSpaces);
         
         if (isHexColor) {
             // If it doesn't start with #, add it

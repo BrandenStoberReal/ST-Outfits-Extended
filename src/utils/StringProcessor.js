@@ -21,6 +21,27 @@ export function replaceAll(str, searchValue, replaceValue) {
     return result;
 }
 
+// Function to check if a string matches the pattern ^[a-zA-Z0-9_-]+$
+function _isValidSlotName(str) {
+    if (str.length === 0) {
+        return false;
+    }
+    
+    for (let i = 0; i < str.length; i++) {
+        const char = str[i];
+
+        if (!((char >= 'a' && char <= 'z') || 
+              (char >= 'A' && char <= 'Z') || 
+              (char >= '0' && char <= '9') || 
+              char === '_' || 
+              char === '-')) {
+            return false;
+        }
+    }
+    
+    return true;
+}
+
 // Function to extract all commands matching the pattern without using regex
 // Looking for patterns like: outfit-system_wear_headwear("Red Baseball Cap")
 // Helper function to find the closing quote, handling escaped quotes
@@ -70,7 +91,7 @@ function findNextCommand(text, startIndex) {
 
     const slot = text.substring(slotStart, slotEnd);
 
-    if (!/^[a-zA-Z0-9_-]+$/.test(slot)) {
+    if (!_isValidSlotName(slot)) {
         return { command: null, nextIndex: patternIndex + 1 };
     }
 

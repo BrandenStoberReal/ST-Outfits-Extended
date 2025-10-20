@@ -6,7 +6,18 @@ export function generateShortId(id, maxLength = 8) {
     if (!id) {return '';}
     if (id.startsWith('temp_')) {return 'temp';}
     
-    const cleanId = id.replace(/[^a-zA-Z0-9]/g, '');
+    // Manually remove non-alphanumeric characters without regex
+    let cleanId = '';
+
+    for (let i = 0; i < id.length; i++) {
+        const char = id[i];
+
+        if ((char >= 'a' && char <= 'z') || 
+            (char >= 'A' && char <= 'Z') || 
+            (char >= '0' && char <= '9')) {
+            cleanId += char;
+        }
+    }
 
     return cleanId.substring(0, maxLength) || id.substring(0, maxLength);
 }
@@ -95,11 +106,51 @@ export function formatSlotName(slotName) {
         return slotNameMap[slotName];
     }
 
-    return slotName
-        .replace(/([a-z])([A-Z])/g, '$1 $2')
-        .replace(/^./, str => str.toUpperCase())
-        .replace(/-/g, ' ')
-        .replace('underwear', 'Underwear');
+    // Replace occurrences of lowercase followed by uppercase letter with a space in between
+    let result = '';
+
+    for (let i = 0; i < slotName.length; i++) {
+        result += slotName[i];
+        if (i < slotName.length - 1 && 
+            slotName[i] >= 'a' && slotName[i] <= 'z' && 
+            slotName[i + 1] >= 'A' && slotName[i + 1] <= 'Z') {
+            result += ' ';
+        }
+    }
+    
+    // Capitalize the first letter
+    if (result.length > 0) {
+        result = result.charAt(0).toUpperCase() + result.slice(1);
+    }
+    
+    // Replace hyphens with spaces
+    result = replaceAll(result, '-', ' ');
+    
+    // Replace 'underwear' with 'Underwear' (case sensitive)
+    result = replaceInString(result, 'underwear', 'Underwear');
+    
+    return result;
+}
+
+// Helper function to replace a substring in a string
+function replaceInString(str, searchStr, replaceStr) {
+    if (!searchStr) {return str;}
+    
+    let result = '';
+    let i = 0;
+    
+    while (i < str.length) {
+        if (i <= str.length - searchStr.length && 
+            str.substring(i, i + searchStr.length) === searchStr) {
+            result += replaceStr;
+            i += searchStr.length;
+        } else {
+            result += str[i];
+            i++;
+        }
+    }
+    
+    return result;
 }
 
 function generateInstanceIdFromTextSimple(text) {

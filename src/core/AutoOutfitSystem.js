@@ -1,3 +1,9 @@
+/**
+ * AutoOutfitSystem - Refactored class to handle automatic outfit updates
+ * This system monitors chat messages and automatically updates character outfits
+ * based on detected clothing changes in the conversation
+ */
+
 import { extractCommands } from '../utils/StringProcessor.js';
 import { generateOutfitFromLLM } from '../services/LLMService.js';
 import { customMacroSystem } from '../utils/CustomMacroSystem.js';
@@ -15,13 +21,13 @@ export class AutoOutfitSystem {
         this.maxRetries = 3;
         this.retryDelay = 2000;
         this.currentRetryCount = 0;
-        this.commandQueue = [];
-        this.isProcessingQueue = false;
-        this.processingTimeout = null;
         this.appInitialized = false;
         this.lastSuccessfulProcessing = null;
     }
 
+    /**
+     * Get the default system prompt for outfit detection
+     */
     getDefaultPrompt() {
         return `Analyze the recent conversation for any mentions of the character putting on, wearing, removing, or changing clothing items or accessories.
         
@@ -47,8 +53,13 @@ NOTES:
 - Output only commands, no explanations`;
     }
 
+    /**
+     * Enable the auto outfit system
+     */
     enable() {
-        if (this.isEnabled) {return '[Outfit System] Auto outfit updates already enabled.';}
+        if (this.isEnabled) {
+            return '[Outfit System] Auto outfit updates already enabled.';
+        }
         
         this.isEnabled = true;
         this.consecutiveFailures = 0;
@@ -57,15 +68,22 @@ NOTES:
         return '[Outfit System] Auto outfit updates enabled.';
     }
 
+    /**
+     * Disable the auto outfit system
+     */
     disable() {
-        if (!this.isEnabled) {return '[Outfit System] Auto outfit updates already disabled.';}
+        if (!this.isEnabled) {
+            return '[Outfit System] Auto outfit updates already disabled.';
+        }
         
         this.isEnabled = false;
         this.removeEventListeners();
-        this.commandQueue = [];
         return '[Outfit System] Auto outfit updates disabled.';
     }
 
+    /**
+     * Set up event listeners for chat messages
+     */
     setupEventListeners() {
         this.removeEventListeners();
         
@@ -82,9 +100,9 @@ NOTES:
             this.eventHandler = (data) => {
                 if (this.isEnabled && !this.isProcessing && this.appInitialized && data && !data.is_user) {
                     console.log('[AutoOutfitSystem] New AI message received, processing...');
-                    if (this.processingTimeout) {clearTimeout(this.processingTimeout);}
                     
-                    this.processingTimeout = setTimeout(() => {
+                    // Add a delay to ensure the message has been fully processed
+                    setTimeout(() => {
                         this.processOutfitCommands().catch(error => {
                             console.error('Auto outfit processing failed:', error);
                             this.consecutiveFailures++;
@@ -100,6 +118,9 @@ NOTES:
         }
     }
 
+    /**
+     * Remove event listeners
+     */
     removeEventListeners() {
         try {
             if (this.eventHandler) {
@@ -109,10 +130,6 @@ NOTES:
                     context.eventSource.off(context.event_types.MESSAGE_RECEIVED, this.eventHandler);
                 }
                 this.eventHandler = null;
-                if (this.processingTimeout) {
-                    clearTimeout(this.processingTimeout);
-                    this.processingTimeout = null;
-                }
                 console.log('[AutoOutfitSystem] Event listener removed');
             }
         } catch (error) {
@@ -120,6 +137,9 @@ NOTES:
         }
     }
 
+    /**
+     * Mark the app as initialized (allows processing to begin)
+     */
     markAppInitialized() {
         if (!this.appInitialized) {
             this.appInitialized = true;
@@ -127,6 +147,9 @@ NOTES:
         }
     }
 
+    /**
+     * Process outfit commands based on chat context
+     */
     async processOutfitCommands() {
         if (this.consecutiveFailures >= this.maxConsecutiveFailures) {
             this.disable();
@@ -159,6 +182,9 @@ NOTES:
         }
     }
 
+    /**
+     * Process with retry mechanism
+     */
     async processWithRetry() {
         while (this.currentRetryCount < this.maxRetries) {
             try {
@@ -179,6 +205,9 @@ NOTES:
         }
     }
 
+    /**
+     * Execute the generation command
+     */
     async executeGenCommand() {
         const recentMessages = this.getLastMessages(3);
 
@@ -213,10 +242,16 @@ NOTES:
         }
     }
 
+    /**
+     * Replace macros in the system prompt
+     */
     replaceMacrosInPrompt(prompt) {
         return customMacroSystem.replaceMacrosInText(prompt);
     }
 
+    /**
+     * Parse the generated text to extract commands
+     */
     parseGeneratedText(text) {
         if (!text || text.trim() === '[none]') {
             return [];
@@ -228,6 +263,9 @@ NOTES:
         return commands;
     }
 
+    /**
+     * Process a batch of commands
+     */
     async processCommandBatch(commands) {
         if (!commands || commands.length === 0) {
             console.log('[AutoOutfitSystem] No commands to process');
@@ -255,21 +293,14 @@ NOTES:
         }
         
         if (successfulCommands.length > 0 && window.extension_settings?.outfit_tracker?.enableSysMessages) {
-            const messagesByCharacter = {};
-
-            successfulCommands.forEach(({ message }) => {
-                const charName = message.match(/(\w+) put on|removed|changed/)?.[1] || 'Character';
-
-                if (!messagesByCharacter[charName]) {
-                    messagesByCharacter[charName] = [];
-                }
-                messagesByCharacter[charName].push(message);
-            });
+            // Get the active character name without using regex
+            const activeCharName = this.getActiveCharacterName();
+            const message = successfulCommands.length === 1 
+                ? `${activeCharName} made an outfit change.`
+                : `${activeCharName} made multiple outfit changes.`;
             
-            for (const [charName, messages] of Object.entries(messagesByCharacter)) {
-                this.showPopup(messages.length === 1 ? messages[0] : `${charName} made multiple outfit changes.`, 'info');
-                await this.delay(1000);
-            }
+            this.showPopup(message, 'info');
+            await this.delay(1000);
             
             this.updateOutfitPanel();
         }
@@ -281,17 +312,197 @@ NOTES:
         console.log(`[AutoOutfitSystem] Batch completed: ${successfulCommands.length} successful, ${failedCommands.length} failed`);
     }
 
+    /**
+     * Get the active character name without using regex
+     */
+    getActiveCharacterName() {
+        try {
+            const context = window.getContext();
+
+            if (context && context.characters && context.this_chid !== undefined) {
+                const character = context.characters[context.this_chid];
+
+                return character?.name || 'Character';
+            }
+            return 'Character';
+        } catch (error) {
+            console.error('Error getting active character name:', error);
+            return 'Character';
+        }
+    }
+
+    /**
+     * Parse a command string to extract action, slot, and value without using regex
+     */
+    parseCommand(command) {
+        if (!command || typeof command !== 'string') {
+            return null;
+        }
+
+        // Check if command starts with 'outfit-system_'
+        if (!command.startsWith('outfit-system_')) {
+            return null;
+        }
+
+        // Find the first underscore after 'outfit-system_'
+        let index = 'outfit-system_'.length;
+        const actionStart = index;
+        const firstUnderscoreAfterSystem = command.indexOf('_', index);
+        
+        if (firstUnderscoreAfterSystem === -1) {
+            return null; // No action found
+        }
+
+        const action = command.substring(actionStart, firstUnderscoreAfterSystem);
+        
+        // Check if action is valid
+        if (!['wear', 'remove', 'change'].includes(action)) {
+            return null;
+        }
+
+        const slotStart = firstUnderscoreAfterSystem + 1;
+        const parenIndex = command.indexOf('(', slotStart);
+        
+        if (parenIndex === -1) {
+            return null; // No opening parenthesis found
+        }
+
+        const slot = command.substring(slotStart, parenIndex);
+        
+        // Validate slot name - check if it contains only valid characters
+        if (!this.isValidSlotName(slot)) {
+            return null;
+        }
+
+        // Extract the value inside parentheses
+        const parenStart = parenIndex + 1;
+        
+        // Check if it's an empty call like outfit-system_remove_headwear()
+        if (command[parenStart] === ')') {
+            return {
+                action,
+                slot,
+                value: ''
+            };
+        }
+        
+        // Check if it starts with a quote
+        if (command[parenStart] !== '"') {
+            return null; // Invalid format
+        }
+
+        const valueStart = parenStart + 1;
+        let valueEnd = -1;
+        
+        // Find the closing quote, handling escaped quotes
+        let i = valueStart;
+
+        while (i < command.length - 1) { // -1 to account for last char being 
+            if (command[i] === '"') {
+                // Check if this quote is not escaped (i.e., not preceded by a backslash)
+                let backslashes = 0;
+                let j = i - 1;
+
+                while (j >= 0 && command[j] === '\\') {
+                    backslashes++;
+                    j--;
+                }
+                
+                // If even number of backslashes before quote, it's not escaped
+                if (backslashes % 2 === 0) {
+                    valueEnd = i;
+                    break;
+                }
+            }
+            i++;
+        }
+
+        if (valueEnd === -1) {
+            return null; // No closing quote found
+        }
+
+        const value = command.substring(valueStart, valueEnd);
+        
+        // Check if the quote is followed by a closing parenthesis
+        if (command[valueEnd + 1] !== ')') {
+            return null; // Invalid format
+        }
+
+        // Ensure the command ends with ')', or has nothing after ')'
+        if (valueEnd + 2 < command.length) {
+            // Allow whitespace after the closing parenthesis
+            const remaining = command.substring(valueEnd + 2).trim();
+
+            if (remaining !== '') {
+                return null; // Invalid format
+            }
+        }
+
+        return {
+            action,
+            slot,
+            value
+        };
+    }
+
+    /**
+     * Check if a slot name is valid (contains only alphanumeric characters, underscores, and hyphens)
+     */
+    isValidSlotName(str) {
+        if (str.length === 0) {
+            return false;
+        }
+        
+        for (let i = 0; i < str.length; i++) {
+            const char = str[i];
+
+            if (!((char >= 'a' && char <= 'z') || 
+                  (char >= 'A' && char <= 'Z') || 
+                  (char >= '0' && char <= '9') || 
+                  char === '_' || 
+                  char === '-')) {
+                return false;
+            }
+        }
+        
+        return true;
+    }
+
+    /**
+     * Replace all occurrences of a substring without using regex
+     */
+    replaceAll(str, searchValue, replaceValue) {
+        if (!searchValue) {return str;}
+        
+        // Prevent infinite loops when the replacement value contains the search value
+        if (searchValue === replaceValue) {return str;}
+        
+        let result = str;
+        let index = result.indexOf(searchValue);
+        
+        while (index !== -1) {
+            result = result.substring(0, index) + replaceValue + result.substring(index + searchValue.length);
+            // Move past the replacement value to prevent infinite loops
+            index = result.indexOf(searchValue, index + replaceValue.length);
+        }
+        
+        return result;
+    }
+
+    /**
+     * Process a single command
+     */
     async processSingleCommand(command) {
         try {
-            const commandRegex = /^outfit-system_(wear|remove|change)_([a-zA-Z0-9_-]+)\((?:"(.*?)")?\)$/;
-            const match = command.match(commandRegex);
+            // Parse command without using regex
+            const parsedCommand = this.parseCommand(command);
 
-            if (!match) {
+            if (!parsedCommand) {
                 throw new Error(`Invalid command format: ${command}`);
             }
 
-            const [, action, slot, value] = match;
-            const cleanValue = value !== undefined ? value.replace(/"/g, '').trim() : '';
+            const { action, slot, value } = parsedCommand;
+            const cleanValue = value !== undefined ? this.replaceAll(value, '"', '').trim() : '';
 
             console.log(`[AutoOutfitSystem] Processing: ${action} ${slot} "${cleanValue}"`);
 
@@ -314,6 +525,9 @@ NOTES:
         }
     }
 
+    /**
+     * Execute a specific command on the outfit manager
+     */
     async executeCommand(action, slot, value) {
         const validSlots = [...this.outfitManager.slots];
 
@@ -328,6 +542,9 @@ NOTES:
         return this.outfitManager.setOutfitItem(slot, action === 'remove' ? 'None' : value);
     }
 
+    /**
+     * Update the outfit panel UI
+     */
     updateOutfitPanel() {
         if (window.botOutfitPanel && window.botOutfitPanel.isVisible) {
             setTimeout(() => {
@@ -342,6 +559,9 @@ NOTES:
         }
     }
 
+    /**
+     * Get the last N messages from the chat
+     */
     getLastMessages(count = 3) {
         try {
             const context = window.getContext();
@@ -363,6 +583,9 @@ NOTES:
         }
     }
 
+    /**
+     * Show a popup notification
+     */
     showPopup(message, type = 'info') {
         try {
             if (typeof toastr !== 'undefined') {
@@ -378,10 +601,16 @@ NOTES:
         }
     }
 
+    /**
+     * Simple delay function
+     */
     delay(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
 
+    /**
+     * Get system status
+     */
     getStatus() {
         return {
             enabled: this.isEnabled,
@@ -394,6 +623,9 @@ NOTES:
         };
     }
 
+    /**
+     * Manual trigger for outfit processing
+     */
     async manualTrigger() {
         if (this.isProcessing) {
             this.showPopup('Auto outfit check already in progress.', 'warning');
@@ -408,29 +640,47 @@ NOTES:
         }
     }
 
+    /**
+     * Set a custom prompt
+     */
     setPrompt(prompt) {
         this.systemPrompt = prompt || this.getDefaultPrompt();
         return '[Outfit System] System prompt updated.';
     }
 
+    /**
+     * Get the processed system prompt
+     */
     getProcessedSystemPrompt() {
         return this.replaceMacrosInPrompt(this.systemPrompt);
     }
     
+    /**
+     * Get current user name
+     */
     getUserName() {
         return customMacroSystem.getCurrentUserName();
     }
 
+    /**
+     * Reset to default prompt
+     */
     resetToDefaultPrompt() {
         this.systemPrompt = this.getDefaultPrompt();
         return '[Outfit System] Reset to default prompt.';
     }
     
+    /**
+     * Set connection profile
+     */
     setConnectionProfile(profile) {
         this.connectionProfile = profile;
         return `[Outfit System] Connection profile set to: ${profile || 'default'}`;
     }
     
+    /**
+     * Get connection profile
+     */
     getConnectionProfile() {
         return this.connectionProfile;
     }

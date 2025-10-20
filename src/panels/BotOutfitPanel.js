@@ -557,7 +557,7 @@ INSTRUCTIONS:
                 }
             }
             
-            const cleanValue = value.replace(/"/g, '').trim();
+            const cleanValue = value.split('"').join('').trim();
             
             console.log(`[BotOutfitPanel] Processing: ${action} ${slot} "${cleanValue}"`);
             
@@ -763,7 +763,29 @@ INSTRUCTIONS:
         
         // Create a simple short identifier by taking up to 6 characters of the instance ID
         // but only alphanumeric characters for better readability
-        const cleanId = instanceId.replace(/[^a-zA-Z0-9]/g, '');
+        let cleanId = '';
+
+        for (let i = 0; i < instanceId.length; i++) {
+            const char = instanceId[i];
+            const code = char.charCodeAt(0);
+
+            // Check if character is digit (0-9)
+            if (code >= 48 && code <= 57) {
+                cleanId += char;
+                continue;
+            }
+            // Check if character is uppercase letter A-Z
+            if (code >= 65 && code <= 90) {
+                cleanId += char;
+                continue;
+            }
+            // Check if character is lowercase letter a-z
+            if (code >= 97 && code <= 122) {
+                cleanId += char;
+                continue;
+            }
+            // Otherwise, skip non-alphanumeric characters
+        }
 
         return cleanId.substring(0, 6);
     }

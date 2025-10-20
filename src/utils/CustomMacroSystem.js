@@ -253,12 +253,35 @@ class CustomMacroSystem {
             const slotData = outfitData.find(data => data.name === slot);
 
             if (slotData && slotData.value !== 'None' && slotData.value !== '') {
-                const formattedSlotName = slot.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).replace(/-/g, ' ');
+                const formattedSlotName = this._formatSlotName(slot);
 
                 section += `**${formattedSlotName}:** {{${macroPrefix}_${slotData.name}}}\n`;
             }
         });
         return section;
+    }
+
+    _formatSlotName(slot) {
+        // Insert a space before uppercase letters
+        let result = '';
+
+        for (let i = 0; i < slot.length; i++) {
+            if (i > 0 && slot[i] >= 'A' && slot[i] <= 'Z' && slot[i-1] !== ' ') {
+                result += ' ' + slot[i];
+            } else {
+                result += slot[i];
+            }
+        }
+        
+        // Capitalize the first letter
+        if (result.length > 0) {
+            result = result.charAt(0).toUpperCase() + result.slice(1);
+        }
+        
+        // Replace hyphens with spaces
+        result = result.split('-').join(' ');
+        
+        return result;
     }
 
     /**

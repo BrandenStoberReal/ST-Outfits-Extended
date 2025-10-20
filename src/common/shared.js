@@ -21,17 +21,7 @@ export function dragElementWithSave(element, storageKey) {
         cursor: 'move'
     });
 
-    // Get the element that will be used for moving (header)
-    const $header = $element.find('.panel-header, .dialogHeader, .title, h2, h3').first();
-
-    if ($header.length) {
-        // When the header is clicked, assign the event handlers
-        $header.on('mousedown', dragMouseDown);
-    } else {
-        // If no header found, allow dragging from the entire element
-        $element.on('mousedown', dragMouseDown);
-    }
-
+    // Define functions before using them
     function dragMouseDown(e) {
         e = e || window.event;
         e.preventDefault();
@@ -73,6 +63,17 @@ export function dragElementWithSave(element, storageKey) {
 
         localStorage.setItem(`outfitPanel_${storageKey}_position`, JSON.stringify(position));
     }
+
+    // Get the element that will be used for moving (header)
+    const $header = $element.find('.panel-header, .dialogHeader, .title, h2, h3').first();
+
+    if ($header.length) {
+        // When the header is clicked, assign the event handlers
+        $header.on('mousedown', dragMouseDown);
+    } else {
+        // If no header found, allow dragging from the entire element
+        $element.on('mousedown', dragMouseDown);
+    }
 }
 
 // Function to make an element resizable with size saving
@@ -80,6 +81,39 @@ export function resizeElement(element, storageKey) {
     const $element = $(element);
     let originalWidth, originalHeight, originalMouseX, originalMouseY;
     
+    // Define functions before using them
+    function resizeElementHandler(e) {
+        const width = originalWidth + (e.pageX - originalMouseX);
+        const height = originalHeight + (e.pageY - originalMouseY);
+        
+        // Calculate the maximum width and height based on current position to stay within viewport
+        const elementRect = $element[0].getBoundingClientRect();
+        const maxWidth = window.innerWidth - elementRect.left - 10; // 10px margin from right edge
+        const maxHeight = window.innerHeight - elementRect.top - 10; // 10px margin from bottom edge
+        
+        // Set minimum and maximum sizes to prevent the element from becoming too small or too large
+        const newWidth = Math.max(200, Math.min(width, maxWidth));
+        const newHeight = Math.max(150, Math.min(height, maxHeight));
+        
+        $element.css({
+            width: newWidth + 'px',
+            height: newHeight + 'px'
+        });
+    }
+
+    function stopResize() {
+        $(document).off('mousemove.resizer');
+        $(document).off('mouseup.resizer');
+        
+        // Save the size to localStorage
+        const size = {
+            width: parseFloat($element.outerWidth()),
+            height: parseFloat($element.outerHeight())
+        };
+
+        localStorage.setItem(`outfitPanel_${storageKey}_size`, JSON.stringify(size));
+    }
+
     // Try to restore previous size
     const savedSize = localStorage.getItem(`outfitPanel_${storageKey}_size`);
 
@@ -112,38 +146,6 @@ export function resizeElement(element, storageKey) {
         e.stopPropagation();
         e.preventDefault();
     });
-
-    function resizeElementHandler(e) {
-        const width = originalWidth + (e.pageX - originalMouseX);
-        const height = originalHeight + (e.pageY - originalMouseY);
-        
-        // Calculate the maximum width and height based on current position to stay within viewport
-        const elementRect = $element[0].getBoundingClientRect();
-        const maxWidth = window.innerWidth - elementRect.left - 10; // 10px margin from right edge
-        const maxHeight = window.innerHeight - elementRect.top - 10; // 10px margin from bottom edge
-        
-        // Set minimum and maximum sizes to prevent the element from becoming too small or too large
-        const newWidth = Math.max(200, Math.min(width, maxWidth));
-        const newHeight = Math.max(150, Math.min(height, maxHeight));
-        
-        $element.css({
-            width: newWidth + 'px',
-            height: newHeight + 'px'
-        });
-    }
-
-    function stopResize() {
-        $(document).off('mousemove.resizer');
-        $(document).off('mouseup.resizer');
-        
-        // Save the size to localStorage
-        const size = {
-            width: parseFloat($element.outerWidth()),
-            height: parseFloat($element.outerHeight())
-        };
-
-        localStorage.setItem(`outfitPanel_${storageKey}_size`, JSON.stringify(size));
-    }
 }
 
 export const extension_api = {
