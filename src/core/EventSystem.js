@@ -136,12 +136,18 @@ class EventSystem {
             if (botOutfit) {
                 this.botManager.setOutfit(botOutfit);
                 await this.botManager.saveOutfit();
-                this.botPanel.renderContent();
+                // Use global references to panels since they're not directly available here
+                if (window.botOutfitPanel && typeof window.botOutfitPanel.renderContent === 'function') {
+                    window.botOutfitPanel.renderContent();
+                }
             }
             if (userOutfit) {
                 this.userManager.setOutfit(userOutfit);
                 await this.userManager.saveOutfit();
-                this.userPanel.renderContent();
+                // Use global references to panels since they're not directly available here
+                if (window.userOutfitPanel && typeof window.userOutfitPanel.renderContent === 'function') {
+                    window.userOutfitPanel.renderContent();
+                }
             }
             console.log('[OutfitTracker] Restored outfits after chat reset.');
 
@@ -185,12 +191,18 @@ class EventSystem {
             if (botOutfit) {
                 this.botManager.setOutfit(botOutfit);
                 await this.botManager.saveOutfit();
-                this.botPanel.renderContent();
+                // Use global references to panels since they're not directly available here
+                if (window.botOutfitPanel && typeof window.botOutfitPanel.renderContent === 'function') {
+                    window.botOutfitPanel.renderContent();
+                }
             }
             if (userOutfit) {
                 this.userManager.setOutfit(userOutfit);
                 await this.userManager.saveOutfit();
-                this.userPanel.renderContent();
+                // Use global references to panels since they're not directly available here
+                if (window.userOutfitPanel && typeof window.userOutfitPanel.renderContent === 'function') {
+                    window.userOutfitPanel.renderContent();
+                }
             }
             console.log('[OutfitTracker] Restored outfits after chat clear.');
 
