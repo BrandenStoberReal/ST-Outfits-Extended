@@ -1,9 +1,10 @@
+import { outfitStore } from '../common/Store.js';
+
 export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem, context) {
     const MODULE_NAME = 'outfit_tracker';
-    import { outfitStore } from '../common/Store.js';
 
-const storeState = outfitStore.getState();
-const settings = { outfit_tracker: storeState.settings };
+    const storeState = outfitStore.getState();
+    const settings = { outfit_tracker: storeState.settings };
     const saveSettingsFn = context?.saveSettingsDebounced || window.saveSettingsDebounced;
     const hasAutoSystem = AutoOutfitSystem.name !== 'DummyAutoOutfitSystem';
     
