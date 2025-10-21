@@ -124,7 +124,7 @@ export function formatSlotName(slotName) {
     }
     
     // Replace hyphens with spaces
-    result = replaceAll(result, '-', ' ');
+    result = replaceInString(result, '-', ' ');
     
     // Replace 'underwear' with 'Underwear' (case sensitive)
     result = replaceInString(result, 'underwear', 'Underwear');

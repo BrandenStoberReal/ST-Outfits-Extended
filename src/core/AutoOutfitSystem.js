@@ -4,7 +4,7 @@
  * based on detected clothing changes in the conversation
  */
 
-import { extractCommands } from '../utils/StringProcessor.js';
+import { extractCommands, replaceAll } from '../utils/StringProcessor.js';
 import { generateOutfitFromLLM } from '../services/LLMService.js';
 import { customMacroSystem } from '../utils/CustomMacroSystem.js';
 
