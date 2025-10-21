@@ -3,25 +3,31 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem, context) {
     const settings = context?.extensionSettings || window.extension_settings;
     const saveSettingsFn = context?.saveSettingsDebounced || window.saveSettingsDebounced;
     const hasAutoSystem = AutoOutfitSystem.name !== 'DummyAutoOutfitSystem';
+    
+    // Safely access settings, with fallback to default values
+    const currentSettings = settings?.[MODULE_NAME] || {};
+    const autoOutfitConnectionProfile = currentSettings.autoOutfitConnectionProfile || '';
+    const autoOutfitPrompt = currentSettings.autoOutfitPrompt || '';
+    
     const autoSettingsHtml = hasAutoSystem ? `
         <div class="flex-container setting-row">
             <label for="outfit-auto-system">Enable auto outfit updates</label>
             <input type="checkbox" id="outfit-auto-system"
-                    ${settings[MODULE_NAME].autoOutfitSystem ? 'checked' : ''}>
+                    ${currentSettings.autoOutfitSystem ? 'checked' : ''}>
         </div>
         <div class="flex-container setting-row">
             <label for="outfit-connection-profile">Connection Profile (Optional):</label>
             <select id="outfit-connection-profile" class="option">
                 <option value="">Default Connection</option>
-                <option value="openrouter" ${window.extension_settings[MODULE_NAME].autoOutfitConnectionProfile === 'openrouter' ? 'selected' : ''}>OpenRouter</option>
-                <option value="ooba" ${window.extension_settings[MODULE_NAME].autoOutfitConnectionProfile === 'ooba' ? 'selected' : ''}>Oobabooga</option>
-                <option value="openai" ${window.extension_settings[MODULE_NAME].autoOutfitConnectionProfile === 'openai' ? 'selected' : ''}>OpenAI</option>
-                <option value="claude" ${window.extension_settings[MODULE_NAME].autoOutfitConnectionProfile === 'claude' ? 'selected' : ''}>Claude</option>
+                <option value="openrouter" ${autoOutfitConnectionProfile === 'openrouter' ? 'selected' : ''}>OpenRouter</option>
+                <option value="ooba" ${autoOutfitConnectionProfile === 'ooba' ? 'selected' : ''}>Oobabooga</option>
+                <option value="openai" ${autoOutfitConnectionProfile === 'openai' ? 'selected' : ''}>OpenAI</option>
+                <option value="claude" ${autoOutfitConnectionProfile === 'claude' ? 'selected' : ''}>Claude</option>
             </select>
         </div>
         <div class="flex-container setting-row">
             <label for="outfit-prompt-input">System Prompt:</label>
-            <textarea id="outfit-prompt-input" placeholder="Enter system prompt for auto outfit detection">${window.extension_settings[MODULE_NAME].autoOutfitPrompt || ''}</textarea>
+            <textarea id="outfit-prompt-input" placeholder="Enter system prompt for auto outfit detection">${autoOutfitPrompt}</textarea>
         </div>
         <div class="flex-container">
             <button id="outfit-prompt-reset-btn" class="menu_button">Reset to Default Prompt</button>
@@ -78,19 +84,19 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem, context) {
                     <div class="flex-container setting-row">
                         <label for="outfit-sys-toggle">Enable system messages</label>
                         <input type="checkbox" id="outfit-sys-toggle"
-                               ${window.extension_settings[MODULE_NAME].enableSysMessages ? 'checked' : ''}>
+                               ${currentSettings.enableSysMessages ?? true ? 'checked' : ''}>
                     </div>
                     
                     <div class="flex-container setting-row">
                         <label for="outfit-auto-bot">Auto-open character panel</label>
                         <input type="checkbox" id="outfit-auto-bot"
-                               ${window.extension_settings[MODULE_NAME].autoOpenBot ? 'checked' : ''}>
+                               ${currentSettings.autoOpenBot ?? true ? 'checked' : ''}>
                     </div>
                     
                     <div class="flex-container setting-row">
                         <label for="outfit-auto-user">Auto-open user panel</label>
                         <input type="checkbox" id="outfit-auto-user"
-                               ${window.extension_settings[MODULE_NAME].autoOpenUser ? 'checked' : ''}>
+                               ${currentSettings.autoOpenUser ?? false ? 'checked' : ''}>
                     </div>
                     
 
@@ -108,7 +114,7 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem, context) {
                             <label for="bot-panel-primary-color" class="color-label">Primary Color:</label>
                             <div class="color-input-wrapper">
                                 <input type="color" id="bot-panel-primary-color-picker" value="#6a4fc1">
-                                <input type="text" id="bot-panel-primary-color" value="${window.extension_settings[MODULE_NAME]?.botPanelColors?.primary || 'linear-gradient(135deg, #6a4fc1 0%, #5a49d0 50%, #4a43c0 100%)'}">
+                                <input type="text" id="bot-panel-primary-color" value="${currentSettings?.botPanelColors?.primary || 'linear-gradient(135deg, #6a4fc1 0%, #5a49d0 50%, #4a43c0 100%)'}">
                                 <button id="bot-panel-primary-reset" class="color-reset-btn">Reset</button>
                             </div>
                         </div>
@@ -116,8 +122,8 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem, context) {
                         <div class="color-setting-row">
                             <label for="bot-panel-border-color" class="color-label">Border Color:</label>
                             <div class="color-input-wrapper">
-                                <input type="color" id="bot-panel-border-color-picker" value="${window.extension_settings[MODULE_NAME]?.botPanelColors?.border || '#8a7fdb'}">
-                                <input type="text" id="bot-panel-border-color" value="${window.extension_settings[MODULE_NAME]?.botPanelColors?.border || '#8a7fdb'}">
+                                <input type="color" id="bot-panel-border-color-picker" value="${currentSettings?.botPanelColors?.border || '#8a7fdb'}">
+                                <input type="text" id="bot-panel-border-color" value="${currentSettings?.botPanelColors?.border || '#8a7fdb'}">
                                 <button id="bot-panel-border-reset" class="color-reset-btn">Reset</button>
                             </div>
                         </div>
@@ -126,7 +132,7 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem, context) {
                             <label for="bot-panel-shadow-color" class="color-label">Shadow Color:</label>
                             <div class="color-input-wrapper">
                                 <input type="color" id="bot-panel-shadow-color-picker" value="#6a4fc1">
-                                <input type="text" id="bot-panel-shadow-color" value="${window.extension_settings[MODULE_NAME]?.botPanelColors?.shadow || 'rgba(106, 79, 193, 0.4)'}">
+                                <input type="text" id="bot-panel-shadow-color" value="${currentSettings?.botPanelColors?.shadow || 'rgba(106, 79, 193, 0.4)'}">
                                 <button id="bot-panel-shadow-reset" class="color-reset-btn">Reset</button>
                             </div>
                         </div>
@@ -140,7 +146,7 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem, context) {
                             <label for="user-panel-primary-color" class="color-label">Primary Color:</label>
                             <div class="color-input-wrapper">
                                 <input type="color" id="user-panel-primary-color-picker" value="#1a78d1">
-                                <input type="text" id="user-panel-primary-color" value="${window.extension_settings[MODULE_NAME]?.userPanelColors?.primary || 'linear-gradient(135deg, #1a78d1 0%, #2a68c1 50%, #1a58b1 100%)'}">
+                                <input type="text" id="user-panel-primary-color" value="${currentSettings?.userPanelColors?.primary || 'linear-gradient(135deg, #1a78d1 0%, #2a68c1 50%, #1a58b1 100%)'}">
                                 <button id="user-panel-primary-reset" class="color-reset-btn">Reset</button>
                             </div>
                         </div>
@@ -148,8 +154,8 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem, context) {
                         <div class="color-setting-row">
                             <label for="user-panel-border-color" class="color-label">Border Color:</label>
                             <div class="color-input-wrapper">
-                                <input type="color" id="user-panel-border-color-picker" value="${window.extension_settings[MODULE_NAME]?.userPanelColors?.border || '#5da6f0'}">
-                                <input type="text" id="user-panel-border-color" value="${window.extension_settings[MODULE_NAME]?.userPanelColors?.border || '#5da6f0'}">
+                                <input type="color" id="user-panel-border-color-picker" value="${currentSettings?.userPanelColors?.border || '#5da6f0'}">
+                                <input type="text" id="user-panel-border-color" value="${currentSettings?.userPanelColors?.border || '#5da6f0'}">
                                 <button id="user-panel-border-reset" class="color-reset-btn">Reset</button>
                             </div>
                         </div>
@@ -158,7 +164,7 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem, context) {
                             <label for="user-panel-shadow-color" class="color-label">Shadow Color:</label>
                             <div class="color-input-wrapper">
                                 <input type="color" id="user-panel-shadow-color-picker" value="#1a78d1">
-                                <input type="text" id="user-panel-shadow-color" value="${window.extension_settings[MODULE_NAME]?.userPanelColors?.shadow || 'rgba(26, 120, 209, 0.4)'}">
+                                <input type="text" id="user-panel-shadow-color" value="${currentSettings?.userPanelColors?.shadow || 'rgba(26, 120, 209, 0.4)'}">
                                 <button id="user-panel-shadow-reset" class="color-reset-btn">Reset</button>
                             </div>
                         </div>
@@ -247,7 +253,7 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem, context) {
             // Fallback to direct checking
             try {
                 // Check if the extension is properly loaded
-                if (window.outfitTracker && settings?.outfit_tracker) {
+                if (window.outfitTracker && settings?.[MODULE_NAME]) {
                     $('#status-core').removeClass('status-loading').addClass('status-active').text('Active');
                 } else {
                     $('#status-core').removeClass('status-loading').addClass('status-inactive').text('Inactive');
@@ -294,7 +300,7 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem, context) {
                 }
                 
                 // Check event system status (check if event listeners were set up)
-                const context = window.getContext ? window.getContext() : null;
+                const context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
 
                 if (context && context.eventSource) {
                     $('#status-events').removeClass('status-loading').addClass('status-active').text('Active');
@@ -644,19 +650,21 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem, context) {
     // Function to update settings and apply colors
     function updateColorSettingsAndApply() {
         // Update the extension settings with new color values
-        settings[MODULE_NAME].botPanelColors = {
-            primary: $('#bot-panel-primary-color').val(),
-            border: $('#bot-panel-border-color').val(),
-            shadow: $('#bot-panel-shadow-color').val()
-        };
+        if (settings && settings[MODULE_NAME]) {
+            settings[MODULE_NAME].botPanelColors = {
+                primary: $('#bot-panel-primary-color').val(),
+                border: $('#bot-panel-border-color').val(),
+                shadow: $('#bot-panel-shadow-color').val()
+            };
 
-        settings[MODULE_NAME].userPanelColors = {
-            primary: $('#user-panel-primary-color').val(),
-            border: $('#user-panel-border-color').val(),
-            shadow: $('#user-panel-shadow-color').val()
-        };
+            settings[MODULE_NAME].userPanelColors = {
+                primary: $('#user-panel-primary-color').val(),
+                border: $('#user-panel-border-color').val(),
+                shadow: $('#user-panel-shadow-color').val()
+            };
 
-        saveSettingsFn();
+            saveSettingsFn();
+        }
 
         // Apply the new colors to the panels
         if (window.botOutfitPanel && window.botOutfitPanel.applyPanelColors) {
@@ -672,10 +680,12 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem, context) {
 
     // Custom toggle switch styling
     $(document).on('change', '#outfit-sys-toggle, #outfit-auto-bot, #outfit-auto-user', function() {
-        settings[MODULE_NAME].enableSysMessages = $('#outfit-sys-toggle').prop('checked');
-        settings[MODULE_NAME].autoOpenBot = $('#outfit-auto-bot').prop('checked');
-        settings[MODULE_NAME].autoOpenUser = $('#outfit-auto-user').prop('checked');
-        saveSettingsFn();
+        if (settings && settings[MODULE_NAME]) {
+            settings[MODULE_NAME].enableSysMessages = $('#outfit-sys-toggle').prop('checked');
+            settings[MODULE_NAME].autoOpenBot = $('#outfit-auto-bot').prop('checked');
+            settings[MODULE_NAME].autoOpenUser = $('#outfit-auto-user').prop('checked');
+            saveSettingsFn();
+        }
     });
 
     // Helper function to validate hex color
@@ -905,39 +915,47 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem, context) {
     // Only add auto system event listeners if it loaded successfully
     if (hasAutoSystem) {
         $('#outfit-auto-system').on('input', function() {
-            settings[MODULE_NAME].autoOutfitSystem = $(this).prop('checked');
-            if ($(this).prop('checked')) {
-                autoOutfitSystem.enable();
-            } else {
-                autoOutfitSystem.disable();
+            if (settings && settings[MODULE_NAME]) {
+                settings[MODULE_NAME].autoOutfitSystem = $(this).prop('checked');
+                if ($(this).prop('checked')) {
+                    autoOutfitSystem.enable();
+                } else {
+                    autoOutfitSystem.disable();
+                }
+                saveSettingsFn();
             }
-            saveSettingsFn();
         });
 
         $('#outfit-connection-profile').on('change', function() {
             const profile = $(this).val() || null;
 
-            settings[MODULE_NAME].autoOutfitConnectionProfile = profile;
-            if (autoOutfitSystem.setConnectionProfile) {
-                autoOutfitSystem.setConnectionProfile(profile);
+            if (settings && settings[MODULE_NAME]) {
+                settings[MODULE_NAME].autoOutfitConnectionProfile = profile;
+                if (autoOutfitSystem.setConnectionProfile) {
+                    autoOutfitSystem.setConnectionProfile(profile);
+                }
+                saveSettingsFn();
             }
-            saveSettingsFn();
         });
 
         $('#outfit-prompt-input').on('change', function() {
-            settings[MODULE_NAME].autoOutfitPrompt = $(this).val();
-            autoOutfitSystem.setPrompt($(this).val());
-            saveSettingsFn();
+            if (settings && settings[MODULE_NAME]) {
+                settings[MODULE_NAME].autoOutfitPrompt = $(this).val();
+                autoOutfitSystem.setPrompt($(this).val());
+                saveSettingsFn();
+            }
         });
 
         $('#outfit-prompt-reset-btn').on('click', function() {
             const message = autoOutfitSystem.resetToDefaultPrompt();
 
-            $('#outfit-prompt-input').val(autoOutfitSystem.systemPrompt);
-            settings[MODULE_NAME].autoOutfitPrompt = autoOutfitSystem.systemPrompt;
-            saveSettingsFn();
+            if (settings && settings[MODULE_NAME]) {
+                $('#outfit-prompt-input').val(autoOutfitSystem.systemPrompt);
+                settings[MODULE_NAME].autoOutfitPrompt = autoOutfitSystem.systemPrompt;
+                saveSettingsFn();
+            }
 
-            if (settings.outfit_tracker?.enableSysMessages) {
+            if (currentSettings?.enableSysMessages) {
                 window.botOutfitPanel.sendSystemMessage(message);
             } else {
                 toastr.info(message);

@@ -88,7 +88,8 @@ NOTES:
         this.removeEventListeners();
         
         try {
-            const context = window.getContext();
+            // Try to get the context from SillyTavern first, then fall back to window.getContext
+            const context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
 
             if (!context || !context.eventSource || !context.event_types) {
                 console.error('[AutoOutfitSystem] Context not ready for event listeners');
@@ -124,7 +125,7 @@ NOTES:
     removeEventListeners() {
         try {
             if (this.eventHandler) {
-                const context = window.getContext();
+                const context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
 
                 if (context && context.eventSource && context.event_types) {
                     context.eventSource.off(context.event_types.MESSAGE_RECEIVED, this.eventHandler);
@@ -292,17 +293,24 @@ NOTES:
             }
         }
         
-        if (successfulCommands.length > 0 && window.extension_settings?.outfit_tracker?.enableSysMessages) {
-            // Get the active character name without using regex
-            const activeCharName = this.getActiveCharacterName();
-            const message = successfulCommands.length === 1 
-                ? `${activeCharName} made an outfit change.`
-                : `${activeCharName} made multiple outfit changes.`;
+        if (successfulCommands.length > 0) {
+            // Check if system messages are enabled using the proper context
+            const context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
+            const settings = context?.extensionSettings || window.extension_settings;
+            const enableSysMessages = settings?.outfit_tracker?.enableSysMessages ?? true;
             
-            this.showPopup(message, 'info');
-            await this.delay(1000);
-            
-            this.updateOutfitPanel();
+            if (enableSysMessages) {
+                // Get the active character name without using regex
+                const activeCharName = this.getActiveCharacterName();
+                const message = successfulCommands.length === 1 
+                    ? `${activeCharName} made an outfit change.`
+                    : `${activeCharName} made multiple outfit changes.`;
+                
+                this.showPopup(message, 'info');
+                await this.delay(1000);
+                
+                this.updateOutfitPanel();
+            }
         }
         
         if (failedCommands.length > 0) {
@@ -317,7 +325,7 @@ NOTES:
      */
     getActiveCharacterName() {
         try {
-            const context = window.getContext();
+            const context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : window.getContext();
 
             if (context && context.characters && context.this_chid !== undefined) {
                 const character = context.characters[context.this_chid];
@@ -564,7 +572,7 @@ NOTES:
      */
     getLastMessages(count = 3) {
         try {
-            const context = window.getContext();
+            const context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : window.getContext();
             const chat = context?.chat;
             
             if (!chat || !Array.isArray(chat) || chat.length === 0) {

@@ -31,7 +31,7 @@ async function loadAutoOutfitSystem() {
 async function processMacrosInFirstMessage(context) {
     try {
         // Use provided context or fallback to global context
-        const ctx = context || (window.SillyTavern?.getContext ? window.SillyTavern.getContext() : window.getContext());
+        const ctx = context || (window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null));
 
         if (!ctx || !ctx.chat) {return;}
 
@@ -232,7 +232,7 @@ function cleanOutfitMacrosFromText(text) {
     }
     
     // Get the current character ID to identify which outfits to look for
-    const context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : window.getContext();
+    const context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
 
     if (!context || !context.characterId) {
         return resultText;
@@ -419,7 +419,7 @@ export async function initializeExtension() {
     await loadAutoOutfitSystem();
 
     // Get SillyTavern context and required functions using the proper SillyTavern API
-    const STContext = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : window.getContext();
+    const STContext = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
     const saveSettingsFn = STContext?.saveSettingsDebounced;
     
     if (!STContext || !saveSettingsFn) {
