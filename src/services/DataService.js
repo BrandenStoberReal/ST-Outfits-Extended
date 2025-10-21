@@ -12,6 +12,7 @@ import { ALL_SLOTS } from '../config/constants.js';
 function clearGlobalOutfitVariables() {
     try {
         // Access the global variables store if available
+        // Note: Global variables are managed by SillyTavern, so we still need to access window.extension_settings
         if (window.extension_settings && window.extension_settings.variables) {
             // Remove all bot-related outfit variables
             if (window.extension_settings.variables.global) {

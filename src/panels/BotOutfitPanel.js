@@ -10,6 +10,9 @@ import { LLMUtility } from '../utils/LLMUtility.js';
 // Import utility functions
 import { formatSlotName as utilsFormatSlotName } from '../utils/utilities.js';
 
+// Import settings utility
+import { areSystemMessagesEnabled } from '../utils/SettingsUtil.js';
+
 export class BotOutfitPanel {
     constructor(outfitManager, clothingSlots, accessorySlots, saveSettingsDebounced) {
         this.outfitManager = outfitManager;
@@ -145,7 +148,7 @@ export class BotOutfitPanel {
             slotElement.querySelector('.slot-change').addEventListener('click', async () => {
                 const message = await this.outfitManager.changeOutfitItem(slot.name);
 
-                if (message && window.extension_settings.outfit_tracker?.enableSysMessages) {
+                if (message && areSystemMessagesEnabled()) {
                     this.sendSystemMessage(message);
                 }
                 this.saveSettingsDebounced();
@@ -184,7 +187,7 @@ export class BotOutfitPanel {
                 defaultPresetElement.querySelector('.load-preset').addEventListener('click', async () => {
                     const message = await this.outfitManager.loadDefaultOutfit();
 
-                    if (message && window.extension_settings.outfit_tracker?.enableSysMessages) {
+                    if (message && areSystemMessagesEnabled()) {
                         this.sendSystemMessage(message);
                     }
                     this.saveSettingsDebounced();
@@ -214,7 +217,7 @@ export class BotOutfitPanel {
                     presetElement.querySelector('.load-preset').addEventListener('click', async () => {
                         const message = await this.outfitManager.loadPreset(preset);
 
-                        if (message && window.extension_settings.outfit_tracker?.enableSysMessages) {
+                        if (message && areSystemMessagesEnabled()) {
                             this.sendSystemMessage(message);
                         }
                         this.saveSettingsDebounced();
@@ -224,7 +227,7 @@ export class BotOutfitPanel {
                     presetElement.querySelector('.set-default-preset').addEventListener('click', async () => {
                         const message = await this.outfitManager.setPresetAsDefault(preset);
 
-                        if (message && window.extension_settings.outfit_tracker?.enableSysMessages) {
+                        if (message && areSystemMessagesEnabled()) {
                             this.sendSystemMessage(message);
                         }
                         this.saveSettingsDebounced();
@@ -237,7 +240,7 @@ export class BotOutfitPanel {
                             if (confirm(`Delete "${preset}" outfit?`)) {
                                 const message = this.outfitManager.deletePreset(preset);
 
-                                if (message && window.extension_settings.outfit_tracker?.enableSysMessages) {
+                                if (message && areSystemMessagesEnabled()) {
                                     this.sendSystemMessage(message);
                                 }
                                 this.saveSettingsDebounced();
@@ -248,7 +251,7 @@ export class BotOutfitPanel {
                             // Delete the preset
                             const message = this.outfitManager.deletePreset(preset);
                             
-                            if (window.extension_settings.outfit_tracker?.enableSysMessages) {
+                            if (areSystemMessagesEnabled()) {
                                 this.sendSystemMessage(message + ' Default outfit cleared.');
                             }
                             this.saveSettingsDebounced();
@@ -261,7 +264,7 @@ export class BotOutfitPanel {
                         if (confirm(`Overwrite "${preset}" with current outfit?`)) {
                             const message = this.outfitManager.overwritePreset(preset);
 
-                            if (message && window.extension_settings.outfit_tracker?.enableSysMessages) {
+                            if (message && areSystemMessagesEnabled()) {
                                 this.sendSystemMessage(message);
                             }
                             this.saveSettingsDebounced();
@@ -286,7 +289,7 @@ export class BotOutfitPanel {
             if (presetName && presetName.toLowerCase() !== 'default') {
                 const message = await this.outfitManager.savePreset(presetName.trim());
 
-                if (message && window.extension_settings.outfit_tracker?.enableSysMessages) {
+                if (message && areSystemMessagesEnabled()) {
                     this.sendSystemMessage(message);
                 }
                 this.saveSettingsDebounced();
@@ -318,7 +321,7 @@ export class BotOutfitPanel {
     async generateOutfitFromCharacterInfo() {
         try {
             // Show a notification that the process has started
-            if (window.extension_settings.outfit_tracker?.enableSysMessages) {
+            if (areSystemMessagesEnabled()) {
                 this.sendSystemMessage('Generating outfit based on character info...');
             }
             
@@ -327,7 +330,7 @@ export class BotOutfitPanel {
             
             if (characterInfo.error) {
                 console.error('Error getting character data:', characterInfo.error);
-                if (window.extension_settings.outfit_tracker?.enableSysMessages) {
+                if (areSystemMessagesEnabled()) {
                     this.sendSystemMessage(`Error: ${characterInfo.error}`);
                 }
                 return;
@@ -340,12 +343,12 @@ export class BotOutfitPanel {
             await this.parseAndApplyOutfitCommands(response);
             
             // Success message
-            if (window.extension_settings.outfit_tracker?.enableSysMessages) {
+            if (areSystemMessagesEnabled()) {
                 this.sendSystemMessage('Outfit generated and applied successfully!');
             }
         } catch (error) {
             console.error('Error in generateOutfitFromCharacterInfo:', error);
-            if (window.extension_settings.outfit_tracker?.enableSysMessages) {
+            if (areSystemMessagesEnabled()) {
                 this.sendSystemMessage(`Error generating outfit: ${error.message}`);
             }
         }
@@ -353,13 +356,15 @@ export class BotOutfitPanel {
 
     sendSystemMessage(message) {
         // Use toastr popup instead of /sys command
-        if (window.extension_settings.outfit_tracker?.enableSysMessages) {
+        if (areSystemMessagesEnabled()) {
             toastr.info(message, 'Outfit System', {
                 timeOut: 4000,
                 extendedTimeOut: 8000
             });
         }
     }
+
+
 
     formatSlotName(name) {
         return utilsFormatSlotName(name);
@@ -565,7 +570,7 @@ INSTRUCTIONS:
             const message = await this.outfitManager.setOutfitItem(slot, action === 'remove' ? 'None' : cleanValue);
             
             // Show system message if enabled
-            if (message && window.extension_settings.outfit_tracker?.enableSysMessages) {
+            if (message && areSystemMessagesEnabled()) {
                 this.sendSystemMessage(message);
             }
             
@@ -621,8 +626,9 @@ INSTRUCTIONS:
 
     // Apply panel colors based on saved preferences
     applyPanelColors() {
-        if (window.extension_settings && window.extension_settings.outfit_tracker && this.domElement) {
-            const colors = window.extension_settings.outfit_tracker.botPanelColors;
+        if (this.domElement) {
+            const storeState = outfitStore.getState();
+            const colors = storeState.panelSettings?.botPanelColors;
 
             if (colors) {
                 this.domElement.style.background = colors.primary;

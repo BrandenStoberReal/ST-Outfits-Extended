@@ -1,5 +1,6 @@
 import { importOutfitFromCharacterCard } from '../services/LLMService.js';
 import { CLOTHING_SLOTS, ACCESSORY_SLOTS } from '../config/constants.js';
+import { areSystemMessagesEnabled } from '../utils/SettingsUtil.js';
 
 export async function registerOutfitCommands(botManager, userManager, autoOutfitSystem) {
     // Check if new slash command system is available in SillyTavern
@@ -225,7 +226,7 @@ Prompt: ${status.hasPrompt ? 'SET' : 'NOT SET'}`;
                         if (prompt) {
                             const message = autoOutfitSystem.setPrompt(prompt);
 
-                            if (window.extension_settings.outfit_tracker?.enableSysMessages) {
+                            if (areSystemMessagesEnabled()) {
                                 window.botOutfitPanel.sendSystemMessage(message);
                             }
                             return message;
@@ -279,7 +280,7 @@ Prompt: ${status.hasPrompt ? 'SET' : 'NOT SET'}`;
                     if (window.autoOutfitSystem) {
                         const message = autoOutfitSystem.resetToDefaultPrompt();
 
-                        if (window.extension_settings.outfit_tracker?.enableSysMessages) {
+                        if (areSystemMessagesEnabled()) {
                             window.botOutfitPanel.sendSystemMessage(message);
                         }
                         // Update the textarea in settings
@@ -424,7 +425,7 @@ Full length: ${status.promptLength} chars`;
                         }
                     }
 
-                    if (window.extension_settings.outfit_tracker?.enableSysMessages) {
+                    if (areSystemMessagesEnabled()) {
                         window.botOutfitPanel.sendSystemMessage(message);
                     }
 
@@ -438,7 +439,7 @@ Full length: ${status.promptLength} chars`;
                         }
                     }
 
-                    if (window.extension_settings.outfit_tracker?.enableSysMessages && userMessage && !userMessage.includes('not found')) {
+                    if (areSystemMessagesEnabled() && userMessage && !userMessage.includes('not found')) {
                         window.userOutfitPanel.sendSystemMessage(userMessage);
                     }
 
@@ -601,7 +602,7 @@ Full length: ${status.promptLength} chars`;
                 try {
                     const message = await botManager.setOutfitItem(slot, item);
 
-                    if (window.extension_settings.outfit_tracker?.enableSysMessages) {
+                    if (areSystemMessagesEnabled()) {
                         window.botOutfitPanel.sendSystemMessage(message);
                     }
                     if (!isQuiet) {
@@ -672,7 +673,7 @@ Full length: ${status.promptLength} chars`;
                 try {
                     const message = await botManager.setOutfitItem(slot, 'None');
 
-                    if (window.extension_settings.outfit_tracker?.enableSysMessages) {
+                    if (areSystemMessagesEnabled()) {
                         window.botOutfitPanel.sendSystemMessage(message);
                     }
                     if (!isQuiet) {
@@ -757,7 +758,7 @@ Full length: ${status.promptLength} chars`;
                 try {
                     const message = await botManager.setOutfitItem(slot, item);
 
-                    if (window.extension_settings.outfit_tracker?.enableSysMessages) {
+                    if (areSystemMessagesEnabled()) {
                         window.botOutfitPanel.sendSystemMessage(message);
                     }
                     if (!isQuiet) {
@@ -843,7 +844,7 @@ Full length: ${status.promptLength} chars`;
                 try {
                     const message = await userManager.setOutfitItem(slot, item);
 
-                    if (window.extension_settings.outfit_tracker?.enableSysMessages) {
+                    if (areSystemMessagesEnabled()) {
                         window.userOutfitPanel.sendSystemMessage(message);
                     }
                     if (!isQuiet) {
@@ -914,7 +915,7 @@ Full length: ${status.promptLength} chars`;
                 try {
                     const message = await userManager.setOutfitItem(slot, 'None');
 
-                    if (window.extension_settings.outfit_tracker?.enableSysMessages) {
+                    if (areSystemMessagesEnabled()) {
                         window.userOutfitPanel.sendSystemMessage(message);
                     }
                     if (!isQuiet) {
@@ -999,7 +1000,7 @@ Full length: ${status.promptLength} chars`;
                 try {
                     const message = await userManager.setOutfitItem(slot, item);
 
-                    if (window.extension_settings.outfit_tracker?.enableSysMessages) {
+                    if (areSystemMessagesEnabled()) {
                         window.userOutfitPanel.sendSystemMessage(message);
                     }
                     if (!isQuiet) {
@@ -1071,7 +1072,7 @@ Full length: ${status.promptLength} chars`;
                 try {
                     const message = await botManager.savePreset(presetName);
 
-                    if (window.extension_settings.outfit_tracker?.enableSysMessages) {
+                    if (areSystemMessagesEnabled()) {
                         window.botOutfitPanel.sendSystemMessage(message);
                     }
                     if (!isQuiet) {
@@ -1142,7 +1143,7 @@ Full length: ${status.promptLength} chars`;
                 try {
                     const message = await botManager.deletePreset(presetName);
 
-                    if (window.extension_settings.outfit_tracker?.enableSysMessages) {
+                    if (areSystemMessagesEnabled()) {
                         window.botOutfitPanel.sendSystemMessage(message);
                     }
                     if (!isQuiet) {
@@ -1213,7 +1214,7 @@ Full length: ${status.promptLength} chars`;
                 try {
                     const message = await userManager.savePreset(presetName);
 
-                    if (window.extension_settings.outfit_tracker?.enableSysMessages) {
+                    if (areSystemMessagesEnabled()) {
                         window.userOutfitPanel.sendSystemMessage(message);
                     }
                     if (!isQuiet) {
@@ -1284,7 +1285,7 @@ Full length: ${status.promptLength} chars`;
                 try {
                     const message = await userManager.deletePreset(presetName);
 
-                    if (window.extension_settings.outfit_tracker?.enableSysMessages) {
+                    if (areSystemMessagesEnabled()) {
                         window.userOutfitPanel.sendSystemMessage(message);
                     }
                     if (!isQuiet) {
@@ -1427,7 +1428,7 @@ Full length: ${status.promptLength} chars`;
                 try {
                     const message = await botManager.overwritePreset(presetName);
 
-                    if (window.extension_settings.outfit_tracker?.enableSysMessages) {
+                    if (areSystemMessagesEnabled()) {
                         window.botOutfitPanel.sendSystemMessage(message);
                     }
                     if (!isQuiet) {
@@ -1504,7 +1505,7 @@ Full length: ${status.promptLength} chars`;
                 try {
                     const message = await userManager.overwritePreset(presetName);
 
-                    if (window.extension_settings.outfit_tracker?.enableSysMessages) {
+                    if (areSystemMessagesEnabled()) {
                         window.userOutfitPanel.sendSystemMessage(message);
                     }
                     if (!isQuiet) {

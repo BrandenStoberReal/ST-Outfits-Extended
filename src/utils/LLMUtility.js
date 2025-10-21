@@ -1,6 +1,7 @@
 /**
  * Unified LLM utility with retry logic for outfit detection system
  */
+import { outfitStore } from '../common/Store.js';
 
 class ConnectionProfileHelper {
     /**
@@ -71,6 +72,15 @@ class ConnectionProfileHelper {
             return window.extension_settings.connectionManager.selectedProfile;
         }
         
+        // Fallback: try to get from our store if available
+        try {
+            const storeState = outfitStore.getState();
+
+            return storeState.settings?.autoOutfitConnectionProfile || null;
+        } catch (error) {
+            console.warn('Could not access store for connection profile:', error);
+        }
+        
         return null;
     }
     
@@ -90,6 +100,16 @@ class ConnectionProfileHelper {
             return window.extension_settings.connectionManager.profiles.find(p => p.id === profileId);
         }
         
+        // Fallback: try to get from our store if available
+        try {
+            const storeState = outfitStore.getState();
+
+            // This might not be relevant for our outfit store but adding for consistency
+            return null; // Our store doesn't store connection profiles separately
+        } catch (error) {
+            console.warn('Could not access store for profiles:', error);
+        }
+        
         return null;
     }
     
@@ -104,6 +124,16 @@ class ConnectionProfileHelper {
         
         if (window.extension_settings?.connectionManager?.profiles) {
             return window.extension_settings.connectionManager.profiles;
+        }
+        
+        // Fallback: try to get from our store if available
+        try {
+            const storeState = outfitStore.getState();
+
+            // This might not be relevant for our outfit store but adding for consistency
+            return []; // Our store doesn't store connection profiles separately
+        } catch (error) {
+            console.warn('Could not access store for profiles:', error);
         }
         
         return [];

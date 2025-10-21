@@ -4,6 +4,9 @@ import { dragElementWithSave, resizeElement } from '../common/shared.js';
 // Import utility functions
 import { formatSlotName as utilsFormatSlotName } from '../utils/utilities.js';
 
+// Import settings utility
+import { areSystemMessagesEnabled } from '../utils/SettingsUtil.js';
+
 export class UserOutfitPanel {
     constructor(outfitManager, clothingSlots, accessorySlots, saveSettingsDebounced) {
         this.outfitManager = outfitManager;
@@ -132,7 +135,7 @@ export class UserOutfitPanel {
             slotElement.querySelector('.slot-change').addEventListener('click', async () => {
                 const message = await this.outfitManager.changeOutfitItem(slot.name);
 
-                if (message && window.extension_settings.outfit_tracker?.enableSysMessages) {
+                if (message && areSystemMessagesEnabled()) {
                     this.sendSystemMessage(message);
                 }
                 this.saveSettingsDebounced();
@@ -171,7 +174,7 @@ export class UserOutfitPanel {
                 defaultPresetElement.querySelector('.load-preset').addEventListener('click', async () => {
                     const message = await this.outfitManager.loadDefaultOutfit();
 
-                    if (message && window.extension_settings.outfit_tracker?.enableSysMessages) {
+                    if (areSystemMessagesEnabled()) {
                         this.sendSystemMessage(message);
                     }
                     this.saveSettingsDebounced();
@@ -201,7 +204,7 @@ export class UserOutfitPanel {
                     presetElement.querySelector('.load-preset').addEventListener('click', async () => {
                         const message = await this.outfitManager.loadPreset(preset);
 
-                        if (message && window.extension_settings.outfit_tracker?.enableSysMessages) {
+                        if (areSystemMessagesEnabled()) {
                             this.sendSystemMessage(message);
                         }
                         this.saveSettingsDebounced();
@@ -211,7 +214,7 @@ export class UserOutfitPanel {
                     presetElement.querySelector('.set-default-preset').addEventListener('click', async () => {
                         const message = await this.outfitManager.setPresetAsDefault(preset);
 
-                        if (message && window.extension_settings.outfit_tracker?.enableSysMessages) {
+                        if (areSystemMessagesEnabled()) {
                             this.sendSystemMessage(message);
                         }
                         this.saveSettingsDebounced();
@@ -224,7 +227,7 @@ export class UserOutfitPanel {
                             if (confirm(`Delete "${preset}" outfit?`)) {
                                 const message = this.outfitManager.deletePreset(preset);
 
-                                if (message && window.extension_settings.outfit_tracker?.enableSysMessages) {
+                                if (areSystemMessagesEnabled()) {
                                     this.sendSystemMessage(message);
                                 }
                                 this.saveSettingsDebounced();
@@ -235,7 +238,7 @@ export class UserOutfitPanel {
                             // Delete the preset
                             const message = this.outfitManager.deletePreset(preset);
                             
-                            if (window.extension_settings.outfit_tracker?.enableSysMessages) {
+                            if (areSystemMessagesEnabled()) {
                                 this.sendSystemMessage(message + ' Default outfit cleared.');
                             }
                             this.saveSettingsDebounced();
@@ -248,7 +251,7 @@ export class UserOutfitPanel {
                         if (confirm(`Overwrite "${preset}" with current outfit?`)) {
                             const message = this.outfitManager.overwritePreset(preset);
 
-                            if (message && window.extension_settings.outfit_tracker?.enableSysMessages) {
+                            if (message && areSystemMessagesEnabled()) {
                                 this.sendSystemMessage(message);
                             }
                             this.saveSettingsDebounced();
@@ -273,7 +276,7 @@ export class UserOutfitPanel {
             if (presetName && presetName.toLowerCase() !== 'default') {
                 const message = await this.outfitManager.savePreset(presetName.trim());
 
-                if (message && window.extension_settings.outfit_tracker?.enableSysMessages) {
+                if (message && areSystemMessagesEnabled()) {
                     this.sendSystemMessage(message);
                 }
                 this.saveSettingsDebounced();
@@ -288,13 +291,15 @@ export class UserOutfitPanel {
 
     sendSystemMessage(message) {
         // Use toastr popup instead of /sys command
-        if (window.extension_settings.outfit_tracker?.enableSysMessages) {
+        if (areSystemMessagesEnabled()) {
             toastr.info(message, 'Outfit System', {
                 timeOut: 4000,
                 extendedTimeOut: 8000
             });
         }
     }
+
+
 
     renderFillOutfitButton(container) {
         const fillOutfitButton = document.createElement('button');
@@ -365,8 +370,9 @@ export class UserOutfitPanel {
 
     // Apply panel colors based on saved preferences
     applyPanelColors() {
-        if (window.extension_settings && window.extension_settings.outfit_tracker && this.domElement) {
-            const colors = window.extension_settings.outfit_tracker.userPanelColors;
+        if (this.domElement) {
+            const storeState = outfitStore.getState();
+            const colors = storeState.panelSettings?.userPanelColors;
 
             if (colors) {
                 this.domElement.style.background = colors.primary;

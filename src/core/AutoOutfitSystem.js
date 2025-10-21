@@ -7,6 +7,7 @@
 import { extractCommands, replaceAll } from '../utils/StringProcessor.js';
 import { generateOutfitFromLLM } from '../services/LLMService.js';
 import { customMacroSystem } from '../utils/CustomMacroSystem.js';
+import { outfitStore } from '../common/Store.js';
 
 export class AutoOutfitSystem {
     constructor(outfitManager) {
@@ -294,10 +295,9 @@ NOTES:
         }
         
         if (successfulCommands.length > 0) {
-            // Check if system messages are enabled using the proper context
-            const context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
-            const settings = context?.extensionSettings || window.extension_settings;
-            const enableSysMessages = settings?.outfit_tracker?.enableSysMessages ?? true;
+            // Check if system messages are enabled using the store
+            const storeState = outfitStore.getState();
+            const enableSysMessages = storeState.settings?.enableSysMessages ?? true;
             
             if (enableSysMessages) {
                 // Get the active character name without using regex
