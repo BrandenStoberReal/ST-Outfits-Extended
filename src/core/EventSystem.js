@@ -121,18 +121,19 @@ class EventSystem {
 
             const result = originalRestart.apply(this, args);
 
-            // After reset, update for current character and restore outfit settings
-            await this.updateForCurrentCharacter();
-
-            // Restore outfit instance IDs first
+            // Restore outfit instance IDs BEFORE updating for current character
+            // This ensures the managers use the correct instance ID when reloading
             if (botOutfitInstanceId) {
                 this.botManager.setOutfitInstanceId(botOutfitInstanceId);
             }
             if (userOutfitInstanceId) {
                 this.userManager.setOutfitInstanceId(userOutfitInstanceId);
             }
+            
+            // After restoring instance IDs, update for current character
+            await this.updateForCurrentCharacter();
 
-            // Restore outfit data after reset
+            // Restore outfit data after reset and character update
             if (botOutfit) {
                 this.botManager.setOutfit(botOutfit);
                 await this.botManager.saveOutfit();
@@ -177,17 +178,18 @@ class EventSystem {
 
             await originalClearChat.apply(this, args);
 
-            await this.updateForCurrentCharacter();
-
-            // Restore outfit instance IDs first
+            // Restore outfit instance IDs BEFORE updating for current character
+            // This ensures the managers use the correct instance ID when reloading
             if (botOutfitInstanceId) {
                 this.botManager.setOutfitInstanceId(botOutfitInstanceId);
             }
             if (userOutfitInstanceId) {
                 this.userManager.setOutfitInstanceId(userOutfitInstanceId);
             }
+            
+            await this.updateForCurrentCharacter();
 
-            // Restore outfit data after clear
+            // Restore outfit data after clear and character update
             if (botOutfit) {
                 this.botManager.setOutfit(botOutfit);
                 await this.botManager.saveOutfit();

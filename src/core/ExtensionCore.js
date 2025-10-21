@@ -335,6 +335,7 @@ function setupApi(botManager, userManager, botPanel, userPanel, autoOutfitSystem
     extension_api.userOutfitPanel = userPanel;
     extension_api.autoOutfitSystem = autoOutfitSystem;
     extension_api.wipeAllOutfits = () => wipeAllOutfits();
+    window.wipeAllOutfits = () => wipeAllOutfits(); // Make it directly accessible globally
     extension_api.getOutfitExtensionStatus = () => ({
         core: true,
         autoOutfit: autoOutfitSystem?.getStatus?.() ?? false,
