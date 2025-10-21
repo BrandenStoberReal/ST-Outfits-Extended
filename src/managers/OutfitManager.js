@@ -170,6 +170,10 @@ export class OutfitManager {
         throw new Error('getPresets must be implemented by subclasses');
     }
     
+    getAllPresets(instanceId = null) {
+        throw new Error('getAllPresets must be implemented by subclasses');
+    }
+    
     async loadDefaultOutfit(instanceId = null) {
         throw new Error('loadDefaultOutfit must be implemented by subclasses');
     }

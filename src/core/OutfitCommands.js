@@ -1,6 +1,7 @@
 import { importOutfitFromCharacterCard } from '../services/LLMService.js';
 import { CLOTHING_SLOTS, ACCESSORY_SLOTS } from '../config/constants.js';
 import { areSystemMessagesEnabled } from '../utils/SettingsUtil.js';
+import { dataPersistenceService } from '../services/DataPersistenceService.js';
 
 export async function registerOutfitCommands(botManager, userManager, autoOutfitSystem) {
     // Check if new slash command system is available in SillyTavern
@@ -285,7 +286,12 @@ Prompt: ${status.hasPrompt ? 'SET' : 'NOT SET'}`;
                         }
                         // Update the textarea in settings
                         $('#outfit-prompt-input').val(autoOutfitSystem.systemPrompt);
-                        window.saveSettingsDebounced();
+                        // Use the store's save method which uses the new persistence service
+                        if (typeof window.outfitStore !== 'undefined') {
+                            window.outfitStore.saveSettings();
+                        } else {
+                            window.saveSettingsDebounced();
+                        }
                         return message;
                     } 
                     const message = 'Auto outfit system not available';

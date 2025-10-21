@@ -391,5 +391,11 @@ export class NewUserOutfitManager extends OutfitManager {
         return '';
 
     }
+    
+    getAllPresets(instanceId = null) {
+        const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
+        
+        return outfitStore.getAllPresets('user', actualInstanceId, 'user');
+    }
 
 }

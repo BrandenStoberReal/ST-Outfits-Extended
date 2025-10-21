@@ -8,6 +8,7 @@ import { ALL_SLOTS } from '../config/constants.js';
 
 /**
  * Clear all global variables related to outfits
+ * @returns {void}
  */
 function clearGlobalOutfitVariables() {
     try {
@@ -17,11 +18,9 @@ function clearGlobalOutfitVariables() {
             // Remove all bot-related outfit variables
             if (window.extension_settings.variables.global) {
                 const globalVars = window.extension_settings.variables.global;
-                
+
                 // Get all variable names that start with outfit-related patterns
-                const outfitVars = Object.keys(globalVars).filter(key => 
-                    ALL_SLOTS.some(slot => key.includes(`_${slot}`))
-                );
+                const outfitVars = Object.keys(globalVars).filter(key => ALL_SLOTS.some(slot => key.endsWith(`_${slot}`)));
                 
                 // Remove each outfit variable
                 outfitVars.forEach(key => {
@@ -38,7 +37,7 @@ function clearGlobalOutfitVariables() {
 
 /**
  * Wipes all saved outfit data for both bot and user characters
- * @returns {string} - Success message
+ * @returns {Promise<string>} - Success message
  */
 export async function wipeAllOutfits() {
     try {

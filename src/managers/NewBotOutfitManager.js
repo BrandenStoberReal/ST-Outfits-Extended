@@ -373,5 +373,11 @@ export class NewBotOutfitManager extends OutfitManager {
         return '';
 
     }
+    
+    getAllPresets(instanceId = null) {
+        const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
+        
+        return outfitStore.getAllPresets(this.character, actualInstanceId, 'bot');
+    }
 
 }

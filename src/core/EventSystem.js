@@ -2,6 +2,7 @@ import { extensionEventBus, EXTENSION_EVENTS } from './events.js';
 import { customMacroSystem } from '../utils/CustomMacroSystem.js';
 import { outfitStore } from '../common/Store.js';
 import { generateMessageHash } from '../utils/utilities.js';
+import { dataPersistenceService } from '../services/DataPersistenceService.js';
 
 class EventSystem {
     constructor(context) {
@@ -120,25 +121,23 @@ class EventSystem {
         if (aiMessages.length > 0 && chat.indexOf(aiMessages[0]) === index) {
             console.log('[OutfitTracker] First message was swiped, updating outfit instance.');
             
-            setTimeout(async () => {
-                // Update the first message hash tracker with the new first message
-                const newFirstBotMessage = chat.find(msg => !msg.is_user && !msg.is_system);
+            // Before updating for the new character, ensure current outfits are properly saved immediately
+            // This ensures that the outfit for the swiped-away message is preserved
+            await this.botManager.saveOutfit();
+            await this.userManager.saveOutfit();
+            
+            // Update the first message hash tracker with the new first message
+            const newFirstBotMessage = chat.find(msg => !msg.is_user && !msg.is_system);
 
-                if (newFirstBotMessage) {
-                    this.currentFirstMessageHash = this.generateMessageHash(newFirstBotMessage.mes);
-                } else {
-                    // If no first message exists, clear the hash
-                    this.currentFirstMessageHash = null;
-                }
-                
-                // Before updating for the new character, ensure current outfits are properly saved
-                // This ensures that the outfit for the swiped-away message is preserved
-                await this.botManager.saveOutfit();
-                await this.userManager.saveOutfit();
-                
-                await this.updateForCurrentCharacter();
-                await this.processMacrosInFirstMessage(this.context);
-            }, 100);
+            if (newFirstBotMessage) {
+                this.currentFirstMessageHash = this.generateMessageHash(newFirstBotMessage.mes);
+            } else {
+                // If no first message exists, clear the hash
+                this.currentFirstMessageHash = null;
+            }
+            
+            await this.updateForCurrentCharacter();
+            await this.processMacrosInFirstMessage(this.context);
         }
     }
 
@@ -164,9 +163,8 @@ class EventSystem {
         window.restartLLM = async (...args) => {
             console.log('[OutfitTracker] Chat reset triggered (restartLLM).');
             
-            if (typeof window.saveSettingsDebounced?.flush === 'function') {
-                window.saveSettingsDebounced.flush();
-            }
+            // Use the new data persistence service for flushing
+            outfitStore.flush();
 
             // Save current outfit data and instance IDs before reset
             const botOutfit = this.botManager.getCurrentOutfit();

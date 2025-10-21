@@ -74,10 +74,10 @@ function getAllOutfitValuesForCharacter(characterId) {
     const outfitValues = new Set();
     
     // Look through bot outfits for this character
-    if (state.botOutfits && state.botOutfits[actualCharacterId]) {
-        Object.values(state.botOutfits[actualCharacterId]).forEach(outfit => {
-            if (outfit) {
-                Object.values(outfit).forEach(value => {
+    if (state.botInstances && state.botInstances[actualCharacterId]) {
+        Object.values(state.botInstances[actualCharacterId]).forEach(instanceData => {
+            if (instanceData && instanceData.bot) {
+                Object.values(instanceData.bot).forEach(value => {
                     if (value && typeof value === 'string' && value !== 'None') {
                         outfitValues.add(value);
                     }
@@ -256,10 +256,10 @@ function cleanOutfitMacrosFromText(text) {
     const outfitValues = new Set();
     
     // Look through bot outfits for this character
-    if (state.botOutfits && state.botOutfits[characterId]) {
-        Object.values(state.botOutfits[characterId]).forEach(outfit => {
-            if (outfit) {
-                Object.values(outfit).forEach(value => {
+    if (state.botInstances && state.botInstances[characterId]) {
+        Object.values(state.botInstances[characterId]).forEach(instanceData => {
+            if (instanceData && instanceData.bot) {
+                Object.values(instanceData.bot).forEach(value => {
                     if (value && typeof value === 'string' && value !== 'None') {
                         outfitValues.add(value);
                     }
