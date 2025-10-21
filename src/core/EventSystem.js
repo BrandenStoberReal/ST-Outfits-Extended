@@ -121,30 +121,26 @@ class EventSystem {
         if (aiMessages.length > 0 && chat.indexOf(aiMessages[0]) === index) {
             console.log('[OutfitTracker] First message was swiped, updating outfit instance.');
             
-            // Save the current outfit data for the old/previous instance to the old instance ID
-            // This ensures that the outfit for the swiped-away message is preserved in the old instance
-            // Get the old instance ID before updating managers
+            // Capture the current outfit instance data and character ID BEFORE updating managers
+            // This ensures that the outfit for the swiped-away message is preserved in the right place
+            const oldBotCharacterId = this.botManager.characterId;
             const oldBotInstanceId = this.botManager.getOutfitInstanceId();
-            const oldUserInstanceId = this.userManager.getOutfitInstanceId();
-            const oldBotOutfit = { ...this.botManager.getCurrentOutfit() };
-            const oldUserOutfit = { ...this.userManager.getCurrentOutfit() };
+            const oldBotOutfitData = { ...this.botManager.getCurrentOutfit() };
+            const oldUserInstanceId = this.userManager.getOutfitInstanceId(); 
+            const oldUserOutfitData = { ...this.userManager.getCurrentOutfit() };
             
-            // Update to the new character/outfit instance first
+            // Update to the new character/outfit instance 
             await this.updateForCurrentCharacter();
             await this.processMacrosInFirstMessage(this.context);
             
-            // Now save the OLD outfit data to the OLD instance ID 
-            if (oldBotInstanceId) {
-                // Save the old outfit data to the old instance ID
-                outfitStore.setBotOutfit(this.botManager.characterId, oldBotInstanceId, oldBotOutfit);
-                // Ensure it's properly saved to persistent storage
+            // Now save the old outfit data to the old instance IDs
+            if (oldBotInstanceId && oldBotCharacterId) {
+                outfitStore.setBotOutfit(oldBotCharacterId, oldBotInstanceId, oldBotOutfitData);
                 outfitStore.saveSettings();
             }
             
             if (oldUserInstanceId) {
-                // Save the old outfit data to the old instance ID
-                outfitStore.setUserOutfit(oldUserInstanceId, oldUserOutfit);
-                // Ensure it's properly saved to persistent storage
+                outfitStore.setUserOutfit(oldUserInstanceId, oldUserOutfitData);
                 outfitStore.saveSettings();
             }
         }
