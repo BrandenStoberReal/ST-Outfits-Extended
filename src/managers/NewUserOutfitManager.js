@@ -237,27 +237,8 @@ export class NewUserOutfitManager extends OutfitManager {
 
         
 
-        delete outfitStore.getState().presets.user[actualInstanceId][presetName];
-
-        
-
-        const instancePresets = outfitStore.getState().presets.user[actualInstanceId] || {};
-
-        if (Object.keys(instancePresets).length === 0) {
-
-            delete outfitStore.getState().presets.user[actualInstanceId];
-
-            
-
-            const userPresets = outfitStore.getState().presets.user || {};
-
-            if (Object.keys(userPresets).length === 0) {
-
-                delete outfitStore.getState().presets.user;
-
-            }
-
-        }
+        // Use the proper store method to delete the preset
+        outfitStore.deletePreset('user', actualInstanceId, presetName, 'user');
 
         
 

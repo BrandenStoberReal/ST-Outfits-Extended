@@ -219,29 +219,8 @@ export class NewBotOutfitManager extends OutfitManager {
 
         
 
-        const key = `${this.character}_${actualInstanceId}`;
-
-        delete outfitStore.getState().presets.bot[key][presetName];
-
-        
-
-        const instancePresets = outfitStore.getState().presets.bot[key] || {};
-
-        if (Object.keys(instancePresets).length === 0) {
-
-            delete outfitStore.getState().presets.bot[key];
-
-            
-
-            const characterPresets = outfitStore.getState().presets.bot || {};
-
-            if (Object.keys(characterPresets).length === 0) {
-
-                delete outfitStore.getState().presets.bot;
-
-            }
-
-        }
+        // Use the proper store method to delete the preset
+        outfitStore.deletePreset(this.character, actualInstanceId, presetName, 'bot');
 
         
 
