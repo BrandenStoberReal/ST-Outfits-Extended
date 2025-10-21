@@ -343,19 +343,7 @@ function setupApi(botManager, userManager, botPanel, userPanel, autoOutfitSystem
         events: true,
         managers: { bot: Boolean(botManager), user: Boolean(userManager) },
     });
-    extension_api.updateQuoteColorSetting = (newColor) => {
-        try {
-            extension_settings.outfit_tracker.quoteColor = newColor;
-            saveSettingsDebounced();
-            registerQuotesColorExtension(newColor);
-            console.log(`[OutfitTracker] Quote color updated to ${newColor}`);
-            return true;
-        } catch (error) {
-            console.error('[OutfitTracker] Error updating quote color:', error);
-            return false;
-        }
-    };
-    extension_api.getQuoteColorSetting = () => extension_settings.outfit_tracker?.quoteColor || '#FFA500';
+
     globalThis.outfitTracker = extension_api;
 }
 
@@ -455,9 +443,7 @@ export async function initializeExtension() {
         processMacrosInFirstMessage,
     });
 
-    const quoteColor = extension_settings.outfit_tracker?.quoteColor || '#FFA500';
 
-    registerQuotesColorExtension(quoteColor);
 
     updatePanelStyles();
 
