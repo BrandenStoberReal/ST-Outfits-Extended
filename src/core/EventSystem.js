@@ -102,11 +102,20 @@ class EventSystem {
             this.currentFirstMessageHash = this.generateMessageHash(firstBotMessage.mes);
             
             // Explicitly save current outfits before updating for new instance
-            const botOutfitInstanceId = this.botManager.getOutfitInstanceId();
-            const userOutfitInstanceId = this.userManager.getOutfitInstanceId();
+            const currentBotInstanceId = this.botManager.getOutfitInstanceId();
+            const currentUserInstanceId = this.userManager.getOutfitInstanceId();
 
-            await this.botManager.saveOutfit(botOutfitInstanceId);
-            await this.userManager.saveOutfit(userOutfitInstanceId);
+            // Save the current outfits to their current instances before changing
+            if (currentBotInstanceId && this.botManager.characterId) {
+                const botOutfitData = { ...this.botManager.getCurrentOutfit() };
+
+                outfitStore.setBotOutfit(this.botManager.characterId, currentBotInstanceId, botOutfitData);
+            }
+            if (currentUserInstanceId) {
+                const userOutfitData = { ...this.userManager.getCurrentOutfit() };
+
+                outfitStore.setUserOutfit(currentUserInstanceId, userOutfitData);
+            }
             
             await this.updateForCurrentCharacter();
             await this.processMacrosInFirstMessage(this.context);
@@ -125,27 +134,29 @@ class EventSystem {
             console.log('[OutfitTracker] First message was swiped, updating outfit instance.');
             
             // Capture the current outfit instance data and character ID BEFORE updating managers
-            // This ensures that the outfit for the swiped-away message is preserved in the right place
+            // This ensures that the outfit for the now-swiped message is preserved in the right place
             const oldBotCharacterId = this.botManager.characterId;
             const oldBotInstanceId = this.botManager.getOutfitInstanceId();
-            const oldBotOutfitData = { ...this.botManager.getCurrentOutfit() };
-            const oldUserInstanceId = this.userManager.getOutfitInstanceId(); 
-            const oldUserOutfitData = { ...this.userManager.getCurrentOutfit() };
+            const oldUserInstanceId = this.userManager.getOutfitInstanceId();
+            
+            // Save the current outfits to their current instances before updating
+            // We need to save the old outfit data with the old instance ID before it changes
+            if (oldBotInstanceId && oldBotCharacterId) {
+                const oldBotOutfitData = { ...this.botManager.getCurrentOutfit() };
+
+                outfitStore.setBotOutfit(oldBotCharacterId, oldBotInstanceId, oldBotOutfitData);
+                outfitStore.saveSettings();
+            }
+            if (oldUserInstanceId) {
+                const oldUserOutfitData = { ...this.userManager.getCurrentOutfit() };
+
+                outfitStore.setUserOutfit(oldUserInstanceId, oldUserOutfitData);
+                outfitStore.saveSettings();
+            }
             
             // Update to the new character/outfit instance 
             await this.updateForCurrentCharacter();
             await this.processMacrosInFirstMessage(this.context);
-            
-            // Now save the old outfit data to the old instance IDs
-            if (oldBotInstanceId && oldBotCharacterId) {
-                outfitStore.setBotOutfit(oldBotCharacterId, oldBotInstanceId, oldBotOutfitData);
-                outfitStore.saveSettings();
-            }
-            
-            if (oldUserInstanceId) {
-                outfitStore.setUserOutfit(oldUserInstanceId, oldUserOutfitData);
-                outfitStore.saveSettings();
-            }
         }
     }
 
@@ -175,10 +186,16 @@ class EventSystem {
             outfitStore.flush();
 
             // Save current outfit data and instance IDs before reset
-            const botOutfit = this.botManager.getCurrentOutfit();
-            const userOutfit = this.userManager.getCurrentOutfit();
             const botOutfitInstanceId = this.botManager.getOutfitInstanceId();
             const userOutfitInstanceId = this.userManager.getOutfitInstanceId();
+
+            // Save the current outfits before the chat is reset
+            if (botOutfitInstanceId) {
+                await this.botManager.saveOutfit(botOutfitInstanceId);
+            }
+            if (userOutfitInstanceId) {
+                await this.userManager.saveOutfit(userOutfitInstanceId);
+            }
 
             const result = originalRestart.apply(this, args);
 
@@ -199,22 +216,16 @@ class EventSystem {
             // After restoring instance IDs, update for current character
             await this.updateForCurrentCharacter();
 
-            // Restore outfit data after reset and character update
-            if (botOutfit) {
-                this.botManager.setOutfit(botOutfit);
-                const botOutfitInstanceId = this.botManager.getOutfitInstanceId();
-
-                await this.botManager.saveOutfit(botOutfitInstanceId);
+            // Load outfit data after reset and character update
+            if (botOutfitInstanceId) {
+                this.botManager.loadOutfit(botOutfitInstanceId);
                 // Use global references to panels since they're not directly available here
                 if (window.botOutfitPanel && typeof window.botOutfitPanel.renderContent === 'function') {
                     window.botOutfitPanel.renderContent();
                 }
             }
-            if (userOutfit) {
-                this.userManager.setOutfit(userOutfit);
-                const userOutfitInstanceId = this.userManager.getOutfitInstanceId();
-
-                await this.userManager.saveOutfit(userOutfitInstanceId);
+            if (userOutfitInstanceId) {
+                this.userManager.loadOutfit(userOutfitInstanceId);
                 // Use global references to panels since they're not directly available here
                 if (window.userOutfitPanel && typeof window.userOutfitPanel.renderContent === 'function') {
                     window.userOutfitPanel.renderContent();
@@ -243,10 +254,22 @@ class EventSystem {
 
         window.clearChat = async (...args) => {
             // Save current outfit data and instance IDs before clear
-            const botOutfit = this.botManager.getCurrentOutfit();
-            const userOutfit = this.userManager.getCurrentOutfit();
             const botOutfitInstanceId = this.botManager.getOutfitInstanceId();
             const userOutfitInstanceId = this.userManager.getOutfitInstanceId();
+
+            // Save the current outfits before the chat is cleared, with their current instance IDs
+            if (botOutfitInstanceId) {
+                const botOutfitData = { ...this.botManager.getCurrentOutfit() };
+
+                outfitStore.setBotOutfit(this.botManager.characterId, botOutfitInstanceId, botOutfitData);
+                outfitStore.saveSettings();
+            }
+            if (userOutfitInstanceId) {
+                const userOutfitData = { ...this.userManager.getCurrentOutfit() };
+
+                outfitStore.setUserOutfit(userOutfitInstanceId, userOutfitData);
+                outfitStore.saveSettings();
+            }
 
             await originalClearChat.apply(this, args);
 
@@ -266,22 +289,16 @@ class EventSystem {
             
             await this.updateForCurrentCharacter();
 
-            // Restore outfit data after clear and character update
-            if (botOutfit) {
-                this.botManager.setOutfit(botOutfit);
-                const botOutfitInstanceId = this.botManager.getOutfitInstanceId();
-
-                await this.botManager.saveOutfit(botOutfitInstanceId);
+            // Load outfit data after clear and character update
+            if (botOutfitInstanceId) {
+                this.botManager.loadOutfit(botOutfitInstanceId);
                 // Use global references to panels since they're not directly available here
                 if (window.botOutfitPanel && typeof window.botOutfitPanel.renderContent === 'function') {
                     window.botOutfitPanel.renderContent();
                 }
             }
-            if (userOutfit) {
-                this.userManager.setOutfit(userOutfit);
-                const userOutfitInstanceId = this.userManager.getOutfitInstanceId();
-
-                await this.userManager.saveOutfit(userOutfitInstanceId);
+            if (userOutfitInstanceId) {
+                this.userManager.loadOutfit(userOutfitInstanceId);
                 // Use global references to panels since they're not directly available here
                 if (window.userOutfitPanel && typeof window.userOutfitPanel.renderContent === 'function') {
                     window.userOutfitPanel.renderContent();
