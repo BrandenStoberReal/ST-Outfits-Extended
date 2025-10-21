@@ -13,6 +13,9 @@ import { formatSlotName as utilsFormatSlotName } from '../utils/utilities.js';
 // Import settings utility
 import { areSystemMessagesEnabled } from '../utils/SettingsUtil.js';
 
+// Import outfit store
+import { outfitStore } from '../common/Store.js';
+
 export class BotOutfitPanel {
     constructor(outfitManager, clothingSlots, accessorySlots, saveSettingsDebounced) {
         this.outfitManager = outfitManager;
