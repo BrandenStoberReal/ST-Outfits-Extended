@@ -99,6 +99,11 @@ class EventSystem {
             const firstBotMessage = aiMessages[0];
 
             this.currentFirstMessageHash = this.generateMessageHash(firstBotMessage.mes);
+            
+            // Explicitly save current outfits before updating for new instance
+            await this.botManager.saveOutfit();
+            await this.userManager.saveOutfit();
+            
             await this.updateForCurrentCharacter();
             await this.processMacrosInFirstMessage(this.context);
         }
@@ -125,6 +130,11 @@ class EventSystem {
                     // If no first message exists, clear the hash
                     this.currentFirstMessageHash = null;
                 }
+                
+                // Before updating for the new character, ensure current outfits are properly saved
+                // This ensures that the outfit for the swiped-away message is preserved
+                await this.botManager.saveOutfit();
+                await this.userManager.saveOutfit();
                 
                 await this.updateForCurrentCharacter();
                 await this.processMacrosInFirstMessage(this.context);
