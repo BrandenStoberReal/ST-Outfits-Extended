@@ -6,7 +6,6 @@ import { customMacroSystem } from '../utils/CustomMacroSystem.js';
 import { extension_api } from '../common/shared.js';
 import { generateInstanceIdFromText } from '../utils/utilities.js';
 import { outfitStore } from '../common/Store.js';
-import { registerQuotesColorExtension } from '../../scripts/showdown-quotes-orange.js';
 import { NewBotOutfitManager } from '../managers/NewBotOutfitManager.js';
 import { BotOutfitPanel } from '../panels/BotOutfitPanel.js';
 import { NewUserOutfitManager } from '../managers/NewUserOutfitManager.js';
