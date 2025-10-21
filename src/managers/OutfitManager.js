@@ -39,6 +39,30 @@ export class OutfitManager {
     getOutfitInstanceId() {
         return this.outfitInstanceId;
     }
+    
+    getCurrentOutfit() {
+        return { ...this.currentValues };
+    }
+    
+    setOutfit(outfitData) {
+        if (!outfitData || typeof outfitData !== 'object') {
+            console.warn(`[${this.constructor.name}] Invalid outfit data provided to setOutfit`);
+            return;
+        }
+        
+        let changed = false;
+        
+        for (const [slot, value] of Object.entries(outfitData)) {
+            if (this.slots.includes(slot) && this.currentValues[slot] !== value) {
+                this.currentValues[slot] = value || 'None';
+                changed = true;
+            }
+        }
+        
+        if (changed && this.characterId && this.outfitInstanceId) {
+            this.saveOutfit();
+        }
+    }
 
     getVarName(slot) {
         throw new Error('getVarName must be implemented by subclasses');

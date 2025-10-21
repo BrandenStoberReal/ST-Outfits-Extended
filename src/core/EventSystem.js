@@ -104,23 +104,39 @@ class EventSystem {
 
         const originalRestart = window.restartLLM;
 
-        window.restartLLM = (...args) => {
+        window.restartLLM = async (...args) => {
             console.log('[OutfitTracker] Chat reset triggered (restartLLM).');
             
             if (typeof window.saveSettingsDebounced?.flush === 'function') {
                 window.saveSettingsDebounced.flush();
             }
 
+            // Save current outfit data before reset
+            const botOutfit = this.botManager.getCurrentOutfit();
+            const userOutfit = this.userManager.getCurrentOutfit();
+
             const result = originalRestart.apply(this, args);
 
-            extensionEventBus.on(EXTENSION_EVENTS.CHAT_CLEARED, async () => {
-                try {
-                    await this.updateForCurrentCharacter();
-                    await this.processMacrosInFirstMessage();
-                } catch (error) {
-                    console.error('[OutfitTracker] Error handling chat reset:', error);
-                }
-            });
+            // After reset, update for current character and restore outfit settings
+            await this.updateForCurrentCharacter();
+
+            // Restore outfit data after reset
+            if (botOutfit) {
+                this.botManager.setOutfit(botOutfit);
+                await this.botManager.saveOutfit();
+                this.botPanel.renderContent();
+            }
+            if (userOutfit) {
+                this.userManager.setOutfit(userOutfit);
+                await this.userManager.saveOutfit();
+                this.userPanel.renderContent();
+            }
+            console.log('[OutfitTracker] Restored outfits after chat reset.');
+
+            await this.processMacrosInFirstMessage();
+
+            // Emit the chat cleared event for any other listeners
+            extensionEventBus.emit(EXTENSION_EVENTS.CHAT_CLEARED);
 
             return result;
         };
