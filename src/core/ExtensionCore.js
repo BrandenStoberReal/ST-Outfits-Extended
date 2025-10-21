@@ -50,6 +50,15 @@ async function processMacrosInFirstMessage(context) {
             const instanceId = await generateInstanceIdFromText(processedMessage, outfitValues);
 
             outfitStore.setCurrentInstanceId(instanceId);
+            
+            // Update the managers with the new instance ID so they can load the correct outfit data
+            if (window.botOutfitPanel?.outfitManager) {
+                window.botOutfitPanel.outfitManager.setOutfitInstanceId(instanceId);
+            }
+            if (window.userOutfitPanel?.outfitManager) {
+                // For user manager, we might want to use a specific instance ID
+                window.userOutfitPanel.outfitManager.setOutfitInstanceId(instanceId);
+            }
         }
     } catch (error) {
         console.error('[OutfitTracker] Error processing macros in first message:', error);
