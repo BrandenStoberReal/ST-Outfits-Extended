@@ -106,7 +106,7 @@ export async function generateOutfitFromLLM(options) {
         const response = await LLMUtility.generateWithRetry(
             prompt,
             'You are an outfit generation system. Based on the character information provided, output outfit commands to set the character\'s clothing and accessories.',
-            window.getContext()
+            window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null)
         );
         
         return response;
@@ -122,7 +122,7 @@ export async function generateOutfitFromLLM(options) {
  */
 export async function importOutfitFromCharacterCard() {
     try {
-        const context = window.getContext();
+        const context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
         
         if (!context || !context.characters || context.characterId === undefined || context.characterId === null) {
             throw new Error('No character selected or context not ready');

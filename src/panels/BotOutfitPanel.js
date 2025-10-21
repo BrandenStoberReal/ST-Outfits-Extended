@@ -78,7 +78,7 @@ export class BotOutfitPanel {
     // Get the first character message text to generate hash from (instance ID)
     getFirstMessageText() {
         try {
-            const context = window.getContext();
+            const context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
 
             if (context && context.chat && Array.isArray(context.chat)) {
                 // Get the first AI message from the character (instance identifier)
@@ -366,7 +366,7 @@ export class BotOutfitPanel {
     }
 
     async getCharacterData() {
-        const context = window.getContext();
+        const context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
         
         if (!context || !context.characters || context.characterId === undefined || context.characterId === null) {
             return {
@@ -456,7 +456,7 @@ INSTRUCTIONS:
             return await LLMUtility.generateWithProfile(
                 prompt,
                 'You are an outfit generation system. Based on the character information provided, output outfit commands to set the character\'s clothing and accessories.',
-                window.getContext(),
+                window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null),
                 connectionProfile
             );
         } catch (error) {
@@ -699,7 +699,7 @@ INSTRUCTIONS:
         }
 
         // Get context to set up event listeners
-        const context = window.getContext && window.getContext();
+        const context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
 
         if (context && context.eventSource && context.event_types) {
             const { eventSource, event_types } = context;

@@ -76,7 +76,7 @@ class CustomMacroSystem {
      */
     getCurrentCharName() {
         try {
-            const context = window.getContext ? window.getContext() : null;
+            const context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
             
             if (context && context.chat) {
                 for (let i = context.chat.length - 1; i >= 0; i--) {
@@ -108,7 +108,7 @@ class CustomMacroSystem {
         }
 
         try {
-            const context = window.getContext ? window.getContext() : null;
+            const context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
             
             // Determine characterId based on macro type and character name
             let charId = null;
@@ -170,7 +170,7 @@ class CustomMacroSystem {
      */
     getCurrentUserName() {
         try {
-            const context = window.getContext ? window.getContext() : null;
+            const context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
             
             if (context && context.chat) {
                 for (let i = context.chat.length - 1; i >= 0; i--) {

@@ -121,7 +121,7 @@ export class LLMUtility {
      */
     static async generateWithRetry(prompt, systemPrompt = 'You are an AI assistant.', context = null, maxRetries = 3) {
         if (!context) {
-            context = (window.getContext && window.getContext()) || {};
+            context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
         }
 
         let attempt = 0;
@@ -169,7 +169,7 @@ export class LLMUtility {
      */
     static async generateWithProfile(prompt, systemPrompt = 'You are an AI assistant.', context = null, profile = null, maxRetries = 3) {
         if (!context) {
-            context = (window.getContext && window.getContext()) || {};
+            context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
         }
 
         const generationFunc = async () => {

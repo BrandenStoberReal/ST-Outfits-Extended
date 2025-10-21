@@ -8,7 +8,7 @@
 function refreshMacroProcessing() {
     try {
         if (window.customMacroSystem && typeof window.customMacroSystem.replaceMacrosInText === 'function') {
-            const context = window.getContext();
+            const context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
 
             if (context && context.chat) {
                 const visibleMessages = Array.from(document.querySelectorAll('#chat .mes'));
@@ -48,7 +48,7 @@ function refreshMacroProcessing() {
 export async function updateForCurrentCharacter(botManager, userManager, botPanel, userPanel) {
     try {
         // Update the bot manager with the current character info
-        const context = window.getContext();
+        const context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
 
         if (context && context.characters && context.characterId !== undefined && context.characterId !== null) {
             const currentChar = context.characters[context.characterId];
