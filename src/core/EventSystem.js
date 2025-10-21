@@ -1,5 +1,6 @@
 import { extensionEventBus, EXTENSION_EVENTS } from './events.js';
 import { customMacroSystem } from '../utils/CustomMacroSystem.js';
+import { outfitStore } from '../common/Store.js';
 
 class EventSystem {
     constructor(context) {
@@ -130,6 +131,11 @@ class EventSystem {
                 this.userManager.setOutfitInstanceId(userOutfitInstanceId);
             }
             
+            // Also update the store with the current instance ID before updating for character
+            if (botOutfitInstanceId) {
+                outfitStore.setCurrentInstanceId(botOutfitInstanceId);
+            }
+            
             // After restoring instance IDs, update for current character
             await this.updateForCurrentCharacter();
 
@@ -152,6 +158,7 @@ class EventSystem {
             }
             console.log('[OutfitTracker] Restored outfits after chat reset.');
 
+            // Only process first message if there actually is one, otherwise keep the restored instance ID
             await this.processMacrosInFirstMessage(this.context);
 
             // Emit the chat cleared event for any other listeners
@@ -187,6 +194,11 @@ class EventSystem {
                 this.userManager.setOutfitInstanceId(userOutfitInstanceId);
             }
             
+            // Also update the store with the current instance ID before updating for character
+            if (botOutfitInstanceId) {
+                outfitStore.setCurrentInstanceId(botOutfitInstanceId);
+            }
+            
             await this.updateForCurrentCharacter();
 
             // Restore outfit data after clear and character update
@@ -208,6 +220,7 @@ class EventSystem {
             }
             console.log('[OutfitTracker] Restored outfits after chat clear.');
 
+            // Only process first message if there actually is one, otherwise keep the restored instance ID
             await this.processMacrosInFirstMessage(this.context);
 
             extensionEventBus.emit(EXTENSION_EVENTS.CHAT_CLEARED);
