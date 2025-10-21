@@ -59,7 +59,9 @@ export async function updateForCurrentCharacter(botManager, userManager, botPane
         }
         
         // Reload the bot outfit for the new character/instance
-        botManager.loadOutfit();
+        const botOutfitInstanceId = botManager.getOutfitInstanceId();
+
+        botManager.loadOutfit(botOutfitInstanceId);
         
         // Update the bot panel character name
         if (botPanel) {
@@ -69,7 +71,9 @@ export async function updateForCurrentCharacter(botManager, userManager, botPane
         // Update the user manager and panel 
         // (User manager uses a standard instance ID and doesn't change based on character)
         userManager.setCharacter('User');
-        userManager.loadOutfit();
+        const userOutfitInstanceId = userManager.getOutfitInstanceId();
+
+        userManager.loadOutfit(userOutfitInstanceId);
         
         if (userPanel) {
             // Update the header to reflect any changes (like new instance ID)

@@ -557,7 +557,9 @@ NOTES:
         if (window.botOutfitPanel && window.botOutfitPanel.isVisible) {
             setTimeout(() => {
                 try {
-                    window.botOutfitPanel.outfitManager.loadOutfit();
+                    const outfitInstanceId = window.botOutfitPanel.outfitManager.getOutfitInstanceId();
+
+                    window.botOutfitPanel.outfitManager.loadOutfit(outfitInstanceId);
                     window.botOutfitPanel.renderContent();
                     console.log('[AutoOutfitSystem] Outfit panel updated');
                 } catch (error) {

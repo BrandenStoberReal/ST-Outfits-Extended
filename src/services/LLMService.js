@@ -179,7 +179,9 @@ export async function importOutfitFromCharacterCard() {
                 }
                 
                 // Save the updated outfit
-                await botManager.saveOutfit();
+                const outfitInstanceId = botManager.getOutfitInstanceId();
+
+                await botManager.saveOutfit(outfitInstanceId);
                 
                 // Update the UI
                 if (window.botOutfitPanel.isVisible) {

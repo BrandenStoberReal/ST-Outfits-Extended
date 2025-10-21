@@ -102,8 +102,11 @@ class EventSystem {
             this.currentFirstMessageHash = this.generateMessageHash(firstBotMessage.mes);
             
             // Explicitly save current outfits before updating for new instance
-            await this.botManager.saveOutfit();
-            await this.userManager.saveOutfit();
+            const botOutfitInstanceId = this.botManager.getOutfitInstanceId();
+            const userOutfitInstanceId = this.userManager.getOutfitInstanceId();
+
+            await this.botManager.saveOutfit(botOutfitInstanceId);
+            await this.userManager.saveOutfit(userOutfitInstanceId);
             
             await this.updateForCurrentCharacter();
             await this.processMacrosInFirstMessage(this.context);
@@ -199,7 +202,9 @@ class EventSystem {
             // Restore outfit data after reset and character update
             if (botOutfit) {
                 this.botManager.setOutfit(botOutfit);
-                await this.botManager.saveOutfit();
+                const botOutfitInstanceId = this.botManager.getOutfitInstanceId();
+
+                await this.botManager.saveOutfit(botOutfitInstanceId);
                 // Use global references to panels since they're not directly available here
                 if (window.botOutfitPanel && typeof window.botOutfitPanel.renderContent === 'function') {
                     window.botOutfitPanel.renderContent();
@@ -207,7 +212,9 @@ class EventSystem {
             }
             if (userOutfit) {
                 this.userManager.setOutfit(userOutfit);
-                await this.userManager.saveOutfit();
+                const userOutfitInstanceId = this.userManager.getOutfitInstanceId();
+
+                await this.userManager.saveOutfit(userOutfitInstanceId);
                 // Use global references to panels since they're not directly available here
                 if (window.userOutfitPanel && typeof window.userOutfitPanel.renderContent === 'function') {
                     window.userOutfitPanel.renderContent();
@@ -262,7 +269,9 @@ class EventSystem {
             // Restore outfit data after clear and character update
             if (botOutfit) {
                 this.botManager.setOutfit(botOutfit);
-                await this.botManager.saveOutfit();
+                const botOutfitInstanceId = this.botManager.getOutfitInstanceId();
+
+                await this.botManager.saveOutfit(botOutfitInstanceId);
                 // Use global references to panels since they're not directly available here
                 if (window.botOutfitPanel && typeof window.botOutfitPanel.renderContent === 'function') {
                     window.botOutfitPanel.renderContent();
@@ -270,7 +279,9 @@ class EventSystem {
             }
             if (userOutfit) {
                 this.userManager.setOutfit(userOutfit);
-                await this.userManager.saveOutfit();
+                const userOutfitInstanceId = this.userManager.getOutfitInstanceId();
+
+                await this.userManager.saveOutfit(userOutfitInstanceId);
                 // Use global references to panels since they're not directly available here
                 if (window.userOutfitPanel && typeof window.userOutfitPanel.renderContent === 'function') {
                     window.userOutfitPanel.renderContent();

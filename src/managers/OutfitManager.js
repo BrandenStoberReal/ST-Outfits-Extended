@@ -68,12 +68,45 @@ export class OutfitManager {
         throw new Error('getVarName must be implemented by subclasses');
     }
 
-    loadOutfit() {
-        throw new Error('loadOutfit must be implemented by subclasses');
+    loadOutfit(instanceId = null) {
+        const actualInstanceId = instanceId || this.outfitInstanceId;
+
+        if (!this.characterId || !actualInstanceId) {
+            console.warn(`[${this.constructor.name}] Cannot load outfit - missing characterId or instanceId`);
+            this.slots.forEach(slot => {
+                this.currentValues[slot] = 'None';
+            });
+            return;
+        }
+
+        const outfitData = this.loadOutfitFromInstanceId(actualInstanceId);
+
+        this.setOutfit(outfitData);
+    }
+
+    loadOutfitFromInstanceId(instanceId) {
+        throw new Error('loadOutfitFromInstanceId must be implemented by subclasses');
     }
     
-    saveOutfit() {
-        throw new Error('saveOutfit must be implemented by subclasses');
+    saveOutfit(instanceId = null) {
+        const actualInstanceId = instanceId || this.outfitInstanceId;
+
+        if (!this.characterId || !actualInstanceId) {
+            console.warn(`[${this.constructor.name}] Cannot save outfit - missing characterId or instanceId`);
+            return;
+        }
+
+        const outfitData = {};
+
+        this.slots.forEach(slot => {
+            outfitData[slot] = this.currentValues[slot] || 'None';
+        });
+
+        this.saveOutfitToInstanceId(outfitData, actualInstanceId);
+    }
+
+    saveOutfitToInstanceId(outfitData, instanceId) {
+        throw new Error('saveOutfitToInstanceId must be implemented by subclasses');
     }
 
     async setOutfitItem(slot, value) {

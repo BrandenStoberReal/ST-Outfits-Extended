@@ -619,7 +619,9 @@ INSTRUCTIONS:
             }, 10); // Small delay to ensure panel is rendered first
             
             this.domElement.querySelector('#bot-outfit-refresh')?.addEventListener('click', () => {
-                this.outfitManager.loadOutfit();
+                const outfitInstanceId = this.outfitManager.getOutfitInstanceId();
+
+                this.outfitManager.loadOutfit(outfitInstanceId);
                 this.renderContent();
             });
 
@@ -717,7 +719,9 @@ INSTRUCTIONS:
             this.eventListeners.push(() => eventSource.on(event_types.CHAT_CHANGED, () => {
                 if (this.isVisible) {
                     this.updateCharacter(this.outfitManager.character);
-                    this.outfitManager.loadOutfit();
+                    const outfitInstanceId = this.outfitManager.getOutfitInstanceId();
+
+                    this.outfitManager.loadOutfit(outfitInstanceId);
                     this.renderContent();
                 }
             }));
@@ -725,7 +729,9 @@ INSTRUCTIONS:
             this.eventListeners.push(() => eventSource.on(event_types.CHAT_ID_CHANGED, () => {
                 if (this.isVisible) {
                     this.updateCharacter(this.outfitManager.character);
-                    this.outfitManager.loadOutfit();
+                    const outfitInstanceId = this.outfitManager.getOutfitInstanceId();
+
+                    this.outfitManager.loadOutfit(outfitInstanceId);
                     this.renderContent();
                 }
             }));
@@ -733,7 +739,9 @@ INSTRUCTIONS:
             this.eventListeners.push(() => eventSource.on(event_types.CHAT_CREATED, () => {
                 if (this.isVisible) {
                     this.updateCharacter(this.outfitManager.character);
-                    this.outfitManager.loadOutfit();
+                    const outfitInstanceId = this.outfitManager.getOutfitInstanceId();
+
+                    this.outfitManager.loadOutfit(outfitInstanceId);
                     this.renderContent();
                 }
             }));
