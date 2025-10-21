@@ -1,6 +1,7 @@
 import { extensionEventBus, EXTENSION_EVENTS } from './events.js';
 import { customMacroSystem } from '../utils/CustomMacroSystem.js';
 import { outfitStore } from '../common/Store.js';
+import { generateMessageHash } from '../utils/utilities.js';
 
 class EventSystem {
     constructor(context) {
@@ -10,6 +11,9 @@ class EventSystem {
         this.updateForCurrentCharacter = context.updateForCurrentCharacter;
         this.processMacrosInFirstMessage = context.processMacrosInFirstMessage;
         this.context = context.context || null;
+        
+        // Track the first message hash to avoid unnecessary updates
+        this.currentFirstMessageHash = null;
 
         this.initialize();
     }
@@ -57,10 +61,31 @@ class EventSystem {
 
     handleChatChange() {
         if (this.context.chat?.length > 0) {
-            console.log('[OutfitTracker] CHAT_CHANGED event fired with populated chat - updating for character switch');
-            this.updateForCurrentCharacter();
-            // Register character-specific macros when chat changes
-            customMacroSystem.registerCharacterSpecificMacros(this.context);
+            // Check if the first AI message has actually changed before triggering update
+            const firstBotMessage = this.context.chat.find(msg => !msg.is_user && !msg.is_system);
+            
+            if (firstBotMessage) {
+                // Generate a hash of the first message to compare with the stored one
+                const firstMessageHash = this.generateMessageHash(firstBotMessage.mes);
+                
+                // Only update if the first message has actually changed
+                if (this.currentFirstMessageHash !== firstMessageHash) {
+                    console.log('[OutfitTracker] CHAT_CHANGED event fired and first message has changed - updating for new conversation context');
+                    this.currentFirstMessageHash = firstMessageHash;
+                    this.updateForCurrentCharacter();
+                    // Register character-specific macros when chat changes
+                    customMacroSystem.registerCharacterSpecificMacros(this.context);
+                } else {
+                    console.log('[OutfitTracker] CHAT_CHANGED event fired but first message unchanged - skipping update');
+                }
+            } else {
+                // If there's no first message, clear the hash to allow update when a new first message appears
+                this.currentFirstMessageHash = null;
+                console.log('[OutfitTracker] CHAT_CHANGED event fired with no first bot message - updating for character switch');
+                this.updateForCurrentCharacter();
+                // Register character-specific macros when chat changes
+                customMacroSystem.registerCharacterSpecificMacros(this.context);
+            }
         }
     }
 
@@ -70,6 +95,10 @@ class EventSystem {
     
         if (aiMessages.length === 1 && !data.is_user) {
             console.log('[OutfitTracker] First AI message received, updating outfit instance.');
+            // Update the first message hash tracker
+            const firstBotMessage = aiMessages[0];
+
+            this.currentFirstMessageHash = this.generateMessageHash(firstBotMessage.mes);
             await this.updateForCurrentCharacter();
             await this.processMacrosInFirstMessage(this.context);
         }
@@ -87,6 +116,16 @@ class EventSystem {
             console.log('[OutfitTracker] First message was swiped, updating outfit instance.');
             
             setTimeout(async () => {
+                // Update the first message hash tracker with the new first message
+                const newFirstBotMessage = chat.find(msg => !msg.is_user && !msg.is_system);
+
+                if (newFirstBotMessage) {
+                    this.currentFirstMessageHash = this.generateMessageHash(newFirstBotMessage.mes);
+                } else {
+                    // If no first message exists, clear the hash
+                    this.currentFirstMessageHash = null;
+                }
+                
                 await this.updateForCurrentCharacter();
                 await this.processMacrosInFirstMessage(this.context);
             }, 100);
@@ -97,6 +136,11 @@ class EventSystem {
         this.updateForCurrentCharacter();
         // Register character-specific macros when context updates
         customMacroSystem.registerCharacterSpecificMacros(this.context);
+    }
+    
+    generateMessageHash(text) {
+        // Use the imported utility function
+        return generateMessageHash(text);
     }
 
     overrideResetChat() {
@@ -158,8 +202,9 @@ class EventSystem {
             }
             console.log('[OutfitTracker] Restored outfits after chat reset.');
 
-            // Only process first message if there actually is one, otherwise keep the restored instance ID
-            await this.processMacrosInFirstMessage(this.context);
+            // Do not process first message after reset to preserve the restored instance ID
+            // The instance ID should remain the same after a reset to maintain outfit continuity
+            // processMacrosInFirstMessage will only be called when a new conversation naturally begins
 
             // Emit the chat cleared event for any other listeners
             extensionEventBus.emit(EXTENSION_EVENTS.CHAT_CLEARED);
@@ -220,8 +265,9 @@ class EventSystem {
             }
             console.log('[OutfitTracker] Restored outfits after chat clear.');
 
-            // Only process first message if there actually is one, otherwise keep the restored instance ID
-            await this.processMacrosInFirstMessage(this.context);
+            // Do not process first message after clear to preserve the restored instance ID
+            // The instance ID should remain the same after a clear to maintain outfit continuity
+            // processMacrosInFirstMessage will only be called when a new conversation naturally begins
 
             extensionEventBus.emit(EXTENSION_EVENTS.CHAT_CLEARED);
         };
