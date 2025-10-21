@@ -344,6 +344,14 @@ function setupApi(botManager, userManager, botPanel, userPanel, autoOutfitSystem
         managers: { bot: Boolean(botManager), user: Boolean(userManager) },
     });
 
+    // Register character-specific macros when the API is set up
+    if (typeof window.getContext !== 'undefined') {
+        // Wait for character data to be loaded before registering character-specific macros
+        setTimeout(() => {
+            customMacroSystem.registerCharacterSpecificMacros();
+        }, 2000); // Wait a bit for character data to load
+    }
+
     globalThis.outfitTracker = extension_api;
 }
 

@@ -1,4 +1,5 @@
 import { extensionEventBus, EXTENSION_EVENTS } from './events.js';
+import { customMacroSystem } from '../utils/CustomMacroSystem.js';
 
 class EventSystem {
     constructor(context) {
@@ -47,12 +48,16 @@ class EventSystem {
             this.autoOutfitSystem.markAppInitialized();
         }
         this.updateForCurrentCharacter();
+        // Register character-specific macros when app is ready
+        customMacroSystem.registerCharacterSpecificMacros();
     }
 
     handleChatChange() {
         if (this.context.chat?.length > 0) {
             console.log('[OutfitTracker] CHAT_CHANGED event fired with populated chat - updating for character switch');
             this.updateForCurrentCharacter();
+            // Register character-specific macros when chat changes
+            customMacroSystem.registerCharacterSpecificMacros();
         }
     }
 
@@ -87,6 +92,8 @@ class EventSystem {
 
     handleContextUpdate() {
         this.updateForCurrentCharacter();
+        // Register character-specific macros when context updates
+        customMacroSystem.registerCharacterSpecificMacros();
     }
 
     overrideResetChat() {

@@ -29,6 +29,8 @@ class CustomMacroSystem {
             });
 
             // Register character-specific slot-based macros
+            // Note: Static registration of all characters may not work well if characters are loaded dynamically
+            // So we'll also create a generic handler for character-specific macros
             if (context.characters) {
                 context.characters.forEach(character => {
                     this.allSlots.forEach(slot => {
@@ -36,6 +38,33 @@ class CustomMacroSystem {
                     });
                 });
             }
+            
+            // Register a generic handler for any character-specific slot macros
+            // This will catch character names that may not have been registered during initialization
+            this.allSlots.forEach(slot => {
+                // This creates a dynamic macro handler for any character name + slot combination
+                // The macro name will be checked dynamically when used
+            });
+        }
+    }
+    
+    /**
+     * Dynamically register character-specific macros as characters become available
+     * This should be called whenever character data changes
+     */
+    registerCharacterSpecificMacros() {
+        const context = window.getContext();
+        
+        if (context && context.registerMacro && context.characters) {
+            context.characters.forEach(character => {
+                this.allSlots.forEach(slot => {
+                    const macroName = `${character.name}_${slot}`;
+
+                    // Unregister first if it exists to avoid duplicates
+                    // Note: SillyTavern doesn't have an unregister function, so we just register again
+                    context.registerMacro(macroName, (macro, nonce) => this.getCurrentSlotValue('char', slot, character.name));
+                });
+            });
         }
     }
 
@@ -77,32 +106,47 @@ class CustomMacroSystem {
         }
 
         try {
-            const state = outfitStore.getState();
-            let charId = state.currentCharacterId;
-
+            const context = window.getContext ? window.getContext() : null;
+            
+            // Determine characterId based on macro type and character name
+            let charId = null;
+            
             if (characterName) {
-                const context = window.getContext ? window.getContext() : null;
-
+                // Looking for a specific character by name
                 if (context && context.characters) {
                     const character = context.characters.find(c => c.name === characterName);
 
                     if (character) {
-                        charId = context.characters.indexOf(character);
+                        charId = character.avatar;
                     } else {
                         return 'None'; // Character not found
                     }
                 }
+            } else if (macroType === 'char' || macroType === 'bot') {
+                // Using current character context
+                charId = context?.characterId || null;
             }
 
-            const instanceId = state.currentOutfitInstanceId;
-
+            // Get appropriate instanceId based on the conversation context
+            const state = outfitStore.getState();
+            let instanceId = null;
+            
+            // Try to determine the appropriate instance ID based on current conversation
+            if (context && context.chatId) {
+                // Use the chatId to create a unique instance ID for this conversation
+                instanceId = context.chatId;
+            } else {
+                // Fallback to current outfit instance ID if available
+                instanceId = state.currentOutfitInstanceId;
+            }
+            
             if (!instanceId) {
                 return 'None';
             }
 
-            if (macroType === 'char' || macroType === 'bot') {
+            if (macroType === 'char' || macroType === 'bot' || characterName) {
                 if (charId !== null && charId !== undefined) {
-                    const outfitData = outfitStore.getBotOutfit(charId, instanceId);
+                    const outfitData = outfitStore.getBotOutfit(charId.toString(), instanceId);
 
                     return outfitData[slotName] || 'None';
                 }
@@ -192,15 +236,33 @@ class CustomMacroSystem {
                     continue;
                 }
             } else {
-                const prefix = parts[0];
+                // For slot-based macros (e.g., Emma_topwear, char_topwear, user_headwear)
+                const potentialCharacterName = parts[0];
                 const potentialSlot = parts.slice(1).join('_');
 
+                // Check if the slot part matches any known slot (could be multi-part like 'head-accessory')
                 if (this.allSlots.includes(potentialSlot)) {
-                    macroType = prefix;
+                    macroType = potentialCharacterName;
                     slot = potentialSlot;
                 } else {
-                    index = closeIdx + 2;
-                    continue;
+                    // Check if it's a multi-part slot name that got split incorrectly
+                    // Try different splits to find a valid slot
+                    for (let i = 1; i < parts.length; i++) {
+                        const prefix = parts.slice(0, i).join('_');
+                        const suffix = parts.slice(i).join('_');
+                        
+                        if (this.allSlots.includes(suffix)) {
+                            macroType = prefix;
+                            slot = suffix;
+                            break;
+                        }
+                    }
+                    
+                    // If we still don't have a valid slot, skip this macro
+                    if (!this.allSlots.includes(slot)) {
+                        index = closeIdx + 2;
+                        continue;
+                    }
                 }
             }
 
@@ -305,8 +367,9 @@ class CustomMacroSystem {
             let replacement;
 
             if (macro.slot) {
-                // This is a slot-based macro like {{char_topwear}} or {{user_headwear}}
-                replacement = this.getCurrentSlotValue(macro.type, macro.slot);
+                // This is a slot-based macro like {{char_topwear}}, {{user_headwear}}, or {{Emma_topwear}}
+                replacement = this.getCurrentSlotValue(macro.type, macro.slot, 
+                    ['char', 'bot', 'user'].includes(macro.type) ? null : macro.type); // Pass character name if not a standard type
             } else {
                 // This is a name-based macro like {{char}} or {{user}}
                 if (macro.type === 'char' || macro.type === 'bot') {
@@ -314,9 +377,8 @@ class CustomMacroSystem {
                 } else if (macro.type === 'user') {
                     replacement = this.getCurrentUserName();
                 } else {
-                    // This could be a character-specific macro like {{Emma_topwear}}
-                    // where macro.type would be the character name and we would need to use getCurrentSlotValue
-                    // with the character name parameter, but since there's no slot, return the character name
+                    // This could be a character-specific macro name without a slot
+                    // In this case, just return the character name
                     replacement = macro.type;
                 }
             }
