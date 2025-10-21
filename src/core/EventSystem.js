@@ -8,13 +8,15 @@ class EventSystem {
         this.autoOutfitSystem = context.autoOutfitSystem;
         this.updateForCurrentCharacter = context.updateForCurrentCharacter;
         this.processMacrosInFirstMessage = context.processMacrosInFirstMessage;
-        this.context = null;
+        this.context = context.context || null;
 
         this.initialize();
     }
 
     initialize() {
-        this.context = window.getContext();
+        // Use the provided context if available, otherwise try to get from window
+        this.context = this.context || (window.SillyTavern?.getContext ? window.SillyTavern.getContext() : window.getContext());
+        
         if (!this.context || !this.context.eventSource || !this.context.event_types) {
             console.warn('[OutfitTracker] Context not fully available for event listeners yet, trying again later');
             setTimeout(() => this.initialize(), 1000);
@@ -49,7 +51,7 @@ class EventSystem {
         }
         this.updateForCurrentCharacter();
         // Register character-specific macros when app is ready
-        customMacroSystem.registerCharacterSpecificMacros();
+        customMacroSystem.registerCharacterSpecificMacros(this.context);
     }
 
     handleChatChange() {
@@ -57,7 +59,7 @@ class EventSystem {
             console.log('[OutfitTracker] CHAT_CHANGED event fired with populated chat - updating for character switch');
             this.updateForCurrentCharacter();
             // Register character-specific macros when chat changes
-            customMacroSystem.registerCharacterSpecificMacros();
+            customMacroSystem.registerCharacterSpecificMacros(this.context);
         }
     }
 
@@ -68,7 +70,7 @@ class EventSystem {
         if (aiMessages.length === 1 && !data.is_user) {
             console.log('[OutfitTracker] First AI message received, updating outfit instance.');
             await this.updateForCurrentCharacter();
-            await this.processMacrosInFirstMessage();
+            await this.processMacrosInFirstMessage(this.context);
         }
     }
 
@@ -85,7 +87,7 @@ class EventSystem {
             
             setTimeout(async () => {
                 await this.updateForCurrentCharacter();
-                await this.processMacrosInFirstMessage();
+                await this.processMacrosInFirstMessage(this.context);
             }, 100);
         }
     }
@@ -93,7 +95,7 @@ class EventSystem {
     handleContextUpdate() {
         this.updateForCurrentCharacter();
         // Register character-specific macros when context updates
-        customMacroSystem.registerCharacterSpecificMacros();
+        customMacroSystem.registerCharacterSpecificMacros(this.context);
     }
 
     overrideResetChat() {
@@ -111,14 +113,24 @@ class EventSystem {
                 window.saveSettingsDebounced.flush();
             }
 
-            // Save current outfit data before reset
+            // Save current outfit data and instance IDs before reset
             const botOutfit = this.botManager.getCurrentOutfit();
             const userOutfit = this.userManager.getCurrentOutfit();
+            const botOutfitInstanceId = this.botManager.getOutfitInstanceId();
+            const userOutfitInstanceId = this.userManager.getOutfitInstanceId();
 
             const result = originalRestart.apply(this, args);
 
             // After reset, update for current character and restore outfit settings
             await this.updateForCurrentCharacter();
+
+            // Restore outfit instance IDs first
+            if (botOutfitInstanceId) {
+                this.botManager.setOutfitInstanceId(botOutfitInstanceId);
+            }
+            if (userOutfitInstanceId) {
+                this.userManager.setOutfitInstanceId(userOutfitInstanceId);
+            }
 
             // Restore outfit data after reset
             if (botOutfit) {
@@ -133,7 +145,7 @@ class EventSystem {
             }
             console.log('[OutfitTracker] Restored outfits after chat reset.');
 
-            await this.processMacrosInFirstMessage();
+            await this.processMacrosInFirstMessage(this.context);
 
             // Emit the chat cleared event for any other listeners
             extensionEventBus.emit(EXTENSION_EVENTS.CHAT_CLEARED);
@@ -151,13 +163,25 @@ class EventSystem {
         const originalClearChat = window.clearChat;
 
         window.clearChat = async (...args) => {
+            // Save current outfit data and instance IDs before clear
             const botOutfit = this.botManager.getCurrentOutfit();
             const userOutfit = this.userManager.getCurrentOutfit();
+            const botOutfitInstanceId = this.botManager.getOutfitInstanceId();
+            const userOutfitInstanceId = this.userManager.getOutfitInstanceId();
 
             await originalClearChat.apply(this, args);
 
             await this.updateForCurrentCharacter();
 
+            // Restore outfit instance IDs first
+            if (botOutfitInstanceId) {
+                this.botManager.setOutfitInstanceId(botOutfitInstanceId);
+            }
+            if (userOutfitInstanceId) {
+                this.userManager.setOutfitInstanceId(userOutfitInstanceId);
+            }
+
+            // Restore outfit data after clear
             if (botOutfit) {
                 this.botManager.setOutfit(botOutfit);
                 await this.botManager.saveOutfit();
@@ -170,7 +194,7 @@ class EventSystem {
             }
             console.log('[OutfitTracker] Restored outfits after chat clear.');
 
-            await this.processMacrosInFirstMessage();
+            await this.processMacrosInFirstMessage(this.context);
 
             extensionEventBus.emit(EXTENSION_EVENTS.CHAT_CLEARED);
         };

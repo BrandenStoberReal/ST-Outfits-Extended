@@ -1,9 +1,17 @@
 // Centralized Store for Outfit Tracker Extension
 // Replaces usage of global variables with a proper state management system
-import { DEFAULT_PANEL_COLORS, DEFAULT_SETTINGS } from '../config/constants.js';
+import { DEFAULT_SETTINGS } from '../config/constants.js';
+
+// Unique module name for extension settings
+const MODULE_NAME = 'outfit_tracker';
 
 class OutfitStore {
     constructor() {
+        this.initializeState();
+    }
+
+    // Initialize the store state with proper defaults
+    initializeState() {
         this.state = {
             // Current outfit data
             botOutfits: {},
@@ -19,11 +27,14 @@ class OutfitStore {
                 user: {}
             },
             
-            // Panel settings
-            panelSettings: { ...DEFAULT_PANEL_COLORS },
+            // Panel settings - taking panel colors from DEFAULT_SETTINGS
+            panelSettings: { 
+                botPanelColors: structuredClone(DEFAULT_SETTINGS.botPanelColors),
+                userPanelColors: structuredClone(DEFAULT_SETTINGS.userPanelColors)
+            },
             
-            // Global settings
-            settings: { ...DEFAULT_SETTINGS },
+            // Global settings with defaults
+            settings: structuredClone(DEFAULT_SETTINGS),
             
             // Current context tracking
             currentCharacterId: null,
@@ -48,6 +59,31 @@ class OutfitStore {
         };
     }
 
+    // Get extension settings with proper initialization
+    getExtensionSettings() {
+        const context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : null;
+        const extensionSettings = context?.extensionSettings || window.extension_settings;
+
+        if (!extensionSettings) {
+            console.warn('[OutfitTracker] Could not access extension settings.');
+            return null;
+        }
+
+        // Initialize settings if they don't exist
+        if (!extensionSettings[MODULE_NAME]) {
+            extensionSettings[MODULE_NAME] = structuredClone(DEFAULT_SETTINGS);
+        }
+
+        // Ensure all default keys exist (helpful after updates)
+        for (const key of Object.keys(DEFAULT_SETTINGS)) {
+            if (!Object.hasOwn(extensionSettings[MODULE_NAME], key)) {
+                extensionSettings[MODULE_NAME][key] = DEFAULT_SETTINGS[key];
+            }
+        }
+
+        return extensionSettings;
+    }
+
     // Subscribe to state changes
     subscribe(listener) {
         this.state.listeners.push(listener);
@@ -60,7 +96,7 @@ class OutfitStore {
     notifyListeners() {
         this.state.listeners.forEach(listener => {
             try {
-                listener(this.state);
+                listener(this.getState());
             } catch (error) {
                 console.error('Error in store listener:', error);
             }
@@ -73,9 +109,9 @@ class OutfitStore {
         this.notifyListeners();
     }
 
-    // Get current state
+    // Get current state (returning a deep clone to prevent external mutations)
     getState() {
-        return { ...this.state };
+        return structuredClone(this.state);
     }
 
     // Bot outfit data management
@@ -90,7 +126,7 @@ class OutfitStore {
         if (!this.state.botInstances[characterId][instanceId]) {
             this.state.botInstances[characterId][instanceId] = { bot: {}, user: {} };
         }
-        this.state.botInstances[characterId][instanceId].bot = { ...outfitData };
+        this.state.botInstances[characterId][instanceId].bot = structuredClone(outfitData);
         this.notifyListeners();
     }
 
@@ -100,7 +136,7 @@ class OutfitStore {
     }
 
     setUserOutfit(instanceId, outfitData) {
-        this.state.userInstances[instanceId] = { ...outfitData };
+        this.state.userInstances[instanceId] = structuredClone(outfitData);
         this.notifyListeners();
     }
 
@@ -121,12 +157,12 @@ class OutfitStore {
             if (!this.state.presets.bot[key]) {
                 this.state.presets.bot[key] = {};
             }
-            this.state.presets.bot[key][presetName] = { ...outfitData };
+            this.state.presets.bot[key][presetName] = structuredClone(outfitData);
         } else {
             if (!this.state.presets.user[instanceId]) {
                 this.state.presets.user[instanceId] = {};
             }
-            this.state.presets.user[instanceId][presetName] = { ...outfitData };
+            this.state.presets.user[instanceId][presetName] = structuredClone(outfitData);
         }
         this.notifyListeners();
     }
@@ -200,21 +236,23 @@ class OutfitStore {
         return this.state.currentChatId;
     }
 
-
-    
     // Persist all data to extension settings for reload persistence
     persistToSettings() {
-        if (window.extension_settings?.outfit_tracker) {
+        const context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : null;
+        const saveSettingsFn = context?.saveSettingsDebounced || window.saveSettingsDebounced;
+        const extensionSettings = this.getExtensionSettings();
+
+        if (extensionSettings && extensionSettings[MODULE_NAME] && typeof saveSettingsFn === 'function') {
             // Update extension settings with current store state
-            window.extension_settings.outfit_tracker.instances = this.state.botInstances;
-            window.extension_settings.outfit_tracker.user_instances = this.state.userInstances;
-            window.extension_settings.outfit_tracker.presets = this.state.presets;
-            window.extension_settings.outfit_tracker.settings = this.state.settings;
+            extensionSettings[MODULE_NAME].instances = structuredClone(this.state.botInstances);
+            extensionSettings[MODULE_NAME].user_instances = structuredClone(this.state.userInstances);
+            extensionSettings[MODULE_NAME].presets = structuredClone(this.state.presets);
+            extensionSettings[MODULE_NAME].settings = structuredClone(this.state.settings);
             
             // Save settings if the debounced function is available
-            if (typeof window.saveSettingsDebounced === 'function') {
-                window.saveSettingsDebounced();
-            }
+            saveSettingsFn();
+        } else {
+            console.warn('[OutfitTracker] Could not persist settings - save function or extension settings not available');
         }
     }
     
@@ -231,21 +269,25 @@ class OutfitStore {
     
     // Load data from extension settings for reload
     loadDataFromSettings() {
-        if (window.extension_settings?.outfit_tracker) {
+        const extensionSettings = this.getExtensionSettings();
+
+        if (extensionSettings && extensionSettings[MODULE_NAME]) {
+            const moduleSettings = extensionSettings[MODULE_NAME];
+            
             // Load instances
-            if (window.extension_settings.outfit_tracker.instances) {
-                this.state.botInstances = { ...window.extension_settings.outfit_tracker.instances };
+            if (moduleSettings.instances) {
+                this.state.botInstances = structuredClone(moduleSettings.instances);
             }
-            if (window.extension_settings.outfit_tracker.user_instances) {
-                this.state.userInstances = { ...window.extension_settings.outfit_tracker.user_instances };
+            if (moduleSettings.user_instances) {
+                this.state.userInstances = structuredClone(moduleSettings.user_instances);
             }
             // Load presets
-            if (window.extension_settings.outfit_tracker.presets) {
-                this.state.presets = { ...window.extension_settings.outfit_tracker.presets };
+            if (moduleSettings.presets) {
+                this.state.presets = structuredClone(moduleSettings.presets);
             }
             // Load settings
-            if (window.extension_settings.outfit_tracker.settings) {
-                this.state.settings = { ...window.extension_settings.outfit_tracker.settings };
+            if (moduleSettings.settings) {
+                this.state.settings = structuredClone(moduleSettings.settings);
             }
         }
     }
@@ -256,8 +298,6 @@ const outfitStore = new OutfitStore();
 
 // Export the store instance and methods for accessing it
 export { outfitStore };
-
-
 
 // Export function to get current store state for debugging
 export const getStoreState = () => {

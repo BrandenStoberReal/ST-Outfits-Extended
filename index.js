@@ -7,7 +7,7 @@ console.log('[OutfitTracker] Starting extension loading...');
 import { initializeExtension } from './src/core/ExtensionCore.js';
 
 // Initialize the extension when the document is ready
-$(async () => {
+$(document).ready(async () => {
     try {
         await initializeExtension();
         console.log('[OutfitTracker] Extension loaded successfully');

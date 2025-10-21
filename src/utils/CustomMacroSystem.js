@@ -14,27 +14,28 @@ class CustomMacroSystem {
         this.allSlots = [...CLOTHING_SLOTS, ...ACCESSORY_SLOTS];
     }
 
-    registerMacros() {
-        const context = window.getContext();
+    registerMacros(context) {
+        // Use provided context or fallback to window
+        const ctx = context || (window.SillyTavern?.getContext ? window.SillyTavern.getContext() : window.getContext());
 
-        if (context && context.registerMacro) {
+        if (ctx && ctx.registerMacro) {
             // Register {{char}} and {{user}} macros
-            context.registerMacro('char', (macro, nonce) => this.getCurrentCharName());
-            context.registerMacro('user', (macro, nonce) => this.getCurrentUserName());
+            ctx.registerMacro('char', (macro, nonce) => this.getCurrentCharName());
+            ctx.registerMacro('user', (macro, nonce) => this.getCurrentUserName());
 
             // Register slot-based macros for char and user
             this.allSlots.forEach(slot => {
-                context.registerMacro(`char_${slot}`, (macro, nonce) => this.getCurrentSlotValue('char', slot));
-                context.registerMacro(`user_${slot}`, (macro, nonce) => this.getCurrentSlotValue('user', slot));
+                ctx.registerMacro(`char_${slot}`, (macro, nonce) => this.getCurrentSlotValue('char', slot));
+                ctx.registerMacro(`user_${slot}`, (macro, nonce) => this.getCurrentSlotValue('user', slot));
             });
 
             // Register character-specific slot-based macros
             // Note: Static registration of all characters may not work well if characters are loaded dynamically
             // So we'll also create a generic handler for character-specific macros
-            if (context.characters) {
-                context.characters.forEach(character => {
+            if (ctx.characters) {
+                ctx.characters.forEach(character => {
                     this.allSlots.forEach(slot => {
-                        context.registerMacro(`${character.name}_${slot}`, (macro, nonce) => this.getCurrentSlotValue('char', slot, character.name));
+                        ctx.registerMacro(`${character.name}_${slot}`, (macro, nonce) => this.getCurrentSlotValue('char', slot, character.name));
                     });
                 });
             }
@@ -52,17 +53,18 @@ class CustomMacroSystem {
      * Dynamically register character-specific macros as characters become available
      * This should be called whenever character data changes
      */
-    registerCharacterSpecificMacros() {
-        const context = window.getContext();
+    registerCharacterSpecificMacros(context) {
+        // Use provided context or fallback to window
+        const ctx = context || (window.SillyTavern?.getContext ? window.SillyTavern.getContext() : window.getContext());
         
-        if (context && context.registerMacro && context.characters) {
-            context.characters.forEach(character => {
+        if (ctx && ctx.registerMacro && ctx.characters) {
+            ctx.characters.forEach(character => {
                 this.allSlots.forEach(slot => {
                     const macroName = `${character.name}_${slot}`;
 
                     // Unregister first if it exists to avoid duplicates
                     // Note: SillyTavern doesn't have an unregister function, so we just register again
-                    context.registerMacro(macroName, (macro, nonce) => this.getCurrentSlotValue('char', slot, character.name));
+                    ctx.registerMacro(macroName, (macro, nonce) => this.getCurrentSlotValue('char', slot, character.name));
                 });
             });
         }

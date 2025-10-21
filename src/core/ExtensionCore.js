@@ -1,5 +1,4 @@
-import { getContext, extension_settings } from '../../../../../../scripts/extensions.js';
-import { saveSettingsDebounced } from '../../../../../../script.js';
+// Import functions using SillyTavern's getContext as recommended in documentation
 import { wipeAllOutfits } from '../services/DataService.js';
 import { updateForCurrentCharacter } from '../services/CharacterService.js';
 import { customMacroSystem } from '../utils/CustomMacroSystem.js';
@@ -29,13 +28,14 @@ async function loadAutoOutfitSystem() {
     }
 }
 
-async function processMacrosInFirstMessage() {
+async function processMacrosInFirstMessage(context) {
     try {
-        const context = getContext();
+        // Use provided context or fallback to global context
+        const ctx = context || (window.SillyTavern?.getContext ? window.SillyTavern.getContext() : window.getContext());
 
-        if (!context || !context.chat) {return;}
+        if (!ctx || !ctx.chat) {return;}
 
-        const firstBotMessage = context.chat.find(message => !message.is_user && !message.is_system);
+        const firstBotMessage = ctx.chat.find(message => !message.is_user && !message.is_system);
 
         if (firstBotMessage) {
             // Use the existing cleanOutfitMacrosFromText function to remove macro patterns
@@ -43,7 +43,7 @@ async function processMacrosInFirstMessage() {
             
             // Collect all possible outfit values for this character to remove from the message before hashing
             // This includes values from all known outfit instances and presets for this character
-            const outfitValues = getAllOutfitValuesForCharacter(context.characterId);
+            const outfitValues = getAllOutfitValuesForCharacter(ctx.characterId);
             
             // Generate instance ID with outfit values removed from the processed message
             // This ensures consistent instance IDs even when outfit values change
@@ -232,7 +232,7 @@ function cleanOutfitMacrosFromText(text) {
     }
     
     // Get the current character ID to identify which outfits to look for
-    const context = getContext();
+    const context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : window.getContext();
 
     if (!context || !context.characterId) {
         return resultText;
@@ -337,7 +337,7 @@ function setupApi(botManager, userManager, botPanel, userPanel, autoOutfitSystem
     extension_api.wipeAllOutfits = () => wipeAllOutfits();
     extension_api.getOutfitExtensionStatus = () => ({
         core: true,
-        autoOutfit: autoOutfitSystem?.getStatus(),
+        autoOutfit: autoOutfitSystem?.getStatus?.() ?? false,
         botPanel: { isVisible: botPanel?.isVisible },
         userPanel: { isVisible: userPanel?.isVisible },
         events: true,
@@ -345,11 +345,15 @@ function setupApi(botManager, userManager, botPanel, userPanel, autoOutfitSystem
     });
 
     // Register character-specific macros when the API is set up
-    if (typeof window.getContext !== 'undefined') {
-        // Wait for character data to be loaded before registering character-specific macros
-        setTimeout(() => {
-            customMacroSystem.registerCharacterSpecificMacros();
-        }, 2000); // Wait a bit for character data to load
+    if (typeof window.SillyTavern?.getContext !== 'undefined') {
+        const STContext = window.SillyTavern.getContext();
+
+        if (STContext) {
+            // Wait for character data to be loaded before registering character-specific macros
+            setTimeout(() => {
+                customMacroSystem.registerCharacterSpecificMacros(STContext);
+            }, 2000); // Wait a bit for character data to load
+        }
     }
 
     globalThis.outfitTracker = extension_api;
@@ -414,21 +418,46 @@ globalThis.outfitTrackerInterceptor = async function(chat, contextSize, abort, t
 export async function initializeExtension() {
     await loadAutoOutfitSystem();
 
-    window.getContext = getContext || window.getContext;
-    window.extension_settings = extension_settings || window.extension_settings;
-    window.saveSettingsDebounced = saveSettingsDebounced || window.saveSettingsDebounced;
-
-    if (!window.getContext || !window.extension_settings || !window.saveSettingsDebounced) {
+    // Get SillyTavern context and required functions using the proper SillyTavern API
+    const STContext = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : window.getContext();
+    const saveSettingsFn = STContext?.saveSettingsDebounced;
+    
+    if (!STContext || !saveSettingsFn) {
         console.error('[OutfitTracker] Required SillyTavern functions are not available.');
         throw new Error('Missing required SillyTavern globals.');
     }
 
     const MODULE_NAME = 'outfit_tracker';
+    
+    // Initialize extension settings with defaults using proper SillyTavern API
+    const defaultSettings = Object.freeze({
+        autoOpenBot: true,
+        autoOpenUser: false,
+        position: 'right',
+        enableSysMessages: true,
+        autoOutfitSystem: false,
+        autoOutfitPrompt: 'After each character response, analyze the conversation to identify any outfit changes (items worn, removed, or changed). Provide updates in the format: "/outfit-wear slotName item", "/outfit-remove slotName", or "/outfit-change slotName newItem". Only output the commands, no additional text.',
+        autoOutfitConnectionProfile: null
+    });
+
+    // Ensure settings exist and have all required keys
+    if (!STContext.extensionSettings[MODULE_NAME]) {
+        STContext.extensionSettings[MODULE_NAME] = structuredClone(defaultSettings);
+    }
+
+    // Ensure all default keys exist (helpful after updates)
+    for (const key of Object.keys(defaultSettings)) {
+        if (!Object.hasOwn(STContext.extensionSettings[MODULE_NAME], key)) {
+            STContext.extensionSettings[MODULE_NAME][key] = defaultSettings[key];
+        }
+    }
+    
+    const settings = STContext.extensionSettings[MODULE_NAME];
 
     const botManager = new NewBotOutfitManager(ALL_SLOTS);
     const userManager = new NewUserOutfitManager(ALL_SLOTS);
-    const botPanel = new BotOutfitPanel(botManager, CLOTHING_SLOTS, ACCESSORY_SLOTS, saveSettingsDebounced);
-    const userPanel = new UserOutfitPanel(userManager, CLOTHING_SLOTS, ACCESSORY_SLOTS, saveSettingsDebounced);
+    const botPanel = new BotOutfitPanel(botManager, CLOTHING_SLOTS, ACCESSORY_SLOTS, saveSettingsFn);
+    const userPanel = new UserOutfitPanel(userManager, CLOTHING_SLOTS, ACCESSORY_SLOTS, saveSettingsFn);
     const autoOutfitSystem = new AutoOutfitSystem(botManager);
 
     // Set global references for the interceptor function to access
@@ -440,25 +469,27 @@ export async function initializeExtension() {
     outfitStore.setAutoOutfitSystem(autoOutfitSystem);
 
     setupApi(botManager, userManager, botPanel, userPanel, autoOutfitSystem);
-    initSettings(autoOutfitSystem, AutoOutfitSystem);
+    initSettings(autoOutfitSystem, AutoOutfitSystem, STContext);
     registerOutfitCommands(botManager, userManager, autoOutfitSystem);
-    customMacroSystem.registerMacros();
-    createSettingsUI(AutoOutfitSystem, autoOutfitSystem);
+    customMacroSystem.registerMacros(STContext);
+    createSettingsUI(AutoOutfitSystem, autoOutfitSystem, STContext);
 
+    // Pass the STContext to the event listeners setup
     setupEventListeners({
         botManager, userManager, botPanel, userPanel, autoOutfitSystem,
         updateForCurrentCharacter: () => updateForCurrentCharacter(botManager, userManager, botPanel, userPanel),
-        processMacrosInFirstMessage,
+        processMacrosInFirstMessage: () => processMacrosInFirstMessage(STContext),
+        context: STContext
     });
 
 
 
     updatePanelStyles();
 
-    if (extension_settings[MODULE_NAME].autoOpenBot && !isMobileDevice()) {
+    if (settings.autoOpenBot && !isMobileDevice()) {
         setTimeout(() => botPanel.show(), 1000);
     }
-    if (extension_settings[MODULE_NAME].autoOpenUser && !isMobileDevice()) {
+    if (settings.autoOpenUser && !isMobileDevice()) {
         setTimeout(() => userPanel.show(), 1000);
     }
     setTimeout(updatePanelStyles, 1500);

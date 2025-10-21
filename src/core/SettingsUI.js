@@ -1,11 +1,13 @@
-export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem) {
+export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem, context) {
     const MODULE_NAME = 'outfit_tracker';
+    const settings = context?.extensionSettings || window.extension_settings;
+    const saveSettingsFn = context?.saveSettingsDebounced || window.saveSettingsDebounced;
     const hasAutoSystem = AutoOutfitSystem.name !== 'DummyAutoOutfitSystem';
     const autoSettingsHtml = hasAutoSystem ? `
         <div class="flex-container setting-row">
             <label for="outfit-auto-system">Enable auto outfit updates</label>
             <input type="checkbox" id="outfit-auto-system"
-                    ${window.extension_settings[MODULE_NAME].autoOutfitSystem ? 'checked' : ''}>
+                    ${settings[MODULE_NAME].autoOutfitSystem ? 'checked' : ''}>
         </div>
         <div class="flex-container setting-row">
             <label for="outfit-connection-profile">Connection Profile (Optional):</label>
@@ -245,7 +247,7 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem) {
             // Fallback to direct checking
             try {
                 // Check if the extension is properly loaded
-                if (window.outfitTracker && window.extension_settings?.outfit_tracker) {
+                if (window.outfitTracker && settings?.outfit_tracker) {
                     $('#status-core').removeClass('status-loading').addClass('status-active').text('Active');
                 } else {
                     $('#status-core').removeClass('status-loading').addClass('status-inactive').text('Inactive');
@@ -642,19 +644,19 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem) {
     // Function to update settings and apply colors
     function updateColorSettingsAndApply() {
         // Update the extension settings with new color values
-        window.extension_settings[MODULE_NAME].botPanelColors = {
+        settings[MODULE_NAME].botPanelColors = {
             primary: $('#bot-panel-primary-color').val(),
             border: $('#bot-panel-border-color').val(),
             shadow: $('#bot-panel-shadow-color').val()
         };
 
-        window.extension_settings[MODULE_NAME].userPanelColors = {
+        settings[MODULE_NAME].userPanelColors = {
             primary: $('#user-panel-primary-color').val(),
             border: $('#user-panel-border-color').val(),
             shadow: $('#user-panel-shadow-color').val()
         };
 
-        window.saveSettingsDebounced();
+        saveSettingsFn();
 
         // Apply the new colors to the panels
         if (window.botOutfitPanel && window.botOutfitPanel.applyPanelColors) {
@@ -670,10 +672,10 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem) {
 
     // Custom toggle switch styling
     $(document).on('change', '#outfit-sys-toggle, #outfit-auto-bot, #outfit-auto-user', function() {
-        window.extension_settings[MODULE_NAME].enableSysMessages = $('#outfit-sys-toggle').prop('checked');
-        window.extension_settings[MODULE_NAME].autoOpenBot = $('#outfit-auto-bot').prop('checked');
-        window.extension_settings[MODULE_NAME].autoOpenUser = $('#outfit-auto-user').prop('checked');
-        window.saveSettingsDebounced();
+        settings[MODULE_NAME].enableSysMessages = $('#outfit-sys-toggle').prop('checked');
+        settings[MODULE_NAME].autoOpenBot = $('#outfit-auto-bot').prop('checked');
+        settings[MODULE_NAME].autoOpenUser = $('#outfit-auto-user').prop('checked');
+        saveSettingsFn();
     });
 
     // Helper function to validate hex color
@@ -903,39 +905,39 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem) {
     // Only add auto system event listeners if it loaded successfully
     if (hasAutoSystem) {
         $('#outfit-auto-system').on('input', function() {
-            window.extension_settings[MODULE_NAME].autoOutfitSystem = $(this).prop('checked');
+            settings[MODULE_NAME].autoOutfitSystem = $(this).prop('checked');
             if ($(this).prop('checked')) {
                 autoOutfitSystem.enable();
             } else {
                 autoOutfitSystem.disable();
             }
-            window.saveSettingsDebounced();
+            saveSettingsFn();
         });
 
         $('#outfit-connection-profile').on('change', function() {
             const profile = $(this).val() || null;
 
-            window.extension_settings[MODULE_NAME].autoOutfitConnectionProfile = profile;
+            settings[MODULE_NAME].autoOutfitConnectionProfile = profile;
             if (autoOutfitSystem.setConnectionProfile) {
                 autoOutfitSystem.setConnectionProfile(profile);
             }
-            window.saveSettingsDebounced();
+            saveSettingsFn();
         });
 
         $('#outfit-prompt-input').on('change', function() {
-            window.extension_settings[MODULE_NAME].autoOutfitPrompt = $(this).val();
+            settings[MODULE_NAME].autoOutfitPrompt = $(this).val();
             autoOutfitSystem.setPrompt($(this).val());
-            window.saveSettingsDebounced();
+            saveSettingsFn();
         });
 
         $('#outfit-prompt-reset-btn').on('click', function() {
             const message = autoOutfitSystem.resetToDefaultPrompt();
 
             $('#outfit-prompt-input').val(autoOutfitSystem.systemPrompt);
-            window.extension_settings[MODULE_NAME].autoOutfitPrompt = autoOutfitSystem.systemPrompt;
-            window.saveSettingsDebounced();
+            settings[MODULE_NAME].autoOutfitPrompt = autoOutfitSystem.systemPrompt;
+            saveSettingsFn();
 
-            if (window.extension_settings.outfit_tracker?.enableSysMessages) {
+            if (settings.outfit_tracker?.enableSysMessages) {
                 window.botOutfitPanel.sendSystemMessage(message);
             } else {
                 toastr.info(message);

@@ -12,7 +12,16 @@ export const ACCESSORY_SLOTS = [
 
 export const ALL_SLOTS = [...CLOTHING_SLOTS, ...ACCESSORY_SLOTS];
 
-export const DEFAULT_PANEL_COLORS = {
+
+
+export const DEFAULT_SETTINGS = Object.freeze({
+    autoOpenBot: true,
+    autoOpenUser: false,
+    position: 'right',
+    enableSysMessages: true,
+    autoOutfitSystem: false,
+    autoOutfitPrompt: 'After each character response, analyze the conversation to identify any outfit changes (items worn, removed, or changed). Provide updates in the format: "/outfit-wear slotName item", "/outfit-remove slotName", or "/outfit-change slotName newItem". Only output the commands, no additional text.',
+    autoOutfitConnectionProfile: null,
     botPanelColors: {
         primary: 'linear-gradient(135deg, #6a4fc1 0%, #5a49d0 50%, #4a43c0 100%)',
         border: '#8a7fdb',
@@ -23,17 +32,7 @@ export const DEFAULT_PANEL_COLORS = {
         border: '#5da6f0',
         shadow: 'rgba(26, 120, 209, 0.4)'
     }
-};
-
-export const DEFAULT_SETTINGS = {
-    autoOpenBot: true,
-    autoOpenUser: false,
-    position: 'right',
-    enableSysMessages: true,
-    autoOutfitSystem: false,
-    autoOutfitPrompt: '',
-    autoOutfitConnectionProfile: null
-};
+});
 
 export const OUTFIT_COMMANDS = {
     WEAR: 'wear',
