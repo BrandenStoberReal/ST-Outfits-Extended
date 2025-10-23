@@ -28,23 +28,24 @@ class CustomMacroSystem {
                 ctx.registerMacro(`char_${slot}`, (macro, nonce) => this.getCurrentSlotValue('char', slot));
                 ctx.registerMacro(`user_${slot}`, (macro, nonce) => this.getCurrentSlotValue('user', slot));
             });
+        }
+    }
+    
+    /**
+     * Deregister all outfit-related macros to prepare for re-registration
+     */
+    deregisterMacros(context) {
+        const ctx = context || (window.SillyTavern?.getContext ? window.SillyTavern.getContext() : window.getContext());
 
-            // Register character-specific slot-based macros
-            // Note: Static registration of all characters may not work well if characters are loaded dynamically
-            // So we'll also create a generic handler for character-specific macros
-            if (ctx.characters) {
-                ctx.characters.forEach(character => {
-                    this.allSlots.forEach(slot => {
-                        ctx.registerMacro(`${character.name}_${slot}`, (macro, nonce) => this.getCurrentSlotValue('char', slot, character.name));
-                    });
-                });
-            }
-            
-            // Register a generic handler for any character-specific slot macros
-            // This will catch character names that may not have been registered during initialization
+        if (ctx && ctx.unregisterMacro) {
+            // Deregister {{char}} and {{user}} macros
+            ctx.unregisterMacro('char');
+            ctx.unregisterMacro('user');
+
+            // Deregister slot-based macros for char and user
             this.allSlots.forEach(slot => {
-                // This creates a dynamic macro handler for any character name + slot combination
-                // The macro name will be checked dynamically when used
+                ctx.unregisterMacro(`char_${slot}`);
+                ctx.unregisterMacro(`user_${slot}`);
             });
         }
     }
@@ -58,15 +59,49 @@ class CustomMacroSystem {
         const ctx = context || (window.SillyTavern?.getContext ? window.SillyTavern.getContext() : window.getContext());
         
         if (ctx && ctx.registerMacro && ctx.characters) {
-            ctx.characters.forEach(character => {
-                this.allSlots.forEach(slot => {
-                    const macroName = `${character.name}_${slot}`;
+            // Iterate through all available characters
+            for (const character of ctx.characters) {
+                if (character && character.name) {
+                    const characterName = character.name;
+                    
+                    // Register a macro for the character's name (e.g., {{Emma}})
+                    ctx.registerMacro(characterName, (macro, nonce) => characterName);
+                    
+                    // Register slot-based macros for this specific character (e.g., {{Emma_topwear}}, {{Emma_headwear}})
+                    this.allSlots.forEach(slot => {
+                        const macroName = `${characterName}_${slot}`;
 
-                    // Unregister first if it exists to avoid duplicates
-                    // Note: SillyTavern doesn't have an unregister function, so we just register again
-                    ctx.registerMacro(macroName, (macro, nonce) => this.getCurrentSlotValue('char', slot, character.name));
-                });
-            });
+                        ctx.registerMacro(macroName, (macro, nonce) => this.getCurrentSlotValue(characterName, slot, characterName));
+                    });
+                }
+            }
+        }
+    }
+    
+    /**
+     * Deregister character-specific macros to prepare for re-registration
+     */
+    deregisterCharacterSpecificMacros(context) {
+        // Use provided context or fallback to window
+        const ctx = context || (window.SillyTavern?.getContext ? window.SillyTavern.getContext() : window.getContext());
+        
+        if (ctx && ctx.unregisterMacro && ctx.characters) {
+            // Iterate through all available characters
+            for (const character of ctx.characters) {
+                if (character && character.name) {
+                    const characterName = character.name;
+                    
+                    // Deregister the macro for the character's name (e.g., {{Emma}})
+                    ctx.unregisterMacro(characterName);
+                    
+                    // Deregister slot-based macros for this specific character
+                    this.allSlots.forEach(slot => {
+                        const macroName = `${characterName}_${slot}`;
+
+                        ctx.unregisterMacro(macroName);
+                    });
+                }
+            }
         }
     }
 
@@ -97,7 +132,7 @@ class CustomMacroSystem {
 
     /**
      * Get the current value for a specific slot
-     * @param {string} macroType - 'char', 'bot', or 'user'
+     * @param {string} macroType - 'char', 'bot', 'user' or a character name
      * @param {string} slotName - The slot name (e.g., 'topwear')
      * @param {string|null} characterName - The specific character name to get the value for
      * @returns {string} - The current value for the slot
@@ -121,12 +156,36 @@ class CustomMacroSystem {
                     if (character) {
                         charId = character.avatar;
                     } else {
-                        return 'None'; // Character not found
+                        // If character not found in the list, try to match by the currently active character if macroType matches
+                        if (context.characterId && context.getName) {
+                            const currentCharName = context.getName();
+
+                            if (currentCharName === characterName) {
+                                charId = context.characterId;
+                            }
+                        }
+                        // If we still don't have a character ID, return None
+                        if (!charId) {
+                            return 'None'; // Character not found
+                        }
                     }
                 }
             } else if (macroType === 'char' || macroType === 'bot') {
                 // Using current character context
                 charId = context?.characterId || null;
+            } else if (['user'].includes(macroType)) {
+                // User-specific macro, don't need a character ID
+                charId = null;
+            } else {
+                // The macroType might be a character name (e.g. when macro is "Emma_topwear")
+                // Try to match against current character
+                if (context && context.characterId && context.getName) {
+                    const currentCharName = context.getName();
+
+                    if (currentCharName === macroType) {
+                        charId = context.characterId;
+                    }
+                }
             }
 
             // Get appropriate instanceId based on the conversation context
@@ -146,7 +205,7 @@ class CustomMacroSystem {
                 return 'None';
             }
 
-            if (macroType === 'char' || macroType === 'bot' || characterName) {
+            if (macroType === 'char' || macroType === 'bot' || characterName || (this.isValidCharacterName(macroType) && !['user'].includes(macroType))) {
                 if (charId !== null && charId !== undefined) {
                     const outfitData = outfitStore.getBotOutfit(charId.toString(), instanceId);
 
@@ -162,6 +221,15 @@ class CustomMacroSystem {
         }
 
         return 'None';
+    }
+    
+    /**
+     * Check if a string looks like a valid character name (not a standard macro type)
+     * @param {string} name - The name to check
+     * @returns {boolean} - True if it looks like a character name
+     */
+    isValidCharacterName(name) {
+        return !['char', 'bot', 'user'].includes(name);
     }
 
     /**

@@ -56,7 +56,8 @@ class EventSystem {
             this.autoOutfitSystem.markAppInitialized();
         }
         this.updateForCurrentCharacter();
-        // Register character-specific macros when app is ready
+        // Deregister and re-register character-specific macros when app is ready
+        customMacroSystem.deregisterCharacterSpecificMacros(this.context);
         customMacroSystem.registerCharacterSpecificMacros(this.context);
     }
 
@@ -74,7 +75,8 @@ class EventSystem {
                     console.log('[OutfitTracker] CHAT_CHANGED event fired and first message has changed - updating for new conversation context');
                     this.currentFirstMessageHash = firstMessageHash;
                     this.updateForCurrentCharacter();
-                    // Register character-specific macros when chat changes
+                    // Deregister and re-register character-specific macros when chat changes
+                    customMacroSystem.deregisterCharacterSpecificMacros(this.context);
                     customMacroSystem.registerCharacterSpecificMacros(this.context);
                 } else {
                     console.log('[OutfitTracker] CHAT_CHANGED event fired but first message unchanged - skipping update');
@@ -84,7 +86,8 @@ class EventSystem {
                 this.currentFirstMessageHash = null;
                 console.log('[OutfitTracker] CHAT_CHANGED event fired with no first bot message - updating for character switch');
                 this.updateForCurrentCharacter();
-                // Register character-specific macros when chat changes
+                // Deregister and re-register character-specific macros when chat changes
+                customMacroSystem.deregisterCharacterSpecificMacros(this.context);
                 customMacroSystem.registerCharacterSpecificMacros(this.context);
             }
         }
@@ -174,7 +177,8 @@ class EventSystem {
 
     handleContextUpdate() {
         this.updateForCurrentCharacter();
-        // Register character-specific macros when context updates
+        // Deregister and re-register character-specific macros when context updates
+        customMacroSystem.deregisterCharacterSpecificMacros(this.context);
         customMacroSystem.registerCharacterSpecificMacros(this.context);
     }
     
@@ -243,6 +247,7 @@ class EventSystem {
                     window.userOutfitPanel.renderContent();
                 }
             }
+            
             console.log('[OutfitTracker] Restored outfits after chat reset.');
 
             // Do not process first message after reset to preserve the restored instance ID
@@ -314,6 +319,7 @@ class EventSystem {
                     window.userOutfitPanel.renderContent();
                 }
             }
+            
             console.log('[OutfitTracker] Restored outfits after chat clear.');
 
             // Do not process first message after clear to preserve the restored instance ID

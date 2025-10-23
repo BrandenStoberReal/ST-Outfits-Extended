@@ -363,10 +363,21 @@ function setupApi(botManager, userManager, botPanel, userPanel, autoOutfitSystem
         if (STContext) {
             // Wait for character data to be loaded before registering character-specific macros
             setTimeout(() => {
+                customMacroSystem.deregisterCharacterSpecificMacros(STContext);
                 customMacroSystem.registerCharacterSpecificMacros(STContext);
             }, 2000); // Wait a bit for character data to load
         }
     }
+    
+    // Also register a global function that can refresh macros when needed
+    window.refreshOutfitMacros = function() {
+        const STContext = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : window.getContext();
+
+        if (STContext) {
+            customMacroSystem.deregisterCharacterSpecificMacros(STContext);
+            customMacroSystem.registerCharacterSpecificMacros(STContext);
+        }
+    };
 
     globalThis.outfitTracker = extension_api;
 }
