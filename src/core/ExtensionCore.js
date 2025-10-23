@@ -447,6 +447,9 @@ export async function initializeExtension() {
     await dataManager.initialize();
     outfitStore.setDataManager(dataManager);
 
+    // Load the stored state into the outfit store after initialization
+    outfitStore.loadState();
+
     const outfitDataService = new OutfitDataService(dataManager);
 
     const settings = dataManager.loadSettings();
