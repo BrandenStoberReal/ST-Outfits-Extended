@@ -117,8 +117,11 @@ class EventSystem {
                 outfitStore.setUserOutfit(currentUserInstanceId, userOutfitData);
             }
             
-            await this.updateForCurrentCharacter();
+            // Process the first message to generate the new instance ID BEFORE updating managers
             await this.processMacrosInFirstMessage(this.context);
+            
+            // Now update managers for the current character, which will use the new instance ID
+            await this.updateForCurrentCharacter();
         }
     }
 
@@ -133,6 +136,14 @@ class EventSystem {
         if (aiMessages.length > 0 && chat.indexOf(aiMessages[0]) === index) {
             console.log('[OutfitTracker] First message was swiped, updating outfit instance.');
 
+            // Before changing anything, update the first message hash to trigger proper outfit instance handling
+            const firstBotMessage = aiMessages[0];
+
+            if (firstBotMessage) {
+                this.currentFirstMessageHash = this.generateMessageHash(firstBotMessage.mes);
+            }
+
+            // Save current outfit data with the current instance ID before any changes
             const oldBotCharacterId = this.botManager.characterId;
             const oldBotInstanceId = this.botManager.getOutfitInstanceId();
             const oldUserInstanceId = this.userManager.getOutfitInstanceId();
@@ -140,18 +151,24 @@ class EventSystem {
             if (oldBotInstanceId && oldBotCharacterId) {
                 const oldBotOutfitData = { ...this.botManager.getCurrentOutfit() };
 
+                // Save the current outfit data to the current instance ID
                 outfitStore.setBotOutfit(oldBotCharacterId, oldBotInstanceId, oldBotOutfitData);
             }
             if (oldUserInstanceId) {
                 const oldUserOutfitData = { ...this.userManager.getCurrentOutfit() };
 
+                // Save the current outfit data to the current instance ID
                 outfitStore.setUserOutfit(oldUserInstanceId, oldUserOutfitData);
             }
 
+            // Save to storage immediately to preserve the current state
             outfitStore.saveState();
 
-            await this.updateForCurrentCharacter();
+            // Process the first message to generate the new instance ID BEFORE updating managers
             await this.processMacrosInFirstMessage(this.context);
+
+            // Now update managers for the current character, which will use the new instance ID
+            await this.updateForCurrentCharacter();
         }
     }
 
