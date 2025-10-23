@@ -17,16 +17,15 @@ import { areSystemMessagesEnabled } from '../utils/SettingsUtil.js';
 import { outfitStore } from '../common/Store.js';
 
 export class BotOutfitPanel {
-    constructor(outfitManager, clothingSlots, accessorySlots, saveSettingsDebounced) {
+    constructor(outfitManager, clothingSlots, accessorySlots) {
         this.outfitManager = outfitManager;
         this.clothingSlots = clothingSlots;
         this.accessorySlots = accessorySlots;
         this.isVisible = false;
         this.domElement = null;
         this.currentTab = 'clothing';
-        this.saveSettingsDebounced = saveSettingsDebounced;
-        this.eventListeners = []; // Track event listeners for cleanup
-        this.outfitSubscription = null; // Track outfit data subscription
+        this.eventListeners = [];
+        this.outfitSubscription = null;
     }
 
     createPanel() {

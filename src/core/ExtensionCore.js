@@ -1,5 +1,4 @@
 // Import functions using SillyTavern's getContext as recommended in documentation
-import { wipeAllOutfits } from '../services/DataService.js';
 import { updateForCurrentCharacter } from '../services/CharacterService.js';
 import { customMacroSystem } from '../utils/CustomMacroSystem.js';
 import { extension_api } from '../common/shared.js';
@@ -14,6 +13,9 @@ import { registerOutfitCommands } from './OutfitCommands.js';
 import { createSettingsUI } from './SettingsUI.js';
 import { initSettings } from './settings.js';
 import { CLOTHING_SLOTS, ACCESSORY_SLOTS, ALL_SLOTS } from '../config/constants.js';
+import { StorageService } from '../services/StorageService.js';
+import { DataManager } from '../services/DataManager.js';
+import { OutfitDataService } from '../services/OutfitDataService.js';
 
 let AutoOutfitSystem;
 
@@ -339,12 +341,12 @@ function cleanOutfitMacrosFromText(text) {
     return workingText;
 }
 
-function setupApi(botManager, userManager, botPanel, userPanel, autoOutfitSystem) {
+function setupApi(botManager, userManager, botPanel, userPanel, autoOutfitSystem, outfitDataService) {
     extension_api.botOutfitPanel = botPanel;
     extension_api.userOutfitPanel = userPanel;
     extension_api.autoOutfitSystem = autoOutfitSystem;
-    extension_api.wipeAllOutfits = () => wipeAllOutfits();
-    window.wipeAllOutfits = () => wipeAllOutfits(); // Make it directly accessible globally
+    extension_api.wipeAllOutfits = () => outfitDataService.wipeAllOutfits();
+    window.wipeAllOutfits = () => outfitDataService.wipeAllOutfits(); // Make it directly accessible globally
     extension_api.getOutfitExtensionStatus = () => ({
         core: true,
         autoOutfit: autoOutfitSystem?.getStatus?.() ?? false,
@@ -428,46 +430,30 @@ globalThis.outfitTrackerInterceptor = async function(chat, contextSize, abort, t
 export async function initializeExtension() {
     await loadAutoOutfitSystem();
 
-    // Get SillyTavern context and required functions using the proper SillyTavern API
-    const STContext = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
-    const saveSettingsFn = STContext?.saveSettingsDebounced;
-    
-    if (!STContext || !saveSettingsFn) {
-        console.error('[OutfitTracker] Required SillyTavern functions are not available.');
+    const STContext = window.SillyTavern?.getContext?.() || window.getContext?.();
+
+    if (!STContext) {
+        console.error('[OutfitTracker] Required SillyTavern context is not available.');
         throw new Error('Missing required SillyTavern globals.');
     }
 
-    const MODULE_NAME = 'outfit_tracker';
-    
-    // Initialize extension settings with defaults using proper SillyTavern API
-    const defaultSettings = Object.freeze({
-        autoOpenBot: true,
-        autoOpenUser: false,
-        position: 'right',
-        enableSysMessages: true,
-        autoOutfitSystem: false,
-        autoOutfitPrompt: 'After each character response, analyze the conversation to identify any outfit changes (items worn, removed, or changed). Provide updates in the format: "/outfit-wear slotName item", "/outfit-remove slotName", or "/outfit-change slotName newItem". Only output the commands, no additional text.',
-        autoOutfitConnectionProfile: null
-    });
+    const storageService = new StorageService(
+        (data) => STContext.saveSettingsDebounced({ outfit_tracker: data }),
+        () => STContext.extensionSettings.outfit_tracker
+    );
 
-    // Ensure settings exist and have all required keys
-    if (!STContext.extensionSettings[MODULE_NAME]) {
-        STContext.extensionSettings[MODULE_NAME] = structuredClone(defaultSettings);
-    }
+    const dataManager = new DataManager(storageService);
+    await dataManager.initialize();
+    outfitStore.setDataManager(dataManager);
 
-    // Ensure all default keys exist (helpful after updates)
-    for (const key of Object.keys(defaultSettings)) {
-        if (!Object.hasOwn(STContext.extensionSettings[MODULE_NAME], key)) {
-            STContext.extensionSettings[MODULE_NAME][key] = defaultSettings[key];
-        }
-    }
-    
-    const settings = STContext.extensionSettings[MODULE_NAME];
+    const outfitDataService = new OutfitDataService(dataManager);
+
+    const settings = dataManager.loadSettings();
 
     const botManager = new NewBotOutfitManager(ALL_SLOTS);
     const userManager = new NewUserOutfitManager(ALL_SLOTS);
-    const botPanel = new BotOutfitPanel(botManager, CLOTHING_SLOTS, ACCESSORY_SLOTS, saveSettingsFn);
-    const userPanel = new UserOutfitPanel(userManager, CLOTHING_SLOTS, ACCESSORY_SLOTS, saveSettingsFn);
+    const botPanel = new BotOutfitPanel(botManager, CLOTHING_SLOTS, ACCESSORY_SLOTS);
+    const userPanel = new UserOutfitPanel(userManager, CLOTHING_SLOTS, ACCESSORY_SLOTS);
     const autoOutfitSystem = new AutoOutfitSystem(botManager);
 
     // Set global references for the interceptor function to access
@@ -478,7 +464,7 @@ export async function initializeExtension() {
     outfitStore.setPanelRef('user', userPanel);
     outfitStore.setAutoOutfitSystem(autoOutfitSystem);
 
-    setupApi(botManager, userManager, botPanel, userPanel, autoOutfitSystem);
+    setupApi(botManager, userManager, botPanel, userPanel, autoOutfitSystem, outfitDataService);
     initSettings(autoOutfitSystem, AutoOutfitSystem, STContext);
     registerOutfitCommands(botManager, userManager, autoOutfitSystem);
     customMacroSystem.registerMacros(STContext);

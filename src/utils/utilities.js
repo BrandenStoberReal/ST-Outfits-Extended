@@ -78,78 +78,73 @@ export function safeGet(obj, path, defaultValue = null) {
     }
 }
 
-const slotNameMap = {
-    'topunderwear': 'Top Underwear / Inner Top',
-    'bottomunderwear': 'Bottom Underwear / Inner Bottom',
-    'footunderwear': 'Foot Underwear / Socks',
-    'head-accessory': 'Head Accessory',
-    'ears-accessory': 'Ears Accessory',
-    'eyes-accessory': 'Eyes Accessory',
-    'mouth-accessory': 'Mouth Accessory',
-    'neck-accessory': 'Neck Accessory',
-    'body-accessory': 'Body Accessory',
-    'arms-accessory': 'Arms Accessory',
-    'hands-accessory': 'Hands Accessory',
-    'waist-accessory': 'Waist Accessory',
-    'bottom-accessory': 'Bottom Accessory',
-    'legs-accessory': 'Legs Accessory',
-    'foot-accessory': 'Foot Accessory'
-};
+export function deepClone(obj) {
+    if (obj === null || typeof obj !== 'object') {
+        return obj;
+    }
+    if (obj instanceof Date) {
+        return new Date(obj.getTime());
+    }
+    if (Array.isArray(obj)) {
+        return obj.map(item => deepClone(item));
+    }
+    if (typeof obj === 'object') {
+        const clonedObj = {};
 
-/**
- * Formats a slot name for display
- * @param {string} slotName - The slot name to format
- * @returns {string} - The formatted slot name
- */
+        for (const key in obj) {
+            if (Object.prototype.hasOwnProperty.call(obj, key)) {
+                clonedObj[key] = deepClone(obj[key]);
+            }
+        }
+        return clonedObj;
+    }
+}
+
+export function deepMerge(target, source) {
+    const output = { ...target };
+
+    if (target && typeof target === 'object' && source && typeof source === 'object') {
+        Object.keys(source).forEach(key => {
+            if (source[key] && typeof source[key] === 'object' && key in target) {
+                output[key] = deepMerge(target[key], source[key]);
+            } else {
+                output[key] = source[key];
+            }
+        });
+    }
+
+    return output;
+}
+
 export function formatSlotName(slotName) {
+    const slotNameMap = {
+        'topunderwear': 'Top Underwear / Inner Top',
+        'bottomunderwear': 'Bottom Underwear / Inner Bottom',
+        'footunderwear': 'Foot Underwear / Socks',
+        'head-accessory': 'Head Accessory',
+        'ears-accessory': 'Ears Accessory',
+        'eyes-accessory': 'Eyes Accessory',
+        'mouth-accessory': 'Mouth Accessory',
+        'neck-accessory': 'Neck Accessory',
+        'body-accessory': 'Body Accessory',
+        'arms-accessory': 'Arms Accessory',
+        'hands-accessory': 'Hands Accessory',
+        'waist-accessory': 'Waist Accessory',
+        'bottom-accessory': 'Bottom Accessory',
+        'legs-accessory': 'Legs Accessory',
+        'foot-accessory': 'Foot Accessory'
+    };
+
     if (slotNameMap[slotName]) {
         return slotNameMap[slotName];
     }
 
-    // Replace occurrences of lowercase followed by uppercase letter with a space in between
-    let result = '';
+    let result = slotName.replace(/([a-z])([A-Z])/g, '$1 $2');
 
-    for (let i = 0; i < slotName.length; i++) {
-        result += slotName[i];
-        if (i < slotName.length - 1 && 
-            slotName[i] >= 'a' && slotName[i] <= 'z' && 
-            slotName[i + 1] >= 'A' && slotName[i + 1] <= 'Z') {
-            result += ' ';
-        }
-    }
-    
-    // Capitalize the first letter
-    if (result.length > 0) {
-        result = result.charAt(0).toUpperCase() + result.slice(1);
-    }
-    
-    // Replace hyphens with spaces
-    result = replaceInString(result, '-', ' ');
-    
-    // Replace 'underwear' with 'Underwear' (case sensitive)
-    result = replaceInString(result, 'underwear', 'Underwear');
-    
-    return result;
-}
+    result = result.charAt(0).toUpperCase() + result.slice(1);
+    result = result.replace(/-/g, ' ');
+    result = result.replace(/underwear/g, 'Underwear');
 
-// Helper function to replace a substring in a string
-function replaceInString(str, searchStr, replaceStr) {
-    if (!searchStr) {return str;}
-    
-    let result = '';
-    let i = 0;
-    
-    while (i < str.length) {
-        if (i <= str.length - searchStr.length && 
-            str.substring(i, i + searchStr.length) === searchStr) {
-            result += replaceStr;
-            i += searchStr.length;
-        } else {
-            result += str[i];
-            i++;
-        }
-    }
-    
     return result;
 }
 

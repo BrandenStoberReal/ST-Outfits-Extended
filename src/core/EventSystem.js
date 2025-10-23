@@ -125,36 +125,31 @@ class EventSystem {
     async handleMessageSwiped(index) {
         console.log(`[OutfitTracker] MESSAGE_SWIPED event fired with index: ${index}`);
         const chat = this.context.chat;
-    
+
         if (!chat || index < 0 || index >= chat.length) {return;}
-    
+
         const aiMessages = chat.filter(msg => !msg.is_user && !msg.is_system);
 
         if (aiMessages.length > 0 && chat.indexOf(aiMessages[0]) === index) {
             console.log('[OutfitTracker] First message was swiped, updating outfit instance.');
-            
-            // Capture the current outfit instance data and character ID BEFORE updating managers
-            // This ensures that the outfit for the now-swiped message is preserved in the right place
+
             const oldBotCharacterId = this.botManager.characterId;
             const oldBotInstanceId = this.botManager.getOutfitInstanceId();
             const oldUserInstanceId = this.userManager.getOutfitInstanceId();
-            
-            // Save the current outfits to their current instances before updating
-            // We need to save the old outfit data with the old instance ID before it changes
+
             if (oldBotInstanceId && oldBotCharacterId) {
                 const oldBotOutfitData = { ...this.botManager.getCurrentOutfit() };
 
                 outfitStore.setBotOutfit(oldBotCharacterId, oldBotInstanceId, oldBotOutfitData);
-                outfitStore.saveSettings();
             }
             if (oldUserInstanceId) {
                 const oldUserOutfitData = { ...this.userManager.getCurrentOutfit() };
 
                 outfitStore.setUserOutfit(oldUserInstanceId, oldUserOutfitData);
-                outfitStore.saveSettings();
             }
-            
-            // Update to the new character/outfit instance 
+
+            outfitStore.saveState();
+
             await this.updateForCurrentCharacter();
             await this.processMacrosInFirstMessage(this.context);
         }
@@ -253,23 +248,21 @@ class EventSystem {
         const originalClearChat = window.clearChat;
 
         window.clearChat = async (...args) => {
-            // Save current outfit data and instance IDs before clear
             const botOutfitInstanceId = this.botManager.getOutfitInstanceId();
             const userOutfitInstanceId = this.userManager.getOutfitInstanceId();
 
-            // Save the current outfits before the chat is cleared, with their current instance IDs
             if (botOutfitInstanceId) {
                 const botOutfitData = { ...this.botManager.getCurrentOutfit() };
 
                 outfitStore.setBotOutfit(this.botManager.characterId, botOutfitInstanceId, botOutfitData);
-                outfitStore.saveSettings();
             }
             if (userOutfitInstanceId) {
                 const userOutfitData = { ...this.userManager.getCurrentOutfit() };
 
                 outfitStore.setUserOutfit(userOutfitInstanceId, userOutfitData);
-                outfitStore.saveSettings();
             }
+
+            outfitStore.saveState();
 
             await originalClearChat.apply(this, args);
 
