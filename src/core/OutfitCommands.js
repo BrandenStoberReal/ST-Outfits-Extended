@@ -1,7 +1,7 @@
 import { importOutfitFromCharacterCard } from '../services/LLMService.js';
 import { CLOTHING_SLOTS, ACCESSORY_SLOTS } from '../config/constants.js';
 import { areSystemMessagesEnabled } from '../utils/SettingsUtil.js';
-import { dataPersistenceService } from '../services/DataPersistenceService.js';
+import { DataManager } from '../services/DataManager.js';
 
 export async function registerOutfitCommands(botManager, userManager, autoOutfitSystem) {
     // Check if new slash command system is available in SillyTavern

@@ -2,7 +2,7 @@ import { extensionEventBus, EXTENSION_EVENTS } from './events.js';
 import { customMacroSystem } from '../utils/CustomMacroSystem.js';
 import { outfitStore } from '../common/Store.js';
 import { generateMessageHash } from '../utils/utilities.js';
-import { dataPersistenceService } from '../services/DataPersistenceService.js';
+import { DataManager } from '../services/DataManager.js';
 
 class EventSystem {
     constructor(context) {
