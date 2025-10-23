@@ -453,8 +453,8 @@ export async function initializeExtension() {
 
     const botManager = new NewBotOutfitManager(ALL_SLOTS);
     const userManager = new NewUserOutfitManager(ALL_SLOTS);
-    const botPanel = new BotOutfitPanel(botManager, CLOTHING_SLOTS, ACCESSORY_SLOTS);
-    const userPanel = new UserOutfitPanel(userManager, CLOTHING_SLOTS, ACCESSORY_SLOTS);
+    const botPanel = new BotOutfitPanel(botManager, CLOTHING_SLOTS, ACCESSORY_SLOTS, (data) => STContext.saveSettingsDebounced({ outfit_tracker: data }));
+    const userPanel = new UserOutfitPanel(userManager, CLOTHING_SLOTS, ACCESSORY_SLOTS, (data) => STContext.saveSettingsDebounced({ outfit_tracker: data }));
     const autoOutfitSystem = new AutoOutfitSystem(botManager);
 
     // Set global references for the interceptor function to access

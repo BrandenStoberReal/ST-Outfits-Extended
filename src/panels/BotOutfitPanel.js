@@ -17,7 +17,7 @@ import { areSystemMessagesEnabled } from '../utils/SettingsUtil.js';
 import { outfitStore } from '../common/Store.js';
 
 export class BotOutfitPanel {
-    constructor(outfitManager, clothingSlots, accessorySlots) {
+    constructor(outfitManager, clothingSlots, accessorySlots, saveSettingsDebounced) {
         this.outfitManager = outfitManager;
         this.clothingSlots = clothingSlots;
         this.accessorySlots = accessorySlots;
@@ -26,6 +26,7 @@ export class BotOutfitPanel {
         this.currentTab = 'clothing';
         this.eventListeners = [];
         this.outfitSubscription = null;
+        this.saveSettingsDebounced = saveSettingsDebounced;
     }
 
     createPanel() {
