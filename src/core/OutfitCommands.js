@@ -288,7 +288,7 @@ Prompt: ${status.hasPrompt ? 'SET' : 'NOT SET'}`;
                         $('#outfit-prompt-input').val(autoOutfitSystem.systemPrompt);
                         // Use the store's save method which uses the new persistence service
                         if (typeof window.outfitStore !== 'undefined') {
-                            window.outfitStore.saveSettings();
+                            window.outfitStore.saveState();
                         } else {
                             window.saveSettingsDebounced();
                         }

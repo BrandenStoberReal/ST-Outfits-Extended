@@ -255,21 +255,23 @@ class OutfitStore {
     }
 
     saveState() {
-        if (!this.dataManager) return;
+        if (!this.dataManager) {return;}
         const { botInstances, userInstances, presets, settings } = this.state;
+
         this.dataManager.saveOutfitData({ botInstances, userInstances, presets });
         this.dataManager.saveSettings(settings);
     }
 
     loadState() {
-        if (!this.dataManager) return;
+        if (!this.dataManager) {return;}
         const { botInstances, userInstances, presets } = this.dataManager.loadOutfitData();
         const settings = this.dataManager.loadSettings();
+
         this.setState({ botInstances, userInstances, presets, settings });
     }
 
     flush() {
-        if (!this.dataManager) return;
+        if (!this.dataManager) {return;}
         this.dataManager.flush();
     }
 

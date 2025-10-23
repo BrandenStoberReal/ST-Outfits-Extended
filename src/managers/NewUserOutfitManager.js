@@ -89,7 +89,7 @@ export class NewUserOutfitManager extends OutfitManager {
 
         outfitStore.setUserOutfit(this.outfitInstanceId, userOutfit);
 
-        outfitStore.saveSettings();
+        outfitStore.saveState();
 
     }
 

@@ -102,7 +102,7 @@ export async function updateForCurrentCharacter(botManager, userManager, botPane
         if (window.outfitStore) {
             window.outfitStore.setCurrentCharacter(context?.characterId?.toString() || null);
             window.outfitStore.setCurrentChat(context?.chatId || null);
-            outfitStore.saveSettings();
+            outfitStore.saveState();
         }
         
         // Optionally trigger a refresh of macro processing after character change

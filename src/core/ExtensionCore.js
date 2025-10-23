@@ -443,6 +443,7 @@ export async function initializeExtension() {
     );
 
     const dataManager = new DataManager(storageService);
+
     await dataManager.initialize();
     outfitStore.setDataManager(dataManager);
 

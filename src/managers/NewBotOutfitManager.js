@@ -87,7 +87,7 @@ export class NewBotOutfitManager extends OutfitManager {
 
         outfitStore.setBotOutfit(this.characterId, this.outfitInstanceId, botOutfit);
 
-        outfitStore.saveSettings();
+        outfitStore.saveState();
 
     }
 
