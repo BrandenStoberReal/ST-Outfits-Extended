@@ -294,6 +294,17 @@ class OutfitStore {
     }
 
     /**
+     * Update multiple settings at once
+     * @param {Object} settings - Object containing the settings to update
+     */
+    updateSettings(settings) {
+        for (const [key, value] of Object.entries(settings)) {
+            this.state.settings[key] = value;
+        }
+        this.notifyListeners();
+    }
+
+    /**
      * Get the current outfit instance ID
      * @returns {string|null} The current outfit instance ID
      */
