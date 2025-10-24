@@ -1,14 +1,14 @@
 // Import shared UI utilities for drag and resize functionality
-import { dragElementWithSave, resizeElement } from '../common/shared.js';
+import {dragElementWithSave, resizeElement} from '../common/shared.js';
 
 // Import utility functions
-import { formatSlotName as utilsFormatSlotName } from '../utils/utilities.js';
+import {formatSlotName as utilsFormatSlotName} from '../utils/utilities.js';
 
 // Import settings utility
-import { areSystemMessagesEnabled } from '../utils/SettingsUtil.js';
+import {areSystemMessagesEnabled} from '../utils/SettingsUtil.js';
 
 // Import outfit store
-import { outfitStore } from '../common/Store.js';
+import {outfitStore} from '../common/Store.js';
 
 /**
  * UserOutfitPanel - Manages the UI for the user character's outfit tracking
@@ -52,7 +52,7 @@ export class UserOutfitPanel {
         // Get the first message hash for display in the header (instance ID)
         const messageHash = this.generateMessageHash(this.getFirstMessageText() || this.outfitManager.getOutfitInstanceId() || '');
         const hashDisplay = messageHash ? ` (${messageHash})` : '';
-        
+
         panel.innerHTML = `
             <div class="outfit-header">
                 <h3>Your Outfit${hashDisplay}</h3>
@@ -70,7 +70,7 @@ export class UserOutfitPanel {
         `;
 
         document.body.appendChild(panel);
-        
+
         const tabs = panel.querySelectorAll('.outfit-tab');
 
         tabs.forEach(tab => {
@@ -79,7 +79,7 @@ export class UserOutfitPanel {
 
                 this.currentTab = tabName;
                 this.renderContent();
-                
+
                 tabs.forEach(t => t.classList.remove('active'));
                 event.target.classList.add('active');
             });
@@ -87,7 +87,7 @@ export class UserOutfitPanel {
 
         return panel;
     }
-    
+
     /**
      * Gets the first character message text to generate hash from (instance ID)
      * @returns {string} The text of the first AI message from the character
@@ -98,9 +98,9 @@ export class UserOutfitPanel {
 
             if (context && context.chat && Array.isArray(context.chat)) {
                 // Get the first AI message from the character (instance identifier)
-                const aiMessages = context.chat.filter(msg => 
+                const aiMessages = context.chat.filter(msg =>
                     !msg.is_user && !msg.is_system);
-                
+
                 if (aiMessages.length > 0) {
                     const firstMessage = aiMessages[0];
 
@@ -119,15 +119,19 @@ export class UserOutfitPanel {
      * @returns {void}
      */
     renderContent() {
-        if (!this.domElement) {return;}
-        
+        if (!this.domElement) {
+            return;
+        }
+
         const contentArea = this.domElement.querySelector('.outfit-content');
 
-        if (!contentArea) {return;}
-        
+        if (!contentArea) {
+            return;
+        }
+
         contentArea.innerHTML = '';
-        
-        switch(this.currentTab) {
+
+        switch (this.currentTab) {
         case 'clothing':
             this.renderSlots(this.clothingSlots, contentArea);
             this.renderFillOutfitButton(contentArea);
@@ -143,13 +147,13 @@ export class UserOutfitPanel {
 
     renderSlots(slots, container) {
         const outfitData = this.outfitManager.getOutfitData(slots);
-    
+
         outfitData.forEach(slot => {
             const slotElement = document.createElement('div');
 
             slotElement.className = 'outfit-slot';
             slotElement.dataset.slot = slot.name;
-    
+
             slotElement.innerHTML = `
                 <div class="slot-label">${this.formatSlotName(slot.name)}</div>
                 <div class="slot-value" title="${slot.value}">${slot.value}</div>
@@ -157,7 +161,7 @@ export class UserOutfitPanel {
                     <button class="slot-change">Change</button>
                 </div>
             `;
-    
+
             slotElement.querySelector('.slot-change').addEventListener('click', async () => {
                 const message = await this.outfitManager.changeOutfitItem(slot.name);
 
@@ -167,20 +171,20 @@ export class UserOutfitPanel {
                 this.saveSettingsDebounced();
                 this.renderContent();
             });
-    
+
             container.appendChild(slotElement);
         });
     }
 
     renderPresets(container) {
         const presets = this.outfitManager.getPresets();
-        
+
         // Filter out the 'default' preset from the list of regular presets
         const regularPresets = presets.filter(preset => preset !== 'default');
-        
+
         // Get the name of the preset that is currently set as default
         const defaultPresetName = this.outfitManager.getDefaultPresetName();
-        
+
         if (regularPresets.length === 0 && !this.outfitManager.hasDefaultOutfit()) {
             container.innerHTML = '<div>No saved outfits for this instance.</div>';
         } else {
@@ -196,7 +200,7 @@ export class UserOutfitPanel {
                         <button class="load-preset" data-preset="default">Wear</button>
                     </div>
                 `;
-                
+
                 defaultPresetElement.querySelector('.load-preset').addEventListener('click', async () => {
                     const message = await this.outfitManager.loadDefaultOutfit();
 
@@ -206,10 +210,10 @@ export class UserOutfitPanel {
                     this.saveSettingsDebounced();
                     this.renderContent();
                 });
-                
+
                 container.appendChild(defaultPresetElement);
             }
-            
+
             // Render all presets if the default is not 'default' (meaning we have named presets)
             if (defaultPresetName !== 'default' && regularPresets.length > 0) {
                 regularPresets.forEach(preset => {
@@ -226,7 +230,7 @@ export class UserOutfitPanel {
                             <button class="delete-preset" data-preset="${preset}">×</button>
                         </div>
                     `;
-                    
+
                     presetElement.querySelector('.load-preset').addEventListener('click', async () => {
                         const message = await this.outfitManager.loadPreset(preset);
 
@@ -236,7 +240,7 @@ export class UserOutfitPanel {
                         this.saveSettingsDebounced();
                         this.renderContent();
                     });
-                    
+
                     presetElement.querySelector('.set-default-preset').addEventListener('click', async () => {
                         const message = await this.outfitManager.setPresetAsDefault(preset);
 
@@ -246,7 +250,7 @@ export class UserOutfitPanel {
                         this.saveSettingsDebounced();
                         this.renderContent();
                     });
-                    
+
                     presetElement.querySelector('.delete-preset').addEventListener('click', () => {
                         if (defaultPresetName !== preset) {
                             // If it's not the default preset, just delete normally
@@ -263,7 +267,7 @@ export class UserOutfitPanel {
                             // If trying to delete the default preset, warn user that it will also clear the default
                             // Delete the preset
                             const message = this.outfitManager.deletePreset(preset);
-                            
+
                             if (areSystemMessagesEnabled()) {
                                 this.sendSystemMessage(message + ' Default outfit cleared.');
                             }
@@ -271,7 +275,7 @@ export class UserOutfitPanel {
                             this.renderContent();
                         }
                     });
-                    
+
                     presetElement.querySelector('.overwrite-preset').addEventListener('click', () => {
                         // Confirmation dialog to confirm overwriting the preset
                         if (confirm(`Overwrite "${preset}" with current outfit?`)) {
@@ -284,12 +288,12 @@ export class UserOutfitPanel {
                             this.renderContent();
                         }
                     });
-                    
+
                     container.appendChild(presetElement);
                 });
             }
         }
-    
+
         // Add save regular outfit button
         const saveButton = document.createElement('button');
 
@@ -331,7 +335,6 @@ export class UserOutfitPanel {
     }
 
 
-
     /**
      * Renders the button to fill the outfit with LLM-generated items
      * @param {HTMLElement} container - The container element to render the button in
@@ -345,11 +348,11 @@ export class UserOutfitPanel {
         fillOutfitButton.style.marginTop = '5px';
         fillOutfitButton.style.marginBottom = '10px';
         fillOutfitButton.style.width = '100%';
-        
+
         fillOutfitButton.addEventListener('click', () => {
             alert('Fill Outfit with LLM is only available for character outfits, not user outfits.');
         });
-        
+
         container.appendChild(fillOutfitButton);
     }
 
@@ -366,15 +369,14 @@ export class UserOutfitPanel {
     }
 
 
-
     show() {
         if (!this.domElement) {
             this.domElement = this.createPanel();
         }
-        
+
         // Update the header to ensure it has the latest instance ID
         this.updateHeader();
-        
+
         this.renderContent();
         this.domElement.style.display = 'flex';
         this.applyPanelColors(); // Apply colors after showing
@@ -394,7 +396,7 @@ export class UserOutfitPanel {
                     maxHeight: 800
                 });
             }, 10); // Small delay to ensure panel is rendered first
-            
+
             this.domElement.querySelector('#user-outfit-refresh')?.addEventListener('click', () => {
                 const outfitInstanceId = this.outfitManager.getOutfitInstanceId();
 
@@ -432,11 +434,11 @@ export class UserOutfitPanel {
             this.domElement.style.display = 'none';
         }
         this.isVisible = false;
-        
+
         // Clean up dynamic refresh when panel is hidden
         this.cleanupDynamicRefresh();
     }
-    
+
     /**
      * Updates the header to reflect changes (like new instance ID)
      * @returns {void}
@@ -446,7 +448,7 @@ export class UserOutfitPanel {
         if (!this.domElement) {
             this.createPanel();
         }
-        
+
         if (this.domElement) {
             const header = this.domElement.querySelector('.outfit-header h3');
 
@@ -454,7 +456,7 @@ export class UserOutfitPanel {
                 // Get the first message hash for display in the header (instance ID)
                 const messageHash = this.generateMessageHash(this.getFirstMessageText() || this.outfitManager.getOutfitInstanceId() || '');
                 const hashDisplay = messageHash ? ` (${messageHash})` : '';
-                
+
                 header.textContent = `Your Outfit${hashDisplay}`;
             }
         }
@@ -486,7 +488,7 @@ export class UserOutfitPanel {
                                 break;
                             }
                         }
-                        
+
                         if (hasChanged && this.isVisible) {
                             this.renderContent();
                         }
@@ -499,7 +501,7 @@ export class UserOutfitPanel {
         const context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
 
         if (context && context.eventSource && context.event_types) {
-            const { eventSource, event_types } = context;
+            const {eventSource, event_types} = context;
 
             // Listen for chat-related events that might affect outfit data
             this.eventListeners.push(() => eventSource.on(event_types.CHAT_CHANGED, () => {
@@ -511,7 +513,7 @@ export class UserOutfitPanel {
                     this.renderContent();
                 }
             }));
-            
+
             this.eventListeners.push(() => eventSource.on(event_types.CHAT_ID_CHANGED, () => {
                 if (this.isVisible) {
                     const outfitInstanceId = this.outfitManager.getOutfitInstanceId();
@@ -531,7 +533,7 @@ export class UserOutfitPanel {
                     this.renderContent();
                 }
             }));
-            
+
             this.eventListeners.push(() => eventSource.on(event_types.MESSAGE_RECEIVED, () => {
                 if (this.isVisible) {
                     this.renderContent();
@@ -566,11 +568,15 @@ export class UserOutfitPanel {
      * @returns {string} A short identifier based on the instance ID
      */
     generateShortId(instanceId) {
-        if (!instanceId) {return '';}
-        
+        if (!instanceId) {
+            return '';
+        }
+
         // If the instance ID is already a short identifier, return it
-        if (instanceId.startsWith('temp_')) {return 'temp';}
-        
+        if (instanceId.startsWith('temp_')) {
+            return 'temp';
+        }
+
         // Create a simple short identifier by taking up to 6 characters of the instance ID
         // but only alphanumeric characters for better readability
         let cleanId = '';
@@ -592,32 +598,34 @@ export class UserOutfitPanel {
             // Check if character is lowercase letter a-z
             if (code >= 97 && code <= 122) {
                 cleanId += char;
-                continue;
+
             }
             // Otherwise, skip non-alphanumeric characters
         }
 
         return cleanId.substring(0, 6);
     }
-    
+
     /**
      * Generates an 8-character hash from a text string
      * @param {string} text - The text to generate a hash from
      * @returns {string} An 8-character hash string representation of the text
      */
     generateMessageHash(text) {
-        if (!text) {return '';}
-        
+        if (!text) {
+            return '';
+        }
+
         let hash = 0;
         const str = text.substring(0, 100); // Only use first 100 chars to keep ID manageable
-        
+
         for (let i = 0; i < str.length; i++) {
             const char = str.charCodeAt(i);
 
             hash = ((hash << 5) - hash) + char;
             hash &= hash; // Convert to 32-bit integer
         }
-        
+
         // Convert to positive and return 8-character string representation
         return Math.abs(hash).toString(36).substring(0, 8).padEnd(8, '0');
     }

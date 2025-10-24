@@ -1,20 +1,20 @@
 // Import shared UI utilities for drag and resize functionality
-import { dragElementWithSave, resizeElement } from '../common/shared.js';
+import {dragElementWithSave, resizeElement} from '../common/shared.js';
 
 // Import string processing utilities for command extraction
-import { extractCommands } from '../utils/StringProcessor.js';
+import {extractCommands} from '../utils/StringProcessor.js';
 
 // Import LLM utility for outfit generation
-import { LLMUtility } from '../utils/LLMUtility.js';
+import {LLMUtility} from '../utils/LLMUtility.js';
 
 // Import utility functions
-import { formatSlotName as utilsFormatSlotName } from '../utils/utilities.js';
+import {formatSlotName as utilsFormatSlotName} from '../utils/utilities.js';
 
 // Import settings utility
-import { areSystemMessagesEnabled } from '../utils/SettingsUtil.js';
+import {areSystemMessagesEnabled} from '../utils/SettingsUtil.js';
 
 // Import outfit store
-import { outfitStore } from '../common/Store.js';
+import {outfitStore} from '../common/Store.js';
 
 /**
  * BotOutfitPanel - Manages the UI for the bot character's outfit tracking
@@ -58,10 +58,10 @@ export class BotOutfitPanel {
         // Get the first message hash for display in the header (instance ID)
         const messageHash = this.generateMessageHash(this.getFirstMessageText() || this.outfitManager.getOutfitInstanceId() || '');
         const hashDisplay = messageHash ? ` (${messageHash})` : '';
-        
+
         // Replace placeholder "{{char}}" with the actual character name
         const characterName = this.outfitManager.character || 'Unknown';
-        
+
         panel.innerHTML = `
             <div class="outfit-header">
                 <h3>${characterName}'s Outfit${hashDisplay}</h3>
@@ -79,7 +79,7 @@ export class BotOutfitPanel {
         `;
 
         document.body.appendChild(panel);
-        
+
         const tabs = panel.querySelectorAll('.outfit-tab');
 
         tabs.forEach(tab => {
@@ -88,7 +88,7 @@ export class BotOutfitPanel {
 
                 this.currentTab = tabName;
                 this.renderContent();
-                
+
                 tabs.forEach(t => t.classList.remove('active'));
                 event.target.classList.add('active');
             });
@@ -96,7 +96,7 @@ export class BotOutfitPanel {
 
         return panel;
     }
-    
+
     /**
      * Gets the first character message text to generate hash from (instance ID)
      * @returns {string} The text of the first AI message from the character
@@ -107,13 +107,13 @@ export class BotOutfitPanel {
 
             if (context && context.chat && Array.isArray(context.chat)) {
                 // Get the first AI message from the character (instance identifier)
-                const aiMessages = context.chat.filter(msg => 
-                    !msg.is_user && !msg.is_system && 
-                    (msg.name === this.outfitManager.character || 
-                     (context.characters && 
-                      context.characters[context.characterId] && 
-                      msg.name === context.characters[context.characterId].name)));
-                
+                const aiMessages = context.chat.filter(msg =>
+                    !msg.is_user && !msg.is_system &&
+                    (msg.name === this.outfitManager.character ||
+                        (context.characters &&
+                            context.characters[context.characterId] &&
+                            msg.name === context.characters[context.characterId].name)));
+
                 if (aiMessages.length > 0) {
                     const firstMessage = aiMessages[0];
 
@@ -132,15 +132,19 @@ export class BotOutfitPanel {
      * @returns {void}
      */
     renderContent() {
-        if (!this.domElement) {return;}
-        
+        if (!this.domElement) {
+            return;
+        }
+
         const contentArea = this.domElement.querySelector('.outfit-content');
 
-        if (!contentArea) {return;}
-        
+        if (!contentArea) {
+            return;
+        }
+
         contentArea.innerHTML = '';
-        
-        switch(this.currentTab) {
+
+        switch (this.currentTab) {
         case 'clothing':
             this.renderSlots(this.clothingSlots, contentArea);
             this.renderFillOutfitButton(contentArea);
@@ -162,13 +166,13 @@ export class BotOutfitPanel {
      */
     renderSlots(slots, container) {
         const outfitData = this.outfitManager.getOutfitData(slots);
-    
+
         outfitData.forEach(slot => {
             const slotElement = document.createElement('div');
 
             slotElement.className = 'outfit-slot';
             slotElement.dataset.slot = slot.name;
-    
+
             slotElement.innerHTML = `
                 <div class="slot-label">${this.formatSlotName(slot.name)}</div>
                 <div class="slot-value" title="${slot.value}">${slot.value}</div>
@@ -176,7 +180,7 @@ export class BotOutfitPanel {
                     <button class="slot-change">Change</button>
                 </div>
             `;
-    
+
             slotElement.querySelector('.slot-change').addEventListener('click', async () => {
                 const message = await this.outfitManager.changeOutfitItem(slot.name);
 
@@ -186,7 +190,7 @@ export class BotOutfitPanel {
                 this.saveSettingsDebounced();
                 this.renderContent();
             });
-    
+
             container.appendChild(slotElement);
         });
     }
@@ -198,13 +202,13 @@ export class BotOutfitPanel {
      */
     renderPresets(container) {
         const presets = this.outfitManager.getPresets();
-        
+
         // Filter out the 'default' preset from the list of regular presets
         const regularPresets = presets.filter(preset => preset !== 'default');
-        
+
         // Get the name of the preset that is currently set as default
         const defaultPresetName = this.outfitManager.getDefaultPresetName();
-        
+
         if (regularPresets.length === 0 && !this.outfitManager.hasDefaultOutfit()) {
             container.innerHTML = '<div>No saved outfits for this character instance.</div>';
         } else {
@@ -220,7 +224,7 @@ export class BotOutfitPanel {
                         <button class="load-preset" data-preset="default">Wear</button>
                     </div>
                 `;
-                
+
                 defaultPresetElement.querySelector('.load-preset').addEventListener('click', async () => {
                     const message = await this.outfitManager.loadDefaultOutfit();
 
@@ -230,10 +234,10 @@ export class BotOutfitPanel {
                     this.saveSettingsDebounced();
                     this.renderContent();
                 });
-                
+
                 container.appendChild(defaultPresetElement);
             }
-            
+
             // Render all presets if the default is not 'default' (meaning we have named presets)
             if (defaultPresetName !== 'default' && regularPresets.length > 0) {
                 regularPresets.forEach(preset => {
@@ -250,7 +254,7 @@ export class BotOutfitPanel {
                             <button class="delete-preset" data-preset="${preset}">×</button>
                         </div>
                     `;
-                    
+
                     presetElement.querySelector('.load-preset').addEventListener('click', async () => {
                         const message = await this.outfitManager.loadPreset(preset);
 
@@ -260,7 +264,7 @@ export class BotOutfitPanel {
                         this.saveSettingsDebounced();
                         this.renderContent();
                     });
-                    
+
                     presetElement.querySelector('.set-default-preset').addEventListener('click', async () => {
                         const message = await this.outfitManager.setPresetAsDefault(preset);
 
@@ -270,7 +274,7 @@ export class BotOutfitPanel {
                         this.saveSettingsDebounced();
                         this.renderContent();
                     });
-                    
+
                     presetElement.querySelector('.delete-preset').addEventListener('click', () => {
                         if (defaultPresetName !== preset) {
                             // If it's not the default preset, just delete normally
@@ -287,7 +291,7 @@ export class BotOutfitPanel {
                             // If trying to delete the default preset, warn user that it will also clear the default
                             // Delete the preset
                             const message = this.outfitManager.deletePreset(preset);
-                            
+
                             if (areSystemMessagesEnabled()) {
                                 this.sendSystemMessage(message + ' Default outfit cleared.');
                             }
@@ -295,7 +299,7 @@ export class BotOutfitPanel {
                             this.renderContent();
                         }
                     });
-                    
+
                     presetElement.querySelector('.overwrite-preset').addEventListener('click', () => {
                         // Confirmation dialog to confirm overwriting the preset
                         if (confirm(`Overwrite "${preset}" with current outfit?`)) {
@@ -308,12 +312,12 @@ export class BotOutfitPanel {
                             this.renderContent();
                         }
                     });
-                    
+
                     container.appendChild(presetElement);
                 });
             }
         }
-    
+
         // Add save regular outfit button
         const saveButton = document.createElement('button');
 
@@ -352,11 +356,11 @@ export class BotOutfitPanel {
         fillOutfitButton.style.marginTop = '5px';
         fillOutfitButton.style.marginBottom = '10px';
         fillOutfitButton.style.width = '100%';
-        
+
         fillOutfitButton.addEventListener('click', async () => {
             await this.generateOutfitFromCharacterInfo();
         });
-        
+
         container.appendChild(fillOutfitButton);
     }
 
@@ -370,10 +374,10 @@ export class BotOutfitPanel {
             if (areSystemMessagesEnabled()) {
                 this.sendSystemMessage('Generating outfit based on character info...');
             }
-            
+
             // Get character data
             const characterInfo = await this.getCharacterData();
-            
+
             if (characterInfo.error) {
                 console.error('Error getting character data:', characterInfo.error);
                 if (areSystemMessagesEnabled()) {
@@ -381,13 +385,13 @@ export class BotOutfitPanel {
                 }
                 return;
             }
-            
+
             // Generate outfit from LLM
             const response = await this.generateOutfitFromLLM(characterInfo);
-            
+
             // Parse and apply the outfit commands
             await this.parseAndApplyOutfitCommands(response);
-            
+
             // Success message
             if (areSystemMessagesEnabled()) {
                 this.sendSystemMessage('Outfit generated and applied successfully!');
@@ -416,7 +420,6 @@ export class BotOutfitPanel {
     }
 
 
-
     /**
      * Formats a slot name for display
      * @param {string} name - The slot name to format
@@ -432,13 +435,13 @@ export class BotOutfitPanel {
      */
     async getCharacterData() {
         const context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
-        
+
         if (!context || !context.characters || context.characterId === undefined || context.characterId === null) {
             return {
                 error: 'No character selected or context not ready'
             };
         }
-        
+
         const character = context.characters[context.characterId];
 
         if (!character) {
@@ -446,7 +449,7 @@ export class BotOutfitPanel {
                 error: 'Character not found'
             };
         }
-        
+
         // Get character information
         const characterInfo = {
             name: character.name || 'Unknown',
@@ -456,7 +459,7 @@ export class BotOutfitPanel {
             firstMessage: character.first_message || '',
             characterNotes: character.character_notes || '',
         };
-        
+
         // Get the first message from the current chat if it's different from the character's first_message
         if (context.chat && context.chat.length > 0) {
             const firstChatMessage = context.chat.find(msg => !msg.is_user && !msg.is_system);
@@ -465,7 +468,7 @@ export class BotOutfitPanel {
                 characterInfo.firstMessage = firstChatMessage.mes;
             }
         }
-        
+
         return characterInfo;
     }
 
@@ -500,7 +503,7 @@ INSTRUCTIONS:
         try {
             // Get the current system prompt or use the default
             let prompt = this.getDefaultOutfitPrompt();
-            
+
             // Replace placeholders with actual character info
             prompt = prompt
                 .replace('<CHARACTER_NAME>', characterInfo.name)
@@ -509,14 +512,14 @@ INSTRUCTIONS:
                 .replace('<CHARACTER_SCENARIO>', characterInfo.scenario)
                 .replace('<CHARACTER_NOTES>', characterInfo.characterNotes)
                 .replace('<CHARACTER_FIRST_MESSAGE>', characterInfo.firstMessage);
-            
+
             // Check if there is a connection profile set for the auto outfit system
             let connectionProfile = null;
 
             if (window.autoOutfitSystem && typeof window.autoOutfitSystem.getConnectionProfile === 'function') {
                 connectionProfile = window.autoOutfitSystem.getConnectionProfile();
             }
-            
+
             // Use the unified LLM utility with profile if available
             return await LLMUtility.generateWithProfile(
                 prompt,
@@ -533,14 +536,14 @@ INSTRUCTIONS:
     async parseAndApplyOutfitCommands(response) {
         // Use the imported extractCommands function to extract outfit commands
         const commands = extractCommands(response);
-        
+
         if (!commands || commands.length === 0) {
             console.log('[BotOutfitPanel] No outfit commands found in response');
             return;
         }
-        
+
         console.log(`[BotOutfitPanel] Found ${commands.length} commands to process:`, commands);
-        
+
         // Process each command
         for (const command of commands) {
             try {
@@ -549,10 +552,10 @@ INSTRUCTIONS:
                 console.error(`Error processing command "${command}":`, error);
             }
         }
-        
+
         // Update the outfit panel UI
         this.renderContent();
-        
+
         // Save the settings
         this.saveSettingsDebounced();
     }
@@ -563,7 +566,7 @@ INSTRUCTIONS:
             if (!command.startsWith('outfit-system_')) {
                 throw new Error(`Invalid command format: ${command}`);
             }
-            
+
             // Extract the action part
             const actionStart = 'outfit-system_'.length;
             const actionEnd = command.indexOf('_', actionStart);
@@ -571,13 +574,13 @@ INSTRUCTIONS:
             if (actionEnd === -1) {
                 throw new Error(`Invalid command format: ${command}`);
             }
-            
+
             const action = command.substring(actionStart, actionEnd);
 
             if (!['wear', 'remove', 'change'].includes(action)) {
                 throw new Error(`Invalid action: ${action}. Valid actions: wear, remove, change`);
             }
-            
+
             // Extract the slot part
             const slotStart = actionEnd + 1;
             const slotEnd = command.indexOf('(', slotStart);
@@ -585,21 +588,21 @@ INSTRUCTIONS:
             if (slotEnd === -1) {
                 throw new Error(`Invalid command format: ${command}`);
             }
-            
+
             const slot = command.substring(slotStart, slotEnd);
-            
+
             // Extract the value part
             const valueStart = slotEnd + 1;
             let value = '';
-            
+
             if (command.charAt(valueStart) === '"') { // If value is quoted
                 const quoteStart = valueStart + 1;
                 let i = quoteStart;
                 let escaped = false;
-                
+
                 while (i < command.length - 1) {
                     const char = command.charAt(i);
-                    
+
                     if (escaped) {
                         value += char;
                         escaped = false;
@@ -610,7 +613,7 @@ INSTRUCTIONS:
                     } else {
                         value += char;
                     }
-                    
+
                     i++;
                 }
             } else {
@@ -621,19 +624,19 @@ INSTRUCTIONS:
                     value = command.substring(valueStart, closingParen);
                 }
             }
-            
+
             const cleanValue = value.split('"').join('').trim();
-            
+
             console.log(`[BotOutfitPanel] Processing: ${action} ${slot} "${cleanValue}"`);
-            
+
             // Apply the outfit change to the bot manager
             const message = await this.outfitManager.setOutfitItem(slot, action === 'remove' ? 'None' : cleanValue);
-            
+
             // Show system message if enabled
             if (message && areSystemMessagesEnabled()) {
                 this.sendSystemMessage(message);
             }
-            
+
         } catch (error) {
             console.error('Error processing single command:', error);
             throw error;
@@ -653,7 +656,6 @@ INSTRUCTIONS:
     }
 
 
-
     /**
      * Shows the panel UI
      * @returns {void}
@@ -662,7 +664,7 @@ INSTRUCTIONS:
         if (!this.domElement) {
             this.domElement = this.createPanel();
         }
-        
+
         this.renderContent();
         this.domElement.style.display = 'flex';
         this.applyPanelColors(); // Apply colors after showing
@@ -682,7 +684,7 @@ INSTRUCTIONS:
                     maxHeight: 800
                 });
             }, 10); // Small delay to ensure panel is rendered first
-            
+
             this.domElement.querySelector('#bot-outfit-refresh')?.addEventListener('click', () => {
                 const outfitInstanceId = this.outfitManager.getOutfitInstanceId();
 
@@ -717,7 +719,7 @@ INSTRUCTIONS:
             this.domElement.style.display = 'none';
         }
         this.isVisible = false;
-        
+
         // Clean up dynamic refresh when panel is hidden
         this.cleanupDynamicRefresh();
     }
@@ -728,7 +730,7 @@ INSTRUCTIONS:
         if (!this.domElement) {
             this.createPanel();
         }
-        
+
         if (this.domElement) {
             const header = this.domElement.querySelector('.outfit-header h3');
 
@@ -736,7 +738,7 @@ INSTRUCTIONS:
                 // Get the first message hash for display in the header (instance ID)
                 const messageHash = this.generateMessageHash(this.getFirstMessageText() || this.outfitManager.getOutfitInstanceId() || '');
                 const hashDisplay = messageHash ? ` (${messageHash})` : '';
-                
+
                 // Use the name parameter or the manager's character property
                 const formattedName = name || this.outfitManager.character || 'Unknown';
 
@@ -769,7 +771,7 @@ INSTRUCTIONS:
                                 break;
                             }
                         }
-                        
+
                         if (hasChanged && this.isVisible) {
                             this.renderContent();
                         }
@@ -782,7 +784,7 @@ INSTRUCTIONS:
         const context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
 
         if (context && context.eventSource && context.event_types) {
-            const { eventSource, event_types } = context;
+            const {eventSource, event_types} = context;
 
             // Listen for chat-related events that might affect outfit data
             this.eventListeners.push(() => eventSource.on(event_types.CHAT_CHANGED, () => {
@@ -794,7 +796,7 @@ INSTRUCTIONS:
                     this.renderContent();
                 }
             }));
-            
+
             this.eventListeners.push(() => eventSource.on(event_types.CHAT_ID_CHANGED, () => {
                 if (this.isVisible) {
                     this.updateCharacter(this.outfitManager.character);
@@ -814,7 +816,7 @@ INSTRUCTIONS:
                     this.renderContent();
                 }
             }));
-            
+
             this.eventListeners.push(() => eventSource.on(event_types.MESSAGE_RECEIVED, () => {
                 if (this.isVisible) {
                     this.renderContent();
@@ -842,11 +844,15 @@ INSTRUCTIONS:
 
     // Generate a short identifier from the instance ID
     generateShortId(instanceId) {
-        if (!instanceId) {return '';}
-        
+        if (!instanceId) {
+            return '';
+        }
+
         // If the instance ID is already a short identifier, return it
-        if (instanceId.startsWith('temp_')) {return 'temp';}
-        
+        if (instanceId.startsWith('temp_')) {
+            return 'temp';
+        }
+
         // Create a simple short identifier by taking up to 6 characters of the instance ID
         // but only alphanumeric characters for better readability
         let cleanId = '';
@@ -868,28 +874,30 @@ INSTRUCTIONS:
             // Check if character is lowercase letter a-z
             if (code >= 97 && code <= 122) {
                 cleanId += char;
-                continue;
+
             }
             // Otherwise, skip non-alphanumeric characters
         }
 
         return cleanId.substring(0, 6);
     }
-    
+
     // Generate an 8-character hash from a text string
     generateMessageHash(text) {
-        if (!text) {return '';}
-        
+        if (!text) {
+            return '';
+        }
+
         let hash = 0;
         const str = text.substring(0, 100); // Only use first 100 chars to keep ID manageable
-        
+
         for (let i = 0; i < str.length; i++) {
             const char = str.charCodeAt(i);
 
             hash = ((hash << 5) - hash) + char;
             hash &= hash; // Convert to 32-bit integer
         }
-        
+
         // Convert to positive and return 8-character string representation
         return Math.abs(hash).toString(36).substring(0, 8).padEnd(8, '0');
     }
