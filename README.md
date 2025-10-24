@@ -205,95 +205,112 @@ position in the conversation context. When outfits are set, they appear in the c
 > 💡 **This injection happens automatically** - no need to add any variables to your character card unless you want to
 > reference them elsewhere in your prompt.
 
-## 🏷️ Manual Variable Reference (Advanced)
+## 🏷️ Custom Macro System (Advanced)
 
-If you need to manually reference outfit variables in your character card or prompts, you can use the global variable
-macros. The system supports the following format: `{{getglobalvar::<BOT>_slot}}` for character outfits and
-`{{getglobalvar::User_slot}}` for user outfits.
+The extension now uses a custom macro system that replaces the legacy global variable approach. Instead of using
+`{{getglobalvar::<BOT>_slot}}` format, the system registers custom macros that can be used directly in prompts and
+character cards.
 
-Write `<BOT>` for character's outfit. Instead of `<BOT>` you can also write a character's own name such as
-`{{getglobalvar::Emma_headwear}}`. If you set Emma's headwear as "Red Baseball Hat" then if you write
-`{{getglobalvar::Emma_headwear}}` to somewhere, it will appear as "Red Baseball Hat". You can simply write `<BOT>`
-instead of "Emma" and it'll automatically replace `<BOT>` with name of current active character. These variable macros
-work just like how `{{user}}` or `{{char}}` macros work.
+### Basic Macros
 
-> ⚠️ **Important:** The `<BOT>` placeholder in outfit display text is automatically replaced with the actual character's
-> name during context injection. The global variable format `{{getglobalvar::<BOT>_slot}}` uses `<BOT>` as a placeholder
-> that gets replaced with the character name during processing.
+| Macro      | Description              |
+|------------|--------------------------|
+| `{{char}}` | Current character's name |
+| `{{user}}` | Current user's name      |
 
-> 💡 **User's variable names are always the same. They always use "User_" regardless of your persona name.**
+### Outfit Slot Macros
 
-> ⚠️ **Important Scope Note:** The `<BOT>` placeholder replacement and global variable processing (
-`{{getglobalvar::*}}`)
-> only works in conversation context and generated responses, NOT in character card fields (description, personality,
-> scenario, etc.). For character card fields, SillyTavern's core macro system handles replacement, which processes
-> `{{char}}`, `{{user}}`, etc., but not the extension's custom macros. Global variables will only work in character
-> cards
-> if SillyTavern's core macro system is configured to process them.
+The system dynamically registers outfit slot macros for both the current character and user. Each slot can be referenced
+using the format `{{prefix_slot}}`:
 
-Additionally, the system now features an intelligent macro resolution that automatically maps these familiar variable
-formats to context-specific outfit instances. This means that when you use `{{getglobalvar::<BOT>_headwear}}` or a
-character-specific variable like `{{getglobalvar::Emma_headwear}}`, the system automatically resolves it to the
-appropriate outfit instance for the current conversation context. This ensures that outfits are properly tracked and
-maintained across different scenarios and conversation threads.
+#### Character Outfit Macros
 
-### Character Clothing Slots
+| Macro Format               | Description                              |
+|----------------------------|------------------------------------------|
+| `{{char_headwear}}`        | Current character's headwear             |
+| `{{char_topwear}}`         | Current character's top clothing         |
+| `{{char_topunderwear}}`    | Current character's top undergarments    |
+| `{{char_bottomwear}}`      | Current character's bottom clothing      |
+| `{{char_bottomunderwear}}` | Current character's bottom undergarments |
+| `{{char_footwear}}`        | Current character's footwear             |
+| `{{char_footunderwear}}`   | Current character's foot undergarments   |
 
-| Variable                                  | Description                      |
-|-------------------------------------------|----------------------------------|
-| `{{getglobalvar::<BOT>_headwear}}`        | Character's headwear             |
-| `{{getglobalvar::<BOT>_topwear}}`         | Character's top clothing         |
-| `{{getglobalvar::<BOT>_topunderwear}}`    | Character's top undergarments    |
-| `{{getglobalvar::<BOT>_bottomwear}}`      | Character's bottom clothing      |
-| `{{getglobalvar::<BOT>_bottomunderwear}}` | Character's bottom undergarments |
-| `{{getglobalvar::<BOT>_footwear}}`        | Character's footwear             |
-| `{{getglobalvar::<BOT>_footunderwear}}`   | Character's foot undergarments   |
+#### Character Accessory Macros
 
-### Character Accessory Slots
+| Macro Format                | Description                            |
+|-----------------------------|----------------------------------------|
+| `{{char_head-accessory}}`   | Current character's head accessories   |
+| `{{char_ears-accessory}}`   | Current character's ear accessories    |
+| `{{char_eyes-accessory}}`   | Current character's eye accessories    |
+| `{{char_mouth-accessory}}`  | Current character's mouth accessories  |
+| `{{char_neck-accessory}}`   | Current character's neck accessories   |
+| `{{char_body-accessory}}`   | Current character's body accessories   |
+| `{{char_arms-accessory}}`   | Current character's arm accessories    |
+| `{{char_hands-accessory}}`  | Current character's hand accessories   |
+| `{{char_waist-accessory}}`  | Current character's waist accessories  |
+| `{{char_bottom-accessory}}` | Current character's bottom accessories |
+| `{{char_legs-accessory}}`   | Current character's leg accessories    |
+| `{{char_foot-accessory}}`   | Current character's foot accessories   |
 
-| Variable                                   | Description                    |
-|--------------------------------------------|--------------------------------|
-| `{{getglobalvar::<BOT>_head-accessory}}`   | Character's head accessories   |
-| `{{getglobalvar::<BOT>_ears-accessory}}`   | Character's ear accessories    |
-| `{{getglobalvar::<BOT>_eyes-accessory}}`   | Character's eye accessories    |
-| `{{getglobalvar::<BOT>_mouth-accessory}}`  | Character's mouth accessories  |
-| `{{getglobalvar::<BOT>_neck-accessory}}`   | Character's neck accessories   |
-| `{{getglobalvar::<BOT>_body-accessory}}`   | Character's body accessories   |
-| `{{getglobalvar::<BOT>_arms-accessory}}`   | Character's arm accessories    |
-| `{{getglobalvar::<BOT>_hands-accessory}}`  | Character's hand accessories   |
-| `{{getglobalvar::<BOT>_waist-accessory}}`  | Character's waist accessories  |
-| `{{getglobalvar::<BOT>_bottom-accessory}}` | Character's bottom accessories |
-| `{{getglobalvar::<BOT>_legs-accessory}}`   | Character's leg accessories    |
-| `{{getglobalvar::<BOT>_foot-accessory}}`   | Character's foot accessories   |
+#### User Outfit Macros
 
-### User Clothing Slots
+| Macro Format               | Description                         |
+|----------------------------|-------------------------------------|
+| `{{user_headwear}}`        | Current user's headwear             |
+| `{{user_topwear}}`         | Current user's top clothing         |
+| `{{user_topunderwear}}`    | Current user's top undergarments    |
+| `{{user_bottomwear}}`      | Current user's bottom clothing      |
+| `{{user_bottomunderwear}}` | Current user's bottom undergarments |
+| `{{user_footwear}}`        | Current user's footwear             |
+| `{{user_footunderwear}}`   | Current user's foot undergarments   |
 
-| Variable                                 | Description                 |
-|------------------------------------------|-----------------------------|
-| `{{getglobalvar::User_headwear}}`        | User's headwear             |
-| `{{getglobalvar::User_topwear}}`         | User's top clothing         |
-| `{{getglobalvar::User_topunderwear}}`    | User's top undergarments    |
-| `{{getglobalvar::User_bottomwear}}`      | User's bottom clothing      |
-| `{{getglobalvar::User_bottomunderwear}}` | User's bottom undergarments |
-| `{{getglobalvar::User_footwear}}`        | User's footwear             |
-| `{{getglobalvar::User_footunderwear}}`   | User's foot undergarments   |
+#### User Accessory Macros
 
-### User Accessory Slots
+| Macro Format                | Description                       |
+|-----------------------------|-----------------------------------|
+| `{{user_head-accessory}}`   | Current user's head accessories   |
+| `{{user_ears-accessory}}`   | Current user's ear accessories    |
+| `{{user_eyes-accessory}}`   | Current user's eye accessories    |
+| `{{user_mouth-accessory}}`  | Current user's mouth accessories  |
+| `{{user_neck-accessory}}`   | Current user's neck accessories   |
+| `{{user_body-accessory}}`   | Current user's body accessories   |
+| `{{user_arms-accessory}}`   | Current user's arm accessories    |
+| `{{user_hands-accessory}}`  | Current user's hand accessories   |
+| `{{user_waist-accessory}}`  | Current user's waist accessories  |
+| `{{user_bottom-accessory}}` | Current user's bottom accessories |
+| `{{user_legs-accessory}}`   | Current user's leg accessories    |
+| `{{user_foot-accessory}}`   | Current user's foot accessories   |
 
-| Variable                                  | Description               |
-|-------------------------------------------|---------------------------|
-| `{{getglobalvar::User_head-accessory}}`   | User's head accessories   |
-| `{{getglobalvar::User_ears-accessory}}`   | User's ear accessories    |
-| `{{getglobalvar::User_eyes-accessory}}`   | User's eye accessories    |
-| `{{getglobalvar::User_mouth-accessory}}`  | User's mouth accessories  |
-| `{{getglobalvar::User_neck-accessory}}`   | User's neck accessories   |
-| `{{getglobalvar::User_body-accessory}}`   | User's body accessories   |
-| `{{getglobalvar::User_arms-accessory}}`   | User's arm accessories    |
-| `{{getglobalvar::User_hands-accessory}}`  | User's hand accessories   |
-| `{{getglobalvar::User_waist-accessory}}`  | User's waist accessories  |
-| `{{getglobalvar::User_bottom-accessory}}` | User's bottom accessories |
-| `{{getglobalvar::User_legs-accessory}}`   | User's leg accessories    |
-| `{{getglobalvar::User_foot-accessory}}`   | User's foot accessories   |
+### Character-Specific Macros
+
+The system also registers macros for specific character names. For example, if your character's name is "Emma", the
+following macros will be available:
+
+| Macro Format                | Description                 |
+|-----------------------------|-----------------------------|
+| `{{Emma}}`                  | Character name "Emma"       |
+| `{{Emma_headwear}}`         | Emma's headwear             |
+| `{{Emma_topwear}}`          | Emma's top clothing         |
+| `{{Emma_topunderwear}}`     | Emma's top undergarments    |
+| `{{Emma_bottomwear}}`       | Emma's bottom clothing      |
+| `{{Emma_bottomunderwear}}`  | Emma's bottom undergarments |
+| `{{Emma_footwear}}`         | Emma's footwear             |
+| `{{Emma_footunderwear}}`    | Emma's foot undergarments   |
+| `{{Emma_head-accessory}}`   | Emma's head accessories     |
+| `{{Emma_ears-accessory}}`   | Emma's ear accessories      |
+| `{{Emma_eyes-accessory}}`   | Emma's eye accessories      |
+| `{{Emma_mouth-accessory}}`  | Emma's mouth accessories    |
+| `{{Emma_neck-accessory}}`   | Emma's neck accessories     |
+| `{{Emma_body-accessory}}`   | Emma's body accessories     |
+| `{{Emma_arms-accessory}}`   | Emma's arm accessories      |
+| `{{Emma_hands-accessory}}`  | Emma's hand accessories     |
+| `{{Emma_waist-accessory}}`  | Emma's waist accessories    |
+| `{{Emma_bottom-accessory}}` | Emma's bottom accessories   |
+| `{{Emma_legs-accessory}}`   | Emma's leg accessories      |
+| `{{Emma_foot-accessory}}`   | Emma's foot accessories     |
+
+> 💡 **Note:** The custom macro system registers these dynamic macros automatically when the extension loads, making them
+> available throughout SillyTavern where macro substitution is supported.
 
 ## 👨‍💻 Development
 

@@ -28,6 +28,8 @@ export class AutoOutfitSystem {
         this.currentRetryCount = 0;
         this.appInitialized = false;
         this.lastSuccessfulProcessing = null;
+        this.llmOutput = '';
+        this.generatedCommands = [];
     }
 
     /**
@@ -35,28 +37,78 @@ export class AutoOutfitSystem {
      * @returns {string} The default system prompt used for outfit detection by the LLM
      */
     getDefaultPrompt() {
-        return `Analyze the recent conversation for any mentions of the character putting on, wearing, removing, or changing clothing items or accessories.
-        
-CONTEXT:
+        return `You are a sophisticated outfit management AI. Your task is to analyze conversation snippets and identify any changes to a character's clothing or accessories. Based on your analysis, you must output a series of commands to update the character's outfit accordingly.
+
+**CONTEXT**
 Current outfit for {{char}}:
-{{char_headwear}} | {{char_topwear}} | {{char_topunderwear}} | {{char_bottomwear}} | {{char_bottomunderwear}} | {{char_footwear}} | {{char_footunderwear}}
-Accessories: {{char_head-accessory}} | {{char_ears-accessory}} | {{char_eyes-accessory}} | {{char_mouth-accessory}} | {{char_neck-accessory}} | {{char_body-accessory}} | {{char_arms-accessory}} | {{char_hands-accessory}} | {{char_waist-accessory}} | {{char_bottom-accessory}} | {{char_legs-accessory}} | {{char_foot-accessory}}
+- Headwear: {{char_headwear}}
+- Topwear: {{char_topwear}}
+- Top Underwear: {{char_topunderwear}}
+- Bottomwear: {{char_bottomwear}}
+- Bottom Underwear: {{char_bottomunderwear}}
+- Footwear: {{char_footwear}}
+- Foot Underwear: {{char_footunderwear}}
+- Accessories:
+  - Head: {{char_head-accessory}}
+  - Ears: {{char_ears-accessory}}
+  - Eyes: {{char_eyes-accessory}}
+  - Mouth: {{char_mouth-accessory}}
+  - Neck: {{char_neck-accessory}}
+  - Body: {{char_body-accessory}}
+  - Arms: {{char_arms-accessory}}
+  - Hands: {{char_hands-accessory}}
+  - Waist: {{char_waist-accessory}}
+  - Bottom: {{char_bottom-accessory}}
+  - Legs: {{char_legs-accessory}}
+  - Foot: {{char_foot-accessory}}
 
-TASK:
-If clothing/accessory changes occur, output only outfit-system commands (one per line) in this exact format:
-outfit-system_wear_headwear("item name")
-outfit-system_remove_topwear()
-outfit-system_change_bottomwear("new item name")
+**TASK**
+Based on the provided conversation, generate a sequence of commands to reflect any and all changes to the character's outfit.
 
-SLOTS:
-Clothing: headwear, topwear, topunderwear, bottomwear, bottomunderwear, footwear, footunderwear
-Accessories: head-accessory, ears-accessory, eyes-accessory, mouth-accessory, neck-accessory, body-accessory, arms-accessory, hands-accessory, waist-accessory, bottom-accessory, legs-accessory, foot-accessory
+**COMMANDS**
+You have the following commands at your disposal:
+- 'outfit-system_wear_<slot>("item name")': To put on a new item.
+- 'outfit-system_remove_<slot>()': To take off an item.
+- 'outfit-system_change_<slot>("new item name")': To modify an existing item (e.g., from "White Blouse" to "White Blouse (unbuttoned)").
+- 'outfit-system_replace_<slot>("new item name")': To replace an existing item with a new one.
+- 'outfit-system_unequip_<slot>()': To remove an item from a specific slot.
 
-NOTES:
-- Only output commands for explicit clothing changes
-- Use "change" to modify existing items ("White Blouse" to "White Blouse (unbuttoned)")
-- If no changes detected, output: [none]
-- Output only commands, no explanations`;
+**SLOTS**
+- Clothing: 'headwear', 'topwear', 'topunderwear', 'bottomwear', 'bottomunderwear', 'footwear', 'footunderwear'
+- Accessories: 'head-accessory', 'ears-accessory', 'eyes-accessory', 'mouth-accessory', 'neck-accessory', 'body-accessory', 'arms-accessory', 'hands-accessory', 'waist-accessory', 'bottom-accessory', 'legs-accessory', 'foot-accessory'
+
+**INSTRUCTIONS**
+- Only output commands for explicit clothing changes.
+- If no changes are detected, output only '[none]'.
+- Do not include any explanations or conversational text in your output.
+- Ensure that the item names are enclosed in double quotes.
+
+**EXAMPLES**
+- **User:** I'm feeling a bit cold.
+  **{{char}}:** I'll put on my favorite sweater.
+  **Output:**
+  'outfit-system_wear_topwear("Favorite Sweater")'
+
+- **User:** Your shoes are untied.
+  **{{char}}:** Oh, thanks for letting me know. I'll take them off and tie them properly.
+  **Output:**
+  'outfit-system_remove_footwear()'
+
+- **User:** That's a nice hat.
+  **{{char}}:** Thanks! It's new. I'll take it off for a moment to show you.
+  **Output:**
+  'outfit-system_unequip_headwear()'
+
+- **User:** I like your shirt.
+  **{{char}}:** Thanks! I think I'll unbutton it a bit.
+  **Output:**
+  'outfit-system_change_topwear("Shirt (unbuttoned)")'
+
+- **User:** It's getting warm in here.
+  **{{char}}:** I agree. I'll take off my jacket and put on this t-shirt instead.
+  **Output:**
+  'outfit-system_replace_topwear("T-shirt")'
+`;
     }
 
     /**
@@ -240,9 +292,11 @@ NOTES:
         try {
             const result = await generateOutfitFromLLM({prompt: promptText}, this);
 
+            this.llmOutput = result; // Store the LLM output
             console.log('[AutoOutfitSystem] Generated result:', result);
 
             const commands = this.parseGeneratedText(result);
+            this.generatedCommands = commands; // Store the generated commands
 
             if (commands.length > 0) {
                 console.log(`[AutoOutfitSystem] Found ${commands.length} commands, processing...`);
@@ -257,6 +311,13 @@ NOTES:
             console.error('[AutoOutfitSystem] Generation failed:', error);
             throw error;
         }
+    }
+
+    getLlmOutput() {
+        return {
+            llmOutput: this.llmOutput,
+            generatedCommands: this.generatedCommands,
+        };
     }
 
     /**
@@ -299,9 +360,16 @@ NOTES:
 
         const successfulCommands = [];
         const failedCommands = [];
+        const lowConfidenceCommands = [];
 
         for (const command of commands) {
             try {
+                const confidence = this.calculateConfidenceScore(command);
+                if (confidence < 0.7) {
+                    lowConfidenceCommands.push({command, confidence});
+                    continue;
+                }
+
                 const result = await this.processSingleCommand(command);
 
                 if (result.success) {
@@ -338,7 +406,46 @@ NOTES:
             console.warn(`[AutoOutfitSystem] ${failedCommands.length} commands failed:`, failedCommands);
         }
 
-        console.log(`[AutoOutfitSystem] Batch completed: ${successfulCommands.length} successful, ${failedCommands.length} failed`);
+        if (lowConfidenceCommands.length > 0) {
+            console.warn(`[AutoOutfitSystem] ${lowConfidenceCommands.length} commands with low confidence were ignored:`, lowConfidenceCommands);
+        }
+
+        console.log(`[AutoOutfitSystem] Batch completed: ${successfulCommands.length} successful, ${failedCommands.length} failed, ${lowConfidenceCommands.length} low confidence`);
+    }
+
+    /**
+     * Calculate a confidence score for a generated command
+     * @param {string} command - The command to analyze
+     * @returns {number} A confidence score between 0 and 1
+     */
+    calculateConfidenceScore(command) {
+        const parsed = this.parseCommand(command);
+        if (!parsed) {
+            return 0;
+        }
+
+        let score = 0;
+        const {action, slot, value} = parsed;
+
+        // Base score for a valid command structure
+        score += 0.5;
+
+        // Increase score for valid actions
+        if (['wear', 'remove', 'change', 'replace', 'unequip'].includes(action)) {
+            score += 0.2;
+        }
+
+        // Increase score for a valid slot
+        if (this.outfitManager.slots.includes(slot)) {
+            score += 0.2;
+        }
+
+        // Increase score if value is present for actions that require it
+        if (value && ['wear', 'change', 'replace'].includes(action)) {
+            score += 0.1;
+        }
+
+        return Math.min(score, 1.0);
     }
 
     /**
@@ -371,109 +478,19 @@ NOTES:
             return null;
         }
 
-        // Check if command starts with 'outfit-system_'
-        if (!command.startsWith('outfit-system_')) {
+        const commandRegex = /^outfit-system_(wear|remove|change|replace|unequip)_([a-zA-Z0-9_-]+)\((?:"([^"]*)"|)\)$/;
+        const match = command.match(commandRegex);
+
+        if (!match) {
             return null;
         }
 
-        // Find the first underscore after 'outfit-system_'
-        let index = 'outfit-system_'.length;
-        const actionStart = index;
-        const firstUnderscoreAfterSystem = command.indexOf('_', index);
-
-        if (firstUnderscoreAfterSystem === -1) {
-            return null; // No action found
-        }
-
-        const action = command.substring(actionStart, firstUnderscoreAfterSystem);
-
-        // Check if action is valid
-        if (!['wear', 'remove', 'change'].includes(action)) {
-            return null;
-        }
-
-        const slotStart = firstUnderscoreAfterSystem + 1;
-        const parenIndex = command.indexOf('(', slotStart);
-
-        if (parenIndex === -1) {
-            return null; // No opening parenthesis found
-        }
-
-        const slot = command.substring(slotStart, parenIndex);
-
-        // Validate slot name - check if it contains only valid characters
-        if (!this.isValidSlotName(slot)) {
-            return null;
-        }
-
-        // Extract the value inside parentheses
-        const parenStart = parenIndex + 1;
-
-        // Check if it's an empty call like outfit-system_remove_headwear()
-        if (command[parenStart] === ')') {
-            return {
-                action,
-                slot,
-                value: ''
-            };
-        }
-
-        // Check if it starts with a quote
-        if (command[parenStart] !== '"') {
-            return null; // Invalid format
-        }
-
-        const valueStart = parenStart + 1;
-        let valueEnd = -1;
-
-        // Find the closing quote, handling escaped quotes
-        let i = valueStart;
-
-        while (i < command.length - 1) { // -1 to account for last char being 
-            if (command[i] === '"') {
-                // Check if this quote is not escaped (i.e., not preceded by a backslash)
-                let backslashes = 0;
-                let j = i - 1;
-
-                while (j >= 0 && command[j] === '\\') {
-                    backslashes++;
-                    j--;
-                }
-
-                // If even number of backslashes before quote, it's not escaped
-                if (backslashes % 2 === 0) {
-                    valueEnd = i;
-                    break;
-                }
-            }
-            i++;
-        }
-
-        if (valueEnd === -1) {
-            return null; // No closing quote found
-        }
-
-        const value = command.substring(valueStart, valueEnd);
-
-        // Check if the quote is followed by a closing parenthesis
-        if (command[valueEnd + 1] !== ')') {
-            return null; // Invalid format
-        }
-
-        // Ensure the command ends with ')', or has nothing after ')'
-        if (valueEnd + 2 < command.length) {
-            // Allow whitespace after the closing parenthesis
-            const remaining = command.substring(valueEnd + 2).trim();
-
-            if (remaining !== '') {
-                return null; // Invalid format
-            }
-        }
+        const [, action, slot, value] = match;
 
         return {
             action,
             slot,
-            value
+            value: value || ''
         };
     }
 
@@ -585,11 +602,19 @@ NOTES:
             throw new Error(`Invalid slot: ${slot}. Valid slots: ${validSlots.join(', ')}`);
         }
 
-        if (!['wear', 'remove', 'change'].includes(action)) {
-            throw new Error(`Invalid action: ${action}. Valid actions: wear, remove, change`);
+        const validActions = ['wear', 'remove', 'change', 'replace', 'unequip'];
+        if (!validActions.includes(action)) {
+            throw new Error(`Invalid action: ${action}. Valid actions: ${validActions.join(', ')}`);
         }
 
-        return this.outfitManager.setOutfitItem(slot, action === 'remove' ? 'None' : value);
+        let finalAction = action;
+        if (action === 'replace') {
+            finalAction = 'change';
+        } else if (action === 'unequip') {
+            finalAction = 'remove';
+        }
+
+        return this.outfitManager.setOutfitItem(slot, finalAction === 'remove' ? 'None' : value);
     }
 
     /**

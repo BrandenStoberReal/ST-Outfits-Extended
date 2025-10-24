@@ -180,6 +180,20 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem, context) {
                     <h4>${hasAutoSystem ? 'Auto Outfit Settings' : 'Advanced Settings'}</h4>
                     ${autoSettingsHtml}
                 </div>
+                <div class="setting-group">
+                    <h4>LLM Output</h4>
+                    <div class="flex-container setting-row">
+                        <label for="outfit-llm-output">LLM Output:</label>
+                        <textarea id="outfit-llm-output" readonly></textarea>
+                    </div>
+                    <div class="flex-container setting-row">
+                        <label>Generated Commands:</label>
+                        <ul id="outfit-generated-commands"></ul>
+                    </div>
+                    <div class="flex-container">
+                        <button id="outfit-process-btn" class="menu_button">Process</button>
+                    </div>
+                </div>
                 
                 <div class="setting-group">
                     <h4>Data Management</h4>
@@ -973,4 +987,74 @@ Full length: ${status.promptLength} characters`, 'Current System Prompt', {
             }
         }
     });
+
+    // Add event listener for the outfit process button
+    $('#outfit-process-btn').on('click', async function () {
+        if (hasAutoSystem && autoOutfitSystem) {
+            try {
+                // Show a processing message
+                toastr.info('Processing outfit changes from recent messages...', 'Outfit Processing');
+
+                // Manually trigger the LLM analysis
+                await autoOutfitSystem.manualTrigger();
+
+                // Get the LLM output and generated commands
+                const llmOutputData = autoOutfitSystem.getLlmOutput();
+
+                if (llmOutputData) {
+                    // Update the LLM output textarea
+                    $('#outfit-llm-output').val(llmOutputData.llmOutput || 'No output generated');
+
+                    // Update the generated commands list
+                    const $commandsList = $('#outfit-generated-commands');
+                    $commandsList.empty(); // Clear existing items
+
+                    if (llmOutputData.generatedCommands && llmOutputData.generatedCommands.length > 0) {
+                        llmOutputData.generatedCommands.forEach(cmd => {
+                            $commandsList.append(`<li>${cmd}</li>`);
+                        });
+                    } else {
+                        $commandsList.append('<li>No commands generated</li>');
+                    }
+
+                    toastr.success('Outfit processing completed. See results in the LLM Output section.', 'Processing Complete');
+                } else {
+                    $('#outfit-llm-output').val('No output data available');
+                    $('#outfit-generated-commands').empty().append('<li>No commands generated</li>');
+                    toastr.warning('No output data returned from the system.', 'No Data');
+                }
+            } catch (error) {
+                console.error('Error during outfit processing:', error);
+                $('#outfit-llm-output').val(`Error: ${error.message}`);
+                $('#outfit-generated-commands').empty().append(`<li>Error: ${error.message}</li>`);
+                toastr.error(`Outfit processing failed: ${error.message}`, 'Processing Error');
+            }
+        } else {
+            toastr.error('Auto outfit system is not available.', 'System Unavailable');
+        }
+    });
+
+    // Initialize LLM output display if auto outfit system is available
+    if (hasAutoSystem && autoOutfitSystem) {
+        // Try to get initial LLM output (if available)
+        try {
+            const llmOutputData = autoOutfitSystem.getLlmOutput();
+            if (llmOutputData) {
+                $('#outfit-llm-output').val(llmOutputData.llmOutput || 'No output generated');
+
+                const $commandsList = $('#outfit-generated-commands');
+                $commandsList.empty();
+
+                if (llmOutputData.generatedCommands && llmOutputData.generatedCommands.length > 0) {
+                    llmOutputData.generatedCommands.forEach(cmd => {
+                        $commandsList.append(`<li>${cmd}</li>`);
+                    });
+                } else {
+                    $commandsList.append('<li>No commands generated</li>');
+                }
+            }
+        } catch (error) {
+            console.error('Error initializing LLM output display:', error);
+        }
+    }
 }

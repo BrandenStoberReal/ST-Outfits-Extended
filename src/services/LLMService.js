@@ -13,75 +13,28 @@ import {extractCommands} from '../utils/StringProcessor.js';
  */
 async function processSingleCommand(command, botManager) {
     try {
-        // Non-regex approach to parse command - similar to AutoOutfitSystem
-        if (!command.startsWith('outfit-system_')) {
+        const commandRegex = /^outfit-system_(wear|remove|change|replace|unequip)_([a-zA-Z0-9_-]+)\((?:"([^"]*)"|)\)$/;
+        const match = command.match(commandRegex);
+
+        if (!match) {
             throw new Error(`Invalid command format: ${command}`);
         }
 
-        // Extract the action part
-        const actionStart = 'outfit-system_'.length;
-        const actionEnd = command.indexOf('_', actionStart);
-
-        if (actionEnd === -1) {
-            throw new Error(`Invalid command format: ${command}`);
-        }
-
-        const action = command.substring(actionStart, actionEnd);
-
-        if (!['wear', 'remove', 'change'].includes(action)) {
-            throw new Error(`Invalid action: ${action}. Valid actions: wear, remove, change`);
-        }
-
-        // Extract the slot part
-        const slotStart = actionEnd + 1;
-        const slotEnd = command.indexOf('(', slotStart);
-
-        if (slotEnd === -1) {
-            throw new Error(`Invalid command format: ${command}`);
-        }
-
-        const slot = command.substring(slotStart, slotEnd);
-
-        // Extract the value part
-        const valueStart = slotEnd + 1;
-        let value = '';
-
-        if (command.charAt(valueStart) === '"') { // If value is quoted
-            const quoteStart = valueStart + 1;
-            let i = quoteStart;
-            let escaped = false;
-
-            while (i < command.length - 1) {
-                const char = command.charAt(i);
-
-                if (escaped) {
-                    value += char;
-                    escaped = false;
-                } else if (char === '\\') {
-                    escaped = true;
-                } else if (char === '"') {
-                    break; // Found closing quote
-                } else {
-                    value += char;
-                }
-
-                i++;
-            }
-        } else {
-            // Value is not quoted, extract until closing parenthesis
-            const closingParen = command.indexOf(')', valueStart);
-
-            if (closingParen !== -1) {
-                value = command.substring(valueStart, closingParen);
-            }
-        }
-
-        const cleanValue = value.split('"').join('').trim();
+        const [, action, slot, value] = match;
+        const cleanValue = value || '';
 
         console.log(`[LLMService] Processing: ${action} ${slot} "${cleanValue}"`);
 
+        let finalAction = action;
+
+        if (action === 'replace') {
+            finalAction = 'change';
+        } else if (action === 'unequip') {
+            finalAction = 'remove';
+        }
+
         // Apply the outfit change to the bot manager
-        await botManager.setOutfitItem(slot, action === 'remove' ? 'None' : cleanValue);
+        await botManager.setOutfitItem(slot, finalAction === 'remove' ? 'None' : cleanValue);
 
     } catch (error) {
         console.error('Error processing single command:', error);
