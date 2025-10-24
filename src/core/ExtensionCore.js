@@ -18,6 +18,7 @@ import {DataManager} from '../services/DataManager.js';
 import {OutfitDataService} from '../services/OutfitDataService.js';
 import {macroProcessor} from '../utils/MacroProcessor.js';
 import {debugLog} from '../utils/DebugLogger.js';
+import {settingsSync} from '../utils/SettingsSync.js';
 
 let AutoOutfitSystem;
 
@@ -288,6 +289,16 @@ export async function initializeExtension() {
     customMacroSystem.registerMacros(STContext);
     createSettingsUI(AutoOutfitSystem, autoOutfitSystem, STContext);
     debugLog('Extension components initialized', null, 'info');
+
+    // Register settings sync mechanism to ensure consistency
+    settingsSync.registerSettingsSaveListener(STContext, 'outfit_tracker');
+
+    // Check for desync and fix if necessary
+    const desyncCount = settingsSync.fixDesync(STContext.extensionSettings, 'outfit_tracker');
+
+    if (desyncCount > 0) {
+        debugLog(`Fixed ${desyncCount} desynced settings during initialization`, null, 'warn');
+    }
 
     // Pass the STContext to the event listeners setup
     setupEventListeners({

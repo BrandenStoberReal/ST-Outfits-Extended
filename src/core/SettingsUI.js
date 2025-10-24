@@ -698,10 +698,6 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem, context) {
             };
 
             saveSettingsFn();
-
-            // Update the outfit store with the new color settings
-            outfitStore.setSetting('botPanelColors', settings[MODULE_NAME].botPanelColors);
-            outfitStore.setSetting('userPanelColors', settings[MODULE_NAME].userPanelColors);
         }
 
         // Apply the new colors to the panels
@@ -724,12 +720,6 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem, context) {
             settings[MODULE_NAME].autoOpenUser = $('#outfit-auto-user').prop('checked');
             settings[MODULE_NAME].debugMode = $('#outfit-debug-mode').prop('checked');
             saveSettingsFn();
-
-            // Update the outfit store with the new settings
-            outfitStore.setSetting('debugMode', $('#outfit-debug-mode').prop('checked'));
-            outfitStore.setSetting('enableSysMessages', $('#outfit-sys-toggle').prop('checked'));
-            outfitStore.setSetting('autoOpenBot', $('#outfit-auto-bot').prop('checked'));
-            outfitStore.setSetting('autoOpenUser', $('#outfit-auto-user').prop('checked'));
         }
     });
 
@@ -948,9 +938,6 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem, context) {
                     autoOutfitSystem.disable();
                 }
                 saveSettingsFn();
-
-                // Update the outfit store with the new setting
-                outfitStore.setSetting('autoOutfitSystem', $(this).prop('checked'));
             }
         });
 
@@ -963,9 +950,6 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem, context) {
                     autoOutfitSystem.setConnectionProfile(profile);
                 }
                 saveSettingsFn();
-
-                // Update the outfit store with the new setting
-                outfitStore.setSetting('autoOutfitConnectionProfile', profile);
             }
         });
 
@@ -974,9 +958,6 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem, context) {
                 settings[MODULE_NAME].autoOutfitPrompt = $(this).val();
                 autoOutfitSystem.setPrompt($(this).val());
                 saveSettingsFn();
-
-                // Update the outfit store with the new setting
-                outfitStore.setSetting('autoOutfitPrompt', $(this).val());
             }
         });
 
