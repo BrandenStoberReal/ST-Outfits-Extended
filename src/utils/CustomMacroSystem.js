@@ -151,6 +151,7 @@ class CustomMacroSystem {
 
         // Check if we have a cached value that hasn't expired
         const cachedValue = this.macroValueCache.get(cacheKey);
+
         if (cachedValue && Date.now() - cachedValue.timestamp < this.cacheExpiryTime) {
             return cachedValue.value;
         }
@@ -259,6 +260,7 @@ class CustomMacroSystem {
                 if (charId !== null && charId !== undefined) {
                     const outfitData = outfitStore.getBotOutfit(charId.toString(), instanceId);
                     const result = outfitData[slotName] || 'None';
+
                     // Cache the result before returning
                     this._setCache(cacheKey, result);
                     return result;
@@ -266,6 +268,7 @@ class CustomMacroSystem {
             } else if (macroType === 'user') {
                 const outfitData = outfitStore.getUserOutfit(instanceId);
                 const result = outfitData[slotName] || 'None';
+
                 // Cache the result before returning
                 this._setCache(cacheKey, result);
                 return result;
@@ -276,6 +279,7 @@ class CustomMacroSystem {
 
         // If we reach here, cache and return 'None'
         const result = 'None';
+
         this._setCache(cacheKey, result);
         return result;
     }
