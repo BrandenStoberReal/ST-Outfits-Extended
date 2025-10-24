@@ -4,7 +4,22 @@ import { outfitStore } from '../common/Store.js';
 import { generateMessageHash } from '../utils/utilities.js';
 import { DataManager } from '../services/DataManager.js';
 
+/**
+ * EventSystem - Handles all event processing for the outfit tracker extension
+ * This class manages SillyTavern events, extension-specific events, and
+ * ensures proper outfit management during chat changes, message swipes, and chat resets
+ */
 class EventSystem {
+    /**
+     * Creates a new EventSystem instance
+     * @param {object} context - The context containing necessary manager instances and update functions
+     * @param {object} context.botManager - The bot outfit manager instance
+     * @param {object} context.userManager - The user outfit manager instance
+     * @param {object} context.autoOutfitSystem - The auto outfit system instance
+     * @param {Function} context.updateForCurrentCharacter - Function to update outfits for current character
+     * @param {Function} context.processMacrosInFirstMessage - Function to process macros in first message
+     * @param {object} [context.context] - The SillyTavern context (optional)
+     */
     constructor(context) {
         this.botManager = context.botManager;
         this.userManager = context.userManager;
@@ -19,6 +34,10 @@ class EventSystem {
         this.initialize();
     }
 
+    /**
+     * Initializes the event system by setting up the context and event listeners
+     * @returns {void}
+     */
     initialize() {
         // Use the provided context if available, otherwise try to get from window
         this.context = this.context || (window.SillyTavern?.getContext ? window.SillyTavern.getContext() : window.getContext());
@@ -37,6 +56,10 @@ class EventSystem {
         this.updateForCurrentCharacter();
     }
 
+    /**
+     * Sets up SillyTavern-specific event listeners
+     * @returns {void}
+     */
     setupSillyTavernEventListeners() {
         const { eventSource, event_types } = this.context;
 
@@ -46,10 +69,18 @@ class EventSystem {
         eventSource.on(event_types.MESSAGE_SWIPED, (index) => this.handleMessageSwiped(index));
     }
 
+    /**
+     * Sets up extension-specific event listeners
+     * @returns {void}
+     */
     setupExtensionEventListeners() {
         extensionEventBus.on(EXTENSION_EVENTS.CONTEXT_UPDATED, () => this.handleContextUpdate());
     }
 
+    /**
+     * Handles the APP_READY event
+     * @returns {void}
+     */
     handleAppReady() {
         console.log('[OutfitTracker] App ready, marking auto outfit system as initialized');
         if (this.autoOutfitSystem) {
@@ -61,6 +92,10 @@ class EventSystem {
         customMacroSystem.registerCharacterSpecificMacros(this.context);
     }
 
+    /**
+     * Handles the CHAT_CHANGED event
+     * @returns {void}
+     */
     handleChatChange() {
         if (this.context.chat?.length > 0) {
             // Check if the first AI message has actually changed before triggering update
@@ -93,6 +128,11 @@ class EventSystem {
         }
     }
 
+    /**
+     * Handles the MESSAGE_RECEIVED event
+     * @param {object} data - The message data received
+     * @returns {Promise<void>} A promise that resolves when the message has been processed
+     */
     async handleMessageReceived(data) {
         const chat = this.context.chat;
         const aiMessages = chat.filter(msg => !msg.is_user && !msg.is_system);
@@ -128,6 +168,11 @@ class EventSystem {
         }
     }
 
+    /**
+     * Handles the MESSAGE_SWIPED event
+     * @param {number} index - The index of the swiped message
+     * @returns {Promise<void>} A promise that resolves when the swipe has been processed
+     */
     async handleMessageSwiped(index) {
         console.log(`[OutfitTracker] MESSAGE_SWIPED event fired with index: ${index}`);
         const chat = this.context.chat;
@@ -175,6 +220,10 @@ class EventSystem {
         }
     }
 
+    /**
+     * Handles the CONTEXT_UPDATED event
+     * @returns {void}
+     */
     handleContextUpdate() {
         this.updateForCurrentCharacter();
         // Deregister and re-register character-specific macros when context updates
@@ -182,11 +231,20 @@ class EventSystem {
         customMacroSystem.registerCharacterSpecificMacros(this.context);
     }
     
+    /**
+     * Generates a hash for the given message text
+     * @param {string} text - The text to generate a hash for
+     * @returns {string} The generated hash value
+     */
     generateMessageHash(text) {
         // Use the imported utility function
         return generateMessageHash(text);
     }
 
+    /**
+     * Overrides the chat reset functionality to preserve outfit data
+     * @returns {void}
+     */
     overrideResetChat() {
         if (typeof window.restartLLM !== 'function') {
             console.warn('[OutfitTracker] window.restartLLM not found. Cannot override chat reset.');
@@ -261,6 +319,10 @@ class EventSystem {
         };
     }
 
+    /**
+     * Overrides the chat clear functionality to preserve outfit data
+     * @returns {void}
+     */
     overrideClearChat() {
         if (typeof window.clearChat !== 'function') {
             console.warn('[OutfitTracker] window.clearChat not found. Cannot override chat clear.');
@@ -331,6 +393,11 @@ class EventSystem {
     }
 }
 
+/**
+ * Sets up event listeners for the outfit tracker extension
+ * @param {object} context - The context containing necessary manager instances and update functions
+ * @returns {EventSystem} A new instance of the EventSystem class
+ */
 export function setupEventListeners(context) {
     return new EventSystem(context);
 }

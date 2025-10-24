@@ -10,7 +10,19 @@ import { areSystemMessagesEnabled } from '../utils/SettingsUtil.js';
 // Import outfit store
 import { outfitStore } from '../common/Store.js';
 
+/**
+ * UserOutfitPanel - Manages the UI for the user character's outfit tracking
+ * This class creates and manages a draggable panel for viewing and modifying
+ * the user character's outfit, including clothing, accessories, and saved presets
+ */
 export class UserOutfitPanel {
+    /**
+     * Creates a new UserOutfitPanel instance
+     * @param {object} outfitManager - The outfit manager for the user character
+     * @param {Array<string>} clothingSlots - Array of clothing slot names
+     * @param {Array<string>} accessorySlots - Array of accessory slot names
+     * @param {Function} saveSettingsDebounced - Debounced function to save settings
+     */
     constructor(outfitManager, clothingSlots, accessorySlots, saveSettingsDebounced) {
         this.outfitManager = outfitManager;
         this.clothingSlots = clothingSlots;
@@ -23,6 +35,10 @@ export class UserOutfitPanel {
         this.outfitSubscription = null; // Track outfit data subscription
     }
 
+    /**
+     * Creates the panel DOM element and sets up its basic functionality
+     * @returns {HTMLElement} The created panel element
+     */
     createPanel() {
         if (this.domElement) {
             return this.domElement;
@@ -72,7 +88,10 @@ export class UserOutfitPanel {
         return panel;
     }
     
-    // Get the first character message text to generate hash from (instance ID)
+    /**
+     * Gets the first character message text to generate hash from (instance ID)
+     * @returns {string} The text of the first AI message from the character
+     */
     getFirstMessageText() {
         try {
             const context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
@@ -95,6 +114,10 @@ export class UserOutfitPanel {
         }
     }
 
+    /**
+     * Renders the content of the currently selected tab
+     * @returns {void}
+     */
     renderContent() {
         if (!this.domElement) {return;}
         
@@ -292,6 +315,11 @@ export class UserOutfitPanel {
         container.appendChild(saveButton);
     }
 
+    /**
+     * Sends a system message to the UI
+     * @param {string} message - The message to display
+     * @returns {void}
+     */
     sendSystemMessage(message) {
         // Use toastr popup instead of /sys command
         if (areSystemMessagesEnabled()) {
@@ -304,6 +332,11 @@ export class UserOutfitPanel {
 
 
 
+    /**
+     * Renders the button to fill the outfit with LLM-generated items
+     * @param {HTMLElement} container - The container element to render the button in
+     * @returns {void}
+     */
     renderFillOutfitButton(container) {
         const fillOutfitButton = document.createElement('button');
 
@@ -373,7 +406,10 @@ export class UserOutfitPanel {
         }
     }
 
-    // Apply panel colors based on saved preferences
+    /**
+     * Applies panel colors based on saved preferences
+     * @returns {void}
+     */
     applyPanelColors() {
         if (this.domElement) {
             const storeState = outfitStore.getState();
@@ -387,6 +423,10 @@ export class UserOutfitPanel {
         }
     }
 
+    /**
+     * Hides the panel UI
+     * @returns {void}
+     */
     hide() {
         if (this.domElement) {
             this.domElement.style.display = 'none';
@@ -397,7 +437,10 @@ export class UserOutfitPanel {
         this.cleanupDynamicRefresh();
     }
     
-    // Update the header to reflect changes (like new instance ID)
+    /**
+     * Updates the header to reflect changes (like new instance ID)
+     * @returns {void}
+     */
     updateHeader() {
         // Create the panel if it doesn't exist yet, so we can update the header
         if (!this.domElement) {
@@ -417,7 +460,10 @@ export class UserOutfitPanel {
         }
     }
 
-    // Set up dynamic refresh listeners when the panel is shown
+    /**
+     * Sets up dynamic refresh listeners when the panel is shown
+     * @returns {void}
+     */
     setupDynamicRefresh() {
         // Clean up any existing listeners first
         this.cleanupDynamicRefresh();
@@ -494,7 +540,10 @@ export class UserOutfitPanel {
         }
     }
 
-    // Clean up dynamic refresh listeners when the panel is hidden
+    /**
+     * Cleans up dynamic refresh listeners when the panel is hidden
+     * @returns {void}
+     */
     cleanupDynamicRefresh() {
         // Unsubscribe from store changes
         if (this.outfitSubscription) {
@@ -511,7 +560,11 @@ export class UserOutfitPanel {
         this.eventListeners = [];
     }
 
-    // Generate a short identifier from the instance ID
+    /**
+     * Generates a short identifier from the instance ID
+     * @param {string} instanceId - The instance ID to generate a short ID from
+     * @returns {string} A short identifier based on the instance ID
+     */
     generateShortId(instanceId) {
         if (!instanceId) {return '';}
         
@@ -547,7 +600,11 @@ export class UserOutfitPanel {
         return cleanId.substring(0, 6);
     }
     
-    // Generate an 8-character hash from a text string
+    /**
+     * Generates an 8-character hash from a text string
+     * @param {string} text - The text to generate a hash from
+     * @returns {string} An 8-character hash string representation of the text
+     */
     generateMessageHash(text) {
         if (!text) {return '';}
         

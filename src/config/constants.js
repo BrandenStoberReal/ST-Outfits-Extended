@@ -1,19 +1,51 @@
 // Constants for Outfit Tracker Extension
+
+/**
+ * Array of clothing slot names used in the outfit system
+ * @type {string[]}
+ */
 export const CLOTHING_SLOTS = [
     'headwear', 'topwear', 'topunderwear', 'bottomwear',
     'bottomunderwear', 'footwear', 'footunderwear'
 ];
 
+/**
+ * Array of accessory slot names used in the outfit system
+ * @type {string[]}
+ */
 export const ACCESSORY_SLOTS = [
     'head-accessory', 'ears-accessory', 'eyes-accessory', 'mouth-accessory',
     'neck-accessory', 'body-accessory', 'arms-accessory', 'hands-accessory',
     'waist-accessory', 'bottom-accessory', 'legs-accessory', 'foot-accessory'
 ];
 
+/**
+ * Combined array of all outfit slot names
+ * @type {string[]}
+ */
 export const ALL_SLOTS = [...CLOTHING_SLOTS, ...ACCESSORY_SLOTS];
 
 
 
+/**
+ * Default settings for the outfit tracker extension
+ * @type {object}
+ * @property {boolean} autoOpenBot - Whether to automatically open the bot outfit panel
+ * @property {boolean} autoOpenUser - Whether to automatically open the user outfit panel
+ * @property {string} position - The position of the outfit panels
+ * @property {boolean} enableSysMessages - Whether to enable system messages
+ * @property {boolean} autoOutfitSystem - Whether the auto outfit system is enabled
+ * @property {string} autoOutfitPrompt - The prompt for the auto outfit system
+ * @property {string|null} autoOutfitConnectionProfile - The connection profile for auto outfit system
+ * @property {object} botPanelColors - Color settings for the bot outfit panel
+ * @property {string} botPanelColors.primary - Primary color gradient for bot panel
+ * @property {string} botPanelColors.border - Border color for bot panel
+ * @property {string} botPanelColors.shadow - Shadow color for bot panel
+ * @property {object} userPanelColors - Color settings for the user outfit panel
+ * @property {string} userPanelColors.primary - Primary color gradient for user panel
+ * @property {string} userPanelColors.border - Border color for user panel
+ * @property {string} userPanelColors.shadow - Shadow color for user panel
+ */
 export const DEFAULT_SETTINGS = Object.freeze({
     autoOpenBot: true,
     autoOpenUser: false,
@@ -34,6 +66,13 @@ export const DEFAULT_SETTINGS = Object.freeze({
     }
 });
 
+/**
+ * Constants for outfit command types
+ * @type {object}
+ * @property {string} WEAR - Command to wear an item
+ * @property {string} REMOVE - Command to remove an item
+ * @property {string} CHANGE - Command to change an item
+ */
 export const OUTFIT_COMMANDS = {
     WEAR: 'wear',
     REMOVE: 'remove',

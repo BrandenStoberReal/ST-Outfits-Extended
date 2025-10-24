@@ -16,7 +16,19 @@ import { areSystemMessagesEnabled } from '../utils/SettingsUtil.js';
 // Import outfit store
 import { outfitStore } from '../common/Store.js';
 
+/**
+ * BotOutfitPanel - Manages the UI for the bot character's outfit tracking
+ * This class creates and manages a draggable panel for viewing and modifying
+ * the bot character's outfit, including clothing, accessories, and saved presets
+ */
 export class BotOutfitPanel {
+    /**
+     * Creates a new BotOutfitPanel instance
+     * @param {object} outfitManager - The outfit manager for the bot character
+     * @param {Array<string>} clothingSlots - Array of clothing slot names
+     * @param {Array<string>} accessorySlots - Array of accessory slot names
+     * @param {Function} saveSettingsDebounced - Debounced function to save settings
+     */
     constructor(outfitManager, clothingSlots, accessorySlots, saveSettingsDebounced) {
         this.outfitManager = outfitManager;
         this.clothingSlots = clothingSlots;
@@ -29,6 +41,10 @@ export class BotOutfitPanel {
         this.saveSettingsDebounced = saveSettingsDebounced;
     }
 
+    /**
+     * Creates the panel DOM element and sets up its basic functionality
+     * @returns {HTMLElement} The created panel element
+     */
     createPanel() {
         if (this.domElement) {
             return this.domElement;
@@ -81,7 +97,10 @@ export class BotOutfitPanel {
         return panel;
     }
     
-    // Get the first character message text to generate hash from (instance ID)
+    /**
+     * Gets the first character message text to generate hash from (instance ID)
+     * @returns {string} The text of the first AI message from the character
+     */
     getFirstMessageText() {
         try {
             const context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
@@ -108,6 +127,10 @@ export class BotOutfitPanel {
         }
     }
 
+    /**
+     * Renders the content of the currently selected tab
+     * @returns {void}
+     */
     renderContent() {
         if (!this.domElement) {return;}
         
@@ -131,6 +154,12 @@ export class BotOutfitPanel {
         }
     }
 
+    /**
+     * Renders the outfit slots UI elements for the specified slots
+     * @param {Array<string>} slots - Array of slot names to render
+     * @param {HTMLElement} container - The container element to render slots in
+     * @returns {void}
+     */
     renderSlots(slots, container) {
         const outfitData = this.outfitManager.getOutfitData(slots);
     
@@ -162,6 +191,11 @@ export class BotOutfitPanel {
         });
     }
 
+    /**
+     * Renders the presets UI elements for saved outfits
+     * @param {HTMLElement} container - The container element to render presets in
+     * @returns {void}
+     */
     renderPresets(container) {
         const presets = this.outfitManager.getPresets();
         
@@ -305,6 +339,11 @@ export class BotOutfitPanel {
         container.appendChild(saveButton);
     }
 
+    /**
+     * Renders the button to fill the outfit with LLM-generated items
+     * @param {HTMLElement} container - The container element to render the button in
+     * @returns {void}
+     */
     renderFillOutfitButton(container) {
         const fillOutfitButton = document.createElement('button');
 
@@ -321,6 +360,10 @@ export class BotOutfitPanel {
         container.appendChild(fillOutfitButton);
     }
 
+    /**
+     * Generates an outfit for the character based on character information using an LLM
+     * @returns {Promise<void>} A promise that resolves when the outfit generation is complete
+     */
     async generateOutfitFromCharacterInfo() {
         try {
             // Show a notification that the process has started
@@ -357,6 +400,11 @@ export class BotOutfitPanel {
         }
     }
 
+    /**
+     * Sends a system message to the UI
+     * @param {string} message - The message to display
+     * @returns {void}
+     */
     sendSystemMessage(message) {
         // Use toastr popup instead of /sys command
         if (areSystemMessagesEnabled()) {
@@ -369,10 +417,19 @@ export class BotOutfitPanel {
 
 
 
+    /**
+     * Formats a slot name for display
+     * @param {string} name - The slot name to format
+     * @returns {string} The formatted slot name
+     */
     formatSlotName(name) {
         return utilsFormatSlotName(name);
     }
 
+    /**
+     * Gets character data from the current context
+     * @returns {Promise<object>} An object containing character information or an error
+     */
     async getCharacterData() {
         const context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
         
@@ -583,6 +640,10 @@ INSTRUCTIONS:
         }
     }
 
+    /**
+     * Toggles the visibility of the panel
+     * @returns {void}
+     */
     toggle() {
         if (this.isVisible) {
             this.hide();
@@ -593,6 +654,10 @@ INSTRUCTIONS:
 
 
 
+    /**
+     * Shows the panel UI
+     * @returns {void}
+     */
     show() {
         if (!this.domElement) {
             this.domElement = this.createPanel();
@@ -643,6 +708,10 @@ INSTRUCTIONS:
         }
     }
 
+    /**
+     * Hides the panel UI
+     * @returns {void}
+     */
     hide() {
         if (this.domElement) {
             this.domElement.style.display = 'none';

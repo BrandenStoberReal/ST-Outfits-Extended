@@ -78,6 +78,11 @@ export function safeGet(obj, path, defaultValue = null) {
     }
 }
 
+/**
+ * Creates a deep clone of an object
+ * @param {any} obj - The object to clone
+ * @returns {any} A deep clone of the input object
+ */
 export function deepClone(obj) {
     if (obj === null || typeof obj !== 'object') {
         return obj;
@@ -100,6 +105,12 @@ export function deepClone(obj) {
     }
 }
 
+/**
+ * Performs a deep merge of two objects
+ * @param {object} target - The target object to merge into
+ * @param {object} source - The source object to merge from
+ * @returns {object} A new object that is the deep merge of target and source
+ */
 export function deepMerge(target, source) {
     const output = { ...target };
 
@@ -116,6 +127,11 @@ export function deepMerge(target, source) {
     return output;
 }
 
+/**
+ * Formats a slot name for display purposes
+ * @param {string} slotName - The raw slot name to format
+ * @returns {string} The formatted slot name
+ */
 export function formatSlotName(slotName) {
     const slotNameMap = {
         'topunderwear': 'Top Underwear / Inner Top',
@@ -148,6 +164,11 @@ export function formatSlotName(slotName) {
     return result;
 }
 
+/**
+ * Internal function to generate an instance ID from text using a simple hash algorithm
+ * @param {string} text - The input text to hash
+ * @returns {string} The generated instance ID
+ */
 function generateInstanceIdFromTextSimple(text) {
     let hash = 0;
 

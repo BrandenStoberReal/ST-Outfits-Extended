@@ -1,7 +1,16 @@
 import { outfitStore } from '../common/Store.js';
 import { ALL_SLOTS } from '../config/constants.js';
 
+/**
+ * OutfitManager - Abstract base class for managing character outfit data
+ * This class provides a foundation for managing outfit information for both
+ * bot and user characters, with methods for setting, loading, and saving outfits
+ */
 export class OutfitManager {
+    /**
+     * Creates a new OutfitManager instance
+     * @param {Array<string>} [slots=ALL_SLOTS] - Array of slot names to manage
+     */
     constructor(slots = ALL_SLOTS) {
         this.slots = slots;
         this.currentValues = {};
@@ -13,6 +22,12 @@ export class OutfitManager {
         });
     }
 
+    /**
+     * Sets the character name and ID for the outfit manager
+     * @param {string} name - The character name
+     * @param {string|null} [characterId=null] - The character ID
+     * @returns {void}
+     */
     setCharacter(name, characterId = null) {
         if (name === this.character) { return; }
         
@@ -27,6 +42,11 @@ export class OutfitManager {
         this.loadOutfit();
     }
 
+    /**
+     * Sets the outfit instance ID and loads outfit data for that instance
+     * @param {string} instanceId - The outfit instance ID to set
+     * @returns {void}
+     */
     setOutfitInstanceId(instanceId) {
         if (this.outfitInstanceId) {
             this.saveOutfit();
@@ -36,14 +56,27 @@ export class OutfitManager {
         this.loadOutfit();
     }
     
+    /**
+     * Gets the current outfit instance ID
+     * @returns {string|null} The current outfit instance ID
+     */
     getOutfitInstanceId() {
         return this.outfitInstanceId;
     }
     
+    /**
+     * Gets a copy of the current outfit values
+     * @returns {object} A copy of the current outfit values
+     */
     getCurrentOutfit() {
         return { ...this.currentValues };
     }
     
+    /**
+     * Sets outfit data for the manager
+     * @param {object} outfitData - Object containing slot-value pairs to set
+     * @returns {void}
+     */
     setOutfit(outfitData) {
         if (!outfitData || typeof outfitData !== 'object') {
             console.warn(`[${this.constructor.name}] Invalid outfit data provided to setOutfit`);
@@ -64,10 +97,21 @@ export class OutfitManager {
         }
     }
 
+    /**
+     * Gets the variable name for a slot (must be implemented by subclasses)
+     * @param {string} slot - The slot name
+     * @returns {string} The variable name for the slot
+     * @throws {Error} If not implemented by a subclass
+     */
     getVarName(slot) {
         throw new Error('getVarName must be implemented by subclasses');
     }
 
+    /**
+     * Loads outfit data for the specified instance ID
+     * @param {string|null} [instanceId=null] - The instance ID to load from (defaults to current instance ID)
+     * @returns {void}
+     */
     loadOutfit(instanceId = null) {
         const actualInstanceId = instanceId || this.outfitInstanceId;
 
@@ -84,10 +128,21 @@ export class OutfitManager {
         this.setOutfit(outfitData);
     }
 
+    /**
+     * Loads outfit data from a specific instance ID (must be implemented by subclasses)
+     * @param {string} instanceId - The instance ID to load from
+     * @returns {object} The outfit data for the specified instance
+     * @throws {Error} If not implemented by a subclass
+     */
     loadOutfitFromInstanceId(instanceId) {
         throw new Error('loadOutfitFromInstanceId must be implemented by subclasses');
     }
     
+    /**
+     * Saves the current outfit data to the specified instance ID
+     * @param {string|null} [instanceId=null] - The instance ID to save to (defaults to current instance ID)
+     * @returns {void}
+     */
     saveOutfit(instanceId = null) {
         const actualInstanceId = instanceId || this.outfitInstanceId;
 
@@ -105,10 +160,23 @@ export class OutfitManager {
         this.saveOutfitToInstanceId(outfitData, actualInstanceId);
     }
 
+    /**
+     * Saves outfit data to a specific instance ID (must be implemented by subclasses)
+     * @param {object} outfitData - The outfit data to save
+     * @param {string} instanceId - The instance ID to save to
+     * @returns {void}
+     * @throws {Error} If not implemented by a subclass
+     */
     saveOutfitToInstanceId(outfitData, instanceId) {
         throw new Error('saveOutfitToInstanceId must be implemented by subclasses');
     }
 
+    /**
+     * Sets the value for a specific outfit slot
+     * @param {string} slot - The slot name to modify
+     * @param {string} value - The value to set for the slot
+     * @returns {Promise<string|null>} A message describing the change, or null if no change occurred
+     */
     async setOutfitItem(slot, value) {
         if (!this.slots.includes(slot)) {
             console.error(`[${this.constructor.name}] Invalid slot: ${slot}`);

@@ -3,6 +3,15 @@ import { CLOTHING_SLOTS, ACCESSORY_SLOTS } from '../config/constants.js';
 import { areSystemMessagesEnabled } from '../utils/SettingsUtil.js';
 import { DataManager } from '../services/DataManager.js';
 
+/**
+ * Registers all outfit-related slash commands with SillyTavern's command system.
+ * This function sets up commands for outfit management, auto outfit system control,
+ * preset management, and mobile-friendly outfit commands.
+ * @param {object} botManager - The bot outfit manager instance
+ * @param {object} userManager - The user outfit manager instance
+ * @param {object} autoOutfitSystem - The auto outfit system instance
+ * @returns {Promise<void>} A promise that resolves when all commands are registered
+ */
 export async function registerOutfitCommands(botManager, userManager, autoOutfitSystem) {
     // Check if new slash command system is available in SillyTavern
     const hasSlashCommands = typeof window.SlashCommandParser !== 'undefined' && 
