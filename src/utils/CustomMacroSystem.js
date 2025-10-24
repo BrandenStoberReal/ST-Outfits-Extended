@@ -155,19 +155,18 @@ class CustomMacroSystem {
 
                     if (character) {
                         charId = character.avatar;
-                    } else {
+                    } else if (context.characterId && context.getName) {
                         // If character not found in the list, try to match by the currently active character if macroType matches
-                        if (context.characterId && context.getName) {
-                            const currentCharName = context.getName();
+                        const currentCharName = context.getName();
 
-                            if (currentCharName === characterName) {
-                                charId = context.characterId;
-                            }
+                        if (currentCharName === characterName) {
+                            charId = context.characterId;
                         }
-                        // If we still don't have a character ID, return None
-                        if (!charId) {
-                            return 'None'; // Character not found
-                        }
+                    }
+
+                    // If we still don't have a character ID, return None
+                    if (!charId) {
+                        return 'None'; // Character not found
                     }
                 }
             } else if (macroType === 'char' || macroType === 'bot') {
@@ -176,15 +175,13 @@ class CustomMacroSystem {
             } else if (['user'].includes(macroType)) {
                 // User-specific macro, don't need a character ID
                 charId = null;
-            } else {
+            } else if (context && context.characterId && context.getName) {
                 // The macroType might be a character name (e.g. when macro is "Emma_topwear")
                 // Try to match against current character
-                if (context && context.characterId && context.getName) {
-                    const currentCharName = context.getName();
+                const currentCharName = context.getName();
 
-                    if (currentCharName === macroType) {
-                        charId = context.characterId;
-                    }
+                if (currentCharName === macroType) {
+                    charId = context.characterId;
                 }
             }
 
@@ -440,17 +437,15 @@ class CustomMacroSystem {
                 // This is a slot-based macro like {{char_topwear}}, {{user_headwear}}, or {{Emma_topwear}}
                 replacement = this.getCurrentSlotValue(macro.type, macro.slot, 
                     ['char', 'bot', 'user'].includes(macro.type) ? null : macro.type); // Pass character name if not a standard type
-            } else {
+            } else if (macro.type === 'char' || macro.type === 'bot') {
                 // This is a name-based macro like {{char}} or {{user}}
-                if (macro.type === 'char' || macro.type === 'bot') {
-                    replacement = this.getCurrentCharName();
-                } else if (macro.type === 'user') {
-                    replacement = this.getCurrentUserName();
-                } else {
-                    // This could be a character-specific macro name without a slot
-                    // In this case, just return the character name
-                    replacement = macro.type;
-                }
+                replacement = this.getCurrentCharName();
+            } else if (macro.type === 'user') {
+                replacement = this.getCurrentUserName();
+            } else {
+                // This could be a character-specific macro name without a slot
+                // In this case, just return the character name
+                replacement = macro.type;
             }
 
             // Replace the macro in the text

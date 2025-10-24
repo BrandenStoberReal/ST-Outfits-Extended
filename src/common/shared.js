@@ -3,35 +3,7 @@ export function dragElementWithSave(element, storageKey) {
     const $element = $(element);
     let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
     
-    // Try to restore previous position
-    const savedPosition = localStorage.getItem(`outfitPanel_${storageKey}_position`);
-
-    if (savedPosition) {
-        const position = JSON.parse(savedPosition);
-
-        $element.css({
-            top: position.top + 'px',
-            left: position.left + 'px'
-        });
-    }
-
-    // Set the element's style
-    $element.css({
-        position: 'absolute',
-        cursor: 'move'
-    });
-
     // Define functions before using them
-    function dragMouseDown(e) {
-        e = e || window.event;
-        e.preventDefault();
-        // Get the mouse cursor position at startup
-        pos3 = e.clientX;
-        pos4 = e.clientY;
-        $(document).on('mousemove', elementDrag);
-        $(document).on('mouseup', closeDragElement);
-    }
-
     function elementDrag(e) {
         e = e || window.event;
         e.preventDefault();
@@ -63,6 +35,34 @@ export function dragElementWithSave(element, storageKey) {
 
         localStorage.setItem(`outfitPanel_${storageKey}_position`, JSON.stringify(position));
     }
+
+    function dragMouseDown(e) {
+        e = e || window.event;
+        e.preventDefault();
+        // Get the mouse cursor position at startup
+        pos3 = e.clientX;
+        pos4 = e.clientY;
+        $(document).on('mousemove', elementDrag);
+        $(document).on('mouseup', closeDragElement);
+    }
+
+    // Try to restore previous position
+    const savedPosition = localStorage.getItem(`outfitPanel_${storageKey}_position`);
+
+    if (savedPosition) {
+        const position = JSON.parse(savedPosition);
+
+        $element.css({
+            top: position.top + 'px',
+            left: position.left + 'px'
+        });
+    }
+
+    // Set the element's style
+    $element.css({
+        position: 'absolute',
+        cursor: 'move'
+    });
 
     // Get the element that will be used for moving (header)
     const $header = $element.find('.panel-header, .dialogHeader, .title, h2, h3').first();

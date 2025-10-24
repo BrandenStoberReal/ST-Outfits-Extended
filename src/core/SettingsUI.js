@@ -691,25 +691,6 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem, context) {
             saveSettingsFn();
         }
     });
-
-    // Helper function to validate hex color
-    function isValidHexColor(value) {
-        // Check if the value is a valid hex color (with or without #)
-        const hexColorRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
-
-        if (hexColorRegex.test(value)) {
-            return true;
-        }
-        
-        // Check if it's a valid hex color without the # prefix
-        const hexColorWithoutHashRegex = /^([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
-
-        if (hexColorWithoutHashRegex.test(value)) {
-            return true;
-        }
-        
-        return false;
-    }
     
 
 
