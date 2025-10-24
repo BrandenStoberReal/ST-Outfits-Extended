@@ -1,6 +1,5 @@
 import {DEFAULT_SETTINGS} from '../config/constants.js';
 import {debugLog} from '../utils/DebugLogger.js';
-import {outfitStore} from '../common/Store.js';
 
 export function initSettings(autoOutfitSystem, AutoOutfitSystemClass, context) {
     // Get the extension settings using SillyTavern's context
@@ -36,13 +35,6 @@ export function initSettings(autoOutfitSystem, AutoOutfitSystemClass, context) {
             shadow: 'rgba(26, 120, 209, 0.4)'
         };
     }
-
-    // Update the outfit store with the loaded settings
-    for (const [key, value] of Object.entries(settings[MODULE_NAME])) {
-        outfitStore.setSetting(key, value);
-    }
-    
-
 
     // Load auto outfit system settings
     if (settings[MODULE_NAME].autoOutfitSystem && autoOutfitSystem) {
