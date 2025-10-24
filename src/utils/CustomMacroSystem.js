@@ -5,12 +5,17 @@
 
 import {outfitStore} from '../common/Store.js';
 import {ACCESSORY_SLOTS, CLOTHING_SLOTS} from '../config/constants.js';
+import {macroProcessor} from './MacroProcessor.js';
 
 class CustomMacroSystem {
     constructor() {
         this.clothingSlots = CLOTHING_SLOTS;
         this.accessorySlots = ACCESSORY_SLOTS;
         this.allSlots = [...CLOTHING_SLOTS, ...ACCESSORY_SLOTS];
+        // Add a cache for macro values to improve performance of repeated lookups
+        this.macroValueCache = new Map();
+        // Cache expiry time in milliseconds (5 minutes)
+        this.cacheExpiryTime = 5 * 60 * 1000;
     }
 
     registerMacros(context) {
@@ -130,7 +135,7 @@ class CustomMacroSystem {
     }
 
     /**
-     * Get the current value for a specific slot
+     * Get the current value for a specific slot with caching
      * @param {string} macroType - 'char', 'bot', 'user' or a character name
      * @param {string} slotName - The slot name (e.g., 'topwear')
      * @param {string|null} characterName - The specific character name to get the value for
@@ -139,6 +144,15 @@ class CustomMacroSystem {
     getCurrentSlotValue(macroType, slotName, characterName = null) {
         if (!this.allSlots.includes(slotName)) {
             return 'None';
+        }
+
+        // Generate a unique cache key based on the macro parameters
+        const cacheKey = this._generateCacheKey(macroType, slotName, characterName);
+
+        // Check if we have a cached value that hasn't expired
+        const cachedValue = this.macroValueCache.get(cacheKey);
+        if (cachedValue && Date.now() - cachedValue.timestamp < this.cacheExpiryTime) {
+            return cachedValue.value;
         }
 
         try {
@@ -165,6 +179,8 @@ class CustomMacroSystem {
 
                     // If we still don't have a character ID, return None
                     if (!charId) {
+                        // Cache the result to avoid repeated lookups
+                        this._setCache(cacheKey, 'None');
                         return 'None'; // Character not found
                     }
                 }
@@ -193,46 +209,8 @@ class CustomMacroSystem {
                 const firstBotMessage = context?.chat?.find(message => !message.is_user && !message.is_system);
 
                 if (firstBotMessage) {
-                    // Use the same approach as cleanOutfitMacrosFromText but simplified for synchronous operation
-                    let processedMessage = firstBotMessage.mes || '';
-
-                    // Remove macro patterns - simplified version
-                    let startIndex = 0;
-
-                    while (startIndex < processedMessage.length) {
-                        const openIdx = processedMessage.indexOf('{{', startIndex);
-
-                        if (openIdx === -1) {
-                            break;
-                        }
-
-                        const endIdx = processedMessage.indexOf('}}', openIdx);
-
-                        if (endIdx === -1) {
-                            break;
-                        }
-
-                        // Extract content between {{ and }}
-                        const macroContent = processedMessage.substring(openIdx + 2, endIdx);
-                        const underscoreIndex = macroContent.indexOf('_');
-
-                        if (underscoreIndex !== -1) {
-                            const prefix = macroContent.substring(0, underscoreIndex);
-                            const suffix = macroContent.substring(underscoreIndex + 1);
-
-                            // Check if it looks like an outfit macro
-                            const isPrefixValid = prefix === 'char' || prefix === 'user' || this.isAlphaNumericWithUnderscores(prefix);
-                            const isSuffixValid = this.isLowerAlphaNumericWithUnderscoresAndHyphens(suffix);
-
-                            if (isPrefixValid && isSuffixValid) {
-                                processedMessage = processedMessage.substring(0, openIdx) + '{{}}' + processedMessage.substring(endIdx + 2);
-                                startIndex = openIdx + 4; // Move past '{{}}'
-                                continue;
-                            }
-                        }
-
-                        startIndex = endIdx + 2;
-                    }
+                    // Use the global macro processor's function
+                    const processedMessage = macroProcessor.cleanOutfitMacrosFromText(firstBotMessage.mes);
 
                     // Use the same simple hash algorithm as in utilities.js for consistency
                     let hash = 0;
@@ -251,40 +229,103 @@ class CustomMacroSystem {
                         const charOutfitData = outfitStore.getBotOutfit(charId.toString(), instanceId);
 
                         if (charOutfitData && charOutfitData[slotName]) {
+                            // Cache the result before returning
+                            this._setCache(cacheKey, charOutfitData[slotName]);
                             return charOutfitData[slotName];
                         }
                     } else if (macroType === 'user') {
                         const userOutfitData = outfitStore.getUserOutfit(instanceId);
 
                         if (userOutfitData && userOutfitData[slotName]) {
+                            // Cache the result before returning
+                            this._setCache(cacheKey, userOutfitData[slotName]);
                             return userOutfitData[slotName];
                         }
                     }
 
                     // If no data found for this calculated ID, return 'None'
+                    // Cache the result to avoid repeated lookups
+                    this._setCache(cacheKey, 'None');
                     return 'None';
                 }
 
                 // If no first message is available, return 'None'
+                // Cache the result to avoid repeated lookups
+                this._setCache(cacheKey, 'None');
                 return 'None';
             }
 
             if (macroType === 'char' || macroType === 'bot' || characterName || (this.isValidCharacterName(macroType) && !['user'].includes(macroType))) {
                 if (charId !== null && charId !== undefined) {
                     const outfitData = outfitStore.getBotOutfit(charId.toString(), instanceId);
-
-                    return outfitData[slotName] || 'None';
+                    const result = outfitData[slotName] || 'None';
+                    // Cache the result before returning
+                    this._setCache(cacheKey, result);
+                    return result;
                 }
             } else if (macroType === 'user') {
                 const outfitData = outfitStore.getUserOutfit(instanceId);
-
-                return outfitData[slotName] || 'None';
+                const result = outfitData[slotName] || 'None';
+                // Cache the result before returning
+                this._setCache(cacheKey, result);
+                return result;
             }
         } catch (error) {
             console.error('Error getting slot value:', error);
         }
 
-        return 'None';
+        // If we reach here, cache and return 'None'
+        const result = 'None';
+        this._setCache(cacheKey, result);
+        return result;
+    }
+
+    /**
+     * Generate a unique cache key for the macro parameters
+     * @private
+     * @param {string} macroType - The type of macro ('char', 'user', character name, etc.)
+     * @param {string} slotName - The slot name
+     * @param {string|null} characterName - The character name, if applicable
+     * @returns {string} A unique cache key
+     */
+    _generateCacheKey(macroType, slotName, characterName) {
+        const context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
+        const currentCharacterId = context?.characterId || 'unknown';
+        const currentInstanceId = outfitStore.getCurrentInstanceId() || 'unknown';
+
+        // Create a unique identifier based on all relevant parameters
+        return `${macroType}_${slotName}_${characterName || 'null'}_${currentCharacterId}_${currentInstanceId}`;
+    }
+
+    /**
+     * Set a value in the cache with a timestamp
+     * @private
+     * @param {string} cacheKey - The cache key to store the value under
+     * @param {string} value - The value to cache
+     */
+    _setCache(cacheKey, value) {
+        this.macroValueCache.set(cacheKey, {
+            value: value,
+            timestamp: Date.now()
+        });
+    }
+
+    /**
+     * Clear the macro value cache
+     */
+    clearCache() {
+        this.macroValueCache.clear();
+    }
+
+    /**
+     * Remove expired entries from the cache
+     */
+    _cleanupExpiredCache() {
+        for (const [key, entry] of this.macroValueCache.entries()) {
+            if (Date.now() - entry.timestamp >= this.cacheExpiryTime) {
+                this.macroValueCache.delete(key);
+            }
+        }
     }
 
     /**
@@ -533,3 +574,20 @@ class CustomMacroSystem {
 
 // Create and export a single instance of the CustomMacroSystem
 export const customMacroSystem = new CustomMacroSystem();
+
+// Also export a function to update macro cache when outfit data changes
+export const updateMacroCacheOnOutfitChange = (outfitType, characterId, instanceId, slotName) => {
+    // Clear the macro cache for the specific outfit that changed
+    customMacroSystem.clearCache();
+};
+
+// Function to intelligently invalidate only the specific macro caches that would be affected by an outfit change
+export const invalidateSpecificMacroCaches = (outfitType, characterId, instanceId, slotName) => {
+    // Iterate through the cache and remove entries that would be affected by this outfit change
+    for (const [key, entry] of customMacroSystem.macroValueCache.entries()) {
+        // If the cache key contains the characterId, instanceId and slotName that changed, remove it
+        if (key.includes(characterId) && key.includes(instanceId) && key.includes(slotName)) {
+            customMacroSystem.macroValueCache.delete(key);
+        }
+    }
+};

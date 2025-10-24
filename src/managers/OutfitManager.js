@@ -1,4 +1,5 @@
 import {ALL_SLOTS} from '../config/constants.js';
+import {invalidateSpecificMacroCaches} from '../utils/CustomMacroSystem.js';
 
 /**
  * OutfitManager - Abstract base class for managing character outfit data
@@ -205,6 +206,14 @@ export class OutfitManager {
 
         if (this.characterId && this.outfitInstanceId) {
             this.saveOutfit();
+
+            // Invalidate the specific macro caches that would be affected by this outfit change
+            invalidateSpecificMacroCaches(
+                this.constructor.name.includes('Bot') ? 'bot' : 'user',
+                this.characterId,
+                this.outfitInstanceId,
+                slot
+            );
         }
 
         if (previousValue === 'None' && value !== 'None') {
