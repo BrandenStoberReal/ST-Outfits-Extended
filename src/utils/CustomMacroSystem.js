@@ -184,20 +184,88 @@ class CustomMacroSystem {
                 }
             }
 
-            // Get appropriate instanceId based on the conversation context
+            // Get the current instance ID from the store
             const state = outfitStore.getState();
-            let instanceId = null;
+            let instanceId = state.currentOutfitInstanceId;
 
-            // Try to determine the appropriate instance ID based on current conversation
-            if (context && context.chatId) {
-                // Use the chatId to create a unique instance ID for this conversation
-                instanceId = context.chatId;
-            } else {
-                // Fallback to current outfit instance ID if available
-                instanceId = state.currentOutfitInstanceId;
-            }
-
+            // If no instance ID is available yet, calculate it synchronously from the first message
             if (!instanceId) {
+                const firstBotMessage = context?.chat?.find(message => !message.is_user && !message.is_system);
+
+                if (firstBotMessage) {
+                    // Use the same approach as cleanOutfitMacrosFromText but simplified for synchronous operation
+                    let processedMessage = firstBotMessage.mes || '';
+
+                    // Remove macro patterns - simplified version
+                    let startIndex = 0;
+
+                    while (startIndex < processedMessage.length) {
+                        const openIdx = processedMessage.indexOf('{{', startIndex);
+
+                        if (openIdx === -1) {
+                            break;
+                        }
+
+                        const endIdx = processedMessage.indexOf('}}', openIdx);
+
+                        if (endIdx === -1) {
+                            break;
+                        }
+
+                        // Extract content between {{ and }}
+                        const macroContent = processedMessage.substring(openIdx + 2, endIdx);
+                        const underscoreIndex = macroContent.indexOf('_');
+
+                        if (underscoreIndex !== -1) {
+                            const prefix = macroContent.substring(0, underscoreIndex);
+                            const suffix = macroContent.substring(underscoreIndex + 1);
+
+                            // Check if it looks like an outfit macro
+                            const isPrefixValid = prefix === 'char' || prefix === 'user' || this.isAlphaNumericWithUnderscores(prefix);
+                            const isSuffixValid = this.isLowerAlphaNumericWithUnderscoresAndHyphens(suffix);
+
+                            if (isPrefixValid && isSuffixValid) {
+                                processedMessage = processedMessage.substring(0, openIdx) + '{{}}' + processedMessage.substring(endIdx + 2);
+                                startIndex = openIdx + 4; // Move past '{{}}'
+                                continue;
+                            }
+                        }
+
+                        startIndex = endIdx + 2;
+                    }
+
+                    // Use the same simple hash algorithm as in utilities.js for consistency
+                    let hash = 0;
+
+                    for (let i = 0; i < processedMessage.length; i++) {
+                        const char = processedMessage.charCodeAt(i);
+
+                        hash = ((hash << 5) - hash) + char;
+                        hash |= 0; // Convert to 32-bit integer
+                    }
+
+                    instanceId = Math.abs(hash).toString(36);
+
+                    // Try to find stored outfit data with the calculated instance ID
+                    if (charId && (macroType === 'char' || macroType === 'bot' || characterName || (this.isValidCharacterName(macroType) && !['user'].includes(macroType)))) {
+                        const charOutfitData = outfitStore.getBotOutfit(charId.toString(), instanceId);
+
+                        if (charOutfitData && charOutfitData[slotName]) {
+                            return charOutfitData[slotName];
+                        }
+                    } else if (macroType === 'user') {
+                        const userOutfitData = outfitStore.getUserOutfit(instanceId);
+
+                        if (userOutfitData && userOutfitData[slotName]) {
+                            return userOutfitData[slotName];
+                        }
+                    }
+
+                    // If no data found for this calculated ID, return 'None'
+                    return 'None';
+                }
+
+                // If no first message is available, return 'None'
                 return 'None';
             }
 

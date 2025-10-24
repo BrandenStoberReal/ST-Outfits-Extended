@@ -1007,6 +1007,7 @@ Full length: ${status.promptLength} characters`, 'Current System Prompt', {
 
                     // Update the generated commands list
                     const $commandsList = $('#outfit-generated-commands');
+
                     $commandsList.empty(); // Clear existing items
 
                     if (llmOutputData.generatedCommands && llmOutputData.generatedCommands.length > 0) {
@@ -1039,10 +1040,12 @@ Full length: ${status.promptLength} characters`, 'Current System Prompt', {
         // Try to get initial LLM output (if available)
         try {
             const llmOutputData = autoOutfitSystem.getLlmOutput();
+
             if (llmOutputData) {
                 $('#outfit-llm-output').val(llmOutputData.llmOutput || 'No output generated');
 
                 const $commandsList = $('#outfit-generated-commands');
+
                 $commandsList.empty();
 
                 if (llmOutputData.generatedCommands && llmOutputData.generatedCommands.length > 0) {
