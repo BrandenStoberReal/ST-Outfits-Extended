@@ -8,7 +8,10 @@ global.SillyTavern = {
   libs: {
     DOMPurify: { sanitize: jest.fn(text => text) },
     moment: jest.fn(),
-    showdown: { Converter: jest.fn() }
+    showdown: { Converter: jest.fn() },
+    lodash: {},
+    localforage: {},
+    Fuse: {}
   }
 };
 
@@ -68,14 +71,24 @@ global.fetch = jest.fn(() =>
   })
 );
 
-// Mock extension settings and context
+// Mock extension settings and context based on documentation
 const mockContext = {
+  // State objects
+  chat: [], // Chat log - MUTABLE
+  characters: [], // Character list
+  characterId: null, // Index of the current character
+  groups: [], // Group list
+  groupId: null, // ID of the current group
+  
+  // Settings and persistence
   extensionSettings: {},
   saveSettingsDebounced: jest.fn(),
-  characters: [],
-  chat: [],
+  
+  // Chat metadata
   chatMetadata: {},
   saveMetadata: jest.fn(),
+  
+  // Events
   eventSource: {
     on: jest.fn(),
     emit: jest.fn()
@@ -83,17 +96,36 @@ const mockContext = {
   event_types: {
     APP_READY: 'APP_READY',
     MESSAGE_RECEIVED: 'MESSAGE_RECEIVED',
-    MESSAGE_SENT: 'MESSAGE_SENT'
+    MESSAGE_SENT: 'MESSAGE_SENT',
+    USER_MESSAGE_RENDERED: 'USER_MESSAGE_RENDERED',
+    CHARACTER_MESSAGE_RENDERED: 'CHARACTER_MESSAGE_RENDERED',
+    CHAT_CHANGED: 'CHAT_CHANGED',
+    GENERATION_AFTER_COMMANDS: 'GENERATION_AFTER_COMMANDS',
+    GENERATION_STOPPED: 'GENERATION_STOPPED',
+    GENERATION_ENDED: 'GENERATION_ENDED',
+    SETTINGS_UPDATED: 'SETTINGS_UPDATED'
   },
+  
+  // Character cards
   writeExtensionField: jest.fn(),
+  
+  // Text generation
   generateQuietPrompt: jest.fn(),
+  generateRaw: jest.fn(),
+  
+  // Macros
   registerMacro: jest.fn(),
   unregisterMacro: jest.fn(),
   addLocaleData: jest.fn(),
+  
+  // Settings presets
   getPresetManager: jest.fn(() => ({
     writePresetExtensionField: jest.fn(),
     readPresetExtensionField: jest.fn()
-  }))
+  })),
+  
+  // Additional documented methods
+  registerSlashCommand: jest.fn()
 };
 
 global.SillyTavern.getContext.mockReturnValue(mockContext);

@@ -22,6 +22,25 @@ Due to the browser-dependent nature of the SillyTavern extension, tests are orga
 
 3. **Class behavior testing**: Complex systems like the OutfitStore are tested by creating mock classes that implement the same interface.
 
+## Mock Implementation Details
+
+The mock implementations in `setup.js` follow the SillyTavern documentation and include:
+
+- **SillyTavern context** with all documented properties:
+  - State objects: `chat`, `characters`, `characterId`, `groups`, `groupId`
+  - Settings and persistence: `extensionSettings`, `saveSettingsDebounced`
+  - Chat metadata: `chatMetadata`, `saveMetadata`
+  - Events: `eventSource`, `event_types` with all documented event types
+  - Character cards: `writeExtensionField`
+  - Text generation: `generateQuietPrompt`, `generateRaw`
+  - Macros: `registerMacro`, `unregisterMacro`, `addLocaleData`
+  - Settings presets: `getPresetManager`
+  - Additional: `registerSlashCommand`
+
+- **SillyTavern shared libraries** including `DOMPurify`, `moment`, `showdown`, `lodash`, `localforage`, `Fuse`
+
+- **jQuery** with commonly used methods
+
 ## Running Tests
 
 To run all tests:
