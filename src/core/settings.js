@@ -1,4 +1,5 @@
 import {DEFAULT_SETTINGS} from '../config/constants.js';
+import {debugLog} from '../utils/DebugLogger.js';
 
 export function initSettings(autoOutfitSystem, AutoOutfitSystemClass, context) {
     // Get the extension settings using SillyTavern's context
@@ -54,15 +55,15 @@ export function initSettings(autoOutfitSystem, AutoOutfitSystemClass, context) {
 
     // Load presets if they exist in settings
     if (settings[MODULE_NAME].presets) {
-        console.log('[OutfitTracker] Loading presets from settings');
+        debugLog('[OutfitTracker] Loading presets from settings', null, 'info');
     }
 
     // Load instances if they exist in settings
     if (settings[MODULE_NAME].instances) {
-        console.log('[OutfitTracker] Loading bot instances from settings');
+        debugLog('[OutfitTracker] Loading bot instances from settings', null, 'info');
     }
 
     if (settings[MODULE_NAME].user_instances) {
-        console.log('[OutfitTracker] Loading user instances from settings');
+        debugLog('[OutfitTracker] Loading user instances from settings', null, 'info');
     }
 }

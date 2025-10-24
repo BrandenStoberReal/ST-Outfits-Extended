@@ -34,6 +34,7 @@ export const ALL_SLOTS = [...CLOTHING_SLOTS, ...ACCESSORY_SLOTS];
  * @property {string} position - The position of the outfit panels
  * @property {boolean} enableSysMessages - Whether to enable system messages
  * @property {boolean} autoOutfitSystem - Whether the auto outfit system is enabled
+ * @property {boolean} debugMode - Whether debug mode is enabled
  * @property {string} autoOutfitPrompt - The prompt for the auto outfit system
  * @property {string|null} autoOutfitConnectionProfile - The connection profile for auto outfit system
  * @property {object} botPanelColors - Color settings for the bot outfit panel
@@ -51,6 +52,7 @@ export const DEFAULT_SETTINGS = Object.freeze({
     position: 'right',
     enableSysMessages: true,
     autoOutfitSystem: false,
+    debugMode: false,
     autoOutfitPrompt: 'After each character response, analyze the conversation to identify any outfit changes (items worn, removed, or changed). Provide updates in the format: "/outfit-wear slotName item", "/outfit-remove slotName", or "/outfit-change slotName newItem". Only output the commands, no additional text.',
     autoOutfitConnectionProfile: null,
     botPanelColors: {

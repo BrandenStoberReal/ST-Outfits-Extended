@@ -103,6 +103,12 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem, context) {
                                ${currentSettings.autoOpenUser ?? false ? 'checked' : ''}>
                     </div>
                     
+                    <div class="flex-container setting-row">
+                        <label for="outfit-debug-mode">Enable debug mode</label>
+                        <input type="checkbox" id="outfit-debug-mode"
+                               ${currentSettings.debugMode ?? false ? 'checked' : ''}>
+                    </div>
+                    
 
                 </div>
                 
@@ -699,11 +705,12 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem, context) {
     }
 
     // Custom toggle switch styling
-    $(document).on('change', '#outfit-sys-toggle, #outfit-auto-bot, #outfit-auto-user', function () {
+    $(document).on('change', '#outfit-sys-toggle, #outfit-auto-bot, #outfit-auto-user, #outfit-debug-mode', function () {
         if (settings && settings[MODULE_NAME]) {
             settings[MODULE_NAME].enableSysMessages = $('#outfit-sys-toggle').prop('checked');
             settings[MODULE_NAME].autoOpenBot = $('#outfit-auto-bot').prop('checked');
             settings[MODULE_NAME].autoOpenUser = $('#outfit-auto-user').prop('checked');
+            settings[MODULE_NAME].debugMode = $('#outfit-debug-mode').prop('checked');
             saveSettingsFn();
         }
     });
@@ -986,6 +993,27 @@ Full length: ${status.promptLength} characters`, 'Current System Prompt', {
                 window.wipeAllOutfits();
             }
         }
+    });
+
+    // Add event listener for the debug panel button
+    $('#outfit-debug-panel-btn').on('click', async function () {
+        // Check if debug mode is enabled
+        const storeState = outfitStore.getState();
+
+        if (!storeState.settings.debugMode) {
+            toastr.warning('Debug mode must be enabled to use the debug panel.', 'Debug Panel');
+            return;
+        }
+
+        // Create and show the debug panel
+        // Create a global reference to the debug panel if it doesn't exist
+        if (!window.outfitDebugPanel) {
+            const DebugPanel = (await import('../panels/DebugPanel.js')).DebugPanel;
+
+            window.outfitDebugPanel = new DebugPanel();
+        }
+
+        window.outfitDebugPanel.toggle();
     });
 
     // Add event listener for the outfit process button

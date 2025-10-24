@@ -7,6 +7,7 @@ import {NewBotOutfitManager} from '../managers/NewBotOutfitManager.js';
 import {BotOutfitPanel} from '../panels/BotOutfitPanel.js';
 import {NewUserOutfitManager} from '../managers/NewUserOutfitManager.js';
 import {UserOutfitPanel} from '../panels/UserOutfitPanel.js';
+import {DebugPanel} from '../panels/DebugPanel.js';
 import {setupEventListeners} from './EventSystem.js';
 import {registerOutfitCommands} from './OutfitCommands.js';
 import {createSettingsUI} from './SettingsUI.js';
@@ -16,6 +17,7 @@ import {StorageService} from '../services/StorageService.js';
 import {DataManager} from '../services/DataManager.js';
 import {OutfitDataService} from '../services/OutfitDataService.js';
 import {macroProcessor} from '../utils/MacroProcessor.js';
+import {debugLog} from '../utils/DebugLogger.js';
 
 let AutoOutfitSystem;
 
@@ -27,11 +29,14 @@ let AutoOutfitSystem;
  */
 async function loadAutoOutfitSystem() {
     try {
+        debugLog('Attempting to load AutoOutfitSystem module', null, 'debug');
         const autoOutfitModule = await import('./AutoOutfitSystem.js');
 
         AutoOutfitSystem = autoOutfitModule.AutoOutfitSystem;
+        debugLog('AutoOutfitSystem module loaded successfully', null, 'info');
     } catch (error) {
         console.error('[OutfitTracker] Failed to load AutoOutfitSystem:', error);
+        debugLog('Failed to load AutoOutfitSystem, using dummy class', error, 'error');
         AutoOutfitSystem = class DummyAutoOutfitSystem {
         };
     }
@@ -116,6 +121,12 @@ function setupApi(botManager, userManager, botPanel, userPanel, autoOutfitSystem
         }
     };
 
+    // Create and set up the debug panel
+    const debugPanel = new DebugPanel();
+
+    window.outfitDebugPanel = debugPanel;
+    extension_api.debugPanel = debugPanel;
+
     globalThis.outfitTracker = extension_api;
 }
 
@@ -163,7 +174,10 @@ globalThis.outfitTrackerInterceptor = async function (chat, contextSize, abort, 
 
         if (!botPanel || !userPanel) {
             // If panels aren't available yet, store the reference and try later
-            console.warn('[OutfitTracker] Panels not available for interceptor, deferring injection');
+            debugLog('Panels not available for interceptor, deferring injection', {
+                botPanel: Boolean(botPanel),
+                userPanel: Boolean(userPanel)
+            }, 'warn');
             return;
         }
 
@@ -171,7 +185,10 @@ globalThis.outfitTrackerInterceptor = async function (chat, contextSize, abort, 
         const userManager = userPanel.outfitManager;
 
         if (!botManager || !userManager) {
-            console.warn('[OutfitTracker] Managers not available for interceptor');
+            debugLog('Managers not available for interceptor', {
+                botManager: Boolean(botManager),
+                userManager: Boolean(userManager)
+            }, 'warn');
             return;
         }
 
@@ -190,12 +207,17 @@ globalThis.outfitTrackerInterceptor = async function (chat, contextSize, abort, 
                 extra: {outfit_injection: true}
             };
 
+            debugLog('Injecting outfit information into chat', {outfitInfoString}, 'info');
+
             // Insert the outfit information before the last message in the chat
             // This ensures it's included in the context without disrupting the conversation flow
             chat.splice(chat.length - 1, 0, outfitInjection);
+        } else {
+            debugLog('No outfit information to inject', null, 'debug');
         }
     } catch (error) {
         console.error('[OutfitTracker] Error in interceptor:', error);
+        debugLog('Error in interceptor', error, 'error');
     }
 };
 
@@ -208,6 +230,7 @@ globalThis.outfitTrackerInterceptor = async function (chat, contextSize, abort, 
  */
 export async function initializeExtension() {
     await loadAutoOutfitSystem();
+    debugLog('Starting extension initialization', null, 'info');
 
     const STContext = window.SillyTavern?.getContext?.() || window.getContext?.();
 
@@ -228,16 +251,27 @@ export async function initializeExtension() {
 
     // Load the stored state into the outfit store after initialization
     outfitStore.loadState();
+    debugLog('Data manager and outfit store initialized', null, 'info');
 
     const outfitDataService = new OutfitDataService(dataManager);
 
     const settings = dataManager.loadSettings();
 
+    debugLog('Settings loaded', settings, 'info');
+
     const botManager = new NewBotOutfitManager(ALL_SLOTS);
     const userManager = new NewUserOutfitManager(ALL_SLOTS);
+
+    debugLog('Outfit managers created', {botManager, userManager}, 'info');
+
     const botPanel = new BotOutfitPanel(botManager, CLOTHING_SLOTS, ACCESSORY_SLOTS, (data) => STContext.saveSettingsDebounced({outfit_tracker: data}));
     const userPanel = new UserOutfitPanel(userManager, CLOTHING_SLOTS, ACCESSORY_SLOTS, (data) => STContext.saveSettingsDebounced({outfit_tracker: data}));
+
+    debugLog('Outfit panels created', {botPanel, userPanel}, 'info');
+
     const autoOutfitSystem = new AutoOutfitSystem(botManager);
+
+    debugLog('Auto outfit system created', {autoOutfitSystem}, 'info');
 
     // Set global references for the interceptor function to access
     window.botOutfitPanel = botPanel;
@@ -246,12 +280,14 @@ export async function initializeExtension() {
     outfitStore.setPanelRef('bot', botPanel);
     outfitStore.setPanelRef('user', userPanel);
     outfitStore.setAutoOutfitSystem(autoOutfitSystem);
+    debugLog('Global references set', null, 'info');
 
     setupApi(botManager, userManager, botPanel, userPanel, autoOutfitSystem, outfitDataService);
     initSettings(autoOutfitSystem, AutoOutfitSystem, STContext);
     registerOutfitCommands(botManager, userManager, autoOutfitSystem);
     customMacroSystem.registerMacros(STContext);
     createSettingsUI(AutoOutfitSystem, autoOutfitSystem, STContext);
+    debugLog('Extension components initialized', null, 'info');
 
     // Pass the STContext to the event listeners setup
     setupEventListeners({
@@ -260,9 +296,10 @@ export async function initializeExtension() {
         processMacrosInFirstMessage: () => macroProcessor.processMacrosInFirstMessage(STContext),
         context: STContext
     });
-
+    debugLog('Event listeners set up', null, 'info');
 
     updatePanelStyles();
+    debugLog('Panel styles updated', null, 'info');
 
     if (settings.autoOpenBot && !isMobileDevice()) {
         setTimeout(() => botPanel.show(), 1000);
@@ -271,4 +308,6 @@ export async function initializeExtension() {
         setTimeout(() => userPanel.show(), 1000);
     }
     setTimeout(updatePanelStyles, 1500);
+
+    debugLog('Extension initialization completed', null, 'info');
 }
