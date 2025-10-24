@@ -1,1 +1,0 @@
-These are sillytavern source code snippets. These files should never be referenced by code and exist purely for review purposes.
