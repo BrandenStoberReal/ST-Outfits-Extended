@@ -243,17 +243,8 @@ export async function initializeExtension() {
     const storageService = new StorageService(
         (data) => {
             try {
-                // Create a clean copy of the data to avoid circular references
-                // Only include necessary properties to serialize
-                const cleanData = {
-                    instances: data.instances || {},
-                    user_instances: data.user_instances || {},
-                    presets: data.presets || {},
-                    settings: data.settings || {}
-                };
-
                 // Use deepClone to avoid circular reference issues when serializing
-                const clonedData = deepClone(cleanData);
+                const clonedData = deepClone(data);
 
                 // Use safeJsonStringify to handle any remaining circular references
                 const stringifiedData = safeJsonStringify({outfit_tracker: clonedData});
@@ -287,18 +278,30 @@ export async function initializeExtension() {
 
     debugLog('Outfit managers created', {botManager, userManager}, 'info');
 
-    const botPanel = new BotOutfitPanel(botManager, CLOTHING_SLOTS, ACCESSORY_SLOTS, () => {
+    const botPanel = new BotOutfitPanel(botManager, CLOTHING_SLOTS, ACCESSORY_SLOTS, (data) => {
         try {
-            // Save the current state from the store
-            outfitStore.saveState();
+            // Use deepClone to avoid circular reference issues when serializing
+            const clonedData = deepClone(data);
+
+            // Use safeJsonStringify to handle any remaining circular references
+            const stringifiedData = safeJsonStringify({outfit_tracker: clonedData});
+            const finalData = JSON.parse(stringifiedData);
+
+            STContext.saveSettingsDebounced(finalData);
         } catch (error) {
             console.error('[BotOutfitPanel] Error saving settings:', error);
         }
     });
-    const userPanel = new UserOutfitPanel(userManager, CLOTHING_SLOTS, ACCESSORY_SLOTS, () => {
+    const userPanel = new UserOutfitPanel(userManager, CLOTHING_SLOTS, ACCESSORY_SLOTS, (data) => {
         try {
-            // Save the current state from the store
-            outfitStore.saveState();
+            // Use deepClone to avoid circular reference issues when serializing
+            const clonedData = deepClone(data);
+
+            // Use safeJsonStringify to handle any remaining circular references
+            const stringifiedData = safeJsonStringify({outfit_tracker: clonedData});
+            const finalData = JSON.parse(stringifiedData);
+
+            STContext.saveSettingsDebounced(finalData);
         } catch (error) {
             console.error('[UserOutfitPanel] Error saving settings:', error);
         }
