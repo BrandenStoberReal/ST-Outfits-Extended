@@ -87,24 +87,39 @@ export function safeGet(obj, path, defaultValue = null) {
 /**
  * Creates a deep clone of an object
  * @param {any} obj - The object to clone
+ * @param {WeakMap} visited = new WeakMap() - Internal map to track visited objects for circular reference detection
  * @returns {any} A deep clone of the input object
  */
-export function deepClone(obj) {
+export function deepClone(obj, visited = new WeakMap()) {
     if (obj === null || typeof obj !== 'object') {
         return obj;
     }
+
+    // Handle circular references
+    if (visited.has(obj)) {
+        return visited.get(obj);
+    }
+    
     if (obj instanceof Date) {
         return new Date(obj.getTime());
     }
     if (Array.isArray(obj)) {
-        return obj.map(item => deepClone(item));
+        const clonedArray = [];
+
+        visited.set(obj, clonedArray);
+        for (let i = 0; i < obj.length; i++) {
+            clonedArray[i] = deepClone(obj[i], visited);
+        }
+        return clonedArray;
     }
     if (typeof obj === 'object') {
         const clonedObj = {};
 
+        visited.set(obj, clonedObj);
+
         for (const key in obj) {
             if (Object.prototype.hasOwnProperty.call(obj, key)) {
-                clonedObj[key] = deepClone(obj[key]);
+                clonedObj[key] = deepClone(obj[key], visited);
             }
         }
         return clonedObj;
