@@ -10,6 +10,10 @@ import { customMacroSystem } from '../utils/CustomMacroSystem.js';
 import { outfitStore } from '../common/Store.js';
 
 export class AutoOutfitSystem {
+    /**
+     * Creates a new AutoOutfitSystem instance.
+     * @param {object} outfitManager - The outfit manager to use for updating outfits
+     */
     constructor(outfitManager) {
         this.outfitManager = outfitManager;
         this.isEnabled = false;
@@ -28,6 +32,7 @@ export class AutoOutfitSystem {
 
     /**
      * Get the default system prompt for outfit detection
+     * @returns {string} The default system prompt used for outfit detection by the LLM
      */
     getDefaultPrompt() {
         return `Analyze the recent conversation for any mentions of the character putting on, wearing, removing, or changing clothing items or accessories.
@@ -56,6 +61,7 @@ NOTES:
 
     /**
      * Enable the auto outfit system
+     * @returns {string} A status message indicating the result of the operation
      */
     enable() {
         if (this.isEnabled) {
@@ -71,6 +77,7 @@ NOTES:
 
     /**
      * Disable the auto outfit system
+     * @returns {string} A status message indicating the result of the operation
      */
     disable() {
         if (!this.isEnabled) {
@@ -84,6 +91,7 @@ NOTES:
 
     /**
      * Set up event listeners for chat messages
+     * @returns {void}
      */
     setupEventListeners() {
         this.removeEventListeners();
@@ -122,6 +130,7 @@ NOTES:
 
     /**
      * Remove event listeners
+     * @returns {void}
      */
     removeEventListeners() {
         try {
@@ -141,6 +150,7 @@ NOTES:
 
     /**
      * Mark the app as initialized (allows processing to begin)
+     * @returns {void}
      */
     markAppInitialized() {
         if (!this.appInitialized) {
@@ -151,6 +161,7 @@ NOTES:
 
     /**
      * Process outfit commands based on chat context
+     * @returns {Promise<void>} A promise that resolves when processing is complete
      */
     async processOutfitCommands() {
         if (this.consecutiveFailures >= this.maxConsecutiveFailures) {
@@ -186,6 +197,8 @@ NOTES:
 
     /**
      * Process with retry mechanism
+     * @returns {Promise<void>} A promise that resolves when the processing is complete
+     * @throws {Error} If all retry attempts fail
      */
     async processWithRetry() {
         while (this.currentRetryCount < this.maxRetries) {
@@ -209,6 +222,8 @@ NOTES:
 
     /**
      * Execute the generation command
+     * @returns {Promise<void>} A promise that resolves when the generation command is complete
+     * @throws {Error} If there are no valid messages to process or generation fails
      */
     async executeGenCommand() {
         const recentMessages = this.getLastMessages(3);
@@ -246,6 +261,8 @@ NOTES:
 
     /**
      * Replace macros in the system prompt
+     * @param {string} prompt - The prompt to replace macros in
+     * @returns {string} The prompt with macros replaced
      */
     replaceMacrosInPrompt(prompt) {
         return customMacroSystem.replaceMacrosInText(prompt);
@@ -253,6 +270,8 @@ NOTES:
 
     /**
      * Parse the generated text to extract commands
+     * @param {string} text - The text to parse for commands
+     * @returns {Array<string>} An array of extracted outfit commands
      */
     parseGeneratedText(text) {
         if (!text || text.trim() === '[none]') {
@@ -267,6 +286,8 @@ NOTES:
 
     /**
      * Process a batch of commands
+     * @param {Array<string>} commands - An array of outfit command strings to process
+     * @returns {Promise<void>} A promise that resolves when all commands in the batch are processed
      */
     async processCommandBatch(commands) {
         if (!commands || commands.length === 0) {
@@ -322,6 +343,7 @@ NOTES:
 
     /**
      * Get the active character name without using regex
+     * @returns {string} The name of the active character
      */
     getActiveCharacterName() {
         try {
@@ -341,6 +363,8 @@ NOTES:
 
     /**
      * Parse a command string to extract action, slot, and value without using regex
+     * @param {string} command - The outfit command string to parse
+     * @returns {object|null} An object containing action, slot, and value properties, or null if invalid
      */
     parseCommand(command) {
         if (!command || typeof command !== 'string') {
@@ -455,6 +479,8 @@ NOTES:
 
     /**
      * Check if a slot name is valid (contains only alphanumeric characters, underscores, and hyphens)
+     * @param {string} str - The slot name to validate
+     * @returns {boolean} True if the slot name is valid, false otherwise
      */
     isValidSlotName(str) {
         if (str.length === 0) {
@@ -478,6 +504,10 @@ NOTES:
 
     /**
      * Replace all occurrences of a substring without using regex
+     * @param {string} str - The string to perform replacements on
+     * @param {string} searchValue - The substring to search for
+     * @param {string} replaceValue - The replacement string
+     * @returns {string} The string with all occurrences of searchValue replaced with replaceValue
      */
     replaceAll(str, searchValue, replaceValue) {
         if (!searchValue) {return str;}
@@ -499,6 +529,9 @@ NOTES:
 
     /**
      * Process a single command
+     * @param {string} command - The outfit command to process
+     * @returns {Promise<object>} An object containing the result of the command execution
+     * @throws {Error} If the command format is invalid
      */
     async processSingleCommand(command) {
         try {
@@ -535,6 +568,11 @@ NOTES:
 
     /**
      * Execute a specific command on the outfit manager
+     * @param {string} action - The action to perform (wear, remove, or change)
+     * @param {string} slot - The outfit slot to modify
+     * @param {string} value - The value to set for the slot
+     * @returns {Promise<string>} A message indicating the result of the command execution
+     * @throws {Error} If the slot is invalid or the action is not recognized
      */
     async executeCommand(action, slot, value) {
         const validSlots = [...this.outfitManager.slots];
@@ -552,6 +590,7 @@ NOTES:
 
     /**
      * Update the outfit panel UI
+     * @returns {void}
      */
     updateOutfitPanel() {
         if (window.botOutfitPanel && window.botOutfitPanel.isVisible) {
@@ -571,6 +610,8 @@ NOTES:
 
     /**
      * Get the last N messages from the chat
+     * @param {number} count - The number of recent messages to retrieve (default: 3)
+     * @returns {string} The last N messages joined with newlines, or an empty string if no chat exists
      */
     getLastMessages(count = 3) {
         try {
@@ -595,6 +636,9 @@ NOTES:
 
     /**
      * Show a popup notification
+     * @param {string} message - The message to display in the popup
+     * @param {string} type - The type of notification ('info', 'success', 'warning', or 'error'). Default: 'info'
+     * @returns {void}
      */
     showPopup(message, type = 'info') {
         try {
@@ -613,6 +657,8 @@ NOTES:
 
     /**
      * Simple delay function
+     * @param {number} ms - The number of milliseconds to delay
+     * @returns {Promise<void>} A promise that resolves after the specified delay
      */
     delay(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
@@ -620,6 +666,14 @@ NOTES:
 
     /**
      * Get system status
+     * @returns {object} An object containing the current status of the auto outfit system
+     * @property {boolean} enabled - Whether the auto outfit system is enabled
+     * @property {boolean} hasPrompt - Whether the system has a prompt set
+     * @property {number} promptLength - The length of the current system prompt
+     * @property {boolean} isProcessing - Whether the system is currently processing
+     * @property {number} consecutiveFailures - The number of consecutive processing failures
+     * @property {number} currentRetryCount - The current retry attempt count
+     * @property {number} maxRetries - The maximum number of retry attempts
      */
     getStatus() {
         return {
@@ -635,6 +689,7 @@ NOTES:
 
     /**
      * Manual trigger for outfit processing
+     * @returns {Promise<void>} A promise that resolves when the manual trigger completes
      */
     async manualTrigger() {
         if (this.isProcessing) {
@@ -652,6 +707,8 @@ NOTES:
 
     /**
      * Set a custom prompt
+     * @param {string} prompt - The custom prompt to set, or null to reset to default
+     * @returns {string} A status message indicating the prompt was updated
      */
     setPrompt(prompt) {
         this.systemPrompt = prompt || this.getDefaultPrompt();
@@ -660,6 +717,7 @@ NOTES:
 
     /**
      * Get the processed system prompt
+     * @returns {string} The system prompt with macros replaced
      */
     getProcessedSystemPrompt() {
         return this.replaceMacrosInPrompt(this.systemPrompt);
@@ -667,6 +725,7 @@ NOTES:
     
     /**
      * Get current user name
+     * @returns {string} The current user's name
      */
     getUserName() {
         return customMacroSystem.getCurrentUserName();
@@ -674,6 +733,7 @@ NOTES:
 
     /**
      * Reset to default prompt
+     * @returns {string} A status message indicating the prompt was reset
      */
     resetToDefaultPrompt() {
         this.systemPrompt = this.getDefaultPrompt();
@@ -682,6 +742,8 @@ NOTES:
     
     /**
      * Set connection profile
+     * @param {string} profile - The connection profile to use
+     * @returns {string} A status message indicating the profile was set
      */
     setConnectionProfile(profile) {
         this.connectionProfile = profile;
@@ -690,6 +752,7 @@ NOTES:
     
     /**
      * Get connection profile
+     * @returns {string|null} The currently set connection profile, or null if none is set
      */
     getConnectionProfile() {
         return this.connectionProfile;

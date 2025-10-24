@@ -19,6 +19,12 @@ import { OutfitDataService } from '../services/OutfitDataService.js';
 
 let AutoOutfitSystem;
 
+/**
+ * Loads the AutoOutfitSystem module dynamically.
+ * This function attempts to import the AutoOutfitSystem module and assigns it to the AutoOutfitSystem variable.
+ * If loading fails, it creates a dummy class to prevent errors.
+ * @returns {Promise<void>} A promise that resolves when the module is loaded
+ */
 async function loadAutoOutfitSystem() {
     try {
         const autoOutfitModule = await import('./AutoOutfitSystem.js');
@@ -30,6 +36,14 @@ async function loadAutoOutfitSystem() {
     }
 }
 
+/**
+ * Processes the first message in a conversation to generate a unique instance ID.
+ * This function cleans macros from the first bot message and generates an instance ID
+ * based on the cleaned message content, which allows the system to track outfits 
+ * per conversation instance.
+ * @param {object} context - Optional SillyTavern context. If not provided, will try to get from global context.
+ * @returns {Promise<void>} A promise that resolves when the processing is complete
+ */
 async function processMacrosInFirstMessage(context) {
     try {
         // Use provided context or fallback to global context
@@ -67,7 +81,13 @@ async function processMacrosInFirstMessage(context) {
     }
 }
 
-// Function to get all outfit values for a character across all instances
+/**
+ * Gets all outfit values for a character across all instances and presets.
+ * This function collects all outfit values for a specific character to help
+ * ensure consistent instance ID generation regardless of outfit changes.
+ * @param {string|number} characterId - The ID of the character to get outfit values for
+ * @returns {Array<string>} An array of all unique outfit values for the character
+ */
 function getAllOutfitValuesForCharacter(characterId) {
     if (!characterId) {return [];}
     
@@ -112,7 +132,12 @@ function getAllOutfitValuesForCharacter(characterId) {
     return Array.from(outfitValues);
 }
 
-// Helper function to check if a string contains only alphanumeric characters and underscores
+/**
+ * Checks if a string contains only alphanumeric characters and underscores.
+ * This helper function is used to validate macro patterns and other alphanumeric strings.
+ * @param {string} str - The string to validate
+ * @returns {boolean} True if the string contains only alphanumeric characters and underscores, false otherwise
+ */
 function isAlphaNumericWithUnderscores(str) {
     if (!str || typeof str !== 'string') {
         return false;
@@ -138,7 +163,12 @@ function isAlphaNumericWithUnderscores(str) {
     return true;
 }
 
-// Helper function to check if a string contains only lowercase alphanumeric characters, underscores, and hyphens
+/**
+ * Checks if a string contains only lowercase alphanumeric characters, underscores, and hyphens.
+ * This helper function is used to validate slot names in macro patterns.
+ * @param {string} str - The string to validate
+ * @returns {boolean} True if the string contains only lowercase alphanumeric characters, underscores, and hyphens, false otherwise
+ */
 function isLowerAlphaNumericWithUnderscoresAndHyphens(str) {
     if (!str || typeof str !== 'string') {
         return false;
@@ -164,7 +194,12 @@ function isLowerAlphaNumericWithUnderscoresAndHyphens(str) {
     return true;
 }
 
-// Helper function to check if user agent contains mobile device indicators
+/**
+ * Checks if a user agent string contains mobile device indicators.
+ * This helper function is used to determine if the current device is a mobile device.
+ * @param {string} userAgent - The user agent string to check
+ * @returns {boolean} True if the user agent indicates a mobile device, false otherwise
+ */
 function isMobileUserAgent(userAgent) {
     const mobileIndicators = [
         'android',
@@ -188,7 +223,13 @@ function isMobileUserAgent(userAgent) {
     return false;
 }
 
-// Function to clean outfit-related values from text for consistent instance ID generation
+/**
+ * Cleans outfit-related values from text for consistent instance ID generation.
+ * This function removes outfit macros and values from text to ensure that
+ * instance IDs remain consistent regardless of outfit changes.
+ * @param {string} text - The text to clean
+ * @returns {string} The cleaned text with outfit-related values removed
+ */
 function cleanOutfitMacrosFromText(text) {
     if (!text || typeof text !== 'string') {return text || '';}
     
@@ -341,6 +382,18 @@ function cleanOutfitMacrosFromText(text) {
     return workingText;
 }
 
+/**
+ * Sets up the global API for the outfit extension.
+ * This function registers the panel and system references in the global API,
+ * and registers character-specific macros when the system initializes.
+ * @param {object} botManager - The bot outfit manager instance
+ * @param {object} userManager - The user outfit manager instance
+ * @param {object} botPanel - The bot outfit panel instance
+ * @param {object} userPanel - The user outfit panel instance
+ * @param {object} autoOutfitSystem - The auto outfit system instance
+ * @param {object} outfitDataService - The outfit data service instance
+ * @returns {void}
+ */
 function setupApi(botManager, userManager, botPanel, userPanel, autoOutfitSystem, outfitDataService) {
     extension_api.botOutfitPanel = botPanel;
     extension_api.userOutfitPanel = userPanel;
@@ -382,18 +435,38 @@ function setupApi(botManager, userManager, botPanel, userPanel, autoOutfitSystem
     globalThis.outfitTracker = extension_api;
 }
 
+/**
+ * Updates the styles of the outfit panels.
+ * This function applies color settings to both bot and user outfit panels.
+ * @returns {void}
+ */
 function updatePanelStyles() {
     if (window.botOutfitPanel) {window.botOutfitPanel.applyPanelColors();}
     if (window.userOutfitPanel) {window.userOutfitPanel.applyPanelColors();}
 }
 
+/**
+ * Checks if the current device is a mobile device.
+ * This function combines user agent checks, screen size, and touch capabilities to determine
+ * if the current device should be treated as mobile.
+ * @returns {boolean} True if the device is a mobile device, false otherwise
+ */
 function isMobileDevice() {
     const userAgent = navigator.userAgent.toLowerCase();
 
     return isMobileUserAgent(userAgent) || window.innerWidth <= 768 || ('ontouchstart' in window) || (navigator.maxTouchPoints > 1);
 }
 
-// Define the interceptor function to inject outfit information into the context
+/**
+ * The interceptor function to inject outfit information into the conversation context.
+ * This function is called by SillyTavern during generation to inject outfit information
+ * into the AI's context, making it aware of the current character and user outfits.
+ * @param {array} chat - The chat array that will be passed to the AI
+ * @param {number} contextSize - The context size limit
+ * @param {object} abort - Abort signal for the request
+ * @param {string} type - The type of generation request
+ * @returns {Promise<void>} A promise that resolves when the injection is complete
+ */
 globalThis.outfitTrackerInterceptor = async function(chat, contextSize, abort, type) {
     try {
         // Create a temporary reference to the managers using the panel references
@@ -438,6 +511,13 @@ globalThis.outfitTrackerInterceptor = async function(chat, contextSize, abort, t
     }
 };
 
+/**
+ * Initializes the outfit extension.
+ * This is the main initialization function that loads all components of the system,
+ * including managers, panels, settings, and event listeners.
+ * @returns {Promise<void>} A promise that resolves when the extension is fully initialized
+ * @throws {Error} If SillyTavern context is not available
+ */
 export async function initializeExtension() {
     await loadAutoOutfitSystem();
 
