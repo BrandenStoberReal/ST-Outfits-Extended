@@ -415,22 +415,10 @@ class OutfitStore {
         if (!this.dataManager) {
             return;
         }
+        const {botInstances, userInstances, presets, settings} = this.state;
 
-        // Extract only the data we need to save, avoiding problematic references
-        // Use deepClone to prevent circular references
-        const saveableState = {
-            botInstances: deepClone(this.state.botInstances || {}),
-            userInstances: deepClone(this.state.userInstances || {}),
-            presets: deepClone(this.state.presets || {}),
-            settings: deepClone(this.state.settings || {})
-        };
-
-        this.dataManager.saveOutfitData({
-            botInstances: saveableState.botInstances,
-            userInstances: saveableState.userInstances,
-            presets: saveableState.presets
-        });
-        this.dataManager.saveSettings(saveableState.settings);
+        this.dataManager.saveOutfitData({botInstances, userInstances, presets});
+        this.dataManager.saveSettings(settings);
     }
 
     /**

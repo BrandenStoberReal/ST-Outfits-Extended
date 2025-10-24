@@ -18,7 +18,6 @@ import {DataManager} from '../services/DataManager.js';
 import {OutfitDataService} from '../services/OutfitDataService.js';
 import {macroProcessor} from '../utils/MacroProcessor.js';
 import {debugLog} from '../utils/DebugLogger.js';
-import {deepClone} from '../utils/utilities.js';
 
 let AutoOutfitSystem;
 
@@ -241,16 +240,7 @@ export async function initializeExtension() {
     }
 
     const storageService = new StorageService(
-        (data) => {
-            try {
-                // Use deepClone to avoid circular reference issues when serializing
-                const clonedData = deepClone(data);
-
-                STContext.saveSettingsDebounced({outfit_tracker: clonedData});
-            } catch (error) {
-                console.error('[ExtensionCore] Error saving settings:', error);
-            }
-        },
+        (data) => STContext.saveSettingsDebounced({outfit_tracker: data}),
         () => STContext.extensionSettings.outfit_tracker
     );
 
@@ -274,26 +264,8 @@ export async function initializeExtension() {
 
     debugLog('Outfit managers created', {botManager, userManager}, 'info');
 
-    const botPanel = new BotOutfitPanel(botManager, CLOTHING_SLOTS, ACCESSORY_SLOTS, (data) => {
-        try {
-            // Use deepClone to avoid circular reference issues when serializing
-            const clonedData = deepClone(data);
-
-            STContext.saveSettingsDebounced({outfit_tracker: clonedData});
-        } catch (error) {
-            console.error('[BotOutfitPanel] Error saving settings:', error);
-        }
-    });
-    const userPanel = new UserOutfitPanel(userManager, CLOTHING_SLOTS, ACCESSORY_SLOTS, (data) => {
-        try {
-            // Use deepClone to avoid circular reference issues when serializing
-            const clonedData = deepClone(data);
-
-            STContext.saveSettingsDebounced({outfit_tracker: clonedData});
-        } catch (error) {
-            console.error('[UserOutfitPanel] Error saving settings:', error);
-        }
-    });
+    const botPanel = new BotOutfitPanel(botManager, CLOTHING_SLOTS, ACCESSORY_SLOTS, (data) => STContext.saveSettingsDebounced({outfit_tracker: data}));
+    const userPanel = new UserOutfitPanel(userManager, CLOTHING_SLOTS, ACCESSORY_SLOTS, (data) => STContext.saveSettingsDebounced({outfit_tracker: data}));
 
     debugLog('Outfit panels created', {botPanel, userPanel}, 'info');
 

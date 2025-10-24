@@ -1,4 +1,4 @@
-import {deepClone, deepMerge} from '../utils/utilities.js';
+import {deepMerge} from '../utils/utilities.js';
 
 const DATA_VERSION = '1.0.0';
 
@@ -25,22 +25,8 @@ class DataManager {
     }
 
     save(data) {
-        try {
-            // Use deepClone to avoid circular reference issues when serializing
-            const mergedData = deepMerge(this.data, data);
-            // Deep clone the merged data to break any circular references
-            const clonedData = deepClone(mergedData);
-
-            this.storageService.save(clonedData);
-        } catch (error) {
-            console.error('[DataManager] Error saving data:', error);
-            // Fallback: try to save with only safe properties
-            try {
-                this.storageService.save(this.data);
-            } catch (fallbackError) {
-                console.error('[DataManager] Fallback save also failed:', fallbackError);
-            }
-        }
+        this.data = deepMerge(this.data, data);
+        this.storageService.save(this.data);
     }
 
     load() {

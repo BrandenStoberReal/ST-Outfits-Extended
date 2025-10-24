@@ -739,7 +739,6 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem, context) {
                 autoOpenBot: $('#outfit-auto-bot').prop('checked'),
                 autoOpenUser: $('#outfit-auto-user').prop('checked')
             };
-
             outfitStore.setState({
                 ...outfitStore.getState(),
                 settings: updatedSettings
@@ -968,7 +967,6 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem, context) {
                     ...outfitStore.getState().settings,
                     autoOutfitSystem: $(this).prop('checked')
                 };
-
                 outfitStore.setState({
                     ...outfitStore.getState(),
                     settings: updatedSettings
@@ -991,7 +989,6 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem, context) {
                     ...outfitStore.getState().settings,
                     autoOutfitConnectionProfile: profile
                 };
-
                 outfitStore.setState({
                     ...outfitStore.getState(),
                     settings: updatedSettings
@@ -1010,7 +1007,6 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem, context) {
                     ...outfitStore.getState().settings,
                     autoOutfitPrompt: $(this).val()
                 };
-
                 outfitStore.setState({
                     ...outfitStore.getState(),
                     settings: updatedSettings
