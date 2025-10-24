@@ -18,7 +18,7 @@ import {DataManager} from '../services/DataManager.js';
 import {OutfitDataService} from '../services/OutfitDataService.js';
 import {macroProcessor} from '../utils/MacroProcessor.js';
 import {debugLog} from '../utils/DebugLogger.js';
-import {deepClone} from '../utils/utilities.js';
+import {deepClone, safeJsonStringify} from '../utils/utilities.js';
 
 let AutoOutfitSystem;
 
@@ -246,7 +246,11 @@ export async function initializeExtension() {
                 // Use deepClone to avoid circular reference issues when serializing
                 const clonedData = deepClone(data);
 
-                STContext.saveSettingsDebounced({outfit_tracker: clonedData});
+                // Use safeJsonStringify to handle any remaining circular references
+                const stringifiedData = safeJsonStringify({outfit_tracker: clonedData});
+                const finalData = JSON.parse(stringifiedData);
+
+                STContext.saveSettingsDebounced(finalData);
             } catch (error) {
                 console.error('[ExtensionCore] Error saving settings:', error);
             }
@@ -279,7 +283,11 @@ export async function initializeExtension() {
             // Use deepClone to avoid circular reference issues when serializing
             const clonedData = deepClone(data);
 
-            STContext.saveSettingsDebounced({outfit_tracker: clonedData});
+            // Use safeJsonStringify to handle any remaining circular references
+            const stringifiedData = safeJsonStringify({outfit_tracker: clonedData});
+            const finalData = JSON.parse(stringifiedData);
+
+            STContext.saveSettingsDebounced(finalData);
         } catch (error) {
             console.error('[BotOutfitPanel] Error saving settings:', error);
         }
@@ -289,7 +297,11 @@ export async function initializeExtension() {
             // Use deepClone to avoid circular reference issues when serializing
             const clonedData = deepClone(data);
 
-            STContext.saveSettingsDebounced({outfit_tracker: clonedData});
+            // Use safeJsonStringify to handle any remaining circular references
+            const stringifiedData = safeJsonStringify({outfit_tracker: clonedData});
+            const finalData = JSON.parse(stringifiedData);
+
+            STContext.saveSettingsDebounced(finalData);
         } catch (error) {
             console.error('[UserOutfitPanel] Error saving settings:', error);
         }

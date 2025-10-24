@@ -295,3 +295,22 @@ export async function generateInstanceIdFromText(text, valuesToRemove = null) {
         return generateInstanceIdFromTextSimple(normalizedText);
     }
 }
+
+/**
+ * Safely serialize an object to JSON, handling circular references
+ * @param {any} obj - The object to serialize
+ * @returns {string} The JSON string representation of the object
+ */
+export function safeJsonStringify(obj) {
+    const seen = new WeakSet();
+
+    return JSON.stringify(obj, (key, val) => {
+        if (val != null && typeof val == 'object') {
+            if (seen.has(val)) {
+                return '[Circular]';
+            }
+            seen.add(val);
+        }
+        return val;
+    });
+}
