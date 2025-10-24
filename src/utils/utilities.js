@@ -305,7 +305,7 @@ export function safeJsonStringify(obj) {
     const seen = new WeakSet();
 
     return JSON.stringify(obj, (key, val) => {
-        if (val != null && typeof val == 'object') {
+        if (val !== null && typeof val === 'object') {
             if (seen.has(val)) {
                 return '[Circular]';
             }
