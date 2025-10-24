@@ -699,15 +699,9 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem, context) {
 
             saveSettingsFn();
 
-            // Update the outfit store with the new color settings (only update store, don't trigger additional save)
-            outfitStore.setState({
-                ...outfitStore.getState(),
-                settings: {
-                    ...outfitStore.getState().settings,
-                    botPanelColors: settings[MODULE_NAME].botPanelColors,
-                    userPanelColors: settings[MODULE_NAME].userPanelColors
-                }
-            });
+            // Update the outfit store with the new color settings
+            outfitStore.setSetting('botPanelColors', settings[MODULE_NAME].botPanelColors);
+            outfitStore.setSetting('userPanelColors', settings[MODULE_NAME].userPanelColors);
         }
 
         // Apply the new colors to the panels
@@ -731,18 +725,11 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem, context) {
             settings[MODULE_NAME].debugMode = $('#outfit-debug-mode').prop('checked');
             saveSettingsFn();
 
-            // Update the outfit store with the new settings (only update store, don't trigger additional save)
-            const updatedSettings = {
-                ...outfitStore.getState().settings,
-                debugMode: $('#outfit-debug-mode').prop('checked'),
-                enableSysMessages: $('#outfit-sys-toggle').prop('checked'),
-                autoOpenBot: $('#outfit-auto-bot').prop('checked'),
-                autoOpenUser: $('#outfit-auto-user').prop('checked')
-            };
-            outfitStore.setState({
-                ...outfitStore.getState(),
-                settings: updatedSettings
-            });
+            // Update the outfit store with the new settings
+            outfitStore.setSetting('debugMode', $('#outfit-debug-mode').prop('checked'));
+            outfitStore.setSetting('enableSysMessages', $('#outfit-sys-toggle').prop('checked'));
+            outfitStore.setSetting('autoOpenBot', $('#outfit-auto-bot').prop('checked'));
+            outfitStore.setSetting('autoOpenUser', $('#outfit-auto-user').prop('checked'));
         }
     });
 
@@ -962,15 +949,8 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem, context) {
                 }
                 saveSettingsFn();
 
-                // Update the outfit store with the new setting (only update store, don't trigger additional save)
-                const updatedSettings = {
-                    ...outfitStore.getState().settings,
-                    autoOutfitSystem: $(this).prop('checked')
-                };
-                outfitStore.setState({
-                    ...outfitStore.getState(),
-                    settings: updatedSettings
-                });
+                // Update the outfit store with the new setting
+                outfitStore.setSetting('autoOutfitSystem', $(this).prop('checked'));
             }
         });
 
@@ -984,15 +964,8 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem, context) {
                 }
                 saveSettingsFn();
 
-                // Update the outfit store with the new setting (only update store, don't trigger additional save)
-                const updatedSettings = {
-                    ...outfitStore.getState().settings,
-                    autoOutfitConnectionProfile: profile
-                };
-                outfitStore.setState({
-                    ...outfitStore.getState(),
-                    settings: updatedSettings
-                });
+                // Update the outfit store with the new setting
+                outfitStore.setSetting('autoOutfitConnectionProfile', profile);
             }
         });
 
@@ -1002,15 +975,8 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem, context) {
                 autoOutfitSystem.setPrompt($(this).val());
                 saveSettingsFn();
 
-                // Update the outfit store with the new setting (only update store, don't trigger additional save)
-                const updatedSettings = {
-                    ...outfitStore.getState().settings,
-                    autoOutfitPrompt: $(this).val()
-                };
-                outfitStore.setState({
-                    ...outfitStore.getState(),
-                    settings: updatedSettings
-                });
+                // Update the outfit store with the new setting
+                outfitStore.setSetting('autoOutfitPrompt', $(this).val());
             }
         });
 
