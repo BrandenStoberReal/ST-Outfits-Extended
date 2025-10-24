@@ -1,7 +1,6 @@
-import { importOutfitFromCharacterCard } from '../services/LLMService.js';
-import { CLOTHING_SLOTS, ACCESSORY_SLOTS } from '../config/constants.js';
-import { areSystemMessagesEnabled } from '../utils/SettingsUtil.js';
-import { DataManager } from '../services/DataManager.js';
+import {importOutfitFromCharacterCard} from '../services/LLMService.js';
+import {ACCESSORY_SLOTS, CLOTHING_SLOTS} from '../config/constants.js';
+import {areSystemMessagesEnabled} from '../utils/SettingsUtil.js';
 
 /**
  * Registers all outfit-related slash commands with SillyTavern's command system.
@@ -14,12 +13,12 @@ import { DataManager } from '../services/DataManager.js';
  */
 export async function registerOutfitCommands(botManager, userManager, autoOutfitSystem) {
     // Check if new slash command system is available in SillyTavern
-    const hasSlashCommands = typeof window.SlashCommandParser !== 'undefined' && 
-                             typeof window.SlashCommand !== 'undefined' &&
-                             typeof window.SlashCommandArgument !== 'undefined' &&
-                             typeof window.SlashCommandNamedArgument !== 'undefined' &&
-                             typeof window.ARGUMENT_TYPE !== 'undefined';
-    
+    const hasSlashCommands = typeof window.SlashCommandParser !== 'undefined' &&
+        typeof window.SlashCommand !== 'undefined' &&
+        typeof window.SlashCommandArgument !== 'undefined' &&
+        typeof window.SlashCommandNamedArgument !== 'undefined' &&
+        typeof window.ARGUMENT_TYPE !== 'undefined';
+
     if (hasSlashCommands) {
         // Use new slash command system
         window.SlashCommandParser.addCommandObject(window.SlashCommand.fromProps({
@@ -157,7 +156,7 @@ export async function registerOutfitCommands(botManager, userManager, autoOutfit
                                 toastr.info(message, 'Outfit System');
                             }
                             return message;
-                        } 
+                        }
                         const status = autoOutfitSystem.getStatus();
                         const statusMessage = `Auto outfit: ${status.enabled ? 'ON' : 'OFF'}
 Prompt: ${status.hasPrompt ? 'SET' : 'NOT SET'}`;
@@ -166,15 +165,15 @@ Prompt: ${status.hasPrompt ? 'SET' : 'NOT SET'}`;
                             toastr.info(statusMessage);
                         }
                         return statusMessage;
-                    
-                    } 
+
+                    }
                     const message = 'Auto outfit system not available';
 
                     if (!isQuiet) {
                         toastr.error(message, 'Outfit System');
                     }
                     return message;
-                
+
                 },
                 returns: 'toggles auto outfit updates',
                 namedArgumentList: [
@@ -240,20 +239,20 @@ Prompt: ${status.hasPrompt ? 'SET' : 'NOT SET'}`;
                                 window.botOutfitPanel.sendSystemMessage(message);
                             }
                             return message;
-                        } 
+                        }
                         const length = autoOutfitSystem.systemPrompt?.length || 0;
 
                         toastr.info(`Current prompt length: ${length}`);
                         return `Current prompt length: ${length}`;
-                    
-                    } 
+
+                    }
                     const message = 'Auto outfit system not available';
 
                     if (!args?.quiet) {
                         toastr.error(message, 'Outfit System');
                     }
                     return message;
-                
+
                 },
                 returns: 'sets or shows the auto outfit system prompt',
                 namedArgumentList: [],
@@ -302,14 +301,14 @@ Prompt: ${status.hasPrompt ? 'SET' : 'NOT SET'}`;
                             window.saveSettingsDebounced();
                         }
                         return message;
-                    } 
+                    }
                     const message = 'Auto outfit system not available';
 
                     if (!args?.quiet) {
                         toastr.error(message, 'Outfit System');
                     }
                     return message;
-                
+
                 },
                 returns: 'resets to default system prompt',
                 namedArgumentList: [],
@@ -348,14 +347,14 @@ Full length: ${status.promptLength} chars`;
                             extendedTimeOut: 20000
                         });
                         return message;
-                    } 
+                    }
                     const message = 'Auto outfit system not available';
 
                     if (!args?.quiet) {
                         toastr.error(message, 'Outfit System');
                     }
                     return message;
-                
+
                 },
                 returns: 'shows current system prompt',
                 namedArgumentList: [],
@@ -384,14 +383,14 @@ Full length: ${status.promptLength} chars`;
 
                         toastr.info(result, 'Manual Outfit Check');
                         return result;
-                    } 
+                    }
                     const message = 'Auto outfit system not available';
 
                     if (!args?.quiet) {
                         toastr.error(message, 'Outfit System');
                     }
                     return message;
-                
+
                 },
                 returns: 'manually trigger auto outfit check',
                 namedArgumentList: [],
@@ -430,11 +429,11 @@ Full length: ${status.promptLength} chars`;
                 }
 
                 try {
-                // First try to load the outfit for the bot character
+                    // First try to load the outfit for the bot character
                     let message = await botManager.loadPreset(outfitName);
 
                     if (message.includes('not found')) {
-                    // If not found for bot, try loading default outfit if requested
+                        // If not found for bot, try loading default outfit if requested
                         if (outfitName.toLowerCase() === 'default') {
                             message = await botManager.loadDefaultOutfit();
                         }
@@ -448,7 +447,7 @@ Full length: ${status.promptLength} chars`;
                     let userMessage = await userManager.loadPreset(outfitName);
 
                     if (userMessage.includes('not found')) {
-                    // If not found for user, try loading default outfit if requested
+                        // If not found for user, try loading default outfit if requested
                         if (outfitName.toLowerCase() === 'default') {
                             userMessage = await userManager.loadDefaultOutfit();
                         }
@@ -465,14 +464,14 @@ Full length: ${status.promptLength} chars`;
                             toastr.error(error, 'Outfit System');
                         }
                         return error;
-                    } 
+                    }
                     const success = `Switched to "${outfitName}" outfit.`;
 
                     if (!isQuiet) {
                         toastr.info(success, 'Outfit System');
                     }
                     return success;
-                
+
                 } catch (error) {
                     console.error('Error switching outfit:', error);
                     const error_msg = `Error switching to "${outfitName}" outfit.`;
@@ -1360,7 +1359,7 @@ Full length: ${status.promptLength} chars`;
                 const isQuiet = args?.quiet === true;
 
                 try {
-                // Get character presets
+                    // Get character presets
                     const botPresets = botManager.getPresets();
                     // Get user presets
                     const userPresets = userManager.getPresets();

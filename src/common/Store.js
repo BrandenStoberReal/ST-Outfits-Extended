@@ -1,5 +1,5 @@
-import { DEFAULT_SETTINGS } from '../config/constants.js';
-import { deepClone } from '../utils/utilities.js';
+import {DEFAULT_SETTINGS} from '../config/constants.js';
+import {deepClone} from '../utils/utilities.js';
 
 class OutfitStore {
     constructor() {
@@ -13,10 +13,10 @@ class OutfitStore {
                 user: {},
             },
             panelSettings: {
-                botPanelColors: { ...DEFAULT_SETTINGS.botPanelColors },
-                userPanelColors: { ...DEFAULT_SETTINGS.userPanelColors },
+                botPanelColors: {...DEFAULT_SETTINGS.botPanelColors},
+                userPanelColors: {...DEFAULT_SETTINGS.userPanelColors},
             },
-            settings: { ...DEFAULT_SETTINGS },
+            settings: {...DEFAULT_SETTINGS},
             currentCharacterId: null,
             currentChatId: null,
             currentOutfitInstanceId: null,
@@ -72,7 +72,7 @@ class OutfitStore {
      * @param {Object} updates - Object containing the state updates
      */
     setState(updates) {
-        this.state = { ...this.state, ...updates };
+        this.state = {...this.state, ...updates};
         this.notifyListeners();
     }
 
@@ -93,10 +93,14 @@ class OutfitStore {
     getBotOutfit(characterId, instanceId) {
         const characterData = this.state.botInstances[characterId];
 
-        if (!characterData) {return {};}
+        if (!characterData) {
+            return {};
+        }
         const instanceData = characterData[instanceId];
 
-        if (!instanceData) {return {};}
+        if (!instanceData) {
+            return {};
+        }
         return deepClone(instanceData.bot || {});
     }
 
@@ -111,9 +115,9 @@ class OutfitStore {
             this.state.botInstances[characterId] = {};
         }
         if (!this.state.botInstances[characterId][instanceId]) {
-            this.state.botInstances[characterId][instanceId] = { bot: {}, user: {} };
+            this.state.botInstances[characterId][instanceId] = {bot: {}, user: {}};
         }
-        this.state.botInstances[characterId][instanceId].bot = { ...outfitData };
+        this.state.botInstances[characterId][instanceId].bot = {...outfitData};
         this.notifyListeners();
     }
 
@@ -134,7 +138,7 @@ class OutfitStore {
      * @param {Object} outfitData - The outfit data to set
      */
     setUserOutfit(instanceId, outfitData) {
-        this.state.userInstances[instanceId] = { ...outfitData };
+        this.state.userInstances[instanceId] = {...outfitData};
         this.notifyListeners();
     }
 
@@ -169,14 +173,14 @@ class OutfitStore {
             if (!this.state.presets.bot[key]) {
                 this.state.presets.bot[key] = {};
             }
-            this.state.presets.bot[key][presetName] = { ...outfitData };
+            this.state.presets.bot[key][presetName] = {...outfitData};
         } else {
             const key = instanceId || 'default';
 
             if (!this.state.presets.user[key]) {
                 this.state.presets.user[key] = {};
             }
-            this.state.presets.user[key][presetName] = { ...outfitData };
+            this.state.presets.user[key][presetName] = {...outfitData};
         }
         this.notifyListeners();
     }
@@ -408,10 +412,12 @@ class OutfitStore {
      * Save the current state to the data manager
      */
     saveState() {
-        if (!this.dataManager) {return;}
-        const { botInstances, userInstances, presets, settings } = this.state;
+        if (!this.dataManager) {
+            return;
+        }
+        const {botInstances, userInstances, presets, settings} = this.state;
 
-        this.dataManager.saveOutfitData({ botInstances, userInstances, presets });
+        this.dataManager.saveOutfitData({botInstances, userInstances, presets});
         this.dataManager.saveSettings(settings);
     }
 
@@ -419,18 +425,22 @@ class OutfitStore {
      * Load state from the data manager
      */
     loadState() {
-        if (!this.dataManager) {return;}
-        const { botInstances, userInstances, presets } = this.dataManager.loadOutfitData();
+        if (!this.dataManager) {
+            return;
+        }
+        const {botInstances, userInstances, presets} = this.dataManager.loadOutfitData();
         const settings = this.dataManager.loadSettings();
 
-        this.setState({ botInstances, userInstances, presets, settings });
+        this.setState({botInstances, userInstances, presets, settings});
     }
 
     /**
      * Flush data to the data manager
      */
     flush() {
-        if (!this.dataManager) {return;}
+        if (!this.dataManager) {
+            return;
+        }
         this.dataManager.flush();
     }
 
@@ -466,7 +476,9 @@ class OutfitStore {
     getCharacterInstances(characterId) {
         const characterData = this.state.botInstances[characterId];
 
-        if (!characterData) {return [];}
+        if (!characterData) {
+            return [];
+        }
         return Object.keys(characterData);
     }
 
@@ -492,8 +504,7 @@ class OutfitStore {
 const outfitStore = new OutfitStore();
 
 // Export the store instance and methods for accessing it
-export { outfitStore };
-
+export {outfitStore};
 
 
 // Export function to get current store state for debugging

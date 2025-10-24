@@ -4,7 +4,7 @@
 console.log('[OutfitTracker] Starting extension loading...');
 
 // Import main extension core functionality
-import { initializeExtension } from './src/core/ExtensionCore.js';
+import {initializeExtension} from './src/core/ExtensionCore.js';
 
 // Initialize the extension when the document is ready
 $(document).ready(async () => {

@@ -1,5 +1,4 @@
-
-import { deepMerge } from '../utils/utilities.js';
+import {deepMerge} from '../utils/utilities.js';
 
 const DATA_VERSION = '1.0.0';
 
@@ -53,7 +52,7 @@ class DataManager {
     }
 
     saveSettings(settings) {
-        this.save({ settings });
+        this.save({settings});
     }
 
     loadSettings() {
@@ -69,4 +68,4 @@ class DataManager {
     }
 }
 
-export { DataManager };
+export {DataManager};

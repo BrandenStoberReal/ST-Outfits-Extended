@@ -3,9 +3,8 @@
  * Completely removes global variables and uses custom {{char_topwear}} style macros
  */
 
-import { outfitStore } from '../common/Store.js';
-import { CLOTHING_SLOTS, ACCESSORY_SLOTS } from '../config/constants.js';
-import { replaceAll } from './StringProcessor.js';
+import {outfitStore} from '../common/Store.js';
+import {ACCESSORY_SLOTS, CLOTHING_SLOTS} from '../config/constants.js';
 
 class CustomMacroSystem {
     constructor() {
@@ -30,7 +29,7 @@ class CustomMacroSystem {
             });
         }
     }
-    
+
     /**
      * Deregister all outfit-related macros to prepare for re-registration
      */
@@ -49,7 +48,7 @@ class CustomMacroSystem {
             });
         }
     }
-    
+
     /**
      * Dynamically register character-specific macros as characters become available
      * This should be called whenever character data changes
@@ -57,16 +56,16 @@ class CustomMacroSystem {
     registerCharacterSpecificMacros(context) {
         // Use provided context or fallback to window
         const ctx = context || (window.SillyTavern?.getContext ? window.SillyTavern.getContext() : window.getContext());
-        
+
         if (ctx && ctx.registerMacro && ctx.characters) {
             // Iterate through all available characters
             for (const character of ctx.characters) {
                 if (character && character.name) {
                     const characterName = character.name;
-                    
+
                     // Register a macro for the character's name (e.g., {{Emma}})
                     ctx.registerMacro(characterName, (macro, nonce) => characterName);
-                    
+
                     // Register slot-based macros for this specific character (e.g., {{Emma_topwear}}, {{Emma_headwear}})
                     this.allSlots.forEach(slot => {
                         const macroName = `${characterName}_${slot}`;
@@ -77,23 +76,23 @@ class CustomMacroSystem {
             }
         }
     }
-    
+
     /**
      * Deregister character-specific macros to prepare for re-registration
      */
     deregisterCharacterSpecificMacros(context) {
         // Use provided context or fallback to window
         const ctx = context || (window.SillyTavern?.getContext ? window.SillyTavern.getContext() : window.getContext());
-        
+
         if (ctx && ctx.unregisterMacro && ctx.characters) {
             // Iterate through all available characters
             for (const character of ctx.characters) {
                 if (character && character.name) {
                     const characterName = character.name;
-                    
+
                     // Deregister the macro for the character's name (e.g., {{Emma}})
                     ctx.unregisterMacro(characterName);
-                    
+
                     // Deregister slot-based macros for this specific character
                     this.allSlots.forEach(slot => {
                         const macroName = `${characterName}_${slot}`;
@@ -112,7 +111,7 @@ class CustomMacroSystem {
     getCurrentCharName() {
         try {
             const context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
-            
+
             if (context && context.chat) {
                 for (let i = context.chat.length - 1; i >= 0; i--) {
                     const message = context.chat[i];
@@ -144,10 +143,10 @@ class CustomMacroSystem {
 
         try {
             const context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
-            
+
             // Determine characterId based on macro type and character name
             let charId = null;
-            
+
             if (characterName) {
                 // Looking for a specific character by name
                 if (context && context.characters) {
@@ -188,7 +187,7 @@ class CustomMacroSystem {
             // Get appropriate instanceId based on the conversation context
             const state = outfitStore.getState();
             let instanceId = null;
-            
+
             // Try to determine the appropriate instance ID based on current conversation
             if (context && context.chatId) {
                 // Use the chatId to create a unique instance ID for this conversation
@@ -197,7 +196,7 @@ class CustomMacroSystem {
                 // Fallback to current outfit instance ID if available
                 instanceId = state.currentOutfitInstanceId;
             }
-            
+
             if (!instanceId) {
                 return 'None';
             }
@@ -219,7 +218,7 @@ class CustomMacroSystem {
 
         return 'None';
     }
-    
+
     /**
      * Check if a string looks like a valid character name (not a standard macro type)
      * @param {string} name - The name to check
@@ -236,7 +235,7 @@ class CustomMacroSystem {
     getCurrentUserName() {
         try {
             const context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
-            
+
             if (context && context.chat) {
                 for (let i = context.chat.length - 1; i >= 0; i--) {
                     const message = context.chat[i];
@@ -247,7 +246,7 @@ class CustomMacroSystem {
                 }
             }
 
-            if (typeof window.power_user !== 'undefined' && window.power_user && 
+            if (typeof window.power_user !== 'undefined' && window.power_user &&
                 typeof window.user_avatar !== 'undefined' && window.user_avatar) {
                 const personaName = window.power_user.personas[window.user_avatar];
 
@@ -277,11 +276,15 @@ class CustomMacroSystem {
         while (index < text.length) {
             const openIdx = text.indexOf('{{', index);
 
-            if (openIdx === -1) {break;}
+            if (openIdx === -1) {
+                break;
+            }
 
             const closeIdx = text.indexOf('}}', openIdx);
 
-            if (closeIdx === -1) {break;}
+            if (closeIdx === -1) {
+                break;
+            }
 
             const macroContent = text.substring(openIdx + 2, closeIdx);
             const fullMatch = `{{${macroContent}}}`;
@@ -317,14 +320,14 @@ class CustomMacroSystem {
                     for (let i = 1; i < parts.length; i++) {
                         const prefix = parts.slice(0, i).join('_');
                         const suffix = parts.slice(i).join('_');
-                        
+
                         if (this.allSlots.includes(suffix)) {
                             macroType = prefix;
                             slot = suffix;
                             break;
                         }
                     }
-                    
+
                     // If we still don't have a valid slot, skip this macro
                     if (!this.allSlots.includes(slot)) {
                         index = closeIdx + 2;
@@ -374,7 +377,9 @@ class CustomMacroSystem {
     _formatOutfitSection(entity, sectionTitle, slots, outfitData, macroPrefix) {
         const hasItems = outfitData.some(data => slots.includes(data.name) && data.value !== 'None' && data.value !== '');
 
-        if (!hasItems) {return '';}
+        if (!hasItems) {
+            return '';
+        }
 
         let section = `\n**${entity}'s Current ${sectionTitle}**\n`;
 
@@ -395,21 +400,21 @@ class CustomMacroSystem {
         let result = '';
 
         for (let i = 0; i < slot.length; i++) {
-            if (i > 0 && slot[i] >= 'A' && slot[i] <= 'Z' && slot[i-1] !== ' ') {
+            if (i > 0 && slot[i] >= 'A' && slot[i] <= 'Z' && slot[i - 1] !== ' ') {
                 result += ' ' + slot[i];
             } else {
                 result += slot[i];
             }
         }
-        
+
         // Capitalize the first letter
         if (result.length > 0) {
             result = result.charAt(0).toUpperCase() + result.slice(1);
         }
-        
+
         // Replace hyphens with spaces
         result = result.split('-').join(' ');
-        
+
         return result;
     }
 
@@ -425,7 +430,7 @@ class CustomMacroSystem {
 
         // Extract all custom macros from the text
         const macros = this.extractCustomMacros(text);
-        
+
         // Process macros in reverse order to avoid index shifting issues
         let result = text;
 
@@ -435,7 +440,7 @@ class CustomMacroSystem {
 
             if (macro.slot) {
                 // This is a slot-based macro like {{char_topwear}}, {{user_headwear}}, or {{Emma_topwear}}
-                replacement = this.getCurrentSlotValue(macro.type, macro.slot, 
+                replacement = this.getCurrentSlotValue(macro.type, macro.slot,
                     ['char', 'bot', 'user'].includes(macro.type) ? null : macro.type); // Pass character name if not a standard type
             } else if (macro.type === 'char' || macro.type === 'bot') {
                 // This is a name-based macro like {{char}} or {{user}}
@@ -449,9 +454,9 @@ class CustomMacroSystem {
             }
 
             // Replace the macro in the text
-            result = result.substring(0, macro.startIndex) + 
-                    replacement + 
-                    result.substring(macro.startIndex + macro.fullMatch.length);
+            result = result.substring(0, macro.startIndex) +
+                replacement +
+                result.substring(macro.startIndex + macro.fullMatch.length);
         }
 
         return result;

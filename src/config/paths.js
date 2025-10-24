@@ -8,10 +8,10 @@ const ROOTDIR = '../../../../../../';
 export const SILLY_TAVERN_PATHS = {
     // Path to extensions.js from extension files (when extension is in public/extensions/third-party/[name]/)
     EXTENSIONS: ROOTDIR + 'scripts/extensions.js',
-    
+
     // Path to main script.js from extension files
     SCRIPT: ROOTDIR + 'script.js',
-    
+
     // Path to slash commands from extension files
     SLASH_COMMANDS: {
         PARSER: ROOTDIR + 'slash-commands/SlashCommandParser.js',

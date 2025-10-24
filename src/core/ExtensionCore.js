@@ -1,21 +1,21 @@
 // Import functions using SillyTavern's getContext as recommended in documentation
-import { updateForCurrentCharacter } from '../services/CharacterService.js';
-import { customMacroSystem } from '../utils/CustomMacroSystem.js';
-import { extension_api } from '../common/shared.js';
-import { generateInstanceIdFromText } from '../utils/utilities.js';
-import { outfitStore } from '../common/Store.js';
-import { NewBotOutfitManager } from '../managers/NewBotOutfitManager.js';
-import { BotOutfitPanel } from '../panels/BotOutfitPanel.js';
-import { NewUserOutfitManager } from '../managers/NewUserOutfitManager.js';
-import { UserOutfitPanel } from '../panels/UserOutfitPanel.js';
-import { setupEventListeners } from './EventSystem.js';
-import { registerOutfitCommands } from './OutfitCommands.js';
-import { createSettingsUI } from './SettingsUI.js';
-import { initSettings } from './settings.js';
-import { CLOTHING_SLOTS, ACCESSORY_SLOTS, ALL_SLOTS } from '../config/constants.js';
-import { StorageService } from '../services/StorageService.js';
-import { DataManager } from '../services/DataManager.js';
-import { OutfitDataService } from '../services/OutfitDataService.js';
+import {updateForCurrentCharacter} from '../services/CharacterService.js';
+import {customMacroSystem} from '../utils/CustomMacroSystem.js';
+import {extension_api} from '../common/shared.js';
+import {generateInstanceIdFromText} from '../utils/utilities.js';
+import {outfitStore} from '../common/Store.js';
+import {NewBotOutfitManager} from '../managers/NewBotOutfitManager.js';
+import {BotOutfitPanel} from '../panels/BotOutfitPanel.js';
+import {NewUserOutfitManager} from '../managers/NewUserOutfitManager.js';
+import {UserOutfitPanel} from '../panels/UserOutfitPanel.js';
+import {setupEventListeners} from './EventSystem.js';
+import {registerOutfitCommands} from './OutfitCommands.js';
+import {createSettingsUI} from './SettingsUI.js';
+import {initSettings} from './settings.js';
+import {ACCESSORY_SLOTS, ALL_SLOTS, CLOTHING_SLOTS} from '../config/constants.js';
+import {StorageService} from '../services/StorageService.js';
+import {DataManager} from '../services/DataManager.js';
+import {OutfitDataService} from '../services/OutfitDataService.js';
 
 let AutoOutfitSystem;
 
@@ -32,14 +32,15 @@ async function loadAutoOutfitSystem() {
         AutoOutfitSystem = autoOutfitModule.AutoOutfitSystem;
     } catch (error) {
         console.error('[OutfitTracker] Failed to load AutoOutfitSystem:', error);
-        AutoOutfitSystem = class DummyAutoOutfitSystem {};
+        AutoOutfitSystem = class DummyAutoOutfitSystem {
+        };
     }
 }
 
 /**
  * Processes the first message in a conversation to generate a unique instance ID.
  * This function cleans macros from the first bot message and generates an instance ID
- * based on the cleaned message content, which allows the system to track outfits 
+ * based on the cleaned message content, which allows the system to track outfits
  * per conversation instance.
  * @param {object} context - Optional SillyTavern context. If not provided, will try to get from global context.
  * @returns {Promise<void>} A promise that resolves when the processing is complete
@@ -49,24 +50,26 @@ async function processMacrosInFirstMessage(context) {
         // Use provided context or fallback to global context
         const ctx = context || (window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null));
 
-        if (!ctx || !ctx.chat) {return;}
+        if (!ctx || !ctx.chat) {
+            return;
+        }
 
         const firstBotMessage = ctx.chat.find(message => !message.is_user && !message.is_system);
 
         if (firstBotMessage) {
             // Use the existing cleanOutfitMacrosFromText function to remove macro patterns
             const processedMessage = cleanOutfitMacrosFromText(firstBotMessage.mes);
-            
+
             // Collect all possible outfit values for this character to remove from the message before hashing
             // This includes values from all known outfit instances and presets for this character
             const outfitValues = getAllOutfitValuesForCharacter(ctx.characterId);
-            
+
             // Generate instance ID with outfit values removed from the processed message
             // This ensures consistent instance IDs even when outfit values change
             const instanceId = await generateInstanceIdFromText(processedMessage, outfitValues);
 
             outfitStore.setCurrentInstanceId(instanceId);
-            
+
             // Update the managers with the new instance ID so they can load the correct outfit data
             if (window.botOutfitPanel?.outfitManager) {
                 window.botOutfitPanel.outfitManager.setOutfitInstanceId(instanceId);
@@ -89,12 +92,14 @@ async function processMacrosInFirstMessage(context) {
  * @returns {Array<string>} An array of all unique outfit values for the character
  */
 function getAllOutfitValuesForCharacter(characterId) {
-    if (!characterId) {return [];}
-    
+    if (!characterId) {
+        return [];
+    }
+
     const actualCharacterId = characterId.toString();
     const state = outfitStore.getState();
     const outfitValues = new Set();
-    
+
     // Look through bot outfits for this character
     if (state.botInstances && state.botInstances[actualCharacterId]) {
         Object.values(state.botInstances[actualCharacterId]).forEach(instanceData => {
@@ -107,7 +112,7 @@ function getAllOutfitValuesForCharacter(characterId) {
             }
         });
     }
-    
+
     // Look through presets for this character
     if (state.presets && state.presets.bot) {
         Object.keys(state.presets.bot).forEach(key => {
@@ -128,7 +133,7 @@ function getAllOutfitValuesForCharacter(characterId) {
             }
         });
     }
-    
+
     return Array.from(outfitValues);
 }
 
@@ -142,24 +147,32 @@ function isAlphaNumericWithUnderscores(str) {
     if (!str || typeof str !== 'string') {
         return false;
     }
-    
+
     for (let i = 0; i < str.length; i++) {
         const char = str[i];
         const code = char.charCodeAt(0);
-        
+
         // Check if character is uppercase letter (A-Z)
-        if (code >= 65 && code <= 90) {continue;}
+        if (code >= 65 && code <= 90) {
+            continue;
+        }
         // Check if character is lowercase letter (a-z)
-        if (code >= 97 && code <= 122) {continue;}
+        if (code >= 97 && code <= 122) {
+            continue;
+        }
         // Check if character is digit (0-9)
-        if (code >= 48 && code <= 57) {continue;}
+        if (code >= 48 && code <= 57) {
+            continue;
+        }
         // Check if character is underscore (_)
-        if (code === 95) {continue;}
-        
+        if (code === 95) {
+            continue;
+        }
+
         // If character is none of the above, it's invalid
         return false;
     }
-    
+
     return true;
 }
 
@@ -173,24 +186,32 @@ function isLowerAlphaNumericWithUnderscoresAndHyphens(str) {
     if (!str || typeof str !== 'string') {
         return false;
     }
-    
+
     for (let i = 0; i < str.length; i++) {
         const char = str[i];
         const code = char.charCodeAt(0);
-        
+
         // Check if character is lowercase letter (a-z)
-        if (code >= 97 && code <= 122) {continue;}
+        if (code >= 97 && code <= 122) {
+            continue;
+        }
         // Check if character is digit (0-9)
-        if (code >= 48 && code <= 57) {continue;}
+        if (code >= 48 && code <= 57) {
+            continue;
+        }
         // Check if character is underscore (_)
-        if (code === 95) {continue;}
+        if (code === 95) {
+            continue;
+        }
         // Check if character is hyphen (-)
-        if (code === 45) {continue;}
-        
+        if (code === 45) {
+            continue;
+        }
+
         // If character is none of the above, it's invalid
         return false;
     }
-    
+
     return true;
 }
 
@@ -203,7 +224,7 @@ function isLowerAlphaNumericWithUnderscoresAndHyphens(str) {
 function isMobileUserAgent(userAgent) {
     const mobileIndicators = [
         'android',
-        'webos', 
+        'webos',
         'iphone',
         'ipad',
         'ipod',
@@ -211,15 +232,15 @@ function isMobileUserAgent(userAgent) {
         'iemobile',
         'opera mini'
     ];
-    
+
     const lowerUserAgent = userAgent.toLowerCase();
-    
+
     for (let i = 0; i < mobileIndicators.length; i++) {
         if (lowerUserAgent.includes(mobileIndicators[i])) {
             return true;
         }
     }
-    
+
     return false;
 }
 
@@ -231,46 +252,48 @@ function isMobileUserAgent(userAgent) {
  * @returns {string} The cleaned text with outfit-related values removed
  */
 function cleanOutfitMacrosFromText(text) {
-    if (!text || typeof text !== 'string') {return text || '';}
-    
+    if (!text || typeof text !== 'string') {
+        return text || '';
+    }
+
     // First, remove any outfit-related macros like {{char_slot}}, {{user_slot}}, etc.
     // Find and remove all occurrences of the pattern {{prefix_slotname}}
     let resultText = text;
     let startIndex = 0;
-    
+
     // Remove macro patterns without regex
     while (startIndex < resultText.length) {
         const openIdx = resultText.indexOf('{{', startIndex);
-        
+
         if (openIdx === -1) {
             // No more macro opening found
             break;
         }
-        
+
         const endIdx = resultText.indexOf('}}', openIdx);
-        
+
         if (endIdx === -1) {
             // No closing found for this opening, stop processing
             break;
         }
-        
+
         // Extract the content between {{ and }}
         const macroContent = resultText.substring(openIdx + 2, endIdx);
-        
+
         // Check if it matches the pattern: prefix followed by an underscore and a slot name
         // Look for underscore in the macro content
         const underscoreIndex = macroContent.indexOf('_');
-        
+
         if (underscoreIndex !== -1) {
             // Extract prefix and suffix
             const prefix = macroContent.substring(0, underscoreIndex);
             const suffix = macroContent.substring(underscoreIndex + 1);
-            
+
             // Check if the prefix is 'char', 'user', or an alphanumeric sequence followed by underscore
             const isPrefixValid = prefix === 'char' || prefix === 'user' || isAlphaNumericWithUnderscores(prefix);
             // Check if the suffix looks like a valid slot name (alphanumeric, underscore, hyphen)
             const isSuffixValid = isLowerAlphaNumericWithUnderscoresAndHyphens(suffix);
-            
+
             if (isPrefixValid && isSuffixValid) {
                 // This is a valid macro pattern, replace it with {{}}
                 resultText = resultText.substring(0, openIdx) + '{{}}' + resultText.substring(endIdx + 2);
@@ -279,25 +302,25 @@ function cleanOutfitMacrosFromText(text) {
                 continue;
             }
         }
-        
+
         startIndex = endIdx + 2; // Move past the current closing braces
     }
-    
+
     // Get the current character ID to identify which outfits to look for
     const context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
 
     if (!context || !context.characterId) {
         return resultText;
     }
-    
+
     const characterId = context.characterId.toString();
-    
+
     // Get all possible outfit values from the outfit store for this character across all instances
     const state = outfitStore.getState();
-    
+
     // Collect all unique outfit values for this character across all instances
     const outfitValues = new Set();
-    
+
     // Look through bot outfits for this character
     if (state.botInstances && state.botInstances[characterId]) {
         Object.values(state.botInstances[characterId]).forEach(instanceData => {
@@ -310,7 +333,7 @@ function cleanOutfitMacrosFromText(text) {
             }
         });
     }
-    
+
     // Look through presets for this character
     if (state.presets && state.presets.bot) {
         Object.keys(state.presets.bot).forEach(key => {
@@ -331,11 +354,11 @@ function cleanOutfitMacrosFromText(text) {
             }
         });
     }
-    
+
     // Remove each outfit value from the text if it exists
     // Process in reverse length order to handle longer items first (avoid substring issues)
     const sortedValues = Array.from(outfitValues).sort((a, b) => b.length - a.length);
-    
+
     let workingText = resultText;
 
     sortedValues.forEach(outfitValue => {
@@ -345,27 +368,27 @@ function cleanOutfitMacrosFromText(text) {
             let tempText = workingText;
             let lowerTempText = tempText.toLowerCase();
             let lowerOutfitValue = outfitValue.toLowerCase();
-            
+
             let searchStart = 0;
 
             while ((searchStart = lowerTempText.indexOf(lowerOutfitValue, searchStart)) !== -1) {
                 // Verify it's a complete word match to avoid partial replacements
                 const endIndex = searchStart + lowerOutfitValue.length;
-                
+
                 // Check if it's a complete word (surrounded by word boundaries or punctuation)
                 const beforeChar = searchStart > 0 ? lowerTempText.charAt(searchStart - 1) : ' ';
                 const afterChar = endIndex < lowerTempText.length ? lowerTempText.charAt(endIndex) : ' ';
-                
+
                 // Replace if surrounded by spaces/punctuation or at text boundaries
-                const isWordBoundary = (beforeChar === ' ' || beforeChar === '.' || beforeChar === ',' || 
-                                      beforeChar === '"' || beforeChar === '\'' || 
-                                      beforeChar === '(' || beforeChar === '[' || 
-                                      beforeChar === '\n' || beforeChar === '\t') &&
-                                     (afterChar === ' ' || afterChar === '.' || afterChar === ',' || 
-                                      afterChar === '"' || afterChar === '\'' || 
-                                      afterChar === ')' || afterChar === ']' || 
-                                      afterChar === '\n' || afterChar === '\t');
-                
+                const isWordBoundary = (beforeChar === ' ' || beforeChar === '.' || beforeChar === ',' ||
+                        beforeChar === '"' || beforeChar === '\'' ||
+                        beforeChar === '(' || beforeChar === '[' ||
+                        beforeChar === '\n' || beforeChar === '\t') &&
+                    (afterChar === ' ' || afterChar === '.' || afterChar === ',' ||
+                        afterChar === '"' || afterChar === '\'' ||
+                        afterChar === ')' || afterChar === ']' ||
+                        afterChar === '\n' || afterChar === '\t');
+
                 if (isWordBoundary) {
                     workingText = workingText.substring(0, searchStart) + '[OUTFIT_REMOVED]' + workingText.substring(endIndex);
                     lowerTempText = workingText.toLowerCase();
@@ -378,7 +401,7 @@ function cleanOutfitMacrosFromText(text) {
             }
         }
     });
-    
+
     return workingText;
 }
 
@@ -403,10 +426,10 @@ function setupApi(botManager, userManager, botPanel, userPanel, autoOutfitSystem
     extension_api.getOutfitExtensionStatus = () => ({
         core: true,
         autoOutfit: autoOutfitSystem?.getStatus?.() ?? false,
-        botPanel: { isVisible: botPanel?.isVisible },
-        userPanel: { isVisible: userPanel?.isVisible },
+        botPanel: {isVisible: botPanel?.isVisible},
+        userPanel: {isVisible: userPanel?.isVisible},
         events: true,
-        managers: { bot: Boolean(botManager), user: Boolean(userManager) },
+        managers: {bot: Boolean(botManager), user: Boolean(userManager)},
     });
 
     // Register character-specific macros when the API is set up
@@ -421,9 +444,9 @@ function setupApi(botManager, userManager, botPanel, userPanel, autoOutfitSystem
             }, 2000); // Wait a bit for character data to load
         }
     }
-    
+
     // Also register a global function that can refresh macros when needed
-    window.refreshOutfitMacros = function() {
+    window.refreshOutfitMacros = function () {
         const STContext = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : window.getContext();
 
         if (STContext) {
@@ -441,8 +464,12 @@ function setupApi(botManager, userManager, botPanel, userPanel, autoOutfitSystem
  * @returns {void}
  */
 function updatePanelStyles() {
-    if (window.botOutfitPanel) {window.botOutfitPanel.applyPanelColors();}
-    if (window.userOutfitPanel) {window.userOutfitPanel.applyPanelColors();}
+    if (window.botOutfitPanel) {
+        window.botOutfitPanel.applyPanelColors();
+    }
+    if (window.userOutfitPanel) {
+        window.userOutfitPanel.applyPanelColors();
+    }
 }
 
 /**
@@ -467,7 +494,7 @@ function isMobileDevice() {
  * @param {string} type - The type of generation request
  * @returns {Promise<void>} A promise that resolves when the injection is complete
  */
-globalThis.outfitTrackerInterceptor = async function(chat, contextSize, abort, type) {
+globalThis.outfitTrackerInterceptor = async function (chat, contextSize, abort, type) {
     try {
         // Create a temporary reference to the managers using the panel references
         const botPanel = window.botOutfitPanel;
@@ -499,7 +526,7 @@ globalThis.outfitTrackerInterceptor = async function(chat, contextSize, abort, t
                 name: 'Outfit Info',
                 send_date: new Date().toISOString(),
                 mes: outfitInfoString,
-                extra: { outfit_injection: true }
+                extra: {outfit_injection: true}
             };
 
             // Insert the outfit information before the last message in the chat
@@ -529,7 +556,7 @@ export async function initializeExtension() {
     }
 
     const storageService = new StorageService(
-        (data) => STContext.saveSettingsDebounced({ outfit_tracker: data }),
+        (data) => STContext.saveSettingsDebounced({outfit_tracker: data}),
         () => STContext.extensionSettings.outfit_tracker
     );
 
@@ -547,8 +574,8 @@ export async function initializeExtension() {
 
     const botManager = new NewBotOutfitManager(ALL_SLOTS);
     const userManager = new NewUserOutfitManager(ALL_SLOTS);
-    const botPanel = new BotOutfitPanel(botManager, CLOTHING_SLOTS, ACCESSORY_SLOTS, (data) => STContext.saveSettingsDebounced({ outfit_tracker: data }));
-    const userPanel = new UserOutfitPanel(userManager, CLOTHING_SLOTS, ACCESSORY_SLOTS, (data) => STContext.saveSettingsDebounced({ outfit_tracker: data }));
+    const botPanel = new BotOutfitPanel(botManager, CLOTHING_SLOTS, ACCESSORY_SLOTS, (data) => STContext.saveSettingsDebounced({outfit_tracker: data}));
+    const userPanel = new UserOutfitPanel(userManager, CLOTHING_SLOTS, ACCESSORY_SLOTS, (data) => STContext.saveSettingsDebounced({outfit_tracker: data}));
     const autoOutfitSystem = new AutoOutfitSystem(botManager);
 
     // Set global references for the interceptor function to access
@@ -572,7 +599,6 @@ export async function initializeExtension() {
         processMacrosInFirstMessage: () => processMacrosInFirstMessage(STContext),
         context: STContext
     });
-
 
 
     updatePanelStyles();

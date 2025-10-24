@@ -26,7 +26,6 @@ export const ACCESSORY_SLOTS = [
 export const ALL_SLOTS = [...CLOTHING_SLOTS, ...ACCESSORY_SLOTS];
 
 
-
 /**
  * Default settings for the outfit tracker extension
  * @type {object}

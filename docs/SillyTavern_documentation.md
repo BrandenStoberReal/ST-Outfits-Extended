@@ -1,6 +1,9 @@
 UI Extensions
 
-UI extensions expand SillyTavern's functionality by hooking into its events and API. They run in a browser context and have practically unrestricted access to the DOM, JavaScript APIs, and the SillyTavern context. Extensions can modify the UI, call internal APIs, and interact with chat data. This guide explains how to create your own extensions (JavaScript knowledge is required).
+UI extensions expand SillyTavern's functionality by hooking into its events and API. They run in a browser context and
+have practically unrestricted access to the DOM, JavaScript APIs, and the SillyTavern context. Extensions can modify the
+UI, call internal APIs, and interact with chat data. This guide explains how to create your own extensions (JavaScript
+knowledge is required).
 Just want to install extensions?
 
 Go here: Extensions.
@@ -32,7 +35,8 @@ See live examples of simple SillyTavern extensions:
 
 # Bundling
 
-Extensions can also utilize bundling to isolate themselves from the rest of the modules and use any dependencies from NPM, including UI frameworks like Vue, React, etc.
+Extensions can also utilize bundling to isolate themselves from the rest of the modules and use any dependencies from
+NPM, including UI frameworks like Vue, React, etc.
 
     https://github.com/SillyTavern/Extension-WebpackTemplate - template repository of an extension using TypeScript and Webpack (no React).
     https://github.com/SillyTavern/Extension-ReactTemplate - template repository of a bare-bones extension using React and Webpack.
@@ -66,9 +70,12 @@ const generateRaw = await importFromUrl('/script.js', 'generateRaw');
 
 # manifest.json
 
-Every extension must have a folder in data/<user-handle>/extensions and a manifest.json file, which contains metadata about the extension and a path to a JS script file that is the entry point of the extension.
+Every extension must have a folder in data/<user-handle>/extensions and a manifest.json file, which contains metadata
+about the extension and a path to a JS script file that is the entry point of the extension.
 
-Downloadable extensions are mounted into the /scripts/extensions/third-party folder when serving over HTTP, so relative imports should be used based on that. To ease local development, consider placing your extension repository in the /scripts/extensions/third-party folder (the "Install for all users" option).
+Downloadable extensions are mounted into the /scripts/extensions/third-party folder when serving over HTTP, so relative
+imports should be used based on that. To ease local development, consider placing your extension repository in the
+/scripts/extensions/third-party folder (the "Install for all users" option).
 
 ```json
 {
@@ -105,7 +112,8 @@ Downloadable extensions are mounted into the /scripts/extensions/third-party fol
 
 # Dependencies
 
-Extensions can also depend on other SillyTavern extensions. The extension will not load if any of these dependencies are missing or disabled.
+Extensions can also depend on other SillyTavern extensions. The extension will not load if any of these dependencies are
+missing or disabled.
 
 Dependencies are specified by their folder name as it appears in the public/extensions directory.
 
@@ -119,12 +127,15 @@ Examples:
     requires is an optional array of strings specifying required Extras modules. The extension won't be loaded if the connected Extras API doesn't provide all listed modules.
     optional is an optional array of strings specifying optional Extras modules. The extension will still load if these are missing, and the extension should handle their absence gracefully.
 
-To check which modules are currently provided by the connected Extras API, import the modules array from scripts/extensions.js.
+To check which modules are currently provided by the connected Extras API, import the modules array from
+scripts/extensions.js.
 
 # Scripting
+
 ## Using getContext
 
-The getContext() function in the SillyTavern global object gives you access to the SillyTavern context, which is a collection of all the main app state objects, useful functions, and utilities.
+The getContext() function in the SillyTavern global object gives you access to the SillyTavern context, which is a
+collection of all the main app state objects, useful functions, and utilities.
 
 ```js
 const context = SillyTavern.getContext();
@@ -136,13 +147,16 @@ context.groupId; // ID of the current group
 // And many more...
 ```
 
-You can find the full list of available properties and functions in the `context_object_documentation.md` file in this directory.
+You can find the full list of available properties and functions in the `context_object_documentation.md` file in this
+directory.
 
-If you're missing any of the functions/properties in getContext, please get in touch with the developers or send us a pull request!
+If you're missing any of the functions/properties in getContext, please get in touch with the developers or send us a
+pull request!
 
 ## Shared libraries
 
-Most of the npm libraries used internally by the SillyTavern frontend are shared in the libs property of the SillyTavern global object.
+Most of the npm libraries used internally by the SillyTavern frontend are shared in the libs property of the SillyTavern
+global object.
 
     lodash - Utility library. Docs.
     localforage - Browser storage library. Docs.
@@ -164,7 +178,10 @@ const sanitizedHtml = DOMPurify.sanitize('<script>"dirty HTML"</script>');
 
 ## TypeScript notice
 
-If you want access to autocomplete for all methods in the SillyTavern global object (and you probably do), including getContext() and libs, you should add a TypeScript .d.ts module declaration. This declaration should import global types from SillyTavern's source, depending on your extension's location. Below is an example that works for both installation types: "all users" and "current user."
+If you want access to autocomplete for all methods in the SillyTavern global object (and you probably do), including
+getContext() and libs, you should add a TypeScript .d.ts module declaration. This declaration should import global types
+from SillyTavern's source, depending on your extension's location. Below is an example that works for both installation
+types: "all users" and "current user."
 
 global.d.ts - place this file in the root of your extension directory (next to manifest.json):
 
@@ -184,7 +201,8 @@ declare global {
 
 ## Importing from other files
 
-Using imports from SillyTavern code is unreliable and can break at any time if the internal structure of ST's modules changes. getContext provides a more stable API.
+Using imports from SillyTavern code is unreliable and can break at any time if the internal structure of ST's modules
+changes. getContext provides a more stable API.
 
 Unless you're building a bundled extension, you can import variables and functions from other JS files.
 
@@ -201,9 +219,12 @@ const translated = await generateQuietPrompt({ quietPrompt: text });
 ```
 
 # State management
+
 ## Persistent settings
 
-When an extension needs to persist its state, it can use the extensionSettings object from the getContext() function to store and retrieve data. An extension can store any JSON-serializable data in the settings object and must use a unique key to avoid conflicts with other extensions.
+When an extension needs to persist its state, it can use the extensionSettings object from the getContext() function to
+store and retrieve data. An extension can store any JSON-serializable data in the settings object and must use a unique
+key to avoid conflicts with other extensions.
 
 To persist the settings, use the saveSettingsDebounced() function, which will save the settings to the server.
 
@@ -247,11 +268,13 @@ saveSettingsDebounced();
 
 ## Chat metadata
 
-To bind some data to a specific chat, you can use the chatMetadata object from the getContext() function. This object allows you to store arbitrary data associated with a chat, which can be useful for storing extension-specific state.
+To bind some data to a specific chat, you can use the chatMetadata object from the getContext() function. This object
+allows you to store arbitrary data associated with a chat, which can be useful for storing extension-specific state.
 
 To persist the metadata, use the saveMetadata() function, which will save the metadata to the server.
 
-Do not save the reference to chatMetadata in a long-lived variable, as the reference will change when the chat is switched. Always use SillyTavern.getContext().chatMetadata to access the current chat metadata.
+Do not save the reference to chatMetadata in a long-lived variable, as the reference will change when the chat is
+switched. Always use SillyTavern.getContext().chatMetadata to access the current chat metadata.
 
 ```js
 const { chatMetadata, saveMetadata } = SillyTavern.getContext();
@@ -266,21 +289,28 @@ const value = chatMetadata['my_key'];
 await saveMetadata();
 ```
 
-The CHAT_CHANGED event is emitted when the chat is switched, so you can listen to this event to update your extension's state accordingly. See more in the Listening to events section.
+The CHAT_CHANGED event is emitted when the chat is switched, so you can listen to this event to update your extension's
+state accordingly. See more in the Listening to events section.
 
 # Character cards
 
-SillyTavern fully supports Character Cards V2 Specification, which allows to store arbitrary data in the character card JSON data.
+SillyTavern fully supports Character Cards V2 Specification, which allows to store arbitrary data in the character card
+JSON data.
 
-This is useful for extensions that need to store additional data associated with the character and make it shareable when exporting the character card.
+This is useful for extensions that need to store additional data associated with the character and make it shareable
+when exporting the character card.
 
-To write data to the character card extensions data field, use the writeExtensionField function from the getContext() function. This function takes a character ID, a string key, and a value to write. The value must be JSON-serializable.
+To write data to the character card extensions data field, use the writeExtensionField function from the getContext()
+function. This function takes a character ID, a string key, and a value to write. The value must be JSON-serializable.
 
 ## Weirdness Ahead
 
-Despite being called characterId, it's not a "real" unique identifier but rather an index of the character in the characters array.
+Despite being called characterId, it's not a "real" unique identifier but rather an index of the character in the
+characters array.
 
-The index of the current character is provided by the characterId property in the context. If you want to write data to the currently selected character, use SillyTavern.getContext().characterId. If you need to store data for another character, find the index by searching for the character in the characters array.
+The index of the current character is provided by the characterId property in the context. If you want to write data to
+the currently selected character, use SillyTavern.getContext().characterId. If you need to store data for another
+character, find the index by searching for the character in the characters array.
 
 Caution: characterId is undefined in group chats or when no character is selected!
 
@@ -301,7 +331,9 @@ const myData = character.data?.extensions?.my_extension_key;
 
 # Settings presets
 
-Arbitrary JSON data can be stored in the settings presets of the main API types. It will be exported and imported along with the preset JSON, so you can use it to store extension-specific settings for the preset. The following API types support data extensions in settings presets:
+Arbitrary JSON data can be stored in the settings presets of the main API types. It will be exported and imported along
+with the preset JSON, so you can use it to store extension-specific settings for the preset. The following API types
+support data extensions in settings presets:
 
     Chat Completion
     Text Completion
@@ -328,19 +360,24 @@ await pm.writePresetExtensionField({ path: 'hello', value: 'world' });
 const value = pm.readPresetExtensionField({ path: 'hello' });
 ```
 
-The PRESET_CHANGED and MAIN_API_CHANGED events are emitted when the preset is changed or the main API is switched, so you can listen to these events to update your extension's state accordingly. See more in the Listening to events section.
+The PRESET_CHANGED and MAIN_API_CHANGED events are emitted when the preset is changed or the main API is switched, so
+you can listen to these events to update your extension's state accordingly. See more in the Listening to events
+section.
 
 # Internationalization
 
 For general information on providing translations, see the Internationalization page.
 
-Extensions can provide additional localized strings for use with the t, translate functions and the data-i18n attribute in HTML templates.
+Extensions can provide additional localized strings for use with the t, translate functions and the data-i18n attribute
+in HTML templates.
 
-See the list of supported locales here (lang key): https://github.com/SillyTavern/SillyTavern/blob/release/public/locales/lang.json
+See the list of supported locales here (lang
+key): https://github.com/SillyTavern/SillyTavern/blob/release/public/locales/lang.json
 
 ## Direct addLocaleData call
 
-Pass a locale code and an object with the translations to the addLocaleData function. Overrides of existing keys are NOT allowed. If the passed locale code is not a currently chosen locale, the data will be silently ignored.
+Pass a locale code and an object with the translations to the addLocaleData function. Overrides of existing keys are NOT
+allowed. If the passed locale code is not a currently chosen locale, the data will be silently ignored.
 
 ```js
 SillyTavern.getContext().addLocaleData('fr-fr', { 'Hello': 'Bonjour' });
@@ -349,7 +386,8 @@ SillyTavern.getContext().addLocaleData('de-de', { 'Hello': 'Hallo' });
 
 ## Via the extension manifest
 
-Add an i18n object with a list of supported locales and their corresponding JSON file paths (relative to your extension's directory) to the manifest.
+Add an i18n object with a list of supported locales and their corresponding JSON file paths (relative to your
+extension's directory) to the manifest.
 
 ```json
 {
@@ -365,7 +403,9 @@ Add an i18n object with a list of supported locales and their corresponding JSON
 
 # Registering slash commands (new way)
 
-While registerSlashCommand still exists for backward compatibility, new slash commands should now be registered through SlashCommandParser.addCommandObject() to provide extended details about the command and its parameters to the parser (and, in turn, to autocomplete and the command help).
+While registerSlashCommand still exists for backward compatibility, new slash commands should now be registered through
+SlashCommandParser.addCommandObject() to provide extended details about the command and its parameters to the parser (
+and, in turn, to autocomplete and the command help).
 
 ```js
 SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'repeat',
@@ -420,6 +460,7 @@ helpString: `
 All registered commands can be used in STscript in any possible way.
 
 # Events
+
 ## Listening to events
 
 Use eventSource.on(eventType, eventHandler) to listen for events:
@@ -451,11 +492,14 @@ The rest can be found in the source.
 
 ## Event data
 
-The way each event passes its data to the listener is not uniform. Some events don't emit any data; some pass an object or a primitive value. Please refer to the source code where the event is emitted to see what data it passes, or check with the debugger.
+The way each event passes its data to the listener is not uniform. Some events don't emit any data; some pass an object
+or a primitive value. Please refer to the source code where the event is emitted to see what data it passes, or check
+with the debugger.
 
 ## Emitting events
 
-You can produce any application events from extensions, including custom events, by calling eventSource.emit(eventType, ...eventData):
+You can produce any application events from extensions, including custom events, by calling eventSource.emit(eventType,
+...eventData):
 
 ```js
 const { eventSource } = SillyTavern.getContext();
@@ -469,13 +513,17 @@ await eventSource.emit(eventType, { data: 'custom event data' });
 
 # Prompt Interceptors
 
-Prompt Interceptors provide a way for extensions to perform any activity such as modifying the chat data, adding injections, or aborting the generation before a text generation request is made.
+Prompt Interceptors provide a way for extensions to perform any activity such as modifying the chat data, adding
+injections, or aborting the generation before a text generation request is made.
 
-Interceptors from different extensions are run sequentially. The order is determined by the loading_order field in their respective manifest.json files. Extensions with lower loading_order values run earlier. If loading_order is not specified, display_name is used as a fallback. If neither is specified, the order is undefined.
+Interceptors from different extensions are run sequentially. The order is determined by the loading_order field in their
+respective manifest.json files. Extensions with lower loading_order values run earlier. If loading_order is not
+specified, display_name is used as a fallback. If neither is specified, the order is undefined.
 
 ## Registering an Interceptor
 
-To define a prompt interceptor, add a generate_interceptor field to your extension's manifest.json file. The value should be the name of a global function that will be called by SillyTavern.
+To define a prompt interceptor, add a generate_interceptor field to your extension's manifest.json file. The value
+should be the name of a global function that will be called by SillyTavern.
 
 ```json
 {
@@ -488,7 +536,9 @@ To define a prompt interceptor, add a generate_interceptor field to your extensi
 
 ## Interceptor Function
 
-The generate_interceptor function is a global function that will be called upon generation requests that are not dry runs. It must be defined in the global scope (e.g., globalThis.myCustomInterceptorFunction = async function(...) { ... }) and can return a Promise if it needs to perform any asynchronous operations.
+The generate_interceptor function is a global function that will be called upon generation requests that are not dry
+runs. It must be defined in the global scope (e.g., globalThis.myCustomInterceptorFunction = async
+function(...) { ... }) and can return a Promise if it needs to perform any asynchronous operations.
 
 The interceptor function receives the following arguments:
 
@@ -498,6 +548,7 @@ The interceptor function receives the following arguments:
     type: A string indicating the type or trigger of the generation (e.g., 'quiet', 'regenerate', 'impersonate', 'swipe', etc.). This helps the interceptor apply logic conditionally based on how the generation was initiated.
 
 Example Implementation:
+
 ```js
 globalThis.myCustomInterceptorFunction = async function(chat, contextSize, abort, type) {
 // Example: Add a system note before the last user message
@@ -514,11 +565,16 @@ chat.splice(chat.length - 1, 0, systemNote);
 
 # Generating text
 
-SillyTavern provides several functions to generate text in different contexts using the currently chosen LLM API. These functions allow you to generate text in the context of a chat, raw generation without any context, or with structured outputs.
+SillyTavern provides several functions to generate text in different contexts using the currently chosen LLM API. These
+functions allow you to generate text in the context of a chat, raw generation without any context, or with structured
+outputs.
 
 ## Within a chat context
 
-The generateQuietPrompt() function is used to generate text in the context of a chat with an added "quiet" prompt (post-history instruction) in the background (the output is not rendered in the UI). This is useful for generating text without interrupting the user experience while also keeping the relevant chat and character data intact, such as generating a summary or an image prompt.
+The generateQuietPrompt() function is used to generate text in the context of a chat with an added "quiet" prompt (
+post-history instruction) in the background (the output is not rendered in the UI). This is useful for generating text
+without interrupting the user experience while also keeping the relevant chat and character data intact, such as
+generating a summary or an image prompt.
 
 ```js
 const { generateQuietPrompt } = SillyTavern.getContext();
@@ -532,9 +588,13 @@ quietPrompt,
 
 ## Raw generation
 
-The generateRaw() function is used to generate text without any chat context. It is useful when you want to fully control the prompt-building process.
+The generateRaw() function is used to generate text without any chat context. It is useful when you want to fully
+control the prompt-building process.
 
-It accepts a prompt as a Text Completion string or an array of Chat Completion objects, constructing the request with an appropriate format depending on the selected API type, e.g., converting between chat/text modes, applying instruct formatting, etc. You can also pass an additional systemPrompt and a prefill to the function for even more control over the generation process.
+It accepts a prompt as a Text Completion string or an array of Chat Completion objects, constructing the request with an
+appropriate format depending on the selected API type, e.g., converting between chat/text modes, applying instruct
+formatting, etc. You can also pass an additional systemPrompt and a prefill to the function for even more control over
+the generation process.
 
 ```js
 const { generateRaw } = SillyTavern.getContext();
@@ -567,13 +627,19 @@ prefill,
 
 ## Structured Outputs
 
-Currently only supported by the Chat Completion API. The availability varies based on the selected source and model. If the selected model does not support structured outputs, the generation will either fail or will return an empty object ('{}'). Check the documentation for the specific API you are using to see if structured outputs are supported.
+Currently only supported by the Chat Completion API. The availability varies based on the selected source and model. If
+the selected model does not support structured outputs, the generation will either fail or will return an empty
+object ('{}'). Check the documentation for the specific API you are using to see if structured outputs are supported.
 
-You can use the structured outputs feature to ensure the model produces a valid JSON object that adheres to a provided JSON Schema. This is useful for extensions that require structured data, such as state tracking, data classification, etc.
+You can use the structured outputs feature to ensure the model produces a valid JSON object that adheres to a provided
+JSON Schema. This is useful for extensions that require structured data, such as state tracking, data classification,
+etc.
 
-To use structured outputs, you must pass a JSON schema object to generateRaw() or generateQuietPrompt(). The model will then generate a response that matches the schema, and it will be returned as a stringified JSON object.
+To use structured outputs, you must pass a JSON schema object to generateRaw() or generateQuietPrompt(). The model will
+then generate a response that matches the schema, and it will be returned as a stringified JSON object.
 
-The outputs are not validated against the schema, you must handle the parsing and validation of the generated output yourself. If the model fails to generate a valid JSON object, the function will return an empty object ('{}').
+The outputs are not validated against the schema, you must handle the parsing and validation of the generated output
+yourself. If the model fails to generate a valid JSON object, the function will return an empty object ('{}').
 
 Zod is a popular library to generate and validate JSON schemas. Its use will not be covered here.
 
@@ -623,11 +689,15 @@ quietPrompt: prompt,
 jsonSchema,
 });
 ```
+
 # Registering custom macros
 
-You can register custom macros that can be used anywhere where macro substitutions are supported, e.g. in the character card fields, STscript commands, prompt templates, etc.
+You can register custom macros that can be used anywhere where macro substitutions are supported, e.g. in the character
+card fields, STscript commands, prompt templates, etc.
 
-To register a macro, use the registerMacro() function from the SillyTavern.getContext() object. The function accepts a macro name that should be a unique string, and a string or a function that returns a string. The function will be called with a unique nonce string that will be different between each substituteParams call.
+To register a macro, use the registerMacro() function from the SillyTavern.getContext() object. The function accepts a
+macro name that should be a unique string, and a string or a function that returns a string. The function will be called
+with a unique nonce string that will be different between each substituteParams call.
 
 ```js
 const { registerMacro } = SillyTavern.getContext();
@@ -639,6 +709,7 @@ registerMacro('tomorrow', () => {
 return new Date(Date.now() + 24 * 60 * 60 * 1000).toLocaleDateString();
 });
 ```
+
 When a custom macro is no longer needed, remove it using the unregisterMacro() function:
 
 ```js

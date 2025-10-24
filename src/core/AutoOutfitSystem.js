@@ -4,10 +4,10 @@
  * based on detected clothing changes in the conversation
  */
 
-import { extractCommands, replaceAll } from '../utils/StringProcessor.js';
-import { generateOutfitFromLLM } from '../services/LLMService.js';
-import { customMacroSystem } from '../utils/CustomMacroSystem.js';
-import { outfitStore } from '../common/Store.js';
+import {extractCommands} from '../utils/StringProcessor.js';
+import {generateOutfitFromLLM} from '../services/LLMService.js';
+import {customMacroSystem} from '../utils/CustomMacroSystem.js';
+import {outfitStore} from '../common/Store.js';
 
 export class AutoOutfitSystem {
     /**
@@ -67,7 +67,7 @@ NOTES:
         if (this.isEnabled) {
             return '[Outfit System] Auto outfit updates already enabled.';
         }
-        
+
         this.isEnabled = true;
         this.consecutiveFailures = 0;
         this.currentRetryCount = 0;
@@ -83,7 +83,7 @@ NOTES:
         if (!this.isEnabled) {
             return '[Outfit System] Auto outfit updates already disabled.';
         }
-        
+
         this.isEnabled = false;
         this.removeEventListeners();
         return '[Outfit System] Auto outfit updates disabled.';
@@ -95,7 +95,7 @@ NOTES:
      */
     setupEventListeners() {
         this.removeEventListeners();
-        
+
         try {
             // Try to get the context from SillyTavern first, then fall back to window.getContext
             const context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
@@ -104,13 +104,13 @@ NOTES:
                 console.error('[AutoOutfitSystem] Context not ready for event listeners');
                 return;
             }
-            
-            const { eventSource, event_types } = context;
+
+            const {eventSource, event_types} = context;
 
             this.eventHandler = (data) => {
                 if (this.isEnabled && !this.isProcessing && this.appInitialized && data && !data.is_user) {
                     console.log('[AutoOutfitSystem] New AI message received, processing...');
-                    
+
                     // Add a delay to ensure the message has been fully processed
                     setTimeout(() => {
                         this.processOutfitCommands().catch(error => {
@@ -120,7 +120,7 @@ NOTES:
                     }, 1000);
                 }
             };
-            
+
             eventSource.on(event_types.MESSAGE_RECEIVED, this.eventHandler);
             console.log('[AutoOutfitSystem] Event listener registered for MESSAGE_RECEIVED');
         } catch (error) {
@@ -174,15 +174,15 @@ NOTES:
             console.log('[AutoOutfitSystem] Already processing, skipping');
             return;
         }
-        
+
         if (!this.outfitManager || !this.outfitManager.setCharacter) {
             console.error('[AutoOutfitSystem] Outfit manager not properly initialized');
             return;
         }
-        
+
         this.isProcessing = true;
         this.currentRetryCount = 0;
-        
+
         try {
             await this.processWithRetry();
             this.lastSuccessfulProcessing = new Date();
@@ -238,7 +238,7 @@ NOTES:
         console.log('[AutoOutfitSystem] Generating outfit commands with LLMService...');
 
         try {
-            const result = await generateOutfitFromLLM({ prompt: promptText }, this);
+            const result = await generateOutfitFromLLM({prompt: promptText}, this);
 
             console.log('[AutoOutfitSystem] Generated result:', result);
 
@@ -277,7 +277,7 @@ NOTES:
         if (!text || text.trim() === '[none]') {
             return [];
         }
-        
+
         const commands = extractCommands(text);
 
         console.log(`[AutoOutfitSystem] Found ${commands.length} commands:`, commands);
@@ -296,10 +296,10 @@ NOTES:
         }
 
         console.log(`[AutoOutfitSystem] Processing batch of ${commands.length} commands`);
-        
+
         const successfulCommands = [];
         const failedCommands = [];
-        
+
         for (const command of commands) {
             try {
                 const result = await this.processSingleCommand(command);
@@ -307,37 +307,37 @@ NOTES:
                 if (result.success) {
                     successfulCommands.push(result);
                 } else {
-                    failedCommands.push({ command, error: result.error });
+                    failedCommands.push({command, error: result.error});
                 }
             } catch (error) {
-                failedCommands.push({ command, error: error.message });
+                failedCommands.push({command, error: error.message});
                 console.error(`Error processing command "${command}":`, error);
             }
         }
-        
+
         if (successfulCommands.length > 0) {
             // Check if system messages are enabled using the store
             const storeState = outfitStore.getState();
             const enableSysMessages = storeState.settings?.enableSysMessages ?? true;
-            
+
             if (enableSysMessages) {
                 // Get the active character name without using regex
                 const activeCharName = this.getActiveCharacterName();
-                const message = successfulCommands.length === 1 
+                const message = successfulCommands.length === 1
                     ? `${activeCharName} made an outfit change.`
                     : `${activeCharName} made multiple outfit changes.`;
-                
+
                 this.showPopup(message, 'info');
                 await this.delay(1000);
-                
+
                 this.updateOutfitPanel();
             }
         }
-        
+
         if (failedCommands.length > 0) {
             console.warn(`[AutoOutfitSystem] ${failedCommands.length} commands failed:`, failedCommands);
         }
-        
+
         console.log(`[AutoOutfitSystem] Batch completed: ${successfulCommands.length} successful, ${failedCommands.length} failed`);
     }
 
@@ -380,13 +380,13 @@ NOTES:
         let index = 'outfit-system_'.length;
         const actionStart = index;
         const firstUnderscoreAfterSystem = command.indexOf('_', index);
-        
+
         if (firstUnderscoreAfterSystem === -1) {
             return null; // No action found
         }
 
         const action = command.substring(actionStart, firstUnderscoreAfterSystem);
-        
+
         // Check if action is valid
         if (!['wear', 'remove', 'change'].includes(action)) {
             return null;
@@ -394,13 +394,13 @@ NOTES:
 
         const slotStart = firstUnderscoreAfterSystem + 1;
         const parenIndex = command.indexOf('(', slotStart);
-        
+
         if (parenIndex === -1) {
             return null; // No opening parenthesis found
         }
 
         const slot = command.substring(slotStart, parenIndex);
-        
+
         // Validate slot name - check if it contains only valid characters
         if (!this.isValidSlotName(slot)) {
             return null;
@@ -408,7 +408,7 @@ NOTES:
 
         // Extract the value inside parentheses
         const parenStart = parenIndex + 1;
-        
+
         // Check if it's an empty call like outfit-system_remove_headwear()
         if (command[parenStart] === ')') {
             return {
@@ -417,7 +417,7 @@ NOTES:
                 value: ''
             };
         }
-        
+
         // Check if it starts with a quote
         if (command[parenStart] !== '"') {
             return null; // Invalid format
@@ -425,7 +425,7 @@ NOTES:
 
         const valueStart = parenStart + 1;
         let valueEnd = -1;
-        
+
         // Find the closing quote, handling escaped quotes
         let i = valueStart;
 
@@ -439,7 +439,7 @@ NOTES:
                     backslashes++;
                     j--;
                 }
-                
+
                 // If even number of backslashes before quote, it's not escaped
                 if (backslashes % 2 === 0) {
                     valueEnd = i;
@@ -454,7 +454,7 @@ NOTES:
         }
 
         const value = command.substring(valueStart, valueEnd);
-        
+
         // Check if the quote is followed by a closing parenthesis
         if (command[valueEnd + 1] !== ')') {
             return null; // Invalid format
@@ -486,19 +486,19 @@ NOTES:
         if (str.length === 0) {
             return false;
         }
-        
+
         for (let i = 0; i < str.length; i++) {
             const char = str[i];
 
-            if (!((char >= 'a' && char <= 'z') || 
-                  (char >= 'A' && char <= 'Z') || 
-                  (char >= '0' && char <= '9') || 
-                  char === '_' || 
-                  char === '-')) {
+            if (!((char >= 'a' && char <= 'z') ||
+                (char >= 'A' && char <= 'Z') ||
+                (char >= '0' && char <= '9') ||
+                char === '_' ||
+                char === '-')) {
                 return false;
             }
         }
-        
+
         return true;
     }
 
@@ -510,20 +510,24 @@ NOTES:
      * @returns {string} The string with all occurrences of searchValue replaced with replaceValue
      */
     replaceAll(str, searchValue, replaceValue) {
-        if (!searchValue) {return str;}
-        
+        if (!searchValue) {
+            return str;
+        }
+
         // Prevent infinite loops when the replacement value contains the search value
-        if (searchValue === replaceValue) {return str;}
-        
+        if (searchValue === replaceValue) {
+            return str;
+        }
+
         let result = str;
         let index = result.indexOf(searchValue);
-        
+
         while (index !== -1) {
             result = result.substring(0, index) + replaceValue + result.substring(index + searchValue.length);
             // Move past the replacement value to prevent infinite loops
             index = result.indexOf(searchValue, index + replaceValue.length);
         }
-        
+
         return result;
     }
 
@@ -542,7 +546,7 @@ NOTES:
                 throw new Error(`Invalid command format: ${command}`);
             }
 
-            const { action, slot, value } = parsedCommand;
+            const {action, slot, value} = parsedCommand;
             const cleanValue = value !== undefined ? this.replaceAll(value, '"', '').trim() : '';
 
             console.log(`[AutoOutfitSystem] Processing: ${action} ${slot} "${cleanValue}"`);
@@ -617,13 +621,15 @@ NOTES:
         try {
             const context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : window.getContext();
             const chat = context?.chat;
-            
+
             if (!chat || !Array.isArray(chat) || chat.length === 0) {
                 return '';
             }
-            
+
             return chat.slice(-count).map(msg => {
-                if (!msg || typeof msg.mes !== 'string') {return '';}
+                if (!msg || typeof msg.mes !== 'string') {
+                    return '';
+                }
                 const prefix = msg.is_user ? 'User' : (msg.name || 'AI');
 
                 return `${prefix}: ${msg.mes}`;
@@ -696,7 +702,7 @@ NOTES:
             this.showPopup('Auto outfit check already in progress.', 'warning');
             return;
         }
-        
+
         try {
             this.showPopup('Manual outfit check started...', 'info');
             await this.processOutfitCommands();
@@ -722,7 +728,7 @@ NOTES:
     getProcessedSystemPrompt() {
         return this.replaceMacrosInPrompt(this.systemPrompt);
     }
-    
+
     /**
      * Get current user name
      * @returns {string} The current user's name
@@ -739,7 +745,7 @@ NOTES:
         this.systemPrompt = this.getDefaultPrompt();
         return '[Outfit System] Reset to default prompt.';
     }
-    
+
     /**
      * Set connection profile
      * @param {string} profile - The connection profile to use
@@ -749,7 +755,7 @@ NOTES:
         this.connectionProfile = profile;
         return `[Outfit System] Connection profile set to: ${profile || 'default'}`;
     }
-    
+
     /**
      * Get connection profile
      * @returns {string|null} The currently set connection profile, or null if none is set

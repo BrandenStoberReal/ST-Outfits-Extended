@@ -1,7 +1,7 @@
 /**
  * Unified LLM utility with retry logic for outfit detection system
  */
-import { outfitStore } from '../common/Store.js';
+import {outfitStore} from '../common/Store.js';
 
 class ConnectionProfileHelper {
     /**
@@ -17,7 +17,7 @@ class ConnectionProfileHelper {
         }
 
         const currentProfile = this.getCurrentConnectionProfile();
-        
+
         try {
             await this.applyConnectionProfile(profileId);
             return await generationFunc(context);
@@ -30,7 +30,7 @@ class ConnectionProfileHelper {
             }
         }
     }
-    
+
     /**
      * Apply a specific connection profile using the connection manager
      * @param {string} profileId - The connection profile ID to apply
@@ -58,7 +58,7 @@ class ConnectionProfileHelper {
             console.error(`[LLMUtility] Failed to apply connection profile ${profileId}:`, error);
         }
     }
-    
+
     /**
      * Get current connection profile ID
      * @returns {string|null}
@@ -67,11 +67,11 @@ class ConnectionProfileHelper {
         if (window.connectionManager && typeof window.connectionManager.getCurrentProfileId === 'function') {
             return window.connectionManager.getCurrentProfileId();
         }
-        
+
         if (window.extension_settings?.connectionManager?.selectedProfile) {
             return window.extension_settings.connectionManager.selectedProfile;
         }
-        
+
         // Fallback: try to get from our store if available
         try {
             const storeState = outfitStore.getState();
@@ -80,26 +80,28 @@ class ConnectionProfileHelper {
         } catch (error) {
             console.warn('Could not access store for connection profile:', error);
         }
-        
+
         return null;
     }
-    
+
     /**
      * Get a profile by ID from the connection manager
      * @param {string} profileId - The profile ID to retrieve
      * @returns {Object|null}
      */
     static getProfileById(profileId) {
-        if (!profileId) {return null;}
-        
+        if (!profileId) {
+            return null;
+        }
+
         if (window.connectionManager && typeof window.connectionManager.getProfileById === 'function') {
             return window.connectionManager.getProfileById(profileId);
         }
-        
+
         if (window.extension_settings?.connectionManager?.profiles) {
             return window.extension_settings.connectionManager.profiles.find(p => p.id === profileId);
         }
-        
+
         // Fallback: try to get from our store if available
         try {
             const storeState = outfitStore.getState();
@@ -109,10 +111,10 @@ class ConnectionProfileHelper {
         } catch (error) {
             console.warn('Could not access store for profiles:', error);
         }
-        
+
         return null;
     }
-    
+
     /**
      * Get all available profiles
      * @returns {Array} - Array of profile objects
@@ -121,11 +123,11 @@ class ConnectionProfileHelper {
         if (window.connectionManager && typeof window.connectionManager.getAllProfiles === 'function') {
             return window.connectionManager.getAllProfiles();
         }
-        
+
         if (window.extension_settings?.connectionManager?.profiles) {
             return window.extension_settings.connectionManager.profiles;
         }
-        
+
         // Fallback: try to get from our store if available
         try {
             const storeState = outfitStore.getState();
@@ -135,7 +137,7 @@ class ConnectionProfileHelper {
         } catch (error) {
             console.warn('Could not access store for profiles:', error);
         }
-        
+
         return [];
     }
 }
@@ -161,9 +163,9 @@ export class LLMUtility {
                 let result;
 
                 if (context.generateRaw) {
-                    result = await context.generateRaw({ prompt, systemPrompt });
+                    result = await context.generateRaw({prompt, systemPrompt});
                 } else if (context.generateQuietPrompt) {
-                    result = await context.generateQuietPrompt({ quietPrompt: prompt });
+                    result = await context.generateQuietPrompt({quietPrompt: prompt});
                 } else {
                     throw new Error('No generation method available in context');
                 }
@@ -204,10 +206,10 @@ export class LLMUtility {
 
         const generationFunc = async () => {
             if (context.generateRaw) {
-                return context.generateRaw({ prompt, systemPrompt });
+                return context.generateRaw({prompt, systemPrompt});
             } else if (context.generateQuietPrompt) {
-                return context.generateQuietPrompt({ quietPrompt: prompt });
-            } 
+                return context.generateQuietPrompt({quietPrompt: prompt});
+            }
             throw new Error('No generation method available in context');
         };
 

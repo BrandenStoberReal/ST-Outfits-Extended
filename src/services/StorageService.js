@@ -1,4 +1,3 @@
-
 class StorageService {
     constructor(saveFn, loadFn) {
         this.saveFn = saveFn;
@@ -22,4 +21,4 @@ class StorageService {
     }
 }
 
-export { StorageService };
+export {StorageService};

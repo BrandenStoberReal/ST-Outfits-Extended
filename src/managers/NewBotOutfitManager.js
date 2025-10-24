@@ -1,8 +1,6 @@
+import {OutfitManager} from './OutfitManager.js';
 
-import { OutfitManager } from './OutfitManager.js';
-
-import { outfitStore } from '../common/Store.js';
-
+import {outfitStore} from '../common/Store.js';
 
 
 export class NewBotOutfitManager extends OutfitManager {
@@ -12,7 +10,6 @@ export class NewBotOutfitManager extends OutfitManager {
         super(slots);
 
     }
-
 
 
     getVarName(slot) {
@@ -26,7 +23,6 @@ export class NewBotOutfitManager extends OutfitManager {
         return `OUTFIT_INST_${this.characterId}_${this.outfitInstanceId}_${slot}`;
 
     }
-
 
 
     loadOutfit() {
@@ -46,9 +42,7 @@ export class NewBotOutfitManager extends OutfitManager {
         }
 
 
-
         const instanceOutfits = outfitStore.getBotOutfit(this.characterId, this.outfitInstanceId);
-
 
 
         this.slots.forEach(slot => {
@@ -61,7 +55,6 @@ export class NewBotOutfitManager extends OutfitManager {
 
     }
 
-    
 
     saveOutfit() {
 
@@ -74,7 +67,6 @@ export class NewBotOutfitManager extends OutfitManager {
         }
 
 
-
         const botOutfit = {};
 
         this.slots.forEach(slot => {
@@ -83,14 +75,12 @@ export class NewBotOutfitManager extends OutfitManager {
 
         });
 
-        
 
         outfitStore.setBotOutfit(this.characterId, this.outfitInstanceId, botOutfit);
 
         outfitStore.saveState();
 
     }
-
 
 
     savePreset(presetName, instanceId = null) {
@@ -103,11 +93,9 @@ export class NewBotOutfitManager extends OutfitManager {
 
         }
 
-        
 
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
 
-        
 
         const presetData = {};
 
@@ -117,11 +105,9 @@ export class NewBotOutfitManager extends OutfitManager {
 
         });
 
-        
 
         outfitStore.savePreset(this.character, actualInstanceId, presetName, presetData, 'bot');
 
-        
 
         if (outfitStore.getSetting('enableSysMessages')) {
 
@@ -133,7 +119,6 @@ export class NewBotOutfitManager extends OutfitManager {
 
     }
 
-    
 
     async loadPreset(presetName, instanceId = null) {
 
@@ -143,14 +128,11 @@ export class NewBotOutfitManager extends OutfitManager {
 
         }
 
-        
 
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
 
-        
 
-        const { bot: presets } = outfitStore.getPresets(this.character, actualInstanceId);
-
+        const {bot: presets} = outfitStore.getPresets(this.character, actualInstanceId);
 
 
         if (!presets || !presets[presetName]) {
@@ -159,13 +141,11 @@ export class NewBotOutfitManager extends OutfitManager {
 
         }
 
-        
 
         const preset = presets[presetName];
 
         let changed = false;
 
-        
 
         for (const [slot, value] of Object.entries(preset)) {
 
@@ -179,7 +159,6 @@ export class NewBotOutfitManager extends OutfitManager {
 
         }
 
-        
 
         if (changed) {
 
@@ -191,7 +170,6 @@ export class NewBotOutfitManager extends OutfitManager {
 
     }
 
-    
 
     deletePreset(presetName, instanceId = null) {
 
@@ -201,14 +179,11 @@ export class NewBotOutfitManager extends OutfitManager {
 
         }
 
-        
 
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
 
-        
 
-        const { bot: presets } = outfitStore.getPresets(this.character, actualInstanceId);
-
+        const {bot: presets} = outfitStore.getPresets(this.character, actualInstanceId);
 
 
         if (!presets || !presets[presetName]) {
@@ -217,12 +192,10 @@ export class NewBotOutfitManager extends OutfitManager {
 
         }
 
-        
 
         // Use the proper store method to delete the preset
         outfitStore.deletePreset(this.character, actualInstanceId, presetName, 'bot');
 
-        
 
         if (outfitStore.getSetting('enableSysMessages')) {
 
@@ -234,16 +207,13 @@ export class NewBotOutfitManager extends OutfitManager {
 
     }
 
-    
 
     getPresets(instanceId = null) {
 
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
 
-        
 
-        const { bot: presets } = outfitStore.getPresets(this.character, actualInstanceId);
-
+        const {bot: presets} = outfitStore.getPresets(this.character, actualInstanceId);
 
 
         if (!presets) {
@@ -256,16 +226,13 @@ export class NewBotOutfitManager extends OutfitManager {
 
     }
 
-    
 
     async loadDefaultOutfit(instanceId = null) {
 
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
 
-        
 
-        const { bot: presets } = outfitStore.getPresets(this.character, actualInstanceId);
-
+        const {bot: presets} = outfitStore.getPresets(this.character, actualInstanceId);
 
 
         if (!presets || !presets['default']) {
@@ -274,13 +241,11 @@ export class NewBotOutfitManager extends OutfitManager {
 
         }
 
-        
 
         const preset = presets['default'];
 
         let changed = false;
 
-        
 
         for (const [slot, value] of Object.entries(preset)) {
 
@@ -294,7 +259,6 @@ export class NewBotOutfitManager extends OutfitManager {
 
         }
 
-        
 
         for (const slot of this.slots) {
 
@@ -308,7 +272,6 @@ export class NewBotOutfitManager extends OutfitManager {
 
         }
 
-        
 
         if (changed) {
 
@@ -320,7 +283,6 @@ export class NewBotOutfitManager extends OutfitManager {
 
     }
 
-    
 
     overwritePreset(presetName, instanceId = null) {
 
@@ -332,14 +294,11 @@ export class NewBotOutfitManager extends OutfitManager {
 
         }
 
-        
 
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
 
-        
 
-        const { bot: presets } = outfitStore.getPresets(this.character, actualInstanceId);
-
+        const {bot: presets} = outfitStore.getPresets(this.character, actualInstanceId);
 
 
         if (!presets || !presets[presetName]) {
@@ -348,7 +307,6 @@ export class NewBotOutfitManager extends OutfitManager {
 
         }
 
-        
 
         const presetData = {};
 
@@ -358,11 +316,9 @@ export class NewBotOutfitManager extends OutfitManager {
 
         });
 
-        
 
         outfitStore.savePreset(this.character, actualInstanceId, presetName, presetData, 'bot');
 
-        
 
         if (outfitStore.getSetting('enableSysMessages')) {
 
@@ -373,10 +329,10 @@ export class NewBotOutfitManager extends OutfitManager {
         return '';
 
     }
-    
+
     getAllPresets(instanceId = null) {
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
-        
+
         return outfitStore.getAllPresets(this.character, actualInstanceId, 'bot');
     }
 

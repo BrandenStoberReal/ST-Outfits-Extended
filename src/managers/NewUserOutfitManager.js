@@ -1,8 +1,6 @@
+import {OutfitManager} from './OutfitManager.js';
 
-import { OutfitManager } from './OutfitManager.js';
-
-import { outfitStore } from '../common/Store.js';
-
+import {outfitStore} from '../common/Store.js';
 
 
 export class NewUserOutfitManager extends OutfitManager {
@@ -16,7 +14,6 @@ export class NewUserOutfitManager extends OutfitManager {
     }
 
 
-
     getVarName(slot) {
 
         if (!this.outfitInstanceId) {
@@ -28,7 +25,6 @@ export class NewUserOutfitManager extends OutfitManager {
         return `OUTFIT_INST_USER_${this.outfitInstanceId}_${slot}`;
 
     }
-
 
 
     loadOutfit() {
@@ -48,9 +44,7 @@ export class NewUserOutfitManager extends OutfitManager {
         }
 
 
-
         const userOutfit = outfitStore.getUserOutfit(this.outfitInstanceId);
-
 
 
         this.slots.forEach(slot => {
@@ -63,7 +57,6 @@ export class NewUserOutfitManager extends OutfitManager {
 
     }
 
-    
 
     saveOutfit() {
 
@@ -76,7 +69,6 @@ export class NewUserOutfitManager extends OutfitManager {
         }
 
 
-
         const userOutfit = {};
 
         this.slots.forEach(slot => {
@@ -85,14 +77,12 @@ export class NewUserOutfitManager extends OutfitManager {
 
         });
 
-        
 
         outfitStore.setUserOutfit(this.outfitInstanceId, userOutfit);
 
         outfitStore.saveState();
 
     }
-
 
 
     async setOutfitItem(slot, value) {
@@ -110,7 +100,6 @@ export class NewUserOutfitManager extends OutfitManager {
     }
 
 
-
     savePreset(presetName, instanceId = null) {
 
         if (!presetName || typeof presetName !== 'string' || presetName.trim() === '') {
@@ -121,11 +110,9 @@ export class NewUserOutfitManager extends OutfitManager {
 
         }
 
-        
 
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
 
-        
 
         const presetData = {};
 
@@ -135,11 +122,9 @@ export class NewUserOutfitManager extends OutfitManager {
 
         });
 
-        
 
         outfitStore.savePreset('user', actualInstanceId, presetName, presetData, 'user');
 
-        
 
         if (outfitStore.getSetting('enableSysMessages')) {
 
@@ -151,7 +136,6 @@ export class NewUserOutfitManager extends OutfitManager {
 
     }
 
-    
 
     async loadPreset(presetName, instanceId = null) {
 
@@ -161,14 +145,11 @@ export class NewUserOutfitManager extends OutfitManager {
 
         }
 
-        
 
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
 
-        
 
-        const { user: presets } = outfitStore.getPresets('user', actualInstanceId);
-
+        const {user: presets} = outfitStore.getPresets('user', actualInstanceId);
 
 
         if (!presets || !presets[presetName]) {
@@ -177,13 +158,11 @@ export class NewUserOutfitManager extends OutfitManager {
 
         }
 
-        
 
         const preset = presets[presetName];
 
         let changed = false;
 
-        
 
         for (const [slot, value] of Object.entries(preset)) {
 
@@ -197,7 +176,6 @@ export class NewUserOutfitManager extends OutfitManager {
 
         }
 
-        
 
         if (changed) {
 
@@ -209,7 +187,6 @@ export class NewUserOutfitManager extends OutfitManager {
 
     }
 
-    
 
     deletePreset(presetName, instanceId = null) {
 
@@ -219,14 +196,11 @@ export class NewUserOutfitManager extends OutfitManager {
 
         }
 
-        
 
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
 
-        
 
-        const { user: presets } = outfitStore.getPresets('user', actualInstanceId);
-
+        const {user: presets} = outfitStore.getPresets('user', actualInstanceId);
 
 
         if (!presets || !presets[presetName]) {
@@ -235,12 +209,10 @@ export class NewUserOutfitManager extends OutfitManager {
 
         }
 
-        
 
         // Use the proper store method to delete the preset
         outfitStore.deletePreset('user', actualInstanceId, presetName, 'user');
 
-        
 
         if (outfitStore.getSetting('enableSysMessages')) {
 
@@ -252,16 +224,13 @@ export class NewUserOutfitManager extends OutfitManager {
 
     }
 
-    
 
     getPresets(instanceId = null) {
 
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
 
-        
 
-        const { user: presets } = outfitStore.getPresets('user', actualInstanceId);
-
+        const {user: presets} = outfitStore.getPresets('user', actualInstanceId);
 
 
         if (!presets) {
@@ -274,16 +243,13 @@ export class NewUserOutfitManager extends OutfitManager {
 
     }
 
-    
 
     async loadDefaultOutfit(instanceId = null) {
 
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
 
-        
 
-        const { user: presets } = outfitStore.getPresets('user', actualInstanceId);
-
+        const {user: presets} = outfitStore.getPresets('user', actualInstanceId);
 
 
         if (!presets || !presets['default']) {
@@ -292,13 +258,11 @@ export class NewUserOutfitManager extends OutfitManager {
 
         }
 
-        
 
         const preset = presets['default'];
 
         let changed = false;
 
-        
 
         for (const [slot, value] of Object.entries(preset)) {
 
@@ -312,7 +276,6 @@ export class NewUserOutfitManager extends OutfitManager {
 
         }
 
-        
 
         for (const slot of this.slots) {
 
@@ -326,7 +289,6 @@ export class NewUserOutfitManager extends OutfitManager {
 
         }
 
-        
 
         if (changed) {
 
@@ -338,7 +300,6 @@ export class NewUserOutfitManager extends OutfitManager {
 
     }
 
-    
 
     overwritePreset(presetName, instanceId = null) {
 
@@ -350,14 +311,11 @@ export class NewUserOutfitManager extends OutfitManager {
 
         }
 
-        
 
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
 
-        
 
-        const { user: presets } = outfitStore.getPresets('user', actualInstanceId);
-
+        const {user: presets} = outfitStore.getPresets('user', actualInstanceId);
 
 
         if (!presets || !presets[presetName]) {
@@ -366,7 +324,6 @@ export class NewUserOutfitManager extends OutfitManager {
 
         }
 
-        
 
         const presetData = {};
 
@@ -376,11 +333,9 @@ export class NewUserOutfitManager extends OutfitManager {
 
         });
 
-        
 
         outfitStore.savePreset('user', actualInstanceId, presetName, presetData, 'user');
 
-        
 
         if (outfitStore.getSetting('enableSysMessages')) {
 
@@ -391,10 +346,10 @@ export class NewUserOutfitManager extends OutfitManager {
         return '';
 
     }
-    
+
     getAllPresets(instanceId = null) {
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
-        
+
         return outfitStore.getAllPresets('user', actualInstanceId, 'user');
     }
 

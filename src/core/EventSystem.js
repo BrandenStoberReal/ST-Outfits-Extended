@@ -1,8 +1,7 @@
-import { extensionEventBus, EXTENSION_EVENTS } from './events.js';
-import { customMacroSystem } from '../utils/CustomMacroSystem.js';
-import { outfitStore } from '../common/Store.js';
-import { generateMessageHash } from '../utils/utilities.js';
-import { DataManager } from '../services/DataManager.js';
+import {EXTENSION_EVENTS, extensionEventBus} from './events.js';
+import {customMacroSystem} from '../utils/CustomMacroSystem.js';
+import {outfitStore} from '../common/Store.js';
+import {generateMessageHash} from '../utils/utilities.js';
 
 /**
  * EventSystem - Handles all event processing for the outfit tracker extension
@@ -27,7 +26,7 @@ class EventSystem {
         this.updateForCurrentCharacter = context.updateForCurrentCharacter;
         this.processMacrosInFirstMessage = context.processMacrosInFirstMessage;
         this.context = context.context || null;
-        
+
         // Track the first message hash to avoid unnecessary updates
         this.currentFirstMessageHash = null;
 
@@ -41,7 +40,7 @@ class EventSystem {
     initialize() {
         // Use the provided context if available, otherwise try to get from window
         this.context = this.context || (window.SillyTavern?.getContext ? window.SillyTavern.getContext() : window.getContext());
-        
+
         if (!this.context || !this.context.eventSource || !this.context.event_types) {
             console.warn('[OutfitTracker] Context not fully available for event listeners yet, trying again later');
             setTimeout(() => this.initialize(), 1000);
@@ -61,7 +60,7 @@ class EventSystem {
      * @returns {void}
      */
     setupSillyTavernEventListeners() {
-        const { eventSource, event_types } = this.context;
+        const {eventSource, event_types} = this.context;
 
         eventSource.on(event_types.APP_READY, () => this.handleAppReady());
         eventSource.on(event_types.CHAT_CHANGED, () => this.handleChatChange());
@@ -100,11 +99,11 @@ class EventSystem {
         if (this.context.chat?.length > 0) {
             // Check if the first AI message has actually changed before triggering update
             const firstBotMessage = this.context.chat.find(msg => !msg.is_user && !msg.is_system);
-            
+
             if (firstBotMessage) {
                 // Generate a hash of the first message to compare with the stored one
                 const firstMessageHash = this.generateMessageHash(firstBotMessage.mes);
-                
+
                 // Only update if the first message has actually changed
                 if (this.currentFirstMessageHash !== firstMessageHash) {
                     console.log('[OutfitTracker] CHAT_CHANGED event fired and first message has changed - updating for new conversation context');
@@ -136,33 +135,33 @@ class EventSystem {
     async handleMessageReceived(data) {
         const chat = this.context.chat;
         const aiMessages = chat.filter(msg => !msg.is_user && !msg.is_system);
-    
+
         if (aiMessages.length === 1 && !data.is_user) {
             console.log('[OutfitTracker] First AI message received, updating outfit instance.');
             // Update the first message hash tracker
             const firstBotMessage = aiMessages[0];
 
             this.currentFirstMessageHash = this.generateMessageHash(firstBotMessage.mes);
-            
+
             // Explicitly save current outfits before updating for new instance
             const currentBotInstanceId = this.botManager.getOutfitInstanceId();
             const currentUserInstanceId = this.userManager.getOutfitInstanceId();
 
             // Save the current outfits to their current instances before changing
             if (currentBotInstanceId && this.botManager.characterId) {
-                const botOutfitData = { ...this.botManager.getCurrentOutfit() };
+                const botOutfitData = {...this.botManager.getCurrentOutfit()};
 
                 outfitStore.setBotOutfit(this.botManager.characterId, currentBotInstanceId, botOutfitData);
             }
             if (currentUserInstanceId) {
-                const userOutfitData = { ...this.userManager.getCurrentOutfit() };
+                const userOutfitData = {...this.userManager.getCurrentOutfit()};
 
                 outfitStore.setUserOutfit(currentUserInstanceId, userOutfitData);
             }
-            
+
             // Process the first message to generate the new instance ID BEFORE updating managers
             await this.processMacrosInFirstMessage(this.context);
-            
+
             // Now update managers for the current character, which will use the new instance ID
             await this.updateForCurrentCharacter();
         }
@@ -177,7 +176,9 @@ class EventSystem {
         console.log(`[OutfitTracker] MESSAGE_SWIPED event fired with index: ${index}`);
         const chat = this.context.chat;
 
-        if (!chat || index < 0 || index >= chat.length) {return;}
+        if (!chat || index < 0 || index >= chat.length) {
+            return;
+        }
 
         const aiMessages = chat.filter(msg => !msg.is_user && !msg.is_system);
 
@@ -197,13 +198,13 @@ class EventSystem {
             const oldUserInstanceId = this.userManager.getOutfitInstanceId();
 
             if (oldBotInstanceId && oldBotCharacterId) {
-                const oldBotOutfitData = { ...this.botManager.getCurrentOutfit() };
+                const oldBotOutfitData = {...this.botManager.getCurrentOutfit()};
 
                 // Save the current outfit data to the current instance ID
                 outfitStore.setBotOutfit(oldBotCharacterId, oldBotInstanceId, oldBotOutfitData);
             }
             if (oldUserInstanceId) {
-                const oldUserOutfitData = { ...this.userManager.getCurrentOutfit() };
+                const oldUserOutfitData = {...this.userManager.getCurrentOutfit()};
 
                 // Save the current outfit data to the current instance ID
                 outfitStore.setUserOutfit(oldUserInstanceId, oldUserOutfitData);
@@ -230,7 +231,7 @@ class EventSystem {
         customMacroSystem.deregisterCharacterSpecificMacros(this.context);
         customMacroSystem.registerCharacterSpecificMacros(this.context);
     }
-    
+
     /**
      * Generates a hash for the given message text
      * @param {string} text - The text to generate a hash for
@@ -255,7 +256,7 @@ class EventSystem {
 
         window.restartLLM = async (...args) => {
             console.log('[OutfitTracker] Chat reset triggered (restartLLM).');
-            
+
             // Use the new data persistence service for flushing
             outfitStore.flush();
 
@@ -281,12 +282,12 @@ class EventSystem {
             if (userOutfitInstanceId) {
                 this.userManager.setOutfitInstanceId(userOutfitInstanceId);
             }
-            
+
             // Also update the store with the current instance ID before updating for character
             if (botOutfitInstanceId) {
                 outfitStore.setCurrentInstanceId(botOutfitInstanceId);
             }
-            
+
             // After restoring instance IDs, update for current character
             await this.updateForCurrentCharacter();
 
@@ -305,7 +306,7 @@ class EventSystem {
                     window.userOutfitPanel.renderContent();
                 }
             }
-            
+
             console.log('[OutfitTracker] Restored outfits after chat reset.');
 
             // Do not process first message after reset to preserve the restored instance ID
@@ -336,12 +337,12 @@ class EventSystem {
             const userOutfitInstanceId = this.userManager.getOutfitInstanceId();
 
             if (botOutfitInstanceId) {
-                const botOutfitData = { ...this.botManager.getCurrentOutfit() };
+                const botOutfitData = {...this.botManager.getCurrentOutfit()};
 
                 outfitStore.setBotOutfit(this.botManager.characterId, botOutfitInstanceId, botOutfitData);
             }
             if (userOutfitInstanceId) {
-                const userOutfitData = { ...this.userManager.getCurrentOutfit() };
+                const userOutfitData = {...this.userManager.getCurrentOutfit()};
 
                 outfitStore.setUserOutfit(userOutfitInstanceId, userOutfitData);
             }
@@ -358,12 +359,12 @@ class EventSystem {
             if (userOutfitInstanceId) {
                 this.userManager.setOutfitInstanceId(userOutfitInstanceId);
             }
-            
+
             // Also update the store with the current instance ID before updating for character
             if (botOutfitInstanceId) {
                 outfitStore.setCurrentInstanceId(botOutfitInstanceId);
             }
-            
+
             await this.updateForCurrentCharacter();
 
             // Load outfit data after clear and character update
@@ -381,7 +382,7 @@ class EventSystem {
                     window.userOutfitPanel.renderContent();
                 }
             }
-            
+
             console.log('[OutfitTracker] Restored outfits after chat clear.');
 
             // Do not process first message after clear to preserve the restored instance ID

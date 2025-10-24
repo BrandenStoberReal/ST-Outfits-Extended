@@ -14,12 +14,12 @@ export function getSettingValue(key, defaultValue = undefined) {
         if (window.outfitStore && typeof window.outfitStore.getSetting === 'function') {
             return window.outfitStore.getSetting(key);
         }
-        
+
         // Fallback to the extension settings through context
-        const context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : 
-            window.getContext ? window.getContext() : 
+        const context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() :
+            window.getContext ? window.getContext() :
                 null;
-        
+
         if (context && typeof context === 'function') {
             const settings = context().extensionSettings;
 
@@ -27,7 +27,7 @@ export function getSettingValue(key, defaultValue = undefined) {
         } else if (context && context.extensionSettings) {
             return context.extensionSettings.outfit_tracker?.[key];
         }
-        
+
         // Ultimate fallback to window.extension_settings
         return window.extension_settings?.outfit_tracker?.[key];
     } catch (error) {

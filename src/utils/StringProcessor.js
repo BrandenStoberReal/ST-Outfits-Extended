@@ -4,20 +4,24 @@
 
 // Helper function to replace all occurrences of a substring without using regex
 export function replaceAll(str, searchValue, replaceValue) {
-    if (!searchValue) {return str;}
-    
+    if (!searchValue) {
+        return str;
+    }
+
     // Prevent infinite loops when the replacement value contains the search value
-    if (searchValue === replaceValue) {return str;}
-    
+    if (searchValue === replaceValue) {
+        return str;
+    }
+
     let result = str;
     let index = result.indexOf(searchValue);
-    
+
     while (index !== -1) {
         result = result.substring(0, index) + replaceValue + result.substring(index + searchValue.length);
         // Move past the replacement value to prevent infinite loops
         index = result.indexOf(searchValue, index + replaceValue.length);
     }
-    
+
     return result;
 }
 
@@ -26,19 +30,19 @@ function _isValidSlotName(str) {
     if (str.length === 0) {
         return false;
     }
-    
+
     for (let i = 0; i < str.length; i++) {
         const char = str[i];
 
-        if (!((char >= 'a' && char <= 'z') || 
-              (char >= 'A' && char <= 'Z') || 
-              (char >= '0' && char <= '9') || 
-              char === '_' || 
-              char === '-')) {
+        if (!((char >= 'a' && char <= 'z') ||
+            (char >= 'A' && char <= 'Z') ||
+            (char >= '0' && char <= '9') ||
+            char === '_' ||
+            char === '-')) {
             return false;
         }
     }
-    
+
     return true;
 }
 
@@ -73,26 +77,26 @@ function findNextCommand(text, startIndex) {
     const actionEnd = text.indexOf('_', actionStart);
 
     if (actionEnd === -1) {
-        return { command: null, nextIndex: patternIndex + 1 };
+        return {command: null, nextIndex: patternIndex + 1};
     }
 
     const action = text.substring(actionStart, actionEnd);
 
     if (!['wear', 'remove', 'change'].includes(action)) {
-        return { command: null, nextIndex: patternIndex + 1 };
+        return {command: null, nextIndex: patternIndex + 1};
     }
 
     const slotStart = actionEnd + 1;
     const slotEnd = text.indexOf('(', slotStart);
 
     if (slotEnd === -1) {
-        return { command: null, nextIndex: patternIndex + 1 };
+        return {command: null, nextIndex: patternIndex + 1};
     }
 
     const slot = text.substring(slotStart, slotEnd);
 
     if (!_isValidSlotName(slot)) {
-        return { command: null, nextIndex: patternIndex + 1 };
+        return {command: null, nextIndex: patternIndex + 1};
     }
 
     const parenStart = slotEnd;
@@ -122,12 +126,12 @@ function findNextCommand(text, startIndex) {
     }
 
     if (parenEnd === -1) {
-        return { command: null, nextIndex: patternIndex + 1 };
+        return {command: null, nextIndex: patternIndex + 1};
     }
 
     const fullCommand = text.substring(patternIndex, parenEnd + 1);
 
-    return { command: fullCommand, nextIndex: parenEnd + 1 };
+    return {command: fullCommand, nextIndex: parenEnd + 1};
 }
 
 export function extractCommands(text) {
@@ -157,16 +161,20 @@ export function extractCommands(text) {
 
 // Function to extract multiple values from a text without using regex
 export function extractValues(text, startMarker, endMarker) {
-    if (!text || typeof text !== 'string') {return [];}
-    
+    if (!text || typeof text !== 'string') {
+        return [];
+    }
+
     const values = [];
     let startIndex = 0;
-    
+
     while (startIndex < text.length) {
         const startIdx = text.indexOf(startMarker, startIndex);
 
-        if (startIdx === -1) {break;}
-        
+        if (startIdx === -1) {
+            break;
+        }
+
         const contentStart = startIdx + startMarker.length;
         const endIdx = text.indexOf(endMarker, contentStart);
 
@@ -175,52 +183,56 @@ export function extractValues(text, startMarker, endMarker) {
             startIndex = startIdx + 1;
             continue;
         }
-        
+
         const value = text.substring(contentStart, endIdx);
 
         values.push({
             fullMatch: text.substring(startIdx, endIdx + endMarker.length),
             value
         });
-        
+
         startIndex = endIdx + endMarker.length;
     }
-    
+
     return values;
 }
 
 // Function to safely access nested properties
 export function safeGet(obj, path, defaultValue = null) {
-    if (!obj || typeof obj !== 'object') {return defaultValue;}
-    
+    if (!obj || typeof obj !== 'object') {
+        return defaultValue;
+    }
+
     const keys = path.split('.');
     let current = obj;
-    
+
     for (const key of keys) {
         if (current === null || current === undefined) {
             return defaultValue;
         }
         current = current[key];
     }
-    
+
     return current !== undefined ? current : defaultValue;
 }
 
 // Function to safely set nested properties
 export function safeSet(obj, path, value) {
-    if (!obj || typeof obj !== 'object') {return;}
-    
+    if (!obj || typeof obj !== 'object') {
+        return;
+    }
+
     const keys = path.split('.');
     const lastKey = keys.pop();
     let current = obj;
-    
+
     for (const key of keys) {
         if (current[key] === null || current[key] === undefined || typeof current[key] !== 'object') {
             current[key] = {};
         }
         current = current[key];
     }
-    
+
     current[lastKey] = value;
 }
 
@@ -231,41 +243,49 @@ export function removeMacros(text) {
     }
 
     let result = text;
-    
+
     // Remove {{...}} patterns iteratively without regex
     let startIndex = 0;
 
     while (startIndex < result.length) {
         const openIdx = result.indexOf('{{', startIndex);
 
-        if (openIdx === -1) {break;}
-        
+        if (openIdx === -1) {
+            break;
+        }
+
         const closeIdx = result.indexOf('}}', openIdx);
 
-        if (closeIdx === -1) {break;}
-        
+        if (closeIdx === -1) {
+            break;
+        }
+
         // Remove the entire {{...}} pattern
         result = result.substring(0, openIdx) + result.substring(closeIdx + 2);
         // Don't advance startIndex since we modified the string
         startIndex = openIdx;
     }
-    
+
     // Remove <...> patterns iteratively without regex
     startIndex = 0;
     while (startIndex < result.length) {
         const openIdx = result.indexOf('<', startIndex);
 
-        if (openIdx === -1) {break;}
-        
+        if (openIdx === -1) {
+            break;
+        }
+
         const closeIdx = result.indexOf('>', openIdx);
 
-        if (closeIdx === -1) {break;}
-        
+        if (closeIdx === -1) {
+            break;
+        }
+
         // Remove the entire <...> pattern
         result = result.substring(0, openIdx) + result.substring(closeIdx + 1);
         // Don't advance startIndex since we modified the string
         startIndex = openIdx;
     }
-    
+
     return result;
 }

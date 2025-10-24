@@ -1,5 +1,4 @@
-import { outfitStore } from '../common/Store.js';
-import { ALL_SLOTS } from '../config/constants.js';
+import {ALL_SLOTS} from '../config/constants.js';
 
 /**
  * OutfitManager - Abstract base class for managing character outfit data
@@ -17,8 +16,8 @@ export class OutfitManager {
         this.outfitInstanceId = null;
         this.character = 'Unknown';
 
-        this.slots.forEach(slot => { 
-            this.currentValues[slot] = 'None'; 
+        this.slots.forEach(slot => {
+            this.currentValues[slot] = 'None';
         });
     }
 
@@ -29,16 +28,18 @@ export class OutfitManager {
      * @returns {void}
      */
     setCharacter(name, characterId = null) {
-        if (name === this.character) { return; }
-        
+        if (name === this.character) {
+            return;
+        }
+
         if (!name || typeof name !== 'string') {
             console.warn(`[${this.constructor.name}] Invalid character name provided, using "Unknown"`);
             name = 'Unknown';
         }
-        
+
         this.character = name;
         this.characterId = characterId;
-        
+
         this.loadOutfit();
     }
 
@@ -51,11 +52,11 @@ export class OutfitManager {
         if (this.outfitInstanceId) {
             this.saveOutfit();
         }
-        
+
         this.outfitInstanceId = instanceId;
         this.loadOutfit();
     }
-    
+
     /**
      * Gets the current outfit instance ID
      * @returns {string|null} The current outfit instance ID
@@ -63,15 +64,15 @@ export class OutfitManager {
     getOutfitInstanceId() {
         return this.outfitInstanceId;
     }
-    
+
     /**
      * Gets a copy of the current outfit values
      * @returns {object} A copy of the current outfit values
      */
     getCurrentOutfit() {
-        return { ...this.currentValues };
+        return {...this.currentValues};
     }
-    
+
     /**
      * Sets outfit data for the manager
      * @param {object} outfitData - Object containing slot-value pairs to set
@@ -82,16 +83,16 @@ export class OutfitManager {
             console.warn(`[${this.constructor.name}] Invalid outfit data provided to setOutfit`);
             return;
         }
-        
+
         let changed = false;
-        
+
         for (const [slot, value] of Object.entries(outfitData)) {
             if (this.slots.includes(slot) && this.currentValues[slot] !== value) {
                 this.currentValues[slot] = value || 'None';
                 changed = true;
             }
         }
-        
+
         if (changed && this.characterId && this.outfitInstanceId) {
             this.saveOutfit();
         }
@@ -137,7 +138,7 @@ export class OutfitManager {
     loadOutfitFromInstanceId(instanceId) {
         throw new Error('loadOutfitFromInstanceId must be implemented by subclasses');
     }
-    
+
     /**
      * Saves the current outfit data to the specified instance ID
      * @param {string|null} [instanceId=null] - The instance ID to save to (defaults to current instance ID)
@@ -182,26 +183,26 @@ export class OutfitManager {
             console.error(`[${this.constructor.name}] Invalid slot: ${slot}`);
             return null;
         }
-        
+
         if (value === undefined || value === null || value === '') {
             value = 'None';
         }
-        
+
         if (typeof value !== 'string') {
             value = String(value);
         }
-        
+
         const MAX_VALUE_LENGTH = 1000;
 
         if (value.length > MAX_VALUE_LENGTH) {
             value = value.substring(0, MAX_VALUE_LENGTH);
             console.warn(`[${this.constructor.name}] Value truncated to ${MAX_VALUE_LENGTH} characters for slot ${slot}`);
         }
-        
+
         const previousValue = this.currentValues[slot];
-        
+
         this.currentValues[slot] = value;
-        
+
         if (this.characterId && this.outfitInstanceId) {
             this.saveOutfit();
         }
@@ -210,7 +211,7 @@ export class OutfitManager {
             return `${this.character} put on ${value}.`;
         } else if (value === 'None') {
             return `${this.character} removed ${previousValue}.`;
-        } 
+        }
         return `${this.character} changed from ${previousValue} to ${value}.`;
     }
 
@@ -219,21 +220,27 @@ export class OutfitManager {
             console.error(`[${this.constructor.name}] Invalid slot: ${slot}`);
             return null;
         }
-        
+
         const currentValue = this.currentValues[slot];
         let newValue = currentValue;
 
         if (currentValue === 'None') {
             newValue = prompt(`What is ${this.character} wearing on their ${slot}?`, '');
-            if (newValue === null) { return null; }
-            if (newValue === '') { newValue = 'None'; }
+            if (newValue === null) {
+                return null;
+            }
+            if (newValue === '') {
+                newValue = 'None';
+            }
         } else {
             const choice = prompt(
                 `${this.character}'s ${slot}: ${currentValue}\n\nEnter 'remove' to remove, or type new item:`,
                 ''
             );
 
-            if (choice === null) { return null; }
+            if (choice === null) {
+                return null;
+            }
             if (choice === '') {
                 newValue = 'None';
             } else {
@@ -254,31 +261,31 @@ export class OutfitManager {
             varName: this.getVarName(slot)
         }));
     }
-    
+
     savePreset(presetName, instanceId = null) {
         throw new Error('savePreset must be implemented by subclasses');
     }
-    
+
     async loadPreset(presetName, instanceId = null) {
         throw new Error('loadPreset must be implemented by subclasses');
     }
-    
+
     deletePreset(presetName, instanceId = null) {
         throw new Error('deletePreset must be implemented by subclasses');
     }
-    
+
     getPresets(instanceId = null) {
         throw new Error('getPresets must be implemented by subclasses');
     }
-    
+
     getAllPresets(instanceId = null) {
         throw new Error('getAllPresets must be implemented by subclasses');
     }
-    
+
     async loadDefaultOutfit(instanceId = null) {
         throw new Error('loadDefaultOutfit must be implemented by subclasses');
     }
-    
+
     overwritePreset(presetName, instanceId = null) {
         throw new Error('overwritePreset must be implemented by subclasses');
     }

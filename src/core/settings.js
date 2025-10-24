@@ -1,13 +1,13 @@
-import { DEFAULT_SETTINGS } from '../config/constants.js';
+import {DEFAULT_SETTINGS} from '../config/constants.js';
 
 export function initSettings(autoOutfitSystem, AutoOutfitSystemClass, context) {
     // Get the extension settings using SillyTavern's context
     const settings = context.extensionSettings;
     const MODULE_NAME = 'outfit_tracker';
-    
+
     // Load settings from extension settings, using defaults if not available
     if (!settings[MODULE_NAME]) {
-        settings[MODULE_NAME] = { ...DEFAULT_SETTINGS };
+        settings[MODULE_NAME] = {...DEFAULT_SETTINGS};
     }
 
     // Ensure all settings exist

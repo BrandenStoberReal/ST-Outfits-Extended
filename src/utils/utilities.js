@@ -3,17 +3,21 @@
  */
 
 export function generateShortId(id, maxLength = 8) {
-    if (!id) {return '';}
-    if (id.startsWith('temp_')) {return 'temp';}
-    
+    if (!id) {
+        return '';
+    }
+    if (id.startsWith('temp_')) {
+        return 'temp';
+    }
+
     // Manually remove non-alphanumeric characters without regex
     let cleanId = '';
 
     for (let i = 0; i < id.length; i++) {
         const char = id[i];
 
-        if ((char >= 'a' && char <= 'z') || 
-            (char >= 'A' && char <= 'Z') || 
+        if ((char >= 'a' && char <= 'z') ||
+            (char >= 'A' && char <= 'Z') ||
             (char >= '0' && char <= '9')) {
             cleanId += char;
         }
@@ -28,18 +32,20 @@ export function generateShortId(id, maxLength = 8) {
  * @returns {string} - 8-character hash string
  */
 export function generateMessageHash(text) {
-    if (!text) {return '';}
-    
+    if (!text) {
+        return '';
+    }
+
     let hash = 0;
     const str = text.substring(0, 100);
-    
+
     for (let i = 0; i < str.length; i++) {
         const char = str.charCodeAt(i);
 
         hash = ((hash << 5) - hash) + char;
         hash &= hash; // Convert to 32-bit integer
     }
-    
+
     return Math.abs(hash).toString(36).substring(0, 8).padEnd(8, '0');
 }
 
@@ -112,7 +118,7 @@ export function deepClone(obj) {
  * @returns {object} A new object that is the deep merge of target and source
  */
 export function deepMerge(target, source) {
-    const output = { ...target };
+    const output = {...target};
 
     if (target && typeof target === 'object' && source && typeof source === 'object') {
         Object.keys(source).forEach(key => {
@@ -190,7 +196,7 @@ function normalizeTextForInstanceId(text) {
     if (!text || typeof text !== 'string') {
         return '';
     }
-    
+
     let result = text;
     let startIndex = 0;
 
@@ -200,19 +206,19 @@ function normalizeTextForInstanceId(text) {
         if (openIdx === -1) {
             break;
         }
-        
+
         const closeIdx = result.indexOf('}}', openIdx);
 
         if (closeIdx === -1) {
             break;
         }
-        
+
         // Replace the entire {{...}} pattern with {{}}
         result = result.substring(0, openIdx) + '{{}}' + result.substring(closeIdx + 2);
         // Advance startIndex to the next position after the replacement
         startIndex = openIdx + '{{}}'.length;
     }
-    
+
     return result;
 }
 
@@ -224,7 +230,7 @@ function normalizeTextForInstanceId(text) {
  */
 export async function generateInstanceIdFromText(text, valuesToRemove = null) {
     let processedText = text;
-    
+
     // If specific values to remove are provided, remove them from the text
     if (valuesToRemove && Array.isArray(valuesToRemove)) {
         valuesToRemove.forEach(value => {
@@ -233,31 +239,31 @@ export async function generateInstanceIdFromText(text, valuesToRemove = null) {
                 let tempText = processedText;
                 let lowerTempText = tempText.toLowerCase();
                 let lowerValue = value.toLowerCase();
-                
+
                 let startIndex = 0;
 
                 while ((startIndex = lowerTempText.indexOf(lowerValue, startIndex)) !== -1) {
                     // Check if it's a complete word match to avoid partial replacements
                     const endIndex = startIndex + lowerValue.length;
-                    
+
                     // Check if it's surrounded by word boundaries
                     const beforeChar = startIndex > 0 ? lowerTempText.charAt(startIndex - 1) : ' ';
                     const afterChar = endIndex < lowerTempText.length ? lowerTempText.charAt(endIndex) : ' ';
-                    
+
                     if ((beforeChar === ' ' || beforeChar === '.' || beforeChar === ',' || beforeChar === '"' || beforeChar === '\'' || beforeChar === '(' || beforeChar === '[') &&
                         (afterChar === ' ' || afterChar === '.' || afterChar === ',' || afterChar === '"' || afterChar === '\'' || afterChar === ')' || afterChar === ']')) {
                         processedText = processedText.substring(0, startIndex) + '[OUTFIT_REMOVED]' + processedText.substring(endIndex);
                         lowerTempText = processedText.toLowerCase();
                     }
-                    
+
                     startIndex = endIndex;
                 }
             }
         });
     }
-    
+
     const normalizedText = normalizeTextForInstanceId(processedText);
-    
+
     if (typeof crypto !== 'undefined' && crypto.subtle) {
         try {
             const encoder = new TextEncoder();

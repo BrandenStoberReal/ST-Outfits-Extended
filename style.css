@@ -6,7 +6,7 @@
     width: 350px; /* Increased width for better content display */
     max-height: 80vh; /* Responsive max height */
     border-radius: 12px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
     padding: 16px;
     z-index: 10000;
     display: none;
@@ -48,7 +48,7 @@
     margin: 0;
     font-size: 1.4em;
     font-weight: 700;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
     padding-left: 2px;
 }
 
@@ -227,7 +227,7 @@
 .preset-name {
     font-weight: 500;
     font-size: 0.9em;
-    text-shadow: 0 1px 1px rgba(0,0,0,0.1);
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
     flex: 1;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -268,7 +268,7 @@
     cursor: pointer;
     font-weight: 600;
     font-size: 0.75em;
-    text-shadow: 0 1px 1px rgba(0,0,0,0.1);
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
     min-width: 42px;
     transition: all 0.2s ease;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -330,7 +330,7 @@
     cursor: pointer;
     font-weight: 600;
     font-size: 0.85em;
-    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
     transition: all 0.3s ease;
     box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
 }
@@ -352,7 +352,7 @@
     cursor: pointer;
     font-weight: 600;
     font-size: 0.85em;
-    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
     transition: all 0.3s ease;
     box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
 }
@@ -372,7 +372,7 @@
 }
 
 .outfit-actions span:hover {
-    background: rgba(255,255,255,0.25);
+    background: rgba(255, 255, 255, 0.25);
     transform: scale(1.1);
 }
 
@@ -387,14 +387,13 @@
 }
 
 .outfit-content::-webkit-scrollbar-thumb {
-    background: rgba(255,255,255, 0.25);
+    background: rgba(255, 255, 255, 0.25);
     border-radius: 4px;
 }
 
 .outfit-content::-webkit-scrollbar-thumb:hover {
-    background: rgba(255,255,255, 0.35);
+    background: rgba(255, 255, 255, 0.35);
 }
-
 
 
 /* Ensure outfits page has proper scroll */
@@ -444,9 +443,6 @@
 }
 
 
-
-
-
 /* Responsive design */
 @media (max-width: 768px) {
     #bot-outfit-panel,
@@ -458,7 +454,6 @@
         max-width: calc(100% - 20px);
     }
 }
-
 
 
 .outfit-extension-settings h4 {
@@ -514,7 +509,8 @@
     background: #ffffff !important;
     border: 1px solid #000000 !important;
     border-radius: 5px !important;
-    color: #000000 !important; font-weight: bold !important; /* Black and white theme */
+    color: #000000 !important;
+    font-weight: bold !important; /* Black and white theme */
     font-size: 0.9em !important;
     cursor: pointer !important;
     height: 30px !important;
@@ -594,7 +590,6 @@
 }
 
 
-
 .outfit-extension-settings .color-input-wrapper {
     display: flex !important;
     align-items: center !important;
@@ -644,7 +639,8 @@
     border: 1px solid #000000 !important;
     border-radius: 0 5px 5px 0 !important;
     background: #ffffff !important;
-    color: #000000 !important; font-weight: bold !important; /* Black and white theme */
+    color: #000000 !important;
+    font-weight: bold !important; /* Black and white theme */
     cursor: pointer !important;
     font-size: 0.8em !important;
     transition: all 0.2s ease !important;
@@ -704,7 +700,6 @@
     background: #333333 !important;
     color: #ffffff !important;
 }
-
 
 
 /* Error text styling - Changed to black for black and white theme */

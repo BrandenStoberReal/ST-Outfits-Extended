@@ -1,5 +1,4 @@
-
-import { ALL_SLOTS } from '../config/constants.js';
+import {ALL_SLOTS} from '../config/constants.js';
 
 class OutfitDataService {
     constructor(dataManager) {
@@ -18,7 +17,7 @@ class OutfitDataService {
                     delete globalVars[key];
                 });
 
-                this.dataManager.save({ variables: { global: globalVars } });
+                this.dataManager.save({variables: {global: globalVars}});
                 console.log(`[OutfitTracker] Removed ${outfitVars.length} outfit-related global variables`);
             }
         } catch (error) {
@@ -31,7 +30,7 @@ class OutfitDataService {
             this.dataManager.saveOutfitData({
                 botInstances: {},
                 userInstances: {},
-                presets: { bot: {}, user: {} }
+                presets: {bot: {}, user: {}}
             });
 
             this.clearGlobalOutfitVariables();
@@ -53,4 +52,4 @@ class OutfitDataService {
     }
 }
 
-export { OutfitDataService };
+export {OutfitDataService};
