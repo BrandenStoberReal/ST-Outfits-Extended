@@ -67,19 +67,19 @@ Based on the provided conversation, generate a sequence of commands to reflect a
 
 **COMMANDS**
 You have the following commands at your disposal:
-- 'outfit-system_wear_<slot>("item name")': To put on a new item.
-- 'outfit-system_remove_<slot>()': To take off an item.
-- 'outfit-system_change_<slot>("new item name")': To modify an existing item (e.g., from "White Blouse" to "White Blouse (unbuttoned)").
-- 'outfit-system_replace_<slot>("new item name")': To replace an existing item with a new one.
-- 'outfit-system_unequip_<slot>()': To remove an item from a specific slot.
+- \`outfit-system_wear_<slot>("item name")\`: To put on a new item.
+- \`outfit-system_remove_<slot>()\`: To take off an item.
+- \`outfit-system_change_<slot>("new item name")\`: To modify an existing item (e.g., from "White Blouse" to "White Blouse (unbuttoned)").
+- \`outfit-system_replace_<slot>("new item name")\`: To replace an existing item with a new one.
+- \`outfit-system_unequip_<slot>()\`: To remove an item from a specific slot.
 
 **SLOTS**
-- Clothing: 'headwear', 'topwear', 'topunderwear', 'bottomwear', 'bottomunderwear', 'footwear', 'footunderwear'
-- Accessories: 'head-accessory', 'ears-accessory', 'eyes-accessory', 'mouth-accessory', 'neck-accessory', 'body-accessory', 'arms-accessory', 'hands-accessory', 'waist-accessory', 'bottom-accessory', 'legs-accessory', 'foot-accessory'
+- Clothing: \`headwear\`, \`topwear\`, \`topunderwear\`, \`bottomwear\`, \`bottomunderwear\`, \`footwear\`, \`footunderwear\`
+- Accessories: \`head-accessory\`, \`ears-accessory\`, \`eyes-accessory\`, \`mouth-accessory\`, \`neck-accessory\`, \`body-accessory\`, \`arms-accessory\`, \`hands-accessory\`, \`waist-accessory\`, \`bottom-accessory\`, \`legs-accessory\`, \`foot-accessory\`
 
 **INSTRUCTIONS**
 - Only output commands for explicit clothing changes.
-- If no changes are detected, output only '[none]'.
+- If no changes are detected, output only \`[none]\`.
 - Do not include any explanations or conversational text in your output.
 - Ensure that the item names are enclosed in double quotes.
 
@@ -87,27 +87,27 @@ You have the following commands at your disposal:
 - **User:** I'm feeling a bit cold.
   **{{char}}:** I'll put on my favorite sweater.
   **Output:**
-  'outfit-system_wear_topwear("Favorite Sweater")'
+  \`outfit-system_wear_topwear("Favorite Sweater")\`
 
 - **User:** Your shoes are untied.
   **{{char}}:** Oh, thanks for letting me know. I'll take them off and tie them properly.
   **Output:**
-  'outfit-system_remove_footwear()'
+  \`outfit-system_remove_footwear()\`
 
 - **User:** That's a nice hat.
   **{{char}}:** Thanks! It's new. I'll take it off for a moment to show you.
   **Output:**
-  'outfit-system_unequip_headwear()'
+  \`outfit-system_unequip_headwear()\`
 
 - **User:** I like your shirt.
   **{{char}}:** Thanks! I think I'll unbutton it a bit.
   **Output:**
-  'outfit-system_change_topwear("Shirt (unbuttoned)")'
+  \`outfit-system_change_topwear("Shirt (unbuttoned)")\`
 
 - **User:** It's getting warm in here.
   **{{char}}:** I agree. I'll take off my jacket and put on this t-shirt instead.
   **Output:**
-  'outfit-system_replace_topwear("T-shirt")'
+  \`outfit-system_replace_topwear("T-shirt")\`
 `;
     }
 
@@ -296,6 +296,7 @@ You have the following commands at your disposal:
             console.log('[AutoOutfitSystem] Generated result:', result);
 
             const commands = this.parseGeneratedText(result);
+
             this.generatedCommands = commands; // Store the generated commands
 
             if (commands.length > 0) {
@@ -365,6 +366,7 @@ You have the following commands at your disposal:
         for (const command of commands) {
             try {
                 const confidence = this.calculateConfidenceScore(command);
+
                 if (confidence < 0.7) {
                     lowConfidenceCommands.push({command, confidence});
                     continue;
@@ -420,6 +422,7 @@ You have the following commands at your disposal:
      */
     calculateConfidenceScore(command) {
         const parsed = this.parseCommand(command);
+
         if (!parsed) {
             return 0;
         }
@@ -603,11 +606,13 @@ You have the following commands at your disposal:
         }
 
         const validActions = ['wear', 'remove', 'change', 'replace', 'unequip'];
+
         if (!validActions.includes(action)) {
             throw new Error(`Invalid action: ${action}. Valid actions: ${validActions.join(', ')}`);
         }
 
         let finalAction = action;
+
         if (action === 'replace') {
             finalAction = 'change';
         } else if (action === 'unequip') {
