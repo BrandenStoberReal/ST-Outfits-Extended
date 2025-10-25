@@ -698,6 +698,10 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem, context) {
             };
 
             saveSettingsFn();
+
+            // Update the outfit store to reflect the new color settings
+            outfitStore.setSetting('botPanelColors', settings[MODULE_NAME].botPanelColors);
+            outfitStore.setSetting('userPanelColors', settings[MODULE_NAME].userPanelColors);
         }
 
         // Apply the new colors to the panels
@@ -720,6 +724,12 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem, context) {
             settings[MODULE_NAME].autoOpenUser = $('#outfit-auto-user').prop('checked');
             settings[MODULE_NAME].debugMode = $('#outfit-debug-mode').prop('checked');
             saveSettingsFn();
+
+            // Update the outfit store to reflect the new settings
+            outfitStore.setSetting('enableSysMessages', settings[MODULE_NAME].enableSysMessages);
+            outfitStore.setSetting('autoOpenBot', settings[MODULE_NAME].autoOpenBot);
+            outfitStore.setSetting('autoOpenUser', settings[MODULE_NAME].autoOpenUser);
+            outfitStore.setSetting('debugMode', settings[MODULE_NAME].debugMode);
         }
     });
 
@@ -755,6 +765,25 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem, context) {
         }
 
         updateColorSettingsAndApply();
+    });
+
+    // Update outfit store when color values are changed directly 
+    $(document).on('change', '#bot-panel-primary-color, #bot-panel-border-color, #bot-panel-shadow-color, #user-panel-primary-color, #user-panel-border-color, #user-panel-shadow-color', function () {
+        // Update the outfit store to reflect the new color settings
+        const newBotColors = {
+            primary: $('#bot-panel-primary-color').val(),
+            border: $('#bot-panel-border-color').val(),
+            shadow: $('#bot-panel-shadow-color').val()
+        };
+
+        const newUserColors = {
+            primary: $('#user-panel-primary-color').val(),
+            border: $('#user-panel-border-color').val(),
+            shadow: $('#user-panel-shadow-color').val()
+        };
+
+        outfitStore.setSetting('botPanelColors', newBotColors);
+        outfitStore.setSetting('userPanelColors', newUserColors);
     });
 
     // Color customization event listeners
@@ -938,6 +967,9 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem, context) {
                     autoOutfitSystem.disable();
                 }
                 saveSettingsFn();
+
+                // Update the outfit store to reflect the new settings
+                outfitStore.setSetting('autoOutfitSystem', settings[MODULE_NAME].autoOutfitSystem);
             }
         });
 
@@ -950,6 +982,9 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem, context) {
                     autoOutfitSystem.setConnectionProfile(profile);
                 }
                 saveSettingsFn();
+
+                // Update the outfit store to reflect the new settings
+                outfitStore.setSetting('autoOutfitConnectionProfile', settings[MODULE_NAME].autoOutfitConnectionProfile);
             }
         });
 
@@ -958,6 +993,9 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem, context) {
                 settings[MODULE_NAME].autoOutfitPrompt = $(this).val();
                 autoOutfitSystem.setPrompt($(this).val());
                 saveSettingsFn();
+
+                // Update the outfit store to reflect the new settings
+                outfitStore.setSetting('autoOutfitPrompt', settings[MODULE_NAME].autoOutfitPrompt);
             }
         });
 
@@ -968,6 +1006,9 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem, context) {
                 $('#outfit-prompt-input').val(autoOutfitSystem.systemPrompt);
                 settings[MODULE_NAME].autoOutfitPrompt = autoOutfitSystem.systemPrompt;
                 saveSettingsFn();
+
+                // Update the outfit store to reflect the new settings
+                outfitStore.setSetting('autoOutfitPrompt', settings[MODULE_NAME].autoOutfitPrompt);
             }
 
             if (currentSettings?.enableSysMessages) {
