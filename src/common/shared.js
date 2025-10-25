@@ -65,7 +65,7 @@ export function dragElementWithSave(element, storageKey) {
     });
 
     // Get the element that will be used for moving (header)
-    const $header = $element.find('.panel-header, .dialogHeader, .title, h2, h3').first();
+    const $header = $element.find('.panel-header, .dialogHeader, .title, .outfit-header, .outfit-debug-header, h2, h3').first();
 
     if ($header.length) {
         // When the header is clicked, assign the event handlers
