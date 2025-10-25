@@ -24,7 +24,7 @@ export class DebugPanel {
 
             if (context && context.characters) {
                 // Find character by ID (avatar property in SillyTavern)
-                const character = context.characters.find(c => c.avatar === charId);
+                const character = context.characters[charId];
 
                 if (character && character.name) {
                     return character.name;
