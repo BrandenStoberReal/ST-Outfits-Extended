@@ -1282,6 +1282,119 @@ input:checked + .slider:before {
     background: rgba(255, 255, 255, 0.35);
 }
 
+/* Debug Logs Tab */
+.debug-logs-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.log-item {
+    padding: 8px;
+    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.2);
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.log-timestamp {
+    font-size: 0.8em;
+    color: #95a5a6;
+}
+
+.log-level {
+    font-weight: bold;
+}
+
+.log-item.log-info {
+    color: #3498db;
+}
+
+.log-item.log-warn {
+    color: #f39c12;
+}
+
+.log-item.log-error {
+    color: #e74c3c;
+}
+
+/* Debug Settings Tab */
+.debug-settings-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.setting-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.setting-item label {
+    flex: 1;
+    font-weight: 500;
+}
+
+.setting-item input {
+    flex: 2;
+}
+
+/* Macro Testing */
+.macro-testing-area {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.macro-testing-area textarea {
+    width: 100%;
+    min-height: 80px;
+    margin-bottom: 10px;
+}
+
+#macro-test-output {
+    margin-top: 10px;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+    min-height: 40px;
+    white-space: pre-wrap;
+}
+
+.instance-search-container {
+    margin-bottom: 10px;
+}
+
+#instance-search {
+    width: 100%;
+    padding: 8px;
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(0, 0, 0, 0.2);
+    color: #fff;
+}
+
+.instance-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.delete-instance-btn {
+    background: rgba(231, 76, 60, 0.5);
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    padding: 4px 8px;
+    cursor: pointer;
+    font-size: 0.8em;
+}
+
+.delete-instance-btn:hover {
+    background: rgba(231, 76, 60, 0.7);
+}
+
 /* Responsive design for debug panel */
 @media (max-width: 768px) {
     .outfit-debug-panel {

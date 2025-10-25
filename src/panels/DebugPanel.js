@@ -1,6 +1,7 @@
 import {dragElementWithSave, resizeElement} from '../common/shared.js';
 import {outfitStore} from '../common/Store.js';
 import {customMacroSystem} from '../utils/CustomMacroSystem.js';
+import {debugLogger} from '../utils/DebugLogger.js';
 
 export class DebugPanel {
     constructor() {
@@ -38,6 +39,8 @@ export class DebugPanel {
                 <button class="outfit-debug-tab ${this.currentTab === 'macros' ? 'active' : ''}" data-tab="macros">Macros</button>
                 <button class="outfit-debug-tab ${this.currentTab === 'pointers' ? 'active' : ''}" data-tab="pointers">Pointers</button>
                 <button class="outfit-debug-tab ${this.currentTab === 'performance' ? 'active' : ''}" data-tab="performance">Performance</button>
+                <button class="outfit-debug-tab ${this.currentTab === 'settings' ? 'active' : ''}" data-tab="settings">Settings</button>
+                <button class="outfit-debug-tab ${this.currentTab === 'logs' ? 'active' : ''}" data-tab="logs">Logs</button>
                 <button class="outfit-debug-tab ${this.currentTab === 'misc' ? 'active' : ''}" data-tab="misc">Misc</button>
             </div>
             <div class="outfit-debug-content" id="outfit-debug-tab-content"></div>
@@ -78,24 +81,94 @@ export class DebugPanel {
         }
 
         contentArea.innerHTML = '';
+        contentArea.setAttribute('data-tab', this.currentTab);
 
-        switch (this.currentTab) {
-        case 'instances':
-            this.renderInstancesTab(contentArea);
-            break;
-        case 'macros':
-            this.renderMacrosTab(contentArea);
-            break;
-        case 'pointers':
-            this.renderPointersTab(contentArea);
-            break;
-        case 'performance':
-            this.renderPerformanceTab(contentArea);
-            break;
-        case 'misc':
-            this.renderMiscTab(contentArea);
-            break;
+        const tabRenderers = {
+            instances: this.renderInstancesTab.bind(this),
+            macros: this.renderMacrosTab.bind(this),
+            pointers: this.renderPointersTab.bind(this),
+            performance: this.renderPerformanceTab.bind(this),
+            settings: this.renderSettingsTab.bind(this),
+            logs: this.renderLogsTab.bind(this),
+            misc: this.renderMiscTab.bind(this),
+        };
+
+        const renderer = tabRenderers[this.currentTab];
+
+        if (renderer) {
+            renderer(contentArea);
         }
+    }
+
+    /**
+     * Renders the 'Settings' tab with settings editor
+     */
+    renderSettingsTab(container) {
+        const state = outfitStore.getState();
+        const settings = state.settings;
+
+        let settingsHtml = '<div class="debug-settings-list">';
+
+        for (const [key, value] of Object.entries(settings)) {
+            settingsHtml += `
+                <div class="setting-item">
+                    <label for="setting-${key}">${key}</label>
+                    <input type="${typeof value === 'boolean' ? 'checkbox' : 'text'}" id="setting-${key}" data-key="${key}" ${typeof value === 'boolean' && value ? 'checked' : ''} value="${typeof value !== 'boolean' ? value : ''}">
+                </div>
+            `;
+        }
+
+        settingsHtml += '<button id="save-settings-btn" class="menu_button">Save Settings</button>';
+        settingsHtml += '</div>';
+
+        container.innerHTML = settingsHtml;
+
+        // Add event listener for save button
+        setTimeout(() => {
+            document.getElementById('save-settings-btn')?.addEventListener('click', () => {
+                const newSettings = {};
+
+                for (const key of Object.keys(settings)) {
+                    const input = document.getElementById(`setting-${key}`);
+
+                    if (input) {
+                        if (input.type === 'checkbox') {
+                            newSettings[key] = input.checked;
+                        } else {
+                            newSettings[key] = input.value;
+                        }
+                    }
+                }
+                outfitStore.mutator.setSettings(newSettings);
+                toastr.success('Settings saved!', 'Debug Panel');
+                this.renderContent();
+            });
+        }, 100);
+    }
+
+    /**
+     * Renders the 'Logs' tab with logs from the DebugLogger
+     */
+    renderLogsTab(container) {
+        const logs = debugLogger.getLogs();
+
+        let logsHtml = '<div class="debug-logs-list">';
+
+        if (logs.length === 0) {
+            logsHtml += '<p>No logs available.</p>';
+        } else {
+            logsHtml += logs.map(log => `
+                <div class="log-item log-${log.level.toLowerCase()}">
+                    <span class="log-timestamp">${new Date(log.timestamp).toISOString()}</span>
+                    <span class="log-level">[${log.level}]</span>
+                    <span class="log-message">${log.message}</span>
+                </div>
+            `).join('');
+        }
+
+        logsHtml += '</div>';
+
+        container.innerHTML = logsHtml;
     }
 
     /**
@@ -107,6 +180,9 @@ export class DebugPanel {
         const userInstances = state.userInstances;
 
         let instancesHtml = '<div class="debug-instances-list">';
+
+        // Add search input
+        instancesHtml += '<div class="instance-search-container"><input type="text" id="instance-search" placeholder="Search instances..."></div>';
 
         // Add bot instances
         instancesHtml += '<h4>Bot Instances</h4>';
@@ -128,12 +204,14 @@ export class DebugPanel {
                     };
 
                     instancesHtml += `
-                        <div class="instance-item ${isCurrent ? 'current-instance' : ''}" data-character="${charId}" data-instance="${instId}">
-                            <div class="instance-id">${instId} ${isCurrent ? ' <span class="current-marker">[CURRENT]</span>' : ''}</div>
-                            <div class="instance-data">
-                                <pre>${JSON.stringify(formattedBotData, null, 2)}</pre>
-                            </div>
-                        </div>
+                                            <div class="instance-item ${isCurrent ? 'current-instance' : ''}" data-character="${charId}" data-instance="${instId}">
+                                                <div class="instance-id">${instId} ${isCurrent ? ' <span class="current-marker">[CURRENT]</span>' : ''}</div>
+                                                <div class="instance-actions"><button class="delete-instance-btn" data-character="${charId}" data-instance="${instId}">Delete</button></div>
+                                                <div class="instance-data">
+                                                    <pre>${JSON.stringify(formattedBotData, null, 2)}</pre>
+                                                </div>
+                                            </div>
+                        
                     `;
                 }
             }
@@ -158,6 +236,7 @@ export class DebugPanel {
                 instancesHtml += `
                     <div class="instance-item ${isCurrent ? 'current-instance' : ''}" data-character="user" data-instance="${instId}">
                         <div class="instance-id">${instId} ${isCurrent ? ' <span class="current-marker">[CURRENT]</span>' : ''}</div>
+                        <div class="instance-actions"><button class="delete-instance-btn" data-character="user" data-instance="${instId}">Delete</button></div>
                         <div class="instance-data">
                             <pre>${JSON.stringify(formattedUserData, null, 2)}</pre>
                         </div>
@@ -169,6 +248,46 @@ export class DebugPanel {
         instancesHtml += '</div>';
 
         container.innerHTML = instancesHtml;
+
+        // Add event listener for search
+        const searchInput = container.querySelector('#instance-search');
+
+        searchInput.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            const instanceItems = container.querySelectorAll('.instance-item');
+
+            instanceItems.forEach(item => {
+                const instanceId = item.dataset.instance.toLowerCase();
+                const characterId = item.dataset.character.toLowerCase();
+                const instanceData = item.querySelector('.instance-data pre').textContent.toLowerCase();
+
+                if (instanceId.includes(searchTerm) || characterId.includes(searchTerm) || instanceData.includes(searchTerm)) {
+                    item.style.display = '';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        });
+
+        // Add click handlers to delete buttons
+        const deleteButtons = container.querySelectorAll('.delete-instance-btn');
+
+        deleteButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const instanceId = e.target.dataset.instance;
+                const characterId = e.target.dataset.character;
+
+                if (confirm(`Are you sure you want to delete instance ${instanceId} for ${characterId}?`)) {
+                    if (characterId === 'user') {
+                        outfitStore.mutator.deleteUserOutfit(instanceId);
+                    } else {
+                        outfitStore.mutator.deleteBotOutfit(characterId, instanceId);
+                    }
+                    this.renderContent();
+                }
+            });
+        });
 
         // Add click handlers to instance items to show details
         const instanceItems = container.querySelectorAll('.instance-item');
@@ -264,7 +383,25 @@ export class DebugPanel {
 
         macrosHtml += '</div></div>';
 
+        // Add macro testing section
+        macrosHtml += '<h5>Test Macro Processing</h5>';
+        macrosHtml += '<div class="macro-testing-area">';
+        macrosHtml += '<textarea id="macro-test-input" placeholder="Enter text with macros to test..."></textarea>';
+        macrosHtml += '<button id="macro-test-btn" class="menu_button">Process Macros</button>';
+        macrosHtml += '<div id="macro-test-output"></div>';
+        macrosHtml += '</div>';
+
         container.innerHTML = macrosHtml;
+
+        // Add event listener for macro testing
+        setTimeout(() => {
+            document.getElementById('macro-test-btn')?.addEventListener('click', () => {
+                const input = document.getElementById('macro-test-input').value;
+                const output = customMacroSystem.processMacros(input);
+
+                document.getElementById('macro-test-output').innerText = output;
+            });
+        }, 100);
     }
 
     /**

@@ -150,6 +150,7 @@ export class UserOutfitPanel {
         const isPromptInjectionEnabled = this.outfitManager.getPromptInjectionEnabled();
 
         const toggleContainer = document.createElement('div');
+
         toggleContainer.className = 'prompt-injection-container';
         toggleContainer.innerHTML = `
             <label class="switch-label" for="user-outfit-prompt-injection">Prompt Injection</label>
@@ -163,9 +164,11 @@ export class UserOutfitPanel {
         container.appendChild(toggleContainer);
 
         const promptInjectionToggle = toggleContainer.querySelector('#user-outfit-prompt-injection');
+
         if (promptInjectionToggle) {
             promptInjectionToggle.addEventListener('change', (event) => {
                 const isChecked = event.target.checked;
+
                 this.outfitManager.setPromptInjectionEnabled(isChecked);
                 this.saveSettingsDebounced();
             });
