@@ -258,6 +258,10 @@ class CustomMacroSystem {
 
             if (macroType === 'char' || macroType === 'bot' || characterName || (this.isValidCharacterName(macroType) && !['user'].includes(macroType))) {
                 if (charId !== null && charId !== undefined) {
+                    const botOutfitManager = window.outfitTracker.botOutfitPanel.outfitManager;
+                    if (!botOutfitManager.getPromptInjectionEnabled()) {
+                        return 'None';
+                    }
                     const outfitData = outfitStore.getBotOutfit(charId.toString(), instanceId);
                     const result = outfitData[slotName] || 'None';
 
@@ -266,6 +270,10 @@ class CustomMacroSystem {
                     return result;
                 }
             } else if (macroType === 'user') {
+                const userOutfitManager = window.outfitTracker.userOutfitPanel.outfitManager;
+                if (!userOutfitManager.getPromptInjectionEnabled()) {
+                    return 'None';
+                }
                 const outfitData = outfitStore.getUserOutfit(instanceId);
                 const result = outfitData[slotName] || 'None';
 

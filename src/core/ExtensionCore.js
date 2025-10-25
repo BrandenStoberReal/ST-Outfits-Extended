@@ -192,10 +192,15 @@ globalThis.outfitTrackerInterceptor = async function (chat, contextSize, abort, 
             return;
         }
 
+        // If both bot and user have prompt injection disabled, skip entirely
+        if (!botManager.getPromptInjectionEnabled() && !userManager.getPromptInjectionEnabled()) {
+            debugLog('Prompt injection is disabled for both bot and user', null, 'info');
+            return;
+        }
+
         // Check if prompt injection is disabled for this bot instance
         if (!botManager.getPromptInjectionEnabled()) {
             debugLog('Prompt injection is disabled for this bot instance', null, 'info');
-            return;
         }
 
         // Generate outfit information string using the custom macro system

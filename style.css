@@ -405,7 +405,8 @@
 .prompt-injection-container {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-start; /* Changed from space-between */
+    gap: 10px; /* Added gap */
     padding: 10px;
     background: rgba(0, 0, 0, 0.2);
     border-radius: 8px;
