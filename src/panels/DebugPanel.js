@@ -14,6 +14,32 @@ export class DebugPanel {
     }
 
     /**
+     * Get character name by character ID
+     * @param {string} charId - The character ID to look up
+     * @returns {string} The character name or the ID if not found
+     */
+    getCharacterNameById(charId) {
+        try {
+            const context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
+
+            if (context && context.characters) {
+                // Find character by ID (avatar property in SillyTavern)
+                const character = context.characters.find(c => c.avatar === charId);
+
+                if (character && character.name) {
+                    return character.name;
+                }
+            }
+
+            // If not found, return the ID itself
+            return charId || 'Unknown';
+        } catch (error) {
+            console.error('Error getting character name by ID:', error);
+            return charId || 'Unknown';
+        }
+    }
+
+    /**
      * Creates the debug panel DOM element and sets up its basic functionality
      * @returns {HTMLElement} The created panel element
      */
@@ -142,7 +168,9 @@ export class DebugPanel {
             instancesHtml += '<p class="no-instances">No bot instances found</p>';
         } else {
             for (const [charId, charData] of Object.entries(botInstances)) {
-                instancesHtml += `<h5>Character: ${charId}</h5>`;
+                const charName = this.getCharacterNameById(charId);
+
+                instancesHtml += `<h5>Character: ${charName} (${charId})</h5>`;
                 for (const [instId, instData] of Object.entries(charData)) {
                     const currentInstanceId = state.currentOutfitInstanceId;
                     const isCurrent = instId === currentInstanceId;
@@ -150,13 +178,14 @@ export class DebugPanel {
                     // Format bot instance data for better readability
                     const formattedBotData = {
                         timestamp: instData.timestamp || 'No timestamp',
+                        characterName: charName,
                         characterId: charId,
                         instanceId: instId,
                         outfit: instData.bot
                     };
 
                     instancesHtml += `
-                    <div class="instance-item ${isCurrent ? 'current-instance' : ''}" data-character="${charId}" data-instance="${instId}">
+                    <div class="instance-item ${isCurrent ? 'current-instance' : ''}" data-character="${charName}" data-instance="${instId}">
                         <div class="instance-id">${instId} ${isCurrent ? ' <span class="current-marker">[CURRENT]</span>' : ''}</div>
                         <div class="instance-data">
                             <pre>${JSON.stringify(formattedBotData, null, 2)}</pre>
@@ -207,10 +236,10 @@ export class DebugPanel {
 
             instanceItems.forEach(item => {
                 const instanceId = item.dataset.instance.toLowerCase();
-                const characterId = item.dataset.character.toLowerCase();
+                const characterName = item.dataset.character.toLowerCase();
                 const instanceData = item.querySelector('.instance-data pre').textContent.toLowerCase();
 
-                if (instanceId.includes(searchTerm) || characterId.includes(searchTerm) || instanceData.includes(searchTerm)) {
+                if (instanceId.includes(searchTerm) || characterName.includes(searchTerm) || instanceData.includes(searchTerm)) {
                     item.style.display = '';
                 } else {
                     item.style.display = 'none';
@@ -224,7 +253,7 @@ export class DebugPanel {
         instanceItems.forEach(item => {
             item.addEventListener('click', (e) => {
                 const instanceId = e.currentTarget.dataset.instance;
-                const characterId = e.currentTarget.dataset.character;
+                const characterName = e.currentTarget.dataset.character;
 
                 // Expand or collapse the instance data
                 const dataElement = e.currentTarget.querySelector('.instance-data');
@@ -307,7 +336,7 @@ export class DebugPanel {
         macrosHtml += '<h5>Detailed Macro Processing Info:</h5>';
         macrosHtml += '<div class="macro-processing-info">';
         macrosHtml += `<div><strong>Current Chat ID:</strong> ${state.currentChatId || 'None'}</div>`;
-        macrosHtml += `<div><strong>Current Character ID:</strong> ${state.currentCharacterId || 'None'}</div>`;
+        macrosHtml += `<div><strong>Current Character:</strong> ${currentCharName}</div>`;
         macrosHtml += '</div>';
 
         macrosHtml += '</div></div>';
@@ -517,7 +546,9 @@ export class DebugPanel {
         miscHtml += '<div class="store-info">';
 
         // Show key store properties
-        miscHtml += `<div><strong>Current Character ID:</strong> ${state.currentCharacterId || 'None'}</div>`;
+        const currentCharName = state.currentCharacterId ? this.getCharacterNameById(state.currentCharacterId) : 'None';
+
+        miscHtml += `<div><strong>Current Character:</strong> ${currentCharName}</div>`;
         miscHtml += `<div><strong>Current Chat ID:</strong> ${state.currentChatId || 'None'}</div>`;
         miscHtml += `<div><strong>Current Outfit Instance ID:</strong> ${state.currentOutfitInstanceId || 'None'}</div>`;
         miscHtml += `<div><strong>Bot Panels Visible:</strong> ${state.panelVisibility.bot ? 'Yes' : 'No'}</div>`;
