@@ -8,6 +8,8 @@ export class DebugPanel {
         this.domElement = null;
         this.currentTab = 'instances';
         this.eventListeners = [];
+        this.storeSubscription = null;
+        this.previousInstanceId = null;
     }
 
     /**
@@ -256,8 +258,6 @@ export class DebugPanel {
         // Add more detailed macro processing information
         macrosHtml += '<h5>Detailed Macro Processing Info:</h5>';
         macrosHtml += '<div class="macro-processing-info">';
-        macrosHtml += `<div><strong>Registered Macros Count:</strong> ${customMacroSystem.registeredMacros.size}</div>`;
-        macrosHtml += `<div><strong>Has Character-Specific Macros:</strong> ${Boolean(customMacroSystem.characterSpecificMacros.size)}</div>`;
         macrosHtml += `<div><strong>Current Chat ID:</strong> ${state.currentChatId || 'None'}</div>`;
         macrosHtml += `<div><strong>Current Character ID:</strong> ${state.currentCharacterId || 'None'}</div>`;
         macrosHtml += '</div>';
@@ -410,9 +410,9 @@ export class DebugPanel {
 
         // Perform several macro resolutions to test performance
         for (let i = 0; i < 100; i++) {
-            // Try to resolve a common macro pattern
-            customMacroSystem.getMappedValue('headwear', 'char');
-            customMacroSystem.getMappedValue('topwear', 'user');
+            // Try to resolve a common macro pattern using the correct method
+            customMacroSystem.getCurrentSlotValue('char', 'headwear');
+            customMacroSystem.getCurrentSlotValue('user', 'topwear');
         }
 
         const endTime = performance.now();
@@ -467,7 +467,6 @@ export class DebugPanel {
         miscHtml += '<div class="debug-functions">';
         miscHtml += '<button id="debug-refresh-store" class="menu_button">Refresh Store State</button>';
         miscHtml += '<button id="debug-clear-cache" class="menu_button">Clear Macro Cache</button>';
-        miscHtml += '<button id="debug-wipe-all" class="menu_button warning-button">Wipe All Outfits</button>';
         miscHtml += '<button id="debug-export-data" class="menu_button">Export All Data</button>';
         miscHtml += '<button id="debug-import-data" class="menu_button">Import Data</button>';
         miscHtml += '<input type="file" id="debug-import-file" style="display: none;" accept=".json">';
@@ -592,9 +591,26 @@ export class DebugPanel {
             this.domElement = this.createPanel();
         }
 
+        // Initialize the previous instance ID to the current one when showing the panel
+        this.previousInstanceId = state.currentOutfitInstanceId;
+
         this.renderContent();
         this.domElement.style.display = 'flex';
         this.isVisible = true;
+
+        // Subscribe to store changes to update highlighting when current instance changes
+        if (!this.storeSubscription) {
+            this.storeSubscription = outfitStore.subscribe((newState) => {
+                // Check if the current outfit instance ID has changed
+                if (this.previousInstanceId !== newState.currentOutfitInstanceId) {
+                    this.previousInstanceId = newState.currentOutfitInstanceId;
+                    // Only re-render if the debug panel is visible to avoid unnecessary updates
+                    if (this.isVisible && this.currentTab === 'instances') {
+                        this.renderContent();
+                    }
+                }
+            });
+        }
 
         if (this.domElement) {
             dragElementWithSave($(this.domElement), 'outfit-debug-panel');
@@ -620,5 +636,11 @@ export class DebugPanel {
             this.domElement.style.display = 'none';
         }
         this.isVisible = false;
+
+        // Unsubscribe from store changes when panel is hidden
+        if (this.storeSubscription) {
+            this.storeSubscription();
+            this.storeSubscription = null;
+        }
     }
 }

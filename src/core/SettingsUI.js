@@ -212,10 +212,10 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem, context) {
                 <div class="setting-group">
                     <h4>Data Management</h4>
                     <div class="flex-container">
-                        <button id="outfit-wipe-all-btn" class="menu_button warning-button">Wipe All Outfits</button>
+                        <button id="outfit-wipe-all-btn" class="menu_button warning-button">Wipe All Data</button>
                     </div>
-                    <p class="setting-description">This will permanently delete all saved outfit information for all characters and users. This action cannot be undone.</p>
-                </div>
+                    <p class="setting-description">This will permanently delete all extension data and reload the page. This action cannot be undone.</p>
+                </div
             </div>
         </div>
     </div>
@@ -1036,10 +1036,14 @@ Full length: ${status.promptLength} characters`, 'Current System Prompt', {
     // Add event listener for the wipe all outfits button
     $('#outfit-wipe-all-btn').on('click', function () {
         // Show confirmation dialog
-        if (confirm('Are you sure you want to permanently delete ALL saved outfit information for all characters and users? This action cannot be undone.')) {
+        if (confirm('Are you sure you want to permanently delete ALL extension data and reload the page? This action cannot be undone.')) {
             // Call the wipe function after confirmation
             if (typeof window.wipeAllOutfits === 'function') {
                 window.wipeAllOutfits();
+                // Reload the page after wiping all data
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
             }
         }
     });
