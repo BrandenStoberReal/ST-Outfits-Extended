@@ -1,0 +1,48 @@
+{
+  "name": "Assistant",
+  "description": "",
+  "personality": "",
+  "scenario": "",
+  "first_mes": "",
+  "mes_example": "",
+  "creatorcomment": "Automatically created character. Feel free to edit.",
+  "avatar": "default_Assistant.png",
+  "chat": "Assistant - 2025-10-06@18h17m14s",
+  "talkativeness": "0.5",
+  "fav": false,
+  "tags": [],
+  "spec": "chara_card_v3",
+  "spec_version": "3.0",
+  "data": {
+    "name": "Assistant",
+    "description": "",
+    "personality": "",
+    "scenario": "",
+    "first_mes": "",
+    "mes_example": "",
+    "creator_notes": "Automatically created character. Feel free to edit.",
+    "system_prompt": "",
+    "post_history_instructions": "",
+    "tags": [],
+    "creator": "",
+    "character_version": "",
+    "alternate_greetings": [],
+    "extensions": {
+      "talkativeness": "0.5",
+      "fav": false,
+      "world": "",
+      "depth_prompt": {
+        "prompt": "",
+        "depth": 4,
+        "role": "system"
+      }
+    },
+    "group_only_greetings": []
+  },
+  "create_date": "2025-10-5 @14h 55m 52s 586ms",
+  "json_data": "{\"name\":\"Assistant\",\"description\":\"\",\"personality\":\"\",\"scenario\":\"\",\"first_mes\":\"\",\"mes_example\":\"\",\"creatorcomment\":\"Automatically created character. Feel free to edit.\",\"avatar\":\"none\",\"chat\":\"Assistant - 2025-10-06@18h17m14s\",\"talkativeness\":\"0.5\",\"fav\":false,\"tags\":[],\"spec\":\"chara_card_v3\",\"spec_version\":\"3.0\",\"data\":{\"name\":\"Assistant\",\"description\":\"\",\"personality\":\"\",\"scenario\":\"\",\"first_mes\":\"\",\"mes_example\":\"\",\"creator_notes\":\"Automatically created character. Feel free to edit.\",\"system_prompt\":\"\",\"post_history_instructions\":\"\",\"tags\":[],\"creator\":\"\",\"character_version\":\"\",\"alternate_greetings\":[],\"extensions\":{\"talkativeness\":\"0.5\",\"fav\":false,\"world\":\"\",\"depth_prompt\":{\"prompt\":\"\",\"depth\":4,\"role\":\"system\"}},\"group_only_greetings\":[]},\"create_date\":\"2025-10-5 @14h 55m 52s 586ms\"}",
+  "date_added": 1759789032868.887,
+  "chat_size": 790,
+  "date_last_chat": 1759789032690.5132,
+  "data_size": 75
+}

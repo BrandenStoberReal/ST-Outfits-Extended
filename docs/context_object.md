@@ -41,7 +41,8 @@ object.
 
 - **Type**: Array
 - **Purpose**: Array of character objects in the current session
-- **Content**: Each character object contains:
+- **Content**: Each character object contains the full character card data as defined by the character card
+  specification. For a complete example, see [character_example.json](character_example.json).
     - `name`: Character's name
     - `description`: Character's description and personality traits
     - `personality`: Brief personality summary
