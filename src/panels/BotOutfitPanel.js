@@ -69,10 +69,6 @@ export class BotOutfitPanel {
             <div class="outfit-header">
                 <h3>${characterName}'s Outfit${hashDisplay}</h3>
                 <div class="outfit-actions">
-                    <label class="prompt-injection-toggle">
-                        <input type="checkbox" id="bot-outfit-prompt-injection" ${isPromptInjectionEnabled ? 'checked' : ''}>
-                        <span>Prompt Injection</span>
-                    </label>
                     <span class="outfit-action" id="bot-outfit-refresh">↻</span>
                     <span class="outfit-action" id="bot-outfit-close">×</span>
                 </div>
@@ -153,6 +149,7 @@ export class BotOutfitPanel {
 
         switch (this.currentTab) {
         case 'clothing':
+            this.renderPromptInjectionToggle(contentArea); // Add this line
             this.renderSlots(this.clothingSlots, contentArea);
             this.renderFillOutfitButton(contentArea);
             break;
@@ -162,6 +159,36 @@ export class BotOutfitPanel {
         case 'outfits':
             this.renderPresets(contentArea);
             break;
+        }
+    }
+
+    /**
+     * Renders the prompt injection toggle switch in the clothing tab
+     * @param {HTMLElement} container - The container to render the toggle in
+     */
+    renderPromptInjectionToggle(container) {
+        const isPromptInjectionEnabled = this.outfitManager.getPromptInjectionEnabled();
+
+        const toggleContainer = document.createElement('div');
+        toggleContainer.className = 'prompt-injection-container';
+        toggleContainer.innerHTML = `
+            <label class="switch-label" for="bot-outfit-prompt-injection">Prompt Injection</label>
+            <label class="switch">
+                <input type="checkbox" id="bot-outfit-prompt-injection" ${isPromptInjectionEnabled ? 'checked' : ''}>
+                <span class="slider round"></span>
+            </label>
+            <div class="tooltip">?<span class="tooltiptext">When enabled, the bot's current outfit is injected into the prompt, allowing the LLM to be aware of what the bot is wearing.</span></div>
+        `;
+
+        container.appendChild(toggleContainer);
+
+        const promptInjectionToggle = toggleContainer.querySelector('#bot-outfit-prompt-injection');
+        if (promptInjectionToggle) {
+            promptInjectionToggle.addEventListener('change', (event) => {
+                const isChecked = event.target.checked;
+                this.outfitManager.setPromptInjectionEnabled(isChecked);
+                this.saveSettingsDebounced();
+            });
         }
     }
 

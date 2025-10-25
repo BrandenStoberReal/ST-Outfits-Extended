@@ -360,8 +360,26 @@ export class NewUserOutfitManager extends OutfitManager {
      * @returns {void}
      */
     setPromptInjectionEnabled(enabled, instanceId = null) {
-        // User panel doesn't need this functionality
-        console.warn('[NewUserOutfitManager] Prompt injection setting is not applicable for user panel');
+        const actualInstanceId = instanceId || this.outfitInstanceId;
+
+        if (!actualInstanceId) {
+            console.warn('[NewUserOutfitManager] Cannot set prompt injection - missing instanceId');
+            return;
+        }
+
+        if (!outfitStore.state.userInstances[actualInstanceId]) {
+            outfitStore.state.userInstances[actualInstanceId] = {};
+        }
+
+        const updatedInstanceData = {
+            ...outfitStore.state.userInstances[actualInstanceId],
+            promptInjectionEnabled: Boolean(enabled)
+        };
+
+        outfitStore.state.userInstances[actualInstanceId] = updatedInstanceData;
+
+        outfitStore.notifyListeners();
+        outfitStore.saveState();
     }
 
     /**
@@ -370,8 +388,17 @@ export class NewUserOutfitManager extends OutfitManager {
      * @returns {boolean} Whether prompt injection is enabled (always true for user panel)
      */
     getPromptInjectionEnabled(instanceId = null) {
-        // User panel doesn't need this functionality
-        return true; // Default to true (enabled) for user panel
+        const actualInstanceId = instanceId || this.outfitInstanceId;
+
+        if (!actualInstanceId) {
+            console.warn('[NewUserOutfitManager] Cannot get prompt injection - missing instanceId');
+            return true;
+        }
+
+        const instanceData = outfitStore.state.userInstances[actualInstanceId];
+
+        return instanceData?.promptInjectionEnabled !== undefined ?
+            instanceData.promptInjectionEnabled : true;
     }
 
     /**

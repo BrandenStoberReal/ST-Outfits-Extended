@@ -133,6 +133,7 @@ export class UserOutfitPanel {
 
         switch (this.currentTab) {
         case 'clothing':
+            this.renderPromptInjectionToggle(contentArea);
             this.renderSlots(this.clothingSlots, contentArea);
             this.renderFillOutfitButton(contentArea);
             break;
@@ -142,6 +143,32 @@ export class UserOutfitPanel {
         case 'outfits':
             this.renderPresets(contentArea);
             break;
+        }
+    }
+
+    renderPromptInjectionToggle(container) {
+        const isPromptInjectionEnabled = this.outfitManager.getPromptInjectionEnabled();
+
+        const toggleContainer = document.createElement('div');
+        toggleContainer.className = 'prompt-injection-container';
+        toggleContainer.innerHTML = `
+            <label class="switch-label" for="user-outfit-prompt-injection">Prompt Injection</label>
+            <label class="switch">
+                <input type="checkbox" id="user-outfit-prompt-injection" ${isPromptInjectionEnabled ? 'checked' : ''}>
+                <span class="slider round"></span>
+            </label>
+            <div class="tooltip">?<span class="tooltiptext">When enabled, your current outfit is injected into the prompt, allowing the LLM to be aware of what you are wearing.</span></div>
+        `;
+
+        container.appendChild(toggleContainer);
+
+        const promptInjectionToggle = toggleContainer.querySelector('#user-outfit-prompt-injection');
+        if (promptInjectionToggle) {
+            promptInjectionToggle.addEventListener('change', (event) => {
+                const isChecked = event.target.checked;
+                this.outfitManager.setPromptInjectionEnabled(isChecked);
+                this.saveSettingsDebounced();
+            });
         }
     }
 
