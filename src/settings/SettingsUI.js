@@ -564,21 +564,6 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem, context) {
         }
     }
 
-    // Helper function to convert rgb/rgba to hex
-    function rgbToHex(rgb) {
-        const rgbaValues = extractRgbaValues(rgb);
-
-        if (!rgbaValues) {
-            return '#000000';
-        } // Return black for invalid input
-
-        const r = parseInt(rgbaValues.r).toString(16).padStart(2, '0');
-        const g = parseInt(rgbaValues.g).toString(16).padStart(2, '0');
-        const b = parseInt(rgbaValues.b).toString(16).padStart(2, '0');
-
-        return `#${r}${g}${b}`;
-    }
-
     // Helper function to validate hex color without regex
     function isValidHexColorNoRegex(value) {
         if (!value || typeof value !== 'string') {

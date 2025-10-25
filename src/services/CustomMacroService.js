@@ -7,7 +7,7 @@ import {outfitStore} from '../common/Store.js';
 import {ACCESSORY_SLOTS, CLOTHING_SLOTS} from '../config/constants.js';
 import {macroProcessor} from '../processors/MacroProcessor.js';
 
-class CustomMacroSystem {
+class CustomMacroService {
     constructor() {
         this.clothingSlots = CLOTHING_SLOTS;
         this.accessorySlots = ACCESSORY_SLOTS;
@@ -24,13 +24,13 @@ class CustomMacroSystem {
 
         if (ctx && ctx.registerMacro) {
             // Register {{char}} and {{user}} macros
-            ctx.registerMacro('char', (macro, nonce) => this.getCurrentCharName());
-            ctx.registerMacro('user', (macro, nonce) => this.getCurrentUserName());
+            ctx.registerMacro('char', () => this.getCurrentCharName());
+            ctx.registerMacro('user', () => this.getCurrentUserName());
 
             // Register slot-based macros for char and user
             this.allSlots.forEach(slot => {
-                ctx.registerMacro(`char_${slot}`, (macro, nonce) => this.getCurrentSlotValue('char', slot));
-                ctx.registerMacro(`user_${slot}`, (macro, nonce) => this.getCurrentSlotValue('user', slot));
+                ctx.registerMacro(`char_${slot}`, () => this.getCurrentSlotValue('char', slot));
+                ctx.registerMacro(`user_${slot}`, () => this.getCurrentSlotValue('user', slot));
             });
         }
     }
@@ -69,13 +69,13 @@ class CustomMacroSystem {
                     const characterName = character.name;
 
                     // Register a macro for the character's name (e.g., {{Emma}})
-                    ctx.registerMacro(characterName, (macro, nonce) => characterName);
+                    ctx.registerMacro(characterName, () => characterName);
 
                     // Register slot-based macros for this specific character (e.g., {{Emma_topwear}}, {{Emma_headwear}})
                     this.allSlots.forEach(slot => {
                         const macroName = `${characterName}_${slot}`;
 
-                        ctx.registerMacro(macroName, (macro, nonce) => this.getCurrentSlotValue(characterName, slot, characterName));
+                        ctx.registerMacro(macroName, () => this.getCurrentSlotValue(characterName, slot, characterName));
                     });
                 }
             }
@@ -587,7 +587,7 @@ class CustomMacroSystem {
 }
 
 // Create and export a single instance of the CustomMacroSystem
-export const customMacroSystem = new CustomMacroSystem();
+export const customMacroSystem = new CustomMacroService();
 
 // Also export a function to update macro cache when outfit data changes
 export const updateMacroCacheOnOutfitChange = (outfitType, characterId, instanceId, slotName) => {

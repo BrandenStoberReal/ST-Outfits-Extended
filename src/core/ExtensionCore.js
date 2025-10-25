@@ -1,6 +1,6 @@
 // Import functions using SillyTavern's getContext as recommended in documentation
 import {updateForCurrentCharacter} from '../services/CharacterService.js';
-import {customMacroSystem} from '../utils/CustomMacroSystem.js';
+import {customMacroSystem} from '../services/CustomMacroService.js';
 import {extension_api} from '../common/shared.js';
 import {outfitStore} from '../common/Store.js';
 import {NewBotOutfitManager} from '../managers/NewBotOutfitManager.js';
@@ -8,13 +8,13 @@ import {BotOutfitPanel} from '../panels/BotOutfitPanel.js';
 import {NewUserOutfitManager} from '../managers/NewUserOutfitManager.js';
 import {UserOutfitPanel} from '../panels/UserOutfitPanel.js';
 import {DebugPanel} from '../panels/DebugPanel.js';
-import {setupEventListeners} from './EventSystem.js';
-import {registerOutfitCommands} from './OutfitCommands.js';
-import {createSettingsUI} from './SettingsUI.js';
-import {initSettings} from './settings.js';
+import {setupEventListeners} from '../services/EventService.js';
+import {registerOutfitCommands} from '../commands/OutfitCommands.js';
+import {createSettingsUI} from '../settings/SettingsUI.js';
+import {initSettings} from '../settings/settings.js';
 import {ACCESSORY_SLOTS, ALL_SLOTS, CLOTHING_SLOTS} from '../config/constants.js';
 import {StorageService} from '../services/StorageService.js';
-import {DataManager} from '../services/DataManager.js';
+import {DataManager} from '../managers/DataManager.js';
 import {OutfitDataService} from '../services/OutfitDataService.js';
 import {macroProcessor} from '../processors/MacroProcessor.js';
 import {debugLog} from '../logging/DebugLogger.js';
@@ -30,9 +30,9 @@ let AutoOutfitSystem;
 async function loadAutoOutfitSystem() {
     try {
         debugLog('Attempting to load AutoOutfitSystem module', null, 'debug');
-        const autoOutfitModule = await import('./AutoOutfitSystem.js');
+        const autoOutfitModule = await import('../services/AutoOutfitService.js');
 
-        AutoOutfitSystem = autoOutfitModule.AutoOutfitSystem;
+        AutoOutfitSystem = autoOutfitModule.AutoOutfitService;
         debugLog('AutoOutfitSystem module loaded successfully', null, 'info');
     } catch (error) {
         console.error('[OutfitTracker] Failed to load AutoOutfitSystem:', error);

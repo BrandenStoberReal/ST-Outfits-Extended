@@ -62,9 +62,6 @@ export class BotOutfitPanel {
         // Replace placeholder "{{char}}" with the actual character name
         const characterName = this.outfitManager.character || 'Unknown';
 
-        // Check if prompt injection is enabled for this instance
-        const isPromptInjectionEnabled = this.outfitManager.getPromptInjectionEnabled();
-
         panel.innerHTML = `
             <div class="outfit-header">
                 <h3>${characterName}'s Outfit${hashDisplay}</h3>

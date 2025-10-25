@@ -1,6 +1,6 @@
 import {dragElementWithSave, resizeElement} from '../common/shared.js';
 import {outfitStore} from '../common/Store.js';
-import {customMacroSystem} from '../utils/CustomMacroSystem.js';
+import {customMacroSystem} from '../services/CustomMacroService.js';
 import {debugLogger} from '../logging/DebugLogger.js';
 import {getCharacterNameById} from '../utils/CharacterUtils.js';
 
@@ -227,9 +227,6 @@ export class DebugPanel {
 
         instanceItems.forEach(item => {
             item.addEventListener('click', (e) => {
-                const instanceId = e.currentTarget.dataset.instance;
-                const characterName = e.currentTarget.dataset.character;
-
                 // Expand or collapse the instance data
                 const dataElement = e.currentTarget.querySelector('.instance-data');
 

@@ -1,5 +1,5 @@
-import {EXTENSION_EVENTS, extensionEventBus} from './events.js';
-import {customMacroSystem} from '../utils/CustomMacroSystem.js';
+import {EXTENSION_EVENTS, extensionEventBus} from '../core/events.js';
+import {customMacroSystem} from './CustomMacroService.js';
 import {outfitStore} from '../common/Store.js';
 import {generateMessageHash} from '../utils/utilities.js';
 
@@ -8,7 +8,7 @@ import {generateMessageHash} from '../utils/utilities.js';
  * This class manages SillyTavern events, extension-specific events, and
  * ensures proper outfit management during chat changes, message swipes, and chat resets
  */
-class EventSystem {
+class EventService {
     /**
      * Creates a new EventSystem instance
      * @param {object} context - The context containing necessary manager instances and update functions
@@ -417,8 +417,8 @@ class EventSystem {
 /**
  * Sets up event listeners for the outfit tracker extension
  * @param {object} context - The context containing necessary manager instances and update functions
- * @returns {EventSystem} A new instance of the EventSystem class
+ * @returns {EventService} A new instance of the EventSystem class
  */
 export function setupEventListeners(context) {
-    return new EventSystem(context);
+    return new EventService(context);
 }

@@ -49,7 +49,7 @@ jest.mock('../src/services/StorageService.js', () => {
     };
 });
 
-jest.mock('../src/services/DataManager.js', () => {
+jest.mock('../src/managers/DataManager.js', () => {
     return {
         DataManager: jest.fn().mockImplementation(() => ({
             initialize: jest.fn(),

@@ -1,5 +1,5 @@
 import {ALL_SLOTS} from '../config/constants.js';
-import {invalidateSpecificMacroCaches} from '../utils/CustomMacroSystem.js';
+import {invalidateSpecificMacroCaches} from '../services/CustomMacroService.js';
 
 /**
  * OutfitManager - Abstract base class for managing character outfit data

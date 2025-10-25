@@ -5,11 +5,11 @@
  */
 
 import {extractCommands} from '../processors/StringProcessor.js';
-import {generateOutfitFromLLM} from '../services/LLMService.js';
-import {customMacroSystem} from '../utils/CustomMacroSystem.js';
+import {generateOutfitFromLLM} from './LLMService.js';
+import {customMacroSystem} from './CustomMacroService.js';
 import {outfitStore} from '../common/Store.js';
 
-export class AutoOutfitSystem {
+export class AutoOutfitService {
     /**
      * Creates a new AutoOutfitSystem instance.
      * @param {object} outfitManager - The outfit manager to use for updating outfits
