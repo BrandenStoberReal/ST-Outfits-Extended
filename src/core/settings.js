@@ -1,5 +1,5 @@
 import {DEFAULT_SETTINGS} from '../config/constants.js';
-import {debugLog} from '../utils/DebugLogger.js';
+import {debugLog} from '../logging/DebugLogger.js';
 
 export function initSettings(autoOutfitSystem, AutoOutfitSystemClass, context) {
     // Get the extension settings using SillyTavern's context

@@ -3,7 +3,7 @@
  * Unified functions for processing macros in first messages
  */
 
-import {generateInstanceIdFromText} from './utilities.js';
+import {generateInstanceIdFromText} from '../utils/utilities.js';
 import {outfitStore} from '../common/Store.js';
 import {ALL_SLOTS} from '../config/constants.js';
 

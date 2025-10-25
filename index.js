@@ -3,7 +3,7 @@
 
 // Import main extension core functionality
 import {initializeExtension} from './src/core/ExtensionCore.js';
-import {debugLog} from './src/utils/DebugLogger.js';
+import {debugLog} from './src/logging/DebugLogger.js';
 
 console.log('[OutfitTracker] Starting extension loading...');
 debugLog('Starting extension loading...', null, 'info');

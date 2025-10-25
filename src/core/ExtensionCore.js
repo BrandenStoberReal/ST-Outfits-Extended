@@ -16,8 +16,8 @@ import {ACCESSORY_SLOTS, ALL_SLOTS, CLOTHING_SLOTS} from '../config/constants.js
 import {StorageService} from '../services/StorageService.js';
 import {DataManager} from '../services/DataManager.js';
 import {OutfitDataService} from '../services/OutfitDataService.js';
-import {macroProcessor} from '../utils/MacroProcessor.js';
-import {debugLog} from '../utils/DebugLogger.js';
+import {macroProcessor} from '../processors/MacroProcessor.js';
+import {debugLog} from '../logging/DebugLogger.js';
 
 let AutoOutfitSystem;
 

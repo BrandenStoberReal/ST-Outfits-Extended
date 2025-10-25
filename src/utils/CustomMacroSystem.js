@@ -5,7 +5,7 @@
 
 import {outfitStore} from '../common/Store.js';
 import {ACCESSORY_SLOTS, CLOTHING_SLOTS} from '../config/constants.js';
-import {macroProcessor} from './MacroProcessor.js';
+import {macroProcessor} from '../processors/MacroProcessor.js';
 
 class CustomMacroSystem {
     constructor() {

@@ -3,7 +3,7 @@
  */
 
 import {LLMUtility} from '../utils/LLMUtility.js';
-import {extractCommands} from '../utils/StringProcessor.js';
+import {extractCommands} from '../processors/StringProcessor.js';
 
 /**
  * Process a single outfit command

@@ -1,7 +1,8 @@
 import {dragElementWithSave, resizeElement} from '../common/shared.js';
 import {outfitStore} from '../common/Store.js';
 import {customMacroSystem} from '../utils/CustomMacroSystem.js';
-import {debugLogger} from '../utils/DebugLogger.js';
+import {debugLogger} from '../logging/DebugLogger.js';
+import {getCharacterNameById} from '../utils/CharacterUtils';
 
 export class DebugPanel {
     constructor() {
@@ -11,32 +12,6 @@ export class DebugPanel {
         this.eventListeners = [];
         this.storeSubscription = null;
         this.previousInstanceId = null;
-    }
-
-    /**
-     * Get character name by character ID
-     * @param {string} charId - The character ID to look up
-     * @returns {string} The character name or the ID if not found
-     */
-    getCharacterNameById(charId) {
-        try {
-            const context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
-
-            if (context && context.characters) {
-                // Find character by ID (avatar property in SillyTavern)
-                const character = context.characters[charId];
-
-                if (character && character.name) {
-                    return character.name;
-                }
-            }
-
-            // If not found, return the ID itself
-            return charId || 'Unknown';
-        } catch (error) {
-            console.error('Error getting character name by ID:', error);
-            return charId || 'Unknown';
-        }
     }
 
     /**
@@ -168,7 +143,7 @@ export class DebugPanel {
             instancesHtml += '<p class="no-instances">No bot instances found</p>';
         } else {
             for (const [charId, charData] of Object.entries(botInstances)) {
-                const charName = this.getCharacterNameById(charId);
+                const charName = getCharacterNameById(charId);
 
                 instancesHtml += `<h5>Character: ${charName} (${charId})</h5>`;
                 for (const [instId, instData] of Object.entries(charData)) {
@@ -546,7 +521,7 @@ export class DebugPanel {
         miscHtml += '<div class="store-info">';
 
         // Show key store properties
-        const currentCharName = state.currentCharacterId ? this.getCharacterNameById(state.currentCharacterId) : 'None';
+        const currentCharName = state.currentCharacterId ? getCharacterNameById(state.currentCharacterId) : 'None';
 
         miscHtml += `<div><strong>Current Character:</strong> ${currentCharName}</div>`;
         miscHtml += `<div><strong>Current Chat ID:</strong> ${state.currentChatId || 'None'}</div>`;

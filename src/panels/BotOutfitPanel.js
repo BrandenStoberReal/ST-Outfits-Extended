@@ -2,7 +2,7 @@
 import {dragElementWithSave, resizeElement} from '../common/shared.js';
 
 // Import string processing utilities for command extraction
-import {extractCommands} from '../utils/StringProcessor.js';
+import {extractCommands} from '../processors/StringProcessor.js';
 
 // Import LLM utility for outfit generation
 import {LLMUtility} from '../utils/LLMUtility.js';
