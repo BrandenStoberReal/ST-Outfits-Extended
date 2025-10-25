@@ -202,6 +202,14 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem, context) {
                 </div>
                 
                 <div class="setting-group">
+                    <h4>Debug Tools</h4>
+                    <div class="flex-container">
+                        <button id="outfit-debug-panel-btn" class="menu_button">Open Debug Panel</button>
+                    </div>
+                    <p class="setting-description">The debug panel provides detailed information about outfit instances, macro processing, performance metrics, and other debugging tools. Requires debug mode to be enabled.</p>
+                </div>
+   
+                <div class="setting-group">
                     <h4>Data Management</h4>
                     <div class="flex-container">
                         <button id="outfit-wipe-all-btn" class="menu_button warning-button">Wipe All Outfits</button>
