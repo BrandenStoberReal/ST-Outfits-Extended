@@ -2,7 +2,7 @@ import {dragElementWithSave, resizeElement} from '../common/shared.js';
 import {outfitStore} from '../common/Store.js';
 import {customMacroSystem} from '../utils/CustomMacroSystem.js';
 import {debugLogger} from '../logging/DebugLogger.js';
-import {getCharacterNameById} from '../utils/CharacterUtils';
+import {getCharacterNameById} from '../utils/CharacterUtils.js';
 
 export class DebugPanel {
     constructor() {
