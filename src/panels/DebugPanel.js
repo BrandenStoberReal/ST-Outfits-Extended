@@ -39,7 +39,6 @@ export class DebugPanel {
                 <button class="outfit-debug-tab ${this.currentTab === 'macros' ? 'active' : ''}" data-tab="macros">Macros</button>
                 <button class="outfit-debug-tab ${this.currentTab === 'pointers' ? 'active' : ''}" data-tab="pointers">Pointers</button>
                 <button class="outfit-debug-tab ${this.currentTab === 'performance' ? 'active' : ''}" data-tab="performance">Performance</button>
-                <button class="outfit-debug-tab ${this.currentTab === 'settings' ? 'active' : ''}" data-tab="settings">Settings</button>
                 <button class="outfit-debug-tab ${this.currentTab === 'logs' ? 'active' : ''}" data-tab="logs">Logs</button>
                 <button class="outfit-debug-tab ${this.currentTab === 'misc' ? 'active' : ''}" data-tab="misc">Misc</button>
             </div>
@@ -88,7 +87,6 @@ export class DebugPanel {
             macros: this.renderMacrosTab.bind(this),
             pointers: this.renderPointersTab.bind(this),
             performance: this.renderPerformanceTab.bind(this),
-            settings: this.renderSettingsTab.bind(this),
             logs: this.renderLogsTab.bind(this),
             misc: this.renderMiscTab.bind(this),
         };
@@ -98,52 +96,6 @@ export class DebugPanel {
         if (renderer) {
             renderer(contentArea);
         }
-    }
-
-    /**
-     * Renders the 'Settings' tab with settings editor
-     */
-    renderSettingsTab(container) {
-        const state = outfitStore.getState();
-        const settings = state.settings;
-
-        let settingsHtml = '<div class="debug-settings-list">';
-
-        for (const [key, value] of Object.entries(settings)) {
-            settingsHtml += `
-                <div class="setting-item">
-                    <label for="setting-${key}">${key}</label>
-                    <input type="${typeof value === 'boolean' ? 'checkbox' : 'text'}" id="setting-${key}" data-key="${key}" ${typeof value === 'boolean' && value ? 'checked' : ''} value="${typeof value !== 'boolean' ? value : ''}">
-                </div>
-            `;
-        }
-
-        settingsHtml += '<button id="save-settings-btn" class="menu_button">Save Settings</button>';
-        settingsHtml += '</div>';
-
-        container.innerHTML = settingsHtml;
-
-        // Add event listener for save button
-        setTimeout(() => {
-            document.getElementById('save-settings-btn')?.addEventListener('click', () => {
-                const newSettings = {};
-
-                for (const key of Object.keys(settings)) {
-                    const input = document.getElementById(`setting-${key}`);
-
-                    if (input) {
-                        if (input.type === 'checkbox') {
-                            newSettings[key] = input.checked;
-                        } else {
-                            newSettings[key] = input.value;
-                        }
-                    }
-                }
-                outfitStore.mutator.setSettings(newSettings);
-                toastr.success('Settings saved!', 'Debug Panel');
-                this.renderContent();
-            });
-        }, 100);
     }
 
     /**
@@ -204,14 +156,12 @@ export class DebugPanel {
                     };
 
                     instancesHtml += `
-                                            <div class="instance-item ${isCurrent ? 'current-instance' : ''}" data-character="${charId}" data-instance="${instId}">
-                                                <div class="instance-id">${instId} ${isCurrent ? ' <span class="current-marker">[CURRENT]</span>' : ''}</div>
-                                                <div class="instance-actions"><button class="delete-instance-btn" data-character="${charId}" data-instance="${instId}">Delete</button></div>
-                                                <div class="instance-data">
-                                                    <pre>${JSON.stringify(formattedBotData, null, 2)}</pre>
-                                                </div>
-                                            </div>
-                        
+                    <div class="instance-item ${isCurrent ? 'current-instance' : ''}" data-character="${charId}" data-instance="${instId}">
+                        <div class="instance-id">${instId} ${isCurrent ? ' <span class="current-marker">[CURRENT]</span>' : ''}</div>
+                        <div class="instance-data">
+                            <pre>${JSON.stringify(formattedBotData, null, 2)}</pre>
+                        </div>
+                    </div>
                     `;
                 }
             }
@@ -236,7 +186,6 @@ export class DebugPanel {
                 instancesHtml += `
                     <div class="instance-item ${isCurrent ? 'current-instance' : ''}" data-character="user" data-instance="${instId}">
                         <div class="instance-id">${instId} ${isCurrent ? ' <span class="current-marker">[CURRENT]</span>' : ''}</div>
-                        <div class="instance-actions"><button class="delete-instance-btn" data-character="user" data-instance="${instId}">Delete</button></div>
                         <div class="instance-data">
                             <pre>${JSON.stringify(formattedUserData, null, 2)}</pre>
                         </div>
@@ -265,26 +214,6 @@ export class DebugPanel {
                     item.style.display = '';
                 } else {
                     item.style.display = 'none';
-                }
-            });
-        });
-
-        // Add click handlers to delete buttons
-        const deleteButtons = container.querySelectorAll('.delete-instance-btn');
-
-        deleteButtons.forEach(button => {
-            button.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const instanceId = e.target.dataset.instance;
-                const characterId = e.target.dataset.character;
-
-                if (confirm(`Are you sure you want to delete instance ${instanceId} for ${characterId}?`)) {
-                    if (characterId === 'user') {
-                        outfitStore.mutator.deleteUserOutfit(instanceId);
-                    } else {
-                        outfitStore.mutator.deleteBotOutfit(characterId, instanceId);
-                    }
-                    this.renderContent();
                 }
             });
         });
