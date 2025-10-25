@@ -161,12 +161,9 @@ function isMobileDevice() {
  * This function is called by SillyTavern during generation to inject outfit information
  * into the AI's context, making it aware of the current character and user outfits.
  * @param {array} chat - The chat array that will be passed to the AI
- * @param {number} contextSize - The context size limit
- * @param {object} abort - Abort signal for the request
- * @param {string} type - The type of generation request
  * @returns {Promise<void>} A promise that resolves when the injection is complete
  */
-globalThis.outfitTrackerInterceptor = async function (chat, contextSize, abort, type) {
+globalThis.outfitTrackerInterceptor = async function (chat) {
     try {
         // Create a temporary reference to the managers using the panel references
         const botPanel = window.botOutfitPanel;
@@ -295,7 +292,7 @@ export async function initializeExtension() {
 
     setupApi(botManager, userManager, botPanel, userPanel, autoOutfitSystem, outfitDataService);
     initSettings(autoOutfitSystem, AutoOutfitSystem, STContext);
-    registerOutfitCommands(botManager, userManager, autoOutfitSystem);
+    await registerOutfitCommands(botManager, userManager, autoOutfitSystem);
     customMacroSystem.registerMacros(STContext);
     createSettingsUI(AutoOutfitSystem, autoOutfitSystem, STContext);
     debugLog('Extension components initialized', null, 'info');

@@ -398,6 +398,7 @@ export class BotOutfitPanel {
         });
         container.appendChild(clearDefaultButton);
     }
+
     /**
      * Renders the button to fill the outfit with LLM-generated items
      * @param {HTMLElement} container - The container element to render the button in

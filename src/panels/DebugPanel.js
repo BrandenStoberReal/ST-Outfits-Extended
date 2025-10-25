@@ -2,7 +2,7 @@ import {dragElementWithSave, resizeElement} from '../common/shared.js';
 import {outfitStore} from '../common/Store.js';
 import {customMacroSystem} from '../services/CustomMacroService.js';
 import {debugLogger} from '../logging/DebugLogger.js';
-import {getCharacterNameById} from '../utils/CharacterUtils.js';
+import {CharacterInfoType, getCharacterInfoById} from '../utils/CharacterUtils.js';
 
 export class DebugPanel {
     constructor() {
@@ -143,7 +143,7 @@ export class DebugPanel {
             instancesHtml += '<p class="no-instances">No bot instances found</p>';
         } else {
             for (const [charId, charData] of Object.entries(botInstances)) {
-                const charName = getCharacterNameById(charId);
+                const charName = getCharacterInfoById(charId, CharacterInfoType.Name);
 
                 instancesHtml += `<h5>Character: ${charName} (${charId})</h5>`;
                 for (const [instId, instData] of Object.entries(charData)) {
@@ -518,7 +518,7 @@ export class DebugPanel {
         miscHtml += '<div class="store-info">';
 
         // Show key store properties
-        const currentCharName = state.currentCharacterId ? getCharacterNameById(state.currentCharacterId) : 'None';
+        const currentCharName = state.currentCharacterId ? getCharacterInfoById(state.currentCharacterId, CharacterInfoType.Name) : 'None';
 
         miscHtml += `<div><strong>Current Character:</strong> ${currentCharName}</div>`;
         miscHtml += `<div><strong>Current Chat ID:</strong> ${state.currentChatId || 'None'}</div>`;

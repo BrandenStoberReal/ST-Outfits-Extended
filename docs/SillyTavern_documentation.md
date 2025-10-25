@@ -229,24 +229,24 @@ key to avoid conflicts with other extensions.
 To persist the settings, use the saveSettingsDebounced() function, which will save the settings to the server.
 
 ```js
-const { extensionSettings, saveSettingsDebounced } = SillyTavern.getContext();
+const {extensionSettings, saveSettingsDebounced} = SillyTavern.getContext();
 
 // Define a unique identifier for your extension
 const MODULE_NAME = 'my_extension';
 
 // Define default settings
 const defaultSettings = Object.freeze({
-enabled: false,
-option1: 'default',
-option2: 5
+    enabled: false,
+    option1: 'default',
+    option2: 5
 });
 
 // Define a function to get or initialize settings
 function getSettings() {
 // Initialize settings if they don't exist
-if (!extensionSettings[MODULE_NAME]) {
-extensionSettings[MODULE_NAME] = structuredClone(defaultSettings);
-}
+    if (!extensionSettings[MODULE_NAME]) {
+        extensionSettings[MODULE_NAME] = structuredClone(defaultSettings);
+    }
 
     // Ensure all default keys exist (helpful after updates)
     for (const key of Object.keys(defaultSettings)) {
@@ -408,35 +408,39 @@ SlashCommandParser.addCommandObject() to provide extended details about the comm
 and, in turn, to autocomplete and the command help).
 
 ```js
-SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'repeat',
-callback: (namedArgs, unnamedArgs) => {
-return Array(namedArgs.times ?? 5)
-.fill(unnamedArgs.toString())
-.join(isTrueBoolean(namedArgs.space.toString()) ? ' ' : '')
-;
-},
-aliases: ['example-command'],
-returns: 'the repeated text',
-namedArgumentList: [
-SlashCommandNamedArgument.fromProps({ name: 'times',
-description: 'number of times to repeat the text',
-typeList: ARGUMENT_TYPE.NUMBER,
-defaultValue: '5',
-}),
-SlashCommandNamedArgument.fromProps({ name: 'space',
-description: 'whether to separate the texts with a space',
-typeList: ARGUMENT_TYPE.BOOLEAN,
-defaultValue: 'off',
-enumList: ['on', 'off'],
-}),
-],
-unnamedArgumentList: [
-SlashCommandArgument.fromProps({ description: 'the text to repeat',
-typeList: ARGUMENT_TYPE.STRING,
-isRequired: true,
-}),
-],
-helpString: `
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+    name: 'repeat',
+    callback: (namedArgs, unnamedArgs) => {
+        return Array(namedArgs.times ?? 5)
+            .fill(unnamedArgs.toString())
+            .join(isTrueBoolean(namedArgs.space.toString()) ? ' ' : '')
+            ;
+    },
+    aliases: ['example-command'],
+    returns: 'the repeated text',
+    namedArgumentList: [
+        SlashCommandNamedArgument.fromProps({
+            name: 'times',
+            description: 'number of times to repeat the text',
+            typeList: ARGUMENT_TYPE.NUMBER,
+            defaultValue: '5',
+        }),
+        SlashCommandNamedArgument.fromProps({
+            name: 'space',
+            description: 'whether to separate the texts with a space',
+            typeList: ARGUMENT_TYPE.BOOLEAN,
+            defaultValue: 'off',
+            enumList: ['on', 'off'],
+        }),
+    ],
+    unnamedArgumentList: [
+        SlashCommandArgument.fromProps({
+            description: 'the text to repeat',
+            typeList: ARGUMENT_TYPE.STRING,
+            isRequired: true,
+        }),
+    ],
+    helpString: `
         <div>
             Repeats the provided text a number of times.
         </div>
@@ -466,7 +470,7 @@ All registered commands can be used in STscript in any possible way.
 Use eventSource.on(eventType, eventHandler) to listen for events:
 
 ```js
-const { eventSource, event_types } = SillyTavern.getContext();
+const {eventSource, event_types} = SillyTavern.getContext();
 
 eventSource.on(event_types.MESSAGE_RECEIVED, handleIncomingMessage);
 
@@ -502,13 +506,13 @@ You can produce any application events from extensions, including custom events,
 ...eventData):
 
 ```js
-const { eventSource } = SillyTavern.getContext();
+const {eventSource} = SillyTavern.getContext();
 
 // Can be a built-in event_types field or any string.
 const eventType = 'myCustomEvent';
 
 // Use `await` to ensure all event handlers complete before continuing execution.
-await eventSource.emit(eventType, { data: 'custom event data' });
+await eventSource.emit(eventType, {data: 'custom event data'});
 ```
 
 # Prompt Interceptors
