@@ -353,4 +353,124 @@ export class NewUserOutfitManager extends OutfitManager {
         return outfitStore.getAllPresets('user', actualInstanceId, 'user');
     }
 
+    /**
+     * Sets whether prompt injection is enabled for this outfit instance (user panel doesn't use this)
+     * @param {boolean} enabled - Whether prompt injection should be enabled
+     * @param {string|null} [instanceId=null] - The instance ID to set for (defaults to current instance ID)
+     * @returns {void}
+     */
+    setPromptInjectionEnabled(enabled, instanceId = null) {
+        // User panel doesn't need this functionality
+        console.warn('[NewUserOutfitManager] Prompt injection setting is not applicable for user panel');
+    }
+
+    /**
+     * Gets whether prompt injection is enabled for this outfit instance (user panel doesn't use this)
+     * @param {string|null} [instanceId=null] - The instance ID to get for (defaults to current instance ID)
+     * @returns {boolean} Whether prompt injection is enabled (always true for user panel)
+     */
+    getPromptInjectionEnabled(instanceId = null) {
+        // User panel doesn't need this functionality
+        return true; // Default to true (enabled) for user panel
+    }
+
+    /**
+     * Checks if there is a default outfit for this instance
+     * @param {string|null} [instanceId=null] - The instance ID to check (defaults to current instance ID)
+     * @returns {boolean} Whether there is a default outfit
+     */
+    hasDefaultOutfit(instanceId = null) {
+        const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
+        const {user: presets} = outfitStore.getPresets('user', actualInstanceId);
+
+        return Boolean(presets && presets['default']);
+    }
+
+    /**
+     * Gets the name of the default preset for this instance
+     * @param {string|null} [instanceId=null] - The instance ID to get default for (defaults to current instance ID)
+     * @returns {string|null} The name of the default preset or null if none is set
+     */
+    getDefaultPresetName(instanceId = null) {
+        const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
+        const {user: presets} = outfitStore.getPresets('user', actualInstanceId);
+
+        // The "default" preset is a special preset that represents the current outfit as default
+        if (presets && presets['default']) {
+            return 'default';
+        }
+
+        return null;
+    }
+
+    /**
+     * Sets a preset as the default preset for this instance
+     * @param {string} presetName - The name of the preset to set as default
+     * @param {string|null} [instanceId=null] - The instance ID to set default for (defaults to current instance ID)
+     * @returns {Promise<string>} A message describing the result
+     */
+    async setPresetAsDefault(presetName, instanceId = null) {
+        const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
+
+        // Get the preset data that we want to set as default
+        const {user: presets} = outfitStore.getPresets('user', actualInstanceId);
+
+        if (!presets || !presets[presetName]) {
+            return `[Outfit System] Preset "${presetName}" does not exist for user instance ${actualInstanceId}. Cannot set as default.`;
+        }
+
+        // Copy the preset data to the 'default' preset
+        const presetToSetAsDefault = presets[presetName];
+
+        // Save this preset data as the 'default' preset
+        outfitStore.savePreset('user', actualInstanceId, 'default', presetToSetAsDefault, 'user');
+
+        if (outfitStore.getSetting('enableSysMessages')) {
+            return `Set "${presetName}" as your default outfit (instance: ${actualInstanceId}).`;
+        }
+        return '';
+    }
+
+    async clearDefaultPreset(instanceId = null) {
+        const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
+
+        // Check if a default preset exists
+        const {user: presets} = outfitStore.getPresets('user', actualInstanceId);
+
+        if (!presets || !presets['default']) {
+            return `[Outfit System] No default outfit set for user (instance: ${actualInstanceId}).`;
+        }
+
+        // Delete the 'default' preset
+        outfitStore.deletePreset('user', actualInstanceId, 'default', 'user');
+
+        if (outfitStore.getSetting('enableSysMessages')) {
+            return `Default outfit cleared for user (instance: ${actualInstanceId}).`;
+        }
+        return '';
+    }
+
+    /**
+     * Applies the default outfit for this instance after a chat reset
+     * @param {string|null} [instanceId=null] - The instance ID to apply default for (defaults to current instance ID)
+     * @returns {Promise<boolean>} Whether a default outfit was applied
+     */
+    async applyDefaultOutfitAfterReset(instanceId = null) {
+        const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
+
+        // Check if there's a default outfit for the user and instance
+        if (this.hasDefaultOutfit(actualInstanceId)) {
+            await this.loadDefaultOutfit(actualInstanceId);
+            return true;
+        }
+
+        // If no specific default for this instance, try to load the default instance
+        if (actualInstanceId !== 'default' && this.hasDefaultOutfit('default')) {
+            await this.loadDefaultOutfit('default');
+            return true;
+        }
+
+        return false;
+    }
+
 }

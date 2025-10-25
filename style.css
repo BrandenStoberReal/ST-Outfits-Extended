@@ -243,21 +243,21 @@
     color: #f0f0f0;
 }
 
-.outfit-preset.default-preset {
-    background: linear-gradient(90deg, rgba(212, 175, 55, 0.15) 0%, rgba(255, 215, 0, 0.2) 100%);
+.outfit-preset.default-preset-highlight {
+    background: linear-gradient(90deg, rgba(255, 215, 0, 0.1) 0%, rgba(255, 215, 0, 0.2) 100%);
     border: 1px solid rgba(255, 215, 0, 0.4);
     position: relative;
-    box-shadow: 0 2px 6px rgba(212, 175, 55, 0.15);
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.6), inset 0 0 8px rgba(255, 215, 0, 0.4);
 }
 
-.outfit-preset.default-preset .preset-name {
+.outfit-preset.default-preset-highlight .preset-name {
     color: #ffd700;
     font-weight: 600;
-    text-shadow: 0 0 8px rgba(255, 215, 0, 0.5);
+    text-shadow: 0 0 5px rgba(255, 215, 0, 0.8);
 }
 
-.outfit-preset.default-preset .preset-name::before {
-    content: "👑 ";
+.outfit-preset.default-preset-highlight .preset-name::before {
+    content: "⭐ "; /* Gold star emoji */
     margin-right: 5px;
 }
 
@@ -399,6 +399,34 @@
 .outfit-actions span:hover {
     background: rgba(255, 255, 255, 0.25);
     transform: scale(1.1);
+}
+
+/* Prompt injection toggle styling */
+.prompt-injection-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-right: 10px;
+    cursor: pointer;
+    font-size: 0.9em;
+    padding: 4px 6px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.prompt-injection-toggle:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.prompt-injection-toggle input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    cursor: pointer;
+}
+
+.prompt-injection-toggle span {
+    user-select: none;
 }
 
 /* Scrollbar styling */

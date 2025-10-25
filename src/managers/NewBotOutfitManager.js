@@ -11,6 +11,64 @@ export class NewBotOutfitManager extends OutfitManager {
 
     }
 
+    /**
+     * Sets whether prompt injection is enabled for this outfit instance
+     * @param {boolean} enabled - Whether prompt injection should be enabled
+     * @param {string|null} [instanceId=null] - The instance ID to set for (defaults to current instance ID)
+     * @returns {void}
+     */
+    setPromptInjectionEnabled(enabled, instanceId = null) {
+        const actualInstanceId = instanceId || this.outfitInstanceId;
+
+        if (!this.characterId || !actualInstanceId) {
+            console.warn('[NewBotOutfitManager] Cannot set prompt injection - missing characterId or instanceId');
+            return;
+        }
+
+        // Update the bot instance data in the store to include the prompt injection setting
+        if (!outfitStore.state.botInstances[this.characterId]) {
+            outfitStore.state.botInstances[this.characterId] = {};
+        }
+        if (!outfitStore.state.botInstances[this.characterId][actualInstanceId]) {
+            outfitStore.state.botInstances[this.characterId][actualInstanceId] = {bot: {}, user: {}};
+        }
+
+        // Create a new object to ensure React-style state updates
+        const updatedInstanceData = {
+            ...outfitStore.state.botInstances[this.characterId][actualInstanceId],
+            promptInjectionEnabled: Boolean(enabled)
+        };
+
+        outfitStore.state.botInstances[this.characterId][actualInstanceId] = updatedInstanceData;
+
+        // Notify listeners of the state change
+        outfitStore.notifyListeners();
+
+        // Save the updated state
+        outfitStore.saveState();
+    }
+
+    /**
+     * Gets whether prompt injection is enabled for this outfit instance
+     * @param {string|null} [instanceId=null] - The instance ID to get for (defaults to current instance ID)
+     * @returns {boolean} Whether prompt injection is enabled
+     */
+    getPromptInjectionEnabled(instanceId = null) {
+        const actualInstanceId = instanceId || this.outfitInstanceId;
+
+        if (!this.characterId || !actualInstanceId) {
+            console.warn('[NewBotOutfitManager] Cannot get prompt injection - missing characterId or instanceId');
+            return true; // Default to true (enabled) if we can't access the data
+        }
+
+        // Get the instance data from the store
+        const instanceData = outfitStore.state.botInstances[this.characterId]?.[actualInstanceId];
+
+        // Return the stored value or default to true (enabled)
+        return instanceData?.promptInjectionEnabled !== undefined ?
+            instanceData.promptInjectionEnabled : true;
+    }
+
 
     getVarName(slot) {
 
@@ -334,6 +392,105 @@ export class NewBotOutfitManager extends OutfitManager {
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
 
         return outfitStore.getAllPresets(this.character, actualInstanceId, 'bot');
+    }
+
+    /**
+     * Checks if there is a default outfit for this instance
+     * @param {string|null} [instanceId=null] - The instance ID to check (defaults to current instance ID)
+     * @returns {boolean} Whether there is a default outfit
+     */
+    hasDefaultOutfit(instanceId = null) {
+        const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
+        const {bot: presets} = outfitStore.getPresets(this.character, actualInstanceId);
+
+        return Boolean(presets && presets['default']);
+    }
+
+    /**
+     * Gets the name of the default preset for this instance
+     * @param {string|null} [instanceId=null] - The instance ID to get default for (defaults to current instance ID)
+     * @returns {string|null} The name of the default preset or null if none is set
+     */
+    getDefaultPresetName(instanceId = null) {
+        const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
+        const {bot: presets} = outfitStore.getPresets(this.character, actualInstanceId);
+
+        // The "default" preset is a special preset that represents the current outfit as default
+        if (presets && presets['default']) {
+            return 'default';
+        }
+
+        return null;
+    }
+
+    /**
+     * Sets a preset as the default preset for this instance
+     * @param {string} presetName - The name of the preset to set as default
+     * @param {string|null} [instanceId=null] - The instance ID to set default for (defaults to current instance ID)
+     * @returns {Promise<string>} A message describing the result
+     */
+    async setPresetAsDefault(presetName, instanceId = null) {
+        const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
+
+        // Get the preset data that we want to set as default
+        const {bot: presets} = outfitStore.getPresets(this.character, actualInstanceId);
+
+        if (!presets || !presets[presetName]) {
+            return `[Outfit System] Preset "${presetName}" does not exist for instance ${actualInstanceId}. Cannot set as default.`;
+        }
+
+        // Copy the preset data to the 'default' preset
+        const presetToSetAsDefault = presets[presetName];
+
+        // Save this preset data as the 'default' preset
+        outfitStore.savePreset(this.character, actualInstanceId, 'default', presetToSetAsDefault, 'bot');
+
+        if (outfitStore.getSetting('enableSysMessages')) {
+            return `Set "${presetName}" as the default outfit for ${this.character} (instance: ${actualInstanceId}).`;
+        }
+        return '';
+    }
+
+    async clearDefaultPreset(instanceId = null) {
+        const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
+
+        // Check if a default preset exists
+        const {bot: presets} = outfitStore.getPresets(this.character, actualInstanceId);
+
+        if (!presets || !presets['default']) {
+            return `[Outfit System] No default outfit set for ${this.character} (instance: ${actualInstanceId}).`;
+        }
+
+        // Delete the 'default' preset
+        outfitStore.deletePreset(this.character, actualInstanceId, 'default', 'bot');
+
+        if (outfitStore.getSetting('enableSysMessages')) {
+            return `Default outfit cleared for ${this.character} (instance: ${actualInstanceId}).`;
+        }
+        return '';
+    }
+
+    /**
+     * Applies the default outfit for this instance after a chat reset
+     * @param {string|null} [instanceId=null] - The instance ID to apply default for (defaults to current instance ID)
+     * @returns {Promise<boolean>} Whether a default outfit was applied
+     */
+    async applyDefaultOutfitAfterReset(instanceId = null) {
+        const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
+
+        // Check if there's a default outfit for this character and instance
+        if (this.hasDefaultOutfit(actualInstanceId)) {
+            await this.loadDefaultOutfit(actualInstanceId);
+            return true;
+        }
+
+        // If no specific default for this instance, try to load the default instance
+        if (actualInstanceId !== 'default' && this.hasDefaultOutfit('default')) {
+            await this.loadDefaultOutfit('default');
+            return true;
+        }
+
+        return false;
     }
 
 }

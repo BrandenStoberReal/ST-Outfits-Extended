@@ -293,14 +293,24 @@ class EventSystem {
 
             // Load outfit data after reset and character update
             if (botOutfitInstanceId) {
-                this.botManager.loadOutfit(botOutfitInstanceId);
+                // Try to apply default outfit first, otherwise load the saved outfit for this instance
+                const appliedDefault = await this.botManager.applyDefaultOutfitAfterReset(botOutfitInstanceId);
+
+                if (!appliedDefault) {
+                    this.botManager.loadOutfit(botOutfitInstanceId);
+                }
                 // Use global references to panels since they're not directly available here
                 if (window.botOutfitPanel && typeof window.botOutfitPanel.renderContent === 'function') {
                     window.botOutfitPanel.renderContent();
                 }
             }
             if (userOutfitInstanceId) {
-                this.userManager.loadOutfit(userOutfitInstanceId);
+                // Try to apply default outfit first, otherwise load the saved outfit for this instance
+                const appliedDefault = await this.userManager.applyDefaultOutfitAfterReset(userOutfitInstanceId);
+
+                if (!appliedDefault) {
+                    this.userManager.loadOutfit(userOutfitInstanceId);
+                }
                 // Use global references to panels since they're not directly available here
                 if (window.userOutfitPanel && typeof window.userOutfitPanel.renderContent === 'function') {
                     window.userOutfitPanel.renderContent();
@@ -369,14 +379,24 @@ class EventSystem {
 
             // Load outfit data after clear and character update
             if (botOutfitInstanceId) {
-                this.botManager.loadOutfit(botOutfitInstanceId);
+                // Try to apply default outfit first, otherwise load the saved outfit for this instance
+                const appliedDefault = await this.botManager.applyDefaultOutfitAfterReset(botOutfitInstanceId);
+
+                if (!appliedDefault) {
+                    this.botManager.loadOutfit(botOutfitInstanceId);
+                }
                 // Use global references to panels since they're not directly available here
                 if (window.botOutfitPanel && typeof window.botOutfitPanel.renderContent === 'function') {
                     window.botOutfitPanel.renderContent();
                 }
             }
             if (userOutfitInstanceId) {
-                this.userManager.loadOutfit(userOutfitInstanceId);
+                // Try to apply default outfit first, otherwise load the saved outfit for this instance
+                const appliedDefault = await this.userManager.applyDefaultOutfitAfterReset(userOutfitInstanceId);
+
+                if (!appliedDefault) {
+                    this.userManager.loadOutfit(userOutfitInstanceId);
+                }
                 // Use global references to panels since they're not directly available here
                 if (window.userOutfitPanel && typeof window.userOutfitPanel.renderContent === 'function') {
                     window.userOutfitPanel.renderContent();

@@ -62,10 +62,17 @@ export class BotOutfitPanel {
         // Replace placeholder "{{char}}" with the actual character name
         const characterName = this.outfitManager.character || 'Unknown';
 
+        // Check if prompt injection is enabled for this instance
+        const isPromptInjectionEnabled = this.outfitManager.getPromptInjectionEnabled();
+
         panel.innerHTML = `
             <div class="outfit-header">
                 <h3>${characterName}'s Outfit${hashDisplay}</h3>
                 <div class="outfit-actions">
+                    <label class="prompt-injection-toggle">
+                        <input type="checkbox" id="bot-outfit-prompt-injection" ${isPromptInjectionEnabled ? 'checked' : ''}>
+                        <span>Prompt Injection</span>
+                    </label>
                     <span class="outfit-action" id="bot-outfit-refresh">↻</span>
                     <span class="outfit-action" id="bot-outfit-close">×</span>
                 </div>
@@ -244,12 +251,12 @@ export class BotOutfitPanel {
                     const isDefault = (defaultPresetName === preset);
                     const presetElement = document.createElement('div');
 
-                    presetElement.className = `outfit-preset ${isDefault ? 'default-preset' : ''}`;
+                    presetElement.className = `outfit-preset ${isDefault ? 'default-preset-highlight' : ''}`;
                     presetElement.innerHTML = `
-                        <div class="preset-name">${preset}${isDefault ? '' : ''}</div>
+                        <div class="preset-name">${preset}${isDefault ? ' (Default)' : ''}</div>
                         <div class="preset-actions">
                             <button class="load-preset" data-preset="${preset}">Wear</button>
-                            <button class="set-default-preset" data-preset="${preset}" ${isDefault ? 'style="display:none;"' : ''}>Default</button>
+                            <button class="set-default-preset" data-preset="${preset}" ${isDefault ? 'style="display:none;"' : ''}>Set Default</button>
                             <button class="overwrite-preset" data-preset="${preset}">Overwrite</button>
                             <button class="delete-preset" data-preset="${preset}">×</button>
                         </div>
@@ -275,25 +282,29 @@ export class BotOutfitPanel {
                         this.renderContent();
                     });
 
-                    presetElement.querySelector('.delete-preset').addEventListener('click', () => {
-                        if (defaultPresetName !== preset) {
-                            // If it's not the default preset, just delete normally
-                            if (confirm(`Delete "${preset}" outfit?`)) {
-                                const message = this.outfitManager.deletePreset(preset);
+                    const clearDefaultButton = document.createElement('button');
 
-                                if (message && areSystemMessagesEnabled()) {
-                                    this.sendSystemMessage(message);
-                                }
-                                this.saveSettingsDebounced();
-                                this.renderContent();
-                            }
-                        } else if (confirm(`Delete "${preset}"? This will also clear it as the default outfit.`)) {
-                            // If trying to delete the default preset, warn user that it will also clear the default
-                            // Delete the preset
+                    clearDefaultButton.className = 'clear-default-preset';
+                    clearDefaultButton.textContent = 'Clear Default';
+                    clearDefaultButton.style.display = isDefault ? 'inline-block' : 'none';
+                    clearDefaultButton.addEventListener('click', async () => {
+                        const message = await this.outfitManager.clearDefaultPreset();
+
+                        if (message && areSystemMessagesEnabled()) {
+                            this.sendSystemMessage(message);
+                        }
+                        this.saveSettingsDebounced();
+                        this.renderContent();
+                    });
+                    presetElement.querySelector('.preset-actions').appendChild(clearDefaultButton);
+
+
+                    presetElement.querySelector('.delete-preset').addEventListener('click', () => {
+                        if (confirm(`Delete "${preset}" outfit?`)) {
                             const message = this.outfitManager.deletePreset(preset);
 
-                            if (areSystemMessagesEnabled()) {
-                                this.sendSystemMessage(message + ' Default outfit cleared.');
+                            if (message && areSystemMessagesEnabled()) {
+                                this.sendSystemMessage(message);
                             }
                             this.saveSettingsDebounced();
                             this.renderContent();
@@ -336,13 +347,30 @@ export class BotOutfitPanel {
                 this.saveSettingsDebounced();
                 this.renderContent();
             } else if (presetName && presetName.toLowerCase() === 'default') {
-                alert('Please save this outfit with a different name, then use the "Default" button on that outfit.');
+                alert('Please save this outfit with a different name, then use the "Set Default" button on that outfit.');
             }
         });
 
         container.appendChild(saveButton);
-    }
 
+        // Add clear default outfit button
+        const clearDefaultButton = document.createElement('button');
+
+        clearDefaultButton.className = 'clear-default-preset-btn';
+        clearDefaultButton.textContent = 'Clear Default Outfit';
+        clearDefaultButton.style.marginTop = '5px';
+        clearDefaultButton.style.display = this.outfitManager.hasDefaultOutfit() ? 'block' : 'none';
+        clearDefaultButton.addEventListener('click', async () => {
+            const message = await this.outfitManager.clearDefaultPreset();
+
+            if (message && areSystemMessagesEnabled()) {
+                this.sendSystemMessage(message);
+            }
+            this.saveSettingsDebounced();
+            this.renderContent();
+        });
+        container.appendChild(clearDefaultButton);
+    }
     /**
      * Renders the button to fill the outfit with LLM-generated items
      * @param {HTMLElement} container - The container element to render the button in
@@ -693,6 +721,20 @@ INSTRUCTIONS:
             });
 
             this.domElement.querySelector('#bot-outfit-close')?.addEventListener('click', () => this.hide());
+
+            // Add event listener for the prompt injection toggle
+            const promptInjectionToggle = this.domElement.querySelector('#bot-outfit-prompt-injection');
+
+            if (promptInjectionToggle) {
+                promptInjectionToggle.addEventListener('change', (event) => {
+                    const isChecked = event.target.checked;
+
+                    this.outfitManager.setPromptInjectionEnabled(isChecked);
+
+                    // Save the settings after changing
+                    this.saveSettingsDebounced();
+                });
+            }
         }
     }
 
