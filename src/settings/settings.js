@@ -18,11 +18,6 @@ export function initSettings(autoOutfitSystem, AutoOutfitSystemClass, context) {
         }
     }
 
-    // Update the outfitStore with the loaded settings
-    for (const [key, value] of Object.entries(settings[MODULE_NAME])) {
-        outfitStore.setSetting(key, value);
-    }
-
     // Load bot panel colors from settings, using defaults if not available
     if (!settings[MODULE_NAME].botPanelColors) {
         settings[MODULE_NAME].botPanelColors = {
