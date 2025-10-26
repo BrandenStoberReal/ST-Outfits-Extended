@@ -2,8 +2,8 @@
 import {dragElementWithSave, resizeElement} from '../common/shared.js';
 
 // Import utility functions
+import {formatSlotName as utilsFormatSlotName} from '../utils/utilities.js';
 import * as SillyTavernUtility from '../utils/SillyTavernUtility.js';
-import {formatSlotName as utilsFormatSlotName} from '../utils/SillyTavernUtility.js';
 
 // Import settings utility
 import {areSystemMessagesEnabled} from '../utils/SettingsUtil.js';
