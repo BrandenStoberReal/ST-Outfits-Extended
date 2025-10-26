@@ -1,7 +1,7 @@
 {
   "display_name": "SillyTavern Outfit Engine",
   "author": "Lucanna (Forked by Branden)",
-  "version": "1.6.0-dev12-unstable",
+  "version": "2.0.0-dev-unstable",
   "homePage": "https://github.com/BrandenStoberReal/ST-Outfits-Extended",
   "js": "index.js",
   "css": "style.css",
