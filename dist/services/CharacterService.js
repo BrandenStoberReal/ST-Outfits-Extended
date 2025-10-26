@@ -1,4 +1,3 @@
-"use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -8,10 +7,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateForCurrentCharacter = updateForCurrentCharacter;
-const Store_1 = require("../common/Store");
-const CharacterUtils_1 = require("../utils/CharacterUtils");
+import { outfitStore } from '../common/Store';
+import { CharacterInfoType, getCharacterInfoById } from '../utils/CharacterUtils';
 /**
  * CharacterService - Handles character updates for the Outfit Tracker extension
  */
@@ -57,7 +54,7 @@ function refreshMacroProcessing() {
  * @param {object} userPanel - User outfit panel instance
  * @returns {Promise<void>}
  */
-function updateForCurrentCharacter(botManager, userManager, botPanel, userPanel) {
+export function updateForCurrentCharacter(botManager, userManager, botPanel, userPanel) {
     return __awaiter(this, void 0, void 0, function* () {
         var _a, _b;
         try {
@@ -67,17 +64,17 @@ function updateForCurrentCharacter(botManager, userManager, botPanel, userPanel)
             // Save the current outfits to their current instances before changing character
             if (oldBotInstanceId && botManager.characterId) {
                 const oldBotOutfitData = Object.assign({}, botManager.getCurrentOutfit());
-                Store_1.outfitStore.setBotOutfit(botManager.characterId, oldBotInstanceId, oldBotOutfitData);
+                outfitStore.setBotOutfit(botManager.characterId, oldBotInstanceId, oldBotOutfitData);
             }
             if (oldUserInstanceId) {
                 const oldUserOutfitData = Object.assign({}, userManager.getCurrentOutfit());
-                Store_1.outfitStore.setUserOutfit(oldUserInstanceId, oldUserOutfitData);
+                outfitStore.setUserOutfit(oldUserInstanceId, oldUserOutfitData);
             }
             // Update the bot manager with the current character info
             const context = ((_a = window.SillyTavern) === null || _a === void 0 ? void 0 : _a.getContext) ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
             const charId = context.characterId;
             if (charId !== undefined && charId !== null) {
-                const characterName = (0, CharacterUtils_1.getCharacterInfoById)(charId, CharacterUtils_1.CharacterInfoType.Name);
+                const characterName = getCharacterInfoById(charId, CharacterInfoType.Name);
                 if (characterName) {
                     botManager.setCharacter(characterName, charId.toString());
                 }
@@ -102,7 +99,7 @@ function updateForCurrentCharacter(botManager, userManager, botPanel, userPanel)
             if (window.outfitStore) {
                 window.outfitStore.setCurrentCharacter(((_b = context === null || context === void 0 ? void 0 : context.characterId) === null || _b === void 0 ? void 0 : _b.toString()) || null);
                 window.outfitStore.setCurrentChat((context === null || context === void 0 ? void 0 : context.chatId) || null);
-                Store_1.outfitStore.saveState();
+                outfitStore.saveState();
             }
             // Optionally trigger a refresh of macro processing after character change
             refreshMacroProcessing();

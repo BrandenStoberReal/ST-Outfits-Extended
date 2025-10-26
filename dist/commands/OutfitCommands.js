@@ -1,4 +1,3 @@
-"use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -8,11 +7,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.registerOutfitCommands = registerOutfitCommands;
-const LLMService_1 = require("../services/LLMService");
-const constants_1 = require("../config/constants");
-const SettingsUtil_1 = require("../utils/SettingsUtil");
+import { importOutfitFromCharacterCard } from '../services/LLMService';
+import { ACCESSORY_SLOTS, CLOTHING_SLOTS } from '../config/constants';
+import { areSystemMessagesEnabled } from '../utils/SettingsUtil';
 /**
  * Registers all outfit-related slash commands with SillyTavern's command system.
  * This function sets up commands for outfit management, auto outfit system control,
@@ -22,7 +19,7 @@ const SettingsUtil_1 = require("../utils/SettingsUtil");
  * @param {any} autoOutfitSystem - The auto outfit system instance
  * @returns {Promise<void>} A promise that resolves when all commands are registered
  */
-function registerOutfitCommands(botManager, userManager, autoOutfitSystem) {
+export function registerOutfitCommands(botManager, userManager, autoOutfitSystem) {
     return __awaiter(this, void 0, void 0, function* () {
         // Check if new slash command system is available in SillyTavern
         const hasSlashCommands = typeof window.SlashCommandParser !== 'undefined' &&
@@ -242,7 +239,7 @@ function registerOutfitCommands(botManager, userManager, autoOutfitSystem) {
                                 const prompt = (value === null || value === void 0 ? void 0 : value.toString()) || '';
                                 if (prompt) {
                                     const message = autoOutfitSystem.setPrompt(prompt);
-                                    if ((0, SettingsUtil_1.areSystemMessagesEnabled)()) {
+                                    if (areSystemMessagesEnabled()) {
                                         window.botOutfitPanel.sendSystemMessage(message);
                                     }
                                     return message;
@@ -292,7 +289,7 @@ function registerOutfitCommands(botManager, userManager, autoOutfitSystem) {
                         return __awaiter(this, void 0, void 0, function* () {
                             if (window.autoOutfitSystem) {
                                 const message = autoOutfitSystem.resetToDefaultPrompt();
-                                if ((0, SettingsUtil_1.areSystemMessagesEnabled)()) {
+                                if (areSystemMessagesEnabled()) {
                                     window.botOutfitPanel.sendSystemMessage(message);
                                 }
                                 // Update the textarea in settings
@@ -430,7 +427,7 @@ function registerOutfitCommands(botManager, userManager, autoOutfitSystem) {
                                     message = yield botManager.loadDefaultOutfit();
                                 }
                             }
-                            if ((0, SettingsUtil_1.areSystemMessagesEnabled)()) {
+                            if (areSystemMessagesEnabled()) {
                                 window.botOutfitPanel.sendSystemMessage(message);
                             }
                             // Also try to load the outfit for the user if it exists
@@ -441,7 +438,7 @@ function registerOutfitCommands(botManager, userManager, autoOutfitSystem) {
                                     userMessage = yield userManager.loadDefaultOutfit();
                                 }
                             }
-                            if ((0, SettingsUtil_1.areSystemMessagesEnabled)() && userMessage && !userMessage.includes('not found')) {
+                            if (areSystemMessagesEnabled() && userMessage && !userMessage.includes('not found')) {
                                 window.userOutfitPanel.sendSystemMessage(userMessage);
                             }
                             if (message.includes('not found') && (userMessage && userMessage.includes('not found'))) {
@@ -509,7 +506,7 @@ function registerOutfitCommands(botManager, userManager, autoOutfitSystem) {
                     return __awaiter(this, void 0, void 0, function* () {
                         const isQuiet = (args === null || args === void 0 ? void 0 : args.quiet) === true;
                         try {
-                            const result = yield (0, LLMService_1.importOutfitFromCharacterCard)();
+                            const result = yield importOutfitFromCharacterCard();
                             if (!isQuiet) {
                                 toastr.info(result.message, 'Outfit Import');
                             }
@@ -593,7 +590,7 @@ function registerOutfitCommands(botManager, userManager, autoOutfitSystem) {
                         }
                         try {
                             const message = yield botManager.setOutfitItem(slot, item);
-                            if ((0, SettingsUtil_1.areSystemMessagesEnabled)()) {
+                            if (areSystemMessagesEnabled()) {
                                 window.botOutfitPanel.sendSystemMessage(message);
                             }
                             if (!isQuiet) {
@@ -661,7 +658,7 @@ function registerOutfitCommands(botManager, userManager, autoOutfitSystem) {
                         }
                         try {
                             const message = yield botManager.setOutfitItem(slot, 'None');
-                            if ((0, SettingsUtil_1.areSystemMessagesEnabled)()) {
+                            if (areSystemMessagesEnabled()) {
                                 window.botOutfitPanel.sendSystemMessage(message);
                             }
                             if (!isQuiet) {
@@ -740,7 +737,7 @@ function registerOutfitCommands(botManager, userManager, autoOutfitSystem) {
                         }
                         try {
                             const message = yield botManager.setOutfitItem(slot, item);
-                            if ((0, SettingsUtil_1.areSystemMessagesEnabled)()) {
+                            if (areSystemMessagesEnabled()) {
                                 window.botOutfitPanel.sendSystemMessage(message);
                             }
                             if (!isQuiet) {
@@ -820,7 +817,7 @@ function registerOutfitCommands(botManager, userManager, autoOutfitSystem) {
                         }
                         try {
                             const message = yield userManager.setOutfitItem(slot, item);
-                            if ((0, SettingsUtil_1.areSystemMessagesEnabled)()) {
+                            if (areSystemMessagesEnabled()) {
                                 window.userOutfitPanel.sendSystemMessage(message);
                             }
                             if (!isQuiet) {
@@ -888,7 +885,7 @@ function registerOutfitCommands(botManager, userManager, autoOutfitSystem) {
                         }
                         try {
                             const message = yield userManager.setOutfitItem(slot, 'None');
-                            if ((0, SettingsUtil_1.areSystemMessagesEnabled)()) {
+                            if (areSystemMessagesEnabled()) {
                                 window.userOutfitPanel.sendSystemMessage(message);
                             }
                             if (!isQuiet) {
@@ -967,7 +964,7 @@ function registerOutfitCommands(botManager, userManager, autoOutfitSystem) {
                         }
                         try {
                             const message = yield userManager.setOutfitItem(slot, item);
-                            if ((0, SettingsUtil_1.areSystemMessagesEnabled)()) {
+                            if (areSystemMessagesEnabled()) {
                                 window.userOutfitPanel.sendSystemMessage(message);
                             }
                             if (!isQuiet) {
@@ -1036,7 +1033,7 @@ function registerOutfitCommands(botManager, userManager, autoOutfitSystem) {
                         }
                         try {
                             const message = yield botManager.savePreset(presetName);
-                            if ((0, SettingsUtil_1.areSystemMessagesEnabled)()) {
+                            if (areSystemMessagesEnabled()) {
                                 window.botOutfitPanel.sendSystemMessage(message);
                             }
                             if (!isQuiet) {
@@ -1104,7 +1101,7 @@ function registerOutfitCommands(botManager, userManager, autoOutfitSystem) {
                         }
                         try {
                             const message = yield botManager.deletePreset(presetName);
-                            if ((0, SettingsUtil_1.areSystemMessagesEnabled)()) {
+                            if (areSystemMessagesEnabled()) {
                                 window.botOutfitPanel.sendSystemMessage(message);
                             }
                             if (!isQuiet) {
@@ -1172,7 +1169,7 @@ function registerOutfitCommands(botManager, userManager, autoOutfitSystem) {
                         }
                         try {
                             const message = yield userManager.savePreset(presetName);
-                            if ((0, SettingsUtil_1.areSystemMessagesEnabled)()) {
+                            if (areSystemMessagesEnabled()) {
                                 window.userOutfitPanel.sendSystemMessage(message);
                             }
                             if (!isQuiet) {
@@ -1240,7 +1237,7 @@ function registerOutfitCommands(botManager, userManager, autoOutfitSystem) {
                         }
                         try {
                             const message = yield userManager.deletePreset(presetName);
-                            if ((0, SettingsUtil_1.areSystemMessagesEnabled)()) {
+                            if (areSystemMessagesEnabled()) {
                                 window.userOutfitPanel.sendSystemMessage(message);
                             }
                             if (!isQuiet) {
@@ -1305,8 +1302,8 @@ function registerOutfitCommands(botManager, userManager, autoOutfitSystem) {
                             // Get user presets
                             const userPresets = userManager.getPresets();
                             // Get current outfit data for both character and user
-                            const botOutfitData = botManager.getOutfitData([...constants_1.CLOTHING_SLOTS, ...constants_1.ACCESSORY_SLOTS]);
-                            const userOutfitData = userManager.getOutfitData([...constants_1.CLOTHING_SLOTS, ...constants_1.ACCESSORY_SLOTS]);
+                            const botOutfitData = botManager.getOutfitData([...CLOTHING_SLOTS, ...ACCESSORY_SLOTS]);
+                            const userOutfitData = userManager.getOutfitData([...CLOTHING_SLOTS, ...ACCESSORY_SLOTS]);
                             let message = `Available character presets: ${botPresets.length > 0 ? botPresets.join(', ') : 'None'}`;
                             message += `\nAvailable user presets: ${userPresets.length > 0 ? userPresets.join(', ') : 'None'}`;
                             // Add current outfit information
@@ -1374,7 +1371,7 @@ function registerOutfitCommands(botManager, userManager, autoOutfitSystem) {
                         }
                         try {
                             const message = yield botManager.overwritePreset(presetName);
-                            if ((0, SettingsUtil_1.areSystemMessagesEnabled)()) {
+                            if (areSystemMessagesEnabled()) {
                                 window.botOutfitPanel.sendSystemMessage(message);
                             }
                             if (!isQuiet) {
@@ -1448,7 +1445,7 @@ function registerOutfitCommands(botManager, userManager, autoOutfitSystem) {
                         }
                         try {
                             const message = yield userManager.overwritePreset(presetName);
-                            if ((0, SettingsUtil_1.areSystemMessagesEnabled)()) {
+                            if (areSystemMessagesEnabled()) {
                                 window.userOutfitPanel.sendSystemMessage(message);
                             }
                             if (!isQuiet) {

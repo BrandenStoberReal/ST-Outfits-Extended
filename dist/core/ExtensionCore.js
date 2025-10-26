@@ -1,37 +1,3 @@
-"use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -41,27 +7,25 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.initializeExtension = initializeExtension;
-const CharacterService_1 = require("../services/CharacterService");
-const CustomMacroService_1 = require("../services/CustomMacroService");
-const shared_1 = require("../common/shared");
-const Store_1 = require("../common/Store");
-const NewBotOutfitManager_1 = require("../managers/NewBotOutfitManager");
-const BotOutfitPanel_1 = require("../panels/BotOutfitPanel");
-const NewUserOutfitManager_1 = require("../managers/NewUserOutfitManager");
-const UserOutfitPanel_1 = require("../panels/UserOutfitPanel");
-const DebugPanel_1 = require("../panels/DebugPanel");
-const EventService_1 = require("../services/EventService");
-const OutfitCommands_1 = require("../commands/OutfitCommands");
-const SettingsUI_1 = require("../settings/SettingsUI");
-const settings_1 = require("../settings/settings");
-const constants_1 = require("../config/constants");
-const StorageService_1 = require("../services/StorageService");
-const DataManager_1 = require("../managers/DataManager");
-const OutfitDataService_1 = require("../services/OutfitDataService");
-const MacroProcessor_1 = require("../processors/MacroProcessor");
-const DebugLogger_1 = require("../logging/DebugLogger");
+import { updateForCurrentCharacter } from '../services/CharacterService';
+import { customMacroSystem } from '../services/CustomMacroService';
+import { extension_api } from '../common/shared';
+import { outfitStore } from '../common/Store';
+import { NewBotOutfitManager } from '../managers/NewBotOutfitManager';
+import { BotOutfitPanel } from '../panels/BotOutfitPanel';
+import { NewUserOutfitManager } from '../managers/NewUserOutfitManager';
+import { UserOutfitPanel } from '../panels/UserOutfitPanel';
+import { DebugPanel } from '../panels/DebugPanel';
+import { setupEventListeners } from '../services/EventService';
+import { registerOutfitCommands } from '../commands/OutfitCommands';
+import { createSettingsUI } from '../settings/SettingsUI';
+import { initSettings } from '../settings/settings';
+import { ACCESSORY_SLOTS, ALL_SLOTS, CLOTHING_SLOTS } from '../config/constants';
+import { StorageService } from '../services/StorageService';
+import { DataManager } from '../managers/DataManager';
+import { OutfitDataService } from '../services/OutfitDataService';
+import { macroProcessor } from '../processors/MacroProcessor';
+import { debugLog } from '../logging/DebugLogger';
 let AutoOutfitSystem;
 /**
  * Loads the AutoOutfitSystem module dynamically.
@@ -72,14 +36,14 @@ let AutoOutfitSystem;
 function loadAutoOutfitSystem() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            (0, DebugLogger_1.debugLog)('Attempting to load AutoOutfitSystem module', null, 'debug');
-            const autoOutfitModule = yield Promise.resolve().then(() => __importStar(require('../services/AutoOutfitService')));
+            debugLog('Attempting to load AutoOutfitSystem module', null, 'debug');
+            const autoOutfitModule = yield import('../services/AutoOutfitService');
             AutoOutfitSystem = autoOutfitModule.AutoOutfitService;
-            (0, DebugLogger_1.debugLog)('AutoOutfitSystem module loaded successfully', null, 'info');
+            debugLog('AutoOutfitSystem module loaded successfully', null, 'info');
         }
         catch (error) {
             console.error('[OutfitTracker] Failed to load AutoOutfitSystem:', error);
-            (0, DebugLogger_1.debugLog)('Failed to load AutoOutfitSystem, using dummy class', error, 'error');
+            debugLog('Failed to load AutoOutfitSystem, using dummy class', error, 'error');
             AutoOutfitSystem = class DummyAutoOutfitSystem {
             };
         }
@@ -124,12 +88,12 @@ function isMobileUserAgent(userAgent) {
  */
 function setupApi(botManager, userManager, botPanel, userPanel, autoOutfitSystem, outfitDataService) {
     var _a;
-    shared_1.extension_api.botOutfitPanel = botPanel;
-    shared_1.extension_api.userOutfitPanel = userPanel;
-    shared_1.extension_api.autoOutfitSystem = autoOutfitSystem;
-    shared_1.extension_api.wipeAllOutfits = () => outfitDataService.wipeAllOutfits();
+    extension_api.botOutfitPanel = botPanel;
+    extension_api.userOutfitPanel = userPanel;
+    extension_api.autoOutfitSystem = autoOutfitSystem;
+    extension_api.wipeAllOutfits = () => outfitDataService.wipeAllOutfits();
     window.wipeAllOutfits = () => outfitDataService.wipeAllOutfits(); // Make it directly accessible globally
-    shared_1.extension_api.getOutfitExtensionStatus = () => {
+    extension_api.getOutfitExtensionStatus = () => {
         var _a, _b;
         return ({
             core: true,
@@ -146,8 +110,8 @@ function setupApi(botManager, userManager, botPanel, userPanel, autoOutfitSystem
         if (STContext) {
             // Wait for character data to be loaded before registering character-specific macros
             setTimeout(() => {
-                CustomMacroService_1.customMacroSystem.deregisterCharacterSpecificMacros(STContext);
-                CustomMacroService_1.customMacroSystem.registerCharacterSpecificMacros(STContext);
+                customMacroSystem.deregisterCharacterSpecificMacros(STContext);
+                customMacroSystem.registerCharacterSpecificMacros(STContext);
             }, 2000); // Wait a bit for character data to load
         }
     }
@@ -156,15 +120,15 @@ function setupApi(botManager, userManager, botPanel, userPanel, autoOutfitSystem
         var _a;
         const STContext = ((_a = window.SillyTavern) === null || _a === void 0 ? void 0 : _a.getContext) ? window.SillyTavern.getContext() : window.getContext();
         if (STContext) {
-            CustomMacroService_1.customMacroSystem.deregisterCharacterSpecificMacros(STContext);
-            CustomMacroService_1.customMacroSystem.registerCharacterSpecificMacros(STContext);
+            customMacroSystem.deregisterCharacterSpecificMacros(STContext);
+            customMacroSystem.registerCharacterSpecificMacros(STContext);
         }
     };
     // Create and set up the debug panel
-    const debugPanel = new DebugPanel_1.DebugPanel();
+    const debugPanel = new DebugPanel();
     window.outfitDebugPanel = debugPanel;
-    shared_1.extension_api.debugPanel = debugPanel;
-    globalThis.outfitTracker = shared_1.extension_api;
+    extension_api.debugPanel = debugPanel;
+    globalThis.outfitTracker = extension_api;
 }
 /**
  * Updates the styles of the outfit panels.
@@ -204,7 +168,7 @@ globalThis.outfitTrackerInterceptor = function (chat) {
             const userPanel = window.userOutfitPanel;
             if (!botPanel || !userPanel) {
                 // If panels aren't available yet, store the reference and try later
-                (0, DebugLogger_1.debugLog)('Panels not available for interceptor, deferring injection', {
+                debugLog('Panels not available for interceptor, deferring injection', {
                     botPanel: Boolean(botPanel),
                     userPanel: Boolean(userPanel)
                 }, 'warn');
@@ -213,7 +177,7 @@ globalThis.outfitTrackerInterceptor = function (chat) {
             const botManager = botPanel.outfitManager;
             const userManager = userPanel.outfitManager;
             if (!botManager || !userManager) {
-                (0, DebugLogger_1.debugLog)('Managers not available for interceptor', {
+                debugLog('Managers not available for interceptor', {
                     botManager: Boolean(botManager),
                     userManager: Boolean(userManager)
                 }, 'warn');
@@ -221,15 +185,15 @@ globalThis.outfitTrackerInterceptor = function (chat) {
             }
             // If both bot and user have prompt injection disabled, skip entirely
             if (!botManager.getPromptInjectionEnabled() && !userManager.getPromptInjectionEnabled()) {
-                (0, DebugLogger_1.debugLog)('Prompt injection is disabled for both bot and user', null, 'info');
+                debugLog('Prompt injection is disabled for both bot and user', null, 'info');
                 return;
             }
             // Check if prompt injection is disabled for this bot instance
             if (!botManager.getPromptInjectionEnabled()) {
-                (0, DebugLogger_1.debugLog)('Prompt injection is disabled for this bot instance', null, 'info');
+                debugLog('Prompt injection is disabled for this bot instance', null, 'info');
             }
             // Generate outfit information string using the custom macro system
-            const outfitInfoString = CustomMacroService_1.customMacroSystem.generateOutfitInfoString(botManager, userManager);
+            const outfitInfoString = customMacroSystem.generateOutfitInfoString(botManager, userManager);
             // Only inject if there's actual outfit information to add
             if (outfitInfoString && outfitInfoString.trim()) {
                 // Create a new message object for the outfit information
@@ -241,18 +205,18 @@ globalThis.outfitTrackerInterceptor = function (chat) {
                     mes: outfitInfoString,
                     extra: { outfit_injection: true }
                 };
-                (0, DebugLogger_1.debugLog)('Injecting outfit information into chat', { outfitInfoString }, 'info');
+                debugLog('Injecting outfit information into chat', { outfitInfoString }, 'info');
                 // Insert the outfit information before the last message in the chat
                 // This ensures it's included in the context without disrupting the conversation flow
                 chat.splice(chat.length - 1, 0, outfitInjection);
             }
             else {
-                (0, DebugLogger_1.debugLog)('No outfit information to inject', null, 'debug');
+                debugLog('No outfit information to inject', null, 'debug');
             }
         }
         catch (error) {
             console.error('[OutfitTracker] Error in interceptor:', error);
-            (0, DebugLogger_1.debugLog)('Error in interceptor', error, 'error');
+            debugLog('Error in interceptor', error, 'error');
         }
     });
 };
@@ -263,57 +227,57 @@ globalThis.outfitTrackerInterceptor = function (chat) {
  * @returns {Promise<void>} A promise that resolves when the extension is fully initialized
  * @throws {Error} If SillyTavern context is not available
  */
-function initializeExtension() {
+export function initializeExtension() {
     return __awaiter(this, void 0, void 0, function* () {
         var _a, _b, _c;
         yield loadAutoOutfitSystem();
-        (0, DebugLogger_1.debugLog)('Starting extension initialization', null, 'info');
+        debugLog('Starting extension initialization', null, 'info');
         const STContext = ((_b = (_a = window.SillyTavern) === null || _a === void 0 ? void 0 : _a.getContext) === null || _b === void 0 ? void 0 : _b.call(_a)) || ((_c = window.getContext) === null || _c === void 0 ? void 0 : _c.call(window));
         if (!STContext) {
             console.error('[OutfitTracker] Required SillyTavern context is not available.');
             throw new Error('Missing required SillyTavern globals.');
         }
-        const storageService = new StorageService_1.StorageService((data) => STContext.saveSettingsDebounced({ outfit_tracker: data }), () => STContext.extensionSettings.outfit_tracker);
-        const dataManager = new DataManager_1.DataManager(storageService);
+        const storageService = new StorageService((data) => STContext.saveSettingsDebounced({ outfit_tracker: data }), () => STContext.extensionSettings.outfit_tracker);
+        const dataManager = new DataManager(storageService);
         yield dataManager.initialize();
-        Store_1.outfitStore.setDataManager(dataManager);
+        outfitStore.setDataManager(dataManager);
         // Load the stored state into the outfit store after initialization
-        Store_1.outfitStore.loadState();
-        (0, DebugLogger_1.debugLog)('Data manager and outfit store initialized', null, 'info');
-        const outfitDataService = new OutfitDataService_1.OutfitDataService(dataManager);
+        outfitStore.loadState();
+        debugLog('Data manager and outfit store initialized', null, 'info');
+        const outfitDataService = new OutfitDataService(dataManager);
         const settings = dataManager.loadSettings();
-        (0, DebugLogger_1.debugLog)('Settings loaded', settings, 'info');
-        const botManager = new NewBotOutfitManager_1.NewBotOutfitManager(constants_1.ALL_SLOTS);
-        const userManager = new NewUserOutfitManager_1.NewUserOutfitManager(constants_1.ALL_SLOTS);
-        (0, DebugLogger_1.debugLog)('Outfit managers created', { botManager, userManager }, 'info');
-        const botPanel = new BotOutfitPanel_1.BotOutfitPanel(botManager, constants_1.CLOTHING_SLOTS, constants_1.ACCESSORY_SLOTS, (data) => STContext.saveSettingsDebounced({ outfit_tracker: data }));
-        const userPanel = new UserOutfitPanel_1.UserOutfitPanel(userManager, constants_1.CLOTHING_SLOTS, constants_1.ACCESSORY_SLOTS, (data) => STContext.saveSettingsDebounced({ outfit_tracker: data }));
-        (0, DebugLogger_1.debugLog)('Outfit panels created', { botPanel, userPanel }, 'info');
+        debugLog('Settings loaded', settings, 'info');
+        const botManager = new NewBotOutfitManager(ALL_SLOTS);
+        const userManager = new NewUserOutfitManager(ALL_SLOTS);
+        debugLog('Outfit managers created', { botManager, userManager }, 'info');
+        const botPanel = new BotOutfitPanel(botManager, CLOTHING_SLOTS, ACCESSORY_SLOTS, (data) => STContext.saveSettingsDebounced({ outfit_tracker: data }));
+        const userPanel = new UserOutfitPanel(userManager, CLOTHING_SLOTS, ACCESSORY_SLOTS, (data) => STContext.saveSettingsDebounced({ outfit_tracker: data }));
+        debugLog('Outfit panels created', { botPanel, userPanel }, 'info');
         const autoOutfitSystem = new AutoOutfitSystem(botManager);
-        (0, DebugLogger_1.debugLog)('Auto outfit system created', { autoOutfitSystem }, 'info');
+        debugLog('Auto outfit system created', { autoOutfitSystem }, 'info');
         // Set global references for the interceptor function to access
         window.botOutfitPanel = botPanel;
         window.userOutfitPanel = userPanel;
-        Store_1.outfitStore.setPanelRef('bot', botPanel);
-        Store_1.outfitStore.setPanelRef('user', userPanel);
-        Store_1.outfitStore.setAutoOutfitSystem(autoOutfitSystem);
-        (0, DebugLogger_1.debugLog)('Global references set', null, 'info');
+        outfitStore.setPanelRef('bot', botPanel);
+        outfitStore.setPanelRef('user', userPanel);
+        outfitStore.setAutoOutfitSystem(autoOutfitSystem);
+        debugLog('Global references set', null, 'info');
         setupApi(botManager, userManager, botPanel, userPanel, autoOutfitSystem, outfitDataService);
-        (0, settings_1.initSettings)(autoOutfitSystem, AutoOutfitSystem, STContext);
-        yield (0, OutfitCommands_1.registerOutfitCommands)(botManager, userManager, autoOutfitSystem);
-        CustomMacroService_1.customMacroSystem.registerMacros(STContext);
-        (0, SettingsUI_1.createSettingsUI)(AutoOutfitSystem, autoOutfitSystem, STContext);
-        (0, DebugLogger_1.debugLog)('Extension components initialized', null, 'info');
+        initSettings(autoOutfitSystem, AutoOutfitSystem, STContext);
+        yield registerOutfitCommands(botManager, userManager, autoOutfitSystem);
+        customMacroSystem.registerMacros(STContext);
+        createSettingsUI(AutoOutfitSystem, autoOutfitSystem, STContext);
+        debugLog('Extension components initialized', null, 'info');
         // Pass the STContext to the event listeners setup
-        (0, EventService_1.setupEventListeners)({
+        setupEventListeners({
             botManager, userManager, botPanel, userPanel, autoOutfitSystem,
-            updateForCurrentCharacter: () => (0, CharacterService_1.updateForCurrentCharacter)(botManager, userManager, botPanel, userPanel),
-            processMacrosInFirstMessage: () => MacroProcessor_1.macroProcessor.processMacrosInFirstMessage(STContext),
+            updateForCurrentCharacter: () => updateForCurrentCharacter(botManager, userManager, botPanel, userPanel),
+            processMacrosInFirstMessage: () => macroProcessor.processMacrosInFirstMessage(STContext),
             context: STContext
         });
-        (0, DebugLogger_1.debugLog)('Event listeners set up', null, 'info');
+        debugLog('Event listeners set up', null, 'info');
         updatePanelStyles();
-        (0, DebugLogger_1.debugLog)('Panel styles updated', null, 'info');
+        debugLog('Panel styles updated', null, 'info');
         if (settings.autoOpenBot && !isMobileDevice()) {
             setTimeout(() => botPanel.show(), 1000);
         }
@@ -321,6 +285,6 @@ function initializeExtension() {
             setTimeout(() => userPanel.show(), 1000);
         }
         setTimeout(updatePanelStyles, 1500);
-        (0, DebugLogger_1.debugLog)('Extension initialization completed', null, 'info');
+        debugLog('Extension initialization completed', null, 'info');
     });
 }

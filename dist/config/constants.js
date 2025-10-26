@@ -1,12 +1,9 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.OUTFIT_COMMANDS = exports.DEFAULT_SETTINGS = exports.ALL_SLOTS = exports.ACCESSORY_SLOTS = exports.CLOTHING_SLOTS = void 0;
 // Constants for Outfit Tracker Extension
 /**
  * Array of clothing slot names used in the outfit system
  * @type {string[]}
  */
-exports.CLOTHING_SLOTS = [
+export const CLOTHING_SLOTS = [
     'headwear', 'topwear', 'topunderwear', 'bottomwear',
     'bottomunderwear', 'footwear', 'footunderwear'
 ];
@@ -14,7 +11,7 @@ exports.CLOTHING_SLOTS = [
  * Array of accessory slot names used in the outfit system
  * @type {string[]}
  */
-exports.ACCESSORY_SLOTS = [
+export const ACCESSORY_SLOTS = [
     'head-accessory', 'ears-accessory', 'eyes-accessory', 'mouth-accessory',
     'neck-accessory', 'body-accessory', 'arms-accessory', 'hands-accessory',
     'waist-accessory', 'bottom-accessory', 'legs-accessory', 'foot-accessory'
@@ -23,7 +20,7 @@ exports.ACCESSORY_SLOTS = [
  * Combined array of all outfit slot names
  * @type {string[]}
  */
-exports.ALL_SLOTS = [...exports.CLOTHING_SLOTS, ...exports.ACCESSORY_SLOTS];
+export const ALL_SLOTS = [...CLOTHING_SLOTS, ...ACCESSORY_SLOTS];
 /**
  * Default settings for the outfit tracker extension
  * @type {object}
@@ -44,7 +41,7 @@ exports.ALL_SLOTS = [...exports.CLOTHING_SLOTS, ...exports.ACCESSORY_SLOTS];
  * @property {string} userPanelColors.border - Border color for user panel
  * @property {string} userPanelColors.shadow - Shadow color for user panel
  */
-exports.DEFAULT_SETTINGS = Object.freeze({
+export const DEFAULT_SETTINGS = Object.freeze({
     autoOpenBot: true,
     autoOpenUser: false,
     position: 'right',
@@ -71,7 +68,7 @@ exports.DEFAULT_SETTINGS = Object.freeze({
  * @property {string} REMOVE - Command to remove an item
  * @property {string} CHANGE - Command to change an item
  */
-exports.OUTFIT_COMMANDS = {
+export const OUTFIT_COMMANDS = {
     WEAR: 'wear',
     REMOVE: 'remove',
     CHANGE: 'change'

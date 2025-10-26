@@ -1,12 +1,9 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.DebugPanel = void 0;
-const shared_1 = require("../common/shared");
-const Store_1 = require("../common/Store");
-const CustomMacroService_1 = require("../services/CustomMacroService");
-const DebugLogger_1 = require("../logging/DebugLogger");
-const CharacterUtils_1 = require("../utils/CharacterUtils");
-class DebugPanel {
+import { dragElementWithSave, resizeElement } from '../common/shared';
+import { outfitStore } from '../common/Store';
+import { customMacroSystem } from '../services/CustomMacroService';
+import { debugLogger } from '../logging/DebugLogger';
+import { CharacterInfoType, getCharacterInfoById } from '../utils/CharacterUtils';
+export class DebugPanel {
     constructor() {
         this.isVisible = false;
         this.domElement = null;
@@ -89,7 +86,7 @@ class DebugPanel {
      * Renders the 'Logs' tab with logs from the DebugLogger
      */
     renderLogsTab(container) {
-        const logs = DebugLogger_1.debugLogger.getLogs();
+        const logs = debugLogger.getLogs();
         let logsHtml = '<div class="debug-logs-list">';
         if (logs.length === 0) {
             logsHtml += '<p>No logs available.</p>';
@@ -110,7 +107,7 @@ class DebugPanel {
      * Renders the 'Instances' tab with instance browser functionality
      */
     renderInstancesTab(container) {
-        const state = Store_1.outfitStore.getState();
+        const state = outfitStore.getState();
         const botInstances = state.botInstances;
         const userInstances = state.userInstances;
         let instancesHtml = '<div class="debug-instances-list">';
@@ -123,7 +120,7 @@ class DebugPanel {
         }
         else {
             for (const [charId, charData] of Object.entries(botInstances)) {
-                const charName = (0, CharacterUtils_1.getCharacterInfoById)(charId, CharacterUtils_1.CharacterInfoType.Name);
+                const charName = getCharacterInfoById(charId, CharacterInfoType.Name);
                 instancesHtml += `<h5>Character: ${charName} (${charId})</h5>`;
                 for (const [instId, instData] of Object.entries(charData)) {
                     const currentInstanceId = state.currentOutfitInstanceId;
@@ -211,7 +208,7 @@ class DebugPanel {
      * Renders the 'Macros' tab to showcase current instances and derivations
      */
     renderMacrosTab(container) {
-        const state = Store_1.outfitStore.getState();
+        const state = outfitStore.getState();
         const botInstances = state.botInstances;
         const userInstances = state.userInstances;
         let macrosHtml = '<div class="debug-macros-list">';
@@ -219,8 +216,8 @@ class DebugPanel {
         macrosHtml += '<h4>Current Macro Values</h4>';
         macrosHtml += '<div class="macro-info">';
         // Get current character and user names
-        const currentCharName = CustomMacroService_1.customMacroSystem.getCurrentCharName();
-        const currentUserName = CustomMacroService_1.customMacroSystem.getCurrentUserName();
+        const currentCharName = customMacroSystem.getCurrentCharName();
+        const currentUserName = customMacroSystem.getCurrentUserName();
         macrosHtml += `<div><strong>Current Character:</strong> ${currentCharName}</div>`;
         macrosHtml += `<div><strong>Current User:</strong> ${currentUserName}</div>`;
         macrosHtml += `<div><strong>Current Instance ID:</strong> ${state.currentOutfitInstanceId || 'None'}</div>`;
@@ -247,10 +244,10 @@ class DebugPanel {
         macrosHtml += '</table>';
         // Show macro cache information
         macrosHtml += '<h5>Macro Cache Info:</h5>';
-        macrosHtml += `<div>Cached entries: ${CustomMacroService_1.customMacroSystem.macroValueCache.size}</div>`;
+        macrosHtml += `<div>Cached entries: ${customMacroSystem.macroValueCache.size}</div>`;
         macrosHtml += '<table class="macro-cache-table">';
         macrosHtml += '<tr><th>Cache Key</th><th>Value</th><th>Timestamp</th></tr>';
-        for (const [key, entry] of CustomMacroService_1.customMacroSystem.macroValueCache.entries()) {
+        for (const [key, entry] of customMacroSystem.macroValueCache.entries()) {
             const timestamp = new Date(entry.timestamp).toISOString();
             macrosHtml += `<tr><td>${key}</td><td>${entry.value}</td><td>${timestamp}</td></tr>`;
         }
@@ -275,7 +272,7 @@ class DebugPanel {
             var _a;
             (_a = document.getElementById('macro-test-btn')) === null || _a === void 0 ? void 0 : _a.addEventListener('click', () => {
                 const input = document.getElementById('macro-test-input').value;
-                const output = CustomMacroService_1.customMacroSystem.replaceMacrosInText(input);
+                const output = customMacroSystem.replaceMacrosInText(input);
                 document.getElementById('macro-test-output').innerText = output;
             });
         }, 100);
@@ -284,7 +281,7 @@ class DebugPanel {
      * Renders the 'Pointers' tab
      */
     renderPointersTab(container) {
-        const state = Store_1.outfitStore.getState();
+        const state = outfitStore.getState();
         const references = state.references;
         let pointersHtml = '<div class="debug-pointers-list">';
         pointersHtml += '<h4>Global References</h4>';
@@ -304,8 +301,8 @@ class DebugPanel {
             { name: 'window.outfitTracker', exists: Boolean(window.outfitTracker) },
             { name: 'window.outfitTrackerInterceptor', exists: Boolean(window.outfitTrackerInterceptor) },
             { name: 'window.getOutfitExtensionStatus', exists: Boolean(window.getOutfitExtensionStatus) },
-            { name: 'outfitStore', exists: Boolean(Store_1.outfitStore) },
-            { name: 'customMacroSystem', exists: Boolean(CustomMacroService_1.customMacroSystem) },
+            { name: 'outfitStore', exists: Boolean(outfitStore) },
+            { name: 'customMacroSystem', exists: Boolean(customMacroSystem) },
         ];
         for (const ref of globalRefs) {
             pointersHtml += `<tr><td>${ref.name}</td><td>${ref.exists ? 'Available' : 'Not Available'}</td></tr>`;
@@ -318,7 +315,7 @@ class DebugPanel {
      * Renders the 'Performance' tab with performance metrics
      */
     renderPerformanceTab(container) {
-        const state = Store_1.outfitStore.getState();
+        const state = outfitStore.getState();
         // Calculate performance metrics
         const botInstanceCount = Object.keys(state.botInstances).reduce((total, charId) => {
             return total + Object.keys(state.botInstances[charId]).length;
@@ -337,7 +334,7 @@ class DebugPanel {
         performanceHtml += `<div><strong>Estimated Storage Size:</strong> ${estimatedStorageSize}</div>`;
         // Macro performance
         performanceHtml += '<h5>Macro System Performance:</h5>';
-        performanceHtml += `<div><strong>Current Cache Size:</strong> ${CustomMacroService_1.customMacroSystem.macroValueCache.size} items</div>`;
+        performanceHtml += `<div><strong>Current Cache Size:</strong> ${customMacroSystem.macroValueCache.size} items</div>`;
         // Performance indicators
         performanceHtml += '<h5>Performance Indicators:</h5>';
         performanceHtml += '<div class="performance-indicators">';
@@ -398,15 +395,15 @@ class DebugPanel {
         // Perform several macro resolutions to test performance
         for (let i = 0; i < 100; i++) {
             // Try to resolve a common macro pattern using the correct method
-            CustomMacroService_1.customMacroSystem.getCurrentSlotValue('char', 'headwear');
-            CustomMacroService_1.customMacroSystem.getCurrentSlotValue('user', 'topwear');
+            customMacroSystem.getCurrentSlotValue('char', 'headwear');
+            customMacroSystem.getCurrentSlotValue('user', 'topwear');
         }
         const endTime = performance.now();
         const macroTestTime = endTime - startTime;
         // Test store access performance
         const storeStartTime = performance.now();
         for (let i = 0; i < 1000; i++) {
-            Store_1.outfitStore.getState();
+            outfitStore.getState();
         }
         const storeEndTime = performance.now();
         const storeTestTime = storeEndTime - storeStartTime;
@@ -425,12 +422,12 @@ class DebugPanel {
      * Renders the 'Misc' tab for other functions
      */
     renderMiscTab(container) {
-        const state = Store_1.outfitStore.getState();
+        const state = outfitStore.getState();
         let miscHtml = '<div class="debug-misc-content">';
         miscHtml += '<h4>Store State Information</h4>';
         miscHtml += '<div class="store-info">';
         // Show key store properties
-        const currentCharName = state.currentCharacterId ? (0, CharacterUtils_1.getCharacterInfoById)(state.currentCharacterId, CharacterUtils_1.CharacterInfoType.Name) : 'None';
+        const currentCharName = state.currentCharacterId ? getCharacterInfoById(state.currentCharacterId, CharacterInfoType.Name) : 'None';
         miscHtml += `<div><strong>Current Character:</strong> ${currentCharName}</div>`;
         miscHtml += `<div><strong>Current Chat ID:</strong> ${state.currentChatId || 'None'}</div>`;
         miscHtml += `<div><strong>Current Outfit Instance ID:</strong> ${state.currentOutfitInstanceId || 'None'}</div>`;
@@ -458,7 +455,7 @@ class DebugPanel {
                 this.renderContent();
             });
             (_b = document.getElementById('debug-clear-cache')) === null || _b === void 0 ? void 0 : _b.addEventListener('click', () => {
-                CustomMacroService_1.customMacroSystem.clearCache();
+                customMacroSystem.clearCache();
                 toastr.success('Macro cache cleared!', 'Debug Panel');
                 this.renderContent();
             });
@@ -488,7 +485,7 @@ class DebugPanel {
      */
     exportOutfitData() {
         try {
-            const state = Store_1.outfitStore.getState();
+            const state = outfitStore.getState();
             const dataStr = JSON.stringify(state, null, 2);
             const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
             const exportFileDefaultName = `outfit-data-export-${new Date().toISOString().slice(0, 19)}.json`;
@@ -517,8 +514,8 @@ class DebugPanel {
                 const data = JSON.parse((_a = e.target) === null || _a === void 0 ? void 0 : _a.result);
                 if (confirm('Are you sure you want to import this outfit data? This will replace all current data.')) {
                     // Update store state with imported data
-                    Store_1.outfitStore.setState(data);
-                    Store_1.outfitStore.saveState(); // Save to storage
+                    outfitStore.setState(data);
+                    outfitStore.saveState(); // Save to storage
                     this.renderContent();
                     toastr.success('Outfit data imported!', 'Debug Panel');
                 }
@@ -547,7 +544,7 @@ class DebugPanel {
     show() {
         var _a;
         // Check if debug mode is enabled
-        const state = Store_1.outfitStore.getState();
+        const state = outfitStore.getState();
         if (!state.settings.debugMode) {
             console.log('Debug mode is disabled. Not showing debug panel.');
             return;
@@ -562,7 +559,7 @@ class DebugPanel {
         this.isVisible = true;
         // Subscribe to store changes to update highlighting when current instance changes
         if (!this.storeSubscription) {
-            this.storeSubscription = Store_1.outfitStore.subscribe((newState) => {
+            this.storeSubscription = outfitStore.subscribe((newState) => {
                 // Check if the current outfit instance ID has changed
                 if (this.previousInstanceId !== newState.currentOutfitInstanceId) {
                     this.previousInstanceId = newState.currentOutfitInstanceId;
@@ -574,10 +571,10 @@ class DebugPanel {
             });
         }
         if (this.domElement) {
-            (0, shared_1.dragElementWithSave)($(this.domElement), 'outfit-debug-panel');
+            dragElementWithSave($(this.domElement), 'outfit-debug-panel');
             // Initialize resizing with appropriate min/max dimensions
             setTimeout(() => {
-                (0, shared_1.resizeElement)($(this.domElement), 'outfit-debug-panel');
+                resizeElement($(this.domElement), 'outfit-debug-panel');
             }, 10); // Small delay to ensure panel is rendered first
             (_a = this.domElement.querySelector('#outfit-debug-close')) === null || _a === void 0 ? void 0 : _a.addEventListener('click', () => this.hide());
         }
@@ -597,4 +594,3 @@ class DebugPanel {
         }
     }
 }
-exports.DebugPanel = DebugPanel;

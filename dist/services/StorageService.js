@@ -1,6 +1,3 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.StorageService = void 0;
 class StorageService {
     constructor(saveFn, loadFn) {
         this.saveFn = saveFn;
@@ -21,4 +18,4 @@ class StorageService {
         return this.loadFn();
     }
 }
-exports.StorageService = StorageService;
+export { StorageService };

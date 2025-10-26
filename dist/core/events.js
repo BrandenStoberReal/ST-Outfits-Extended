@@ -1,8 +1,5 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.extensionEventBus = exports.EXTENSION_EVENTS = void 0;
 // Define extension-specific events
-exports.EXTENSION_EVENTS = {
+export const EXTENSION_EVENTS = {
     CONTEXT_UPDATED: 'outfit-tracker-context-updated',
     OUTFIT_CHANGED: 'outfit-tracker-outfit-changed',
     PRESET_LOADED: 'outfit-tracker-preset-loaded',
@@ -39,4 +36,4 @@ class ExtensionEventBus {
         }
     }
 }
-exports.extensionEventBus = new ExtensionEventBus();
+export const extensionEventBus = new ExtensionEventBus();

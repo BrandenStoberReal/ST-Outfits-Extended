@@ -1,4 +1,3 @@
-"use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -8,18 +7,16 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.UserOutfitPanel = void 0;
-const shared_1 = require("../common/shared");
-const utilities_1 = require("../utils/utilities");
-const SettingsUtil_1 = require("../utils/SettingsUtil");
-const Store_1 = require("../common/Store");
+import { dragElementWithSave, resizeElement } from '../common/shared';
+import { formatSlotName as utilsFormatSlotName } from '../utils/utilities';
+import { areSystemMessagesEnabled } from '../utils/SettingsUtil';
+import { outfitStore } from '../common/Store';
 /**
  * UserOutfitPanel - Manages the UI for the user character's outfit tracking
  * This class creates and manages a draggable panel for viewing and modifying
  * the user character's outfit, including clothing, accessories, and saved presets
  */
-class UserOutfitPanel {
+export class UserOutfitPanel {
     /**
      * Creates a new UserOutfitPanel instance
      * @param {object} outfitManager - The outfit manager for the user character
@@ -167,7 +164,7 @@ class UserOutfitPanel {
             `;
             slotElement.querySelector('.slot-change').addEventListener('click', () => __awaiter(this, void 0, void 0, function* () {
                 const message = yield this.outfitManager.changeOutfitItem(slot.name);
-                if (message && (0, SettingsUtil_1.areSystemMessagesEnabled)()) {
+                if (message && areSystemMessagesEnabled()) {
                     this.sendSystemMessage(message);
                 }
                 this.saveSettingsDebounced();
@@ -199,7 +196,7 @@ class UserOutfitPanel {
                 `;
                 defaultPresetElement.querySelector('.load-preset').addEventListener('click', () => __awaiter(this, void 0, void 0, function* () {
                     const message = yield this.outfitManager.loadDefaultOutfit();
-                    if ((0, SettingsUtil_1.areSystemMessagesEnabled)()) {
+                    if (areSystemMessagesEnabled()) {
                         this.sendSystemMessage(message);
                     }
                     this.saveSettingsDebounced();
@@ -224,7 +221,7 @@ class UserOutfitPanel {
                     `;
                     presetElement.querySelector('.load-preset').addEventListener('click', () => __awaiter(this, void 0, void 0, function* () {
                         const message = yield this.outfitManager.loadPreset(preset);
-                        if (message && (0, SettingsUtil_1.areSystemMessagesEnabled)()) {
+                        if (message && areSystemMessagesEnabled()) {
                             this.sendSystemMessage(message);
                         }
                         this.saveSettingsDebounced();
@@ -232,7 +229,7 @@ class UserOutfitPanel {
                     }));
                     presetElement.querySelector('.set-default-preset').addEventListener('click', () => __awaiter(this, void 0, void 0, function* () {
                         const message = yield this.outfitManager.setPresetAsDefault(preset);
-                        if (message && (0, SettingsUtil_1.areSystemMessagesEnabled)()) {
+                        if (message && areSystemMessagesEnabled()) {
                             this.sendSystemMessage(message);
                         }
                         this.saveSettingsDebounced();
@@ -244,7 +241,7 @@ class UserOutfitPanel {
                     clearDefaultButton.style.display = isDefault ? 'inline-block' : 'none';
                     clearDefaultButton.addEventListener('click', () => __awaiter(this, void 0, void 0, function* () {
                         const message = yield this.outfitManager.clearDefaultPreset();
-                        if ((0, SettingsUtil_1.areSystemMessagesEnabled)()) {
+                        if (areSystemMessagesEnabled()) {
                             this.sendSystemMessage(message);
                         }
                         this.saveSettingsDebounced();
@@ -254,7 +251,7 @@ class UserOutfitPanel {
                     presetElement.querySelector('.delete-preset').addEventListener('click', () => {
                         if (confirm(`Delete "${preset}" outfit?`)) {
                             const message = this.outfitManager.deletePreset(preset);
-                            if ((0, SettingsUtil_1.areSystemMessagesEnabled)()) {
+                            if (areSystemMessagesEnabled()) {
                                 this.sendSystemMessage(message);
                             }
                             this.saveSettingsDebounced();
@@ -265,7 +262,7 @@ class UserOutfitPanel {
                         // Confirmation dialog to confirm overwriting the preset
                         if (confirm(`Overwrite "${preset}" with current outfit?`)) {
                             const message = this.outfitManager.overwritePreset(preset);
-                            if (message && (0, SettingsUtil_1.areSystemMessagesEnabled)()) {
+                            if (message && areSystemMessagesEnabled()) {
                                 this.sendSystemMessage(message);
                             }
                             this.saveSettingsDebounced();
@@ -285,7 +282,7 @@ class UserOutfitPanel {
             const presetName = prompt('Name this outfit:');
             if (presetName && presetName.toLowerCase() !== 'default') {
                 const message = yield this.outfitManager.savePreset(presetName.trim());
-                if (message && (0, SettingsUtil_1.areSystemMessagesEnabled)()) {
+                if (message && areSystemMessagesEnabled()) {
                     this.sendSystemMessage(message);
                 }
                 this.saveSettingsDebounced();
@@ -304,7 +301,7 @@ class UserOutfitPanel {
         clearDefaultButton.style.display = this.outfitManager.hasDefaultOutfit() ? 'block' : 'none';
         clearDefaultButton.addEventListener('click', () => __awaiter(this, void 0, void 0, function* () {
             const message = yield this.outfitManager.clearDefaultPreset();
-            if (message && (0, SettingsUtil_1.areSystemMessagesEnabled)()) {
+            if (message && areSystemMessagesEnabled()) {
                 this.sendSystemMessage(message);
             }
             this.saveSettingsDebounced();
@@ -319,7 +316,7 @@ class UserOutfitPanel {
      */
     sendSystemMessage(message) {
         // Use toastr popup instead of /sys command
-        if ((0, SettingsUtil_1.areSystemMessagesEnabled)()) {
+        if (areSystemMessagesEnabled()) {
             toastr.info(message, 'Outfit System', {
                 timeOut: 4000,
                 extendedTimeOut: 8000
@@ -344,7 +341,7 @@ class UserOutfitPanel {
         container.appendChild(fillOutfitButton);
     }
     formatSlotName(name) {
-        return (0, utilities_1.formatSlotName)(name);
+        return utilsFormatSlotName(name);
     }
     toggle() {
         if (this.isVisible) {
@@ -368,10 +365,10 @@ class UserOutfitPanel {
         // Set up dynamic refresh when panel becomes visible
         this.setupDynamicRefresh();
         if (this.domElement) {
-            (0, shared_1.dragElementWithSave)($(this.domElement), 'user-outfit-panel');
+            dragElementWithSave($(this.domElement), 'user-outfit-panel');
             // Initialize resizing with appropriate min/max dimensions
             setTimeout(() => {
-                (0, shared_1.resizeElement)($(this.domElement), 'user-outfit-panel', {
+                resizeElement($(this.domElement), 'user-outfit-panel', {
                     minWidth: 250,
                     minHeight: 200,
                     maxWidth: 600,
@@ -393,7 +390,7 @@ class UserOutfitPanel {
     applyPanelColors() {
         var _a;
         if (this.domElement) {
-            const storeState = Store_1.outfitStore.getState();
+            const storeState = outfitStore.getState();
             const colors = (_a = storeState.panelSettings) === null || _a === void 0 ? void 0 : _a.userPanelColors;
             if (colors) {
                 this.domElement.style.background = colors.primary;
@@ -575,4 +572,3 @@ class UserOutfitPanel {
         return Math.abs(hash).toString(36).substring(0, 8).padEnd(8, '0');
     }
 }
-exports.UserOutfitPanel = UserOutfitPanel;

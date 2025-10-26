@@ -1,8 +1,5 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.getStoreState = exports.outfitStore = void 0;
-const constants_1 = require("../config/constants");
-const utilities_1 = require("../utils/utilities");
+import { DEFAULT_SETTINGS } from '../config/constants';
+import { deepClone } from '../utils/utilities';
 class OutfitStore {
     constructor() {
         this.state = {
@@ -15,10 +12,10 @@ class OutfitStore {
                 user: {},
             },
             panelSettings: {
-                botPanelColors: Object.assign({}, constants_1.DEFAULT_SETTINGS.botPanelColors),
-                userPanelColors: Object.assign({}, constants_1.DEFAULT_SETTINGS.userPanelColors),
+                botPanelColors: Object.assign({}, DEFAULT_SETTINGS.botPanelColors),
+                userPanelColors: Object.assign({}, DEFAULT_SETTINGS.userPanelColors),
             },
-            settings: Object.assign({}, constants_1.DEFAULT_SETTINGS),
+            settings: Object.assign({}, DEFAULT_SETTINGS),
             currentCharacterId: null,
             currentChatId: null,
             currentOutfitInstanceId: null,
@@ -59,7 +56,7 @@ class OutfitStore {
         this.notifyListeners();
     }
     getState() {
-        return (0, utilities_1.deepClone)(this.state);
+        return deepClone(this.state);
     }
     getBotOutfit(characterId, instanceId) {
         const characterData = this.state.botInstances[characterId];
@@ -70,7 +67,7 @@ class OutfitStore {
         if (!instanceData) {
             return {};
         }
-        return (0, utilities_1.deepClone)(instanceData.bot || {});
+        return deepClone(instanceData.bot || {});
     }
     setBotOutfit(characterId, instanceId, outfitData) {
         if (!this.state.botInstances[characterId]) {
@@ -91,7 +88,7 @@ class OutfitStore {
     }
     getUserOutfit(instanceId) {
         const instanceData = this.state.userInstances[instanceId];
-        return (0, utilities_1.deepClone)(instanceData || {});
+        return deepClone(instanceData || {});
     }
     setUserOutfit(instanceId, outfitData) {
         // Preserve any existing promptInjectionEnabled value
@@ -112,8 +109,8 @@ class OutfitStore {
         const botPresetKey = this._generateBotPresetKey(characterId, instanceId);
         const userPresetKey = instanceId || 'default';
         return {
-            bot: (0, utilities_1.deepClone)(this.state.presets.bot[botPresetKey] || {}),
-            user: (0, utilities_1.deepClone)(this.state.presets.user[userPresetKey] || {}),
+            bot: deepClone(this.state.presets.bot[botPresetKey] || {}),
+            user: deepClone(this.state.presets.user[userPresetKey] || {}),
         };
     }
     savePreset(characterId, instanceId, presetName, outfitData, type = 'bot') {
@@ -173,10 +170,10 @@ class OutfitStore {
     getAllPresets(characterId, instanceId, type = 'bot') {
         if (type === 'bot') {
             const key = this._generateBotPresetKey(characterId, instanceId);
-            return (0, utilities_1.deepClone)(this.state.presets.bot[key] || {});
+            return deepClone(this.state.presets.bot[key] || {});
         }
         const key = instanceId || 'default';
-        return (0, utilities_1.deepClone)(this.state.presets.user[key] || {});
+        return deepClone(this.state.presets.user[key] || {});
     }
     _generateBotPresetKey(characterId, instanceId) {
         if (!characterId) {
@@ -297,8 +294,7 @@ class OutfitStore {
     }
 }
 const outfitStore = new OutfitStore();
-exports.outfitStore = outfitStore;
-const getStoreState = () => {
+export { outfitStore };
+export const getStoreState = () => {
     return outfitStore.getState();
 };
-exports.getStoreState = getStoreState;

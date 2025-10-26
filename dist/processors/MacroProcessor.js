@@ -1,4 +1,3 @@
-"use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -8,14 +7,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.macroProcessor = void 0;
-const utilities_1 = require("../utils/utilities");
-const Store_1 = require("../common/Store");
-const constants_1 = require("../config/constants");
+import { generateInstanceIdFromText } from '../utils/utilities';
+import { outfitStore } from '../common/Store';
+import { ALL_SLOTS } from '../config/constants';
 class MacroProcessor {
     constructor() {
-        this.allSlots = constants_1.ALL_SLOTS;
+        this.allSlots = ALL_SLOTS;
         this.outfitValuesCache = new Map();
         this.textProcessingCache = new Map();
         this.cacheExpiryTime = 5 * 60 * 1000;
@@ -36,8 +33,8 @@ class MacroProcessor {
                 if (firstBotMessage) {
                     const processedMessage = this.cleanOutfitMacrosFromText(firstBotMessage.mes);
                     const outfitValues = this.getAllOutfitValuesForCharacter(ctx.characterId);
-                    const instanceId = yield (0, utilities_1.generateInstanceIdFromText)(processedMessage, outfitValues);
-                    Store_1.outfitStore.setCurrentInstanceId(instanceId);
+                    const instanceId = yield generateInstanceIdFromText(processedMessage, outfitValues);
+                    outfitStore.setCurrentInstanceId(instanceId);
                     if ((_b = window.botOutfitPanel) === null || _b === void 0 ? void 0 : _b.outfitManager) {
                         window.botOutfitPanel.outfitManager.setOutfitInstanceId(instanceId);
                     }
@@ -56,7 +53,7 @@ class MacroProcessor {
             return [];
         }
         const actualCharacterId = characterId.toString();
-        const state = Store_1.outfitStore.getState();
+        const state = outfitStore.getState();
         const outfitValues = new Set();
         if (state.botInstances && state.botInstances[actualCharacterId]) {
             Object.values(state.botInstances[actualCharacterId]).forEach(instanceData => {
@@ -171,7 +168,7 @@ class MacroProcessor {
             return resultText;
         }
         const characterId = context.characterId.toString();
-        const state = Store_1.outfitStore.getState();
+        const state = outfitStore.getState();
         const outfitValues = new Set();
         if (state.botInstances && state.botInstances[characterId]) {
             Object.values(state.botInstances[characterId]).forEach(instanceData => {
@@ -236,4 +233,4 @@ class MacroProcessor {
         return workingText;
     }
 }
-exports.macroProcessor = new MacroProcessor();
+export const macroProcessor = new MacroProcessor();

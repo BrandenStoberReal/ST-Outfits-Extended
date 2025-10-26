@@ -1,37 +1,3 @@
-"use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -41,13 +7,11 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.createSettingsUI = createSettingsUI;
-const Store_1 = require("../common/Store");
-function createSettingsUI(AutoOutfitSystem, autoOutfitSystem, context) {
+import { outfitStore } from '../common/Store';
+export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem, context) {
     var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m;
     const MODULE_NAME = 'outfit_tracker';
-    const storeState = Store_1.outfitStore.getState();
+    const storeState = outfitStore.getState();
     const settings = { outfit_tracker: storeState.settings };
     const saveSettingsFn = (context === null || context === void 0 ? void 0 : context.saveSettingsDebounced) || window.saveSettingsDebounced;
     const hasAutoSystem = AutoOutfitSystem.name !== 'DummyAutoOutfitSystem';
@@ -674,8 +638,8 @@ function createSettingsUI(AutoOutfitSystem, autoOutfitSystem, context) {
             };
             saveSettingsFn();
             // Update the outfit store to reflect the new color settings
-            Store_1.outfitStore.setSetting('botPanelColors', settings[MODULE_NAME].botPanelColors);
-            Store_1.outfitStore.setSetting('userPanelColors', settings[MODULE_NAME].userPanelColors);
+            outfitStore.setSetting('botPanelColors', settings[MODULE_NAME].botPanelColors);
+            outfitStore.setSetting('userPanelColors', settings[MODULE_NAME].userPanelColors);
         }
         // Apply the new colors to the panels
         if (window.botOutfitPanel && window.botOutfitPanel.applyPanelColors) {
@@ -696,10 +660,10 @@ function createSettingsUI(AutoOutfitSystem, autoOutfitSystem, context) {
             settings[MODULE_NAME].debugMode = $('#outfit-debug-mode').prop('checked');
             saveSettingsFn();
             // Update the outfit store to reflect the new settings
-            Store_1.outfitStore.setSetting('enableSysMessages', settings[MODULE_NAME].enableSysMessages);
-            Store_1.outfitStore.setSetting('autoOpenBot', settings[MODULE_NAME].autoOpenBot);
-            Store_1.outfitStore.setSetting('autoOpenUser', settings[MODULE_NAME].autoOpenUser);
-            Store_1.outfitStore.setSetting('debugMode', settings[MODULE_NAME].debugMode);
+            outfitStore.setSetting('enableSysMessages', settings[MODULE_NAME].enableSysMessages);
+            outfitStore.setSetting('autoOpenBot', settings[MODULE_NAME].autoOpenBot);
+            outfitStore.setSetting('autoOpenUser', settings[MODULE_NAME].autoOpenUser);
+            outfitStore.setSetting('debugMode', settings[MODULE_NAME].debugMode);
         }
     });
     // Update panel colors when settings change
@@ -741,8 +705,8 @@ function createSettingsUI(AutoOutfitSystem, autoOutfitSystem, context) {
             border: $('#user-panel-border-color').val(),
             shadow: $('#user-panel-shadow-color').val()
         };
-        Store_1.outfitStore.setSetting('botPanelColors', newBotColors);
-        Store_1.outfitStore.setSetting('userPanelColors', newUserColors);
+        outfitStore.setSetting('botPanelColors', newBotColors);
+        outfitStore.setSetting('userPanelColors', newUserColors);
     });
     // Color customization event listeners
     $('#apply-panel-colors').on('click', function () {
@@ -892,7 +856,7 @@ function createSettingsUI(AutoOutfitSystem, autoOutfitSystem, context) {
                 }
                 saveSettingsFn();
                 // Update the outfit store to reflect the new settings
-                Store_1.outfitStore.setSetting('autoOutfitSystem', settings[MODULE_NAME].autoOutfitSystem);
+                outfitStore.setSetting('autoOutfitSystem', settings[MODULE_NAME].autoOutfitSystem);
             }
         });
         $('#outfit-connection-profile').on('change', function () {
@@ -904,7 +868,7 @@ function createSettingsUI(AutoOutfitSystem, autoOutfitSystem, context) {
                 }
                 saveSettingsFn();
                 // Update the outfit store to reflect the new settings
-                Store_1.outfitStore.setSetting('autoOutfitConnectionProfile', settings[MODULE_NAME].autoOutfitConnectionProfile);
+                outfitStore.setSetting('autoOutfitConnectionProfile', settings[MODULE_NAME].autoOutfitConnectionProfile);
             }
         });
         $('#outfit-prompt-input').on('change', function () {
@@ -913,7 +877,7 @@ function createSettingsUI(AutoOutfitSystem, autoOutfitSystem, context) {
                 autoOutfitSystem.setPrompt($(this).val());
                 saveSettingsFn();
                 // Update the outfit store to reflect the new settings
-                Store_1.outfitStore.setSetting('autoOutfitPrompt', settings[MODULE_NAME].autoOutfitPrompt);
+                outfitStore.setSetting('autoOutfitPrompt', settings[MODULE_NAME].autoOutfitPrompt);
             }
         });
         $('#outfit-prompt-reset-btn').on('click', function () {
@@ -923,7 +887,7 @@ function createSettingsUI(AutoOutfitSystem, autoOutfitSystem, context) {
                 settings[MODULE_NAME].autoOutfitPrompt = autoOutfitSystem.systemPrompt;
                 saveSettingsFn();
                 // Update the outfit store to reflect the new settings
-                Store_1.outfitStore.setSetting('autoOutfitPrompt', settings[MODULE_NAME].autoOutfitPrompt);
+                outfitStore.setSetting('autoOutfitPrompt', settings[MODULE_NAME].autoOutfitPrompt);
             }
             if (currentSettings === null || currentSettings === void 0 ? void 0 : currentSettings.enableSysMessages) {
                 window.botOutfitPanel.sendSystemMessage(message);
@@ -961,7 +925,7 @@ function createSettingsUI(AutoOutfitSystem, autoOutfitSystem, context) {
     $('#outfit-debug-panel-btn').on('click', function () {
         return __awaiter(this, void 0, void 0, function* () {
             // Check if debug mode is enabled
-            const storeState = Store_1.outfitStore.getState();
+            const storeState = outfitStore.getState();
             if (!storeState.settings.debugMode) {
                 toastr.warning('Debug mode must be enabled to use the debug panel.', 'Debug Panel');
                 return;
@@ -969,7 +933,7 @@ function createSettingsUI(AutoOutfitSystem, autoOutfitSystem, context) {
             // Create and show the debug panel
             // Create a global reference to the debug panel if it doesn't exist
             if (!window.outfitDebugPanel) {
-                const { DebugPanel } = yield Promise.resolve().then(() => __importStar(require('../panels/DebugPanel')));
+                const { DebugPanel } = yield import('../panels/DebugPanel');
                 window.outfitDebugPanel = new DebugPanel();
             }
             window.outfitDebugPanel.toggle();

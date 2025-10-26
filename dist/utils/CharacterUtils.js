@@ -1,11 +1,5 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.CharacterInfoType = void 0;
-exports.getCharacterInfoById = getCharacterInfoById;
-exports.getCharacters = getCharacters;
-exports.getCharacterIdByObject = getCharacterIdByObject;
-const DebugLogger_1 = require("../logging/DebugLogger");
-exports.CharacterInfoType = {
+import { debugLog } from '../logging/DebugLogger';
+export const CharacterInfoType = {
     Name: 'CharName',
     Description: 'CharDesc',
     Personality: 'CharPersonality',
@@ -34,7 +28,7 @@ exports.CharacterInfoType = {
  * @param {string} infoType - A field from the CharacterInfoType enum representing the desired data
  * @returns {any|null} The character info or null if not found
  */
-function getCharacterInfoById(charId, infoType) {
+export function getCharacterInfoById(charId, infoType) {
     var _a;
     try {
         const context = ((_a = window.SillyTavern) === null || _a === void 0 ? void 0 : _a.getContext) ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
@@ -43,78 +37,78 @@ function getCharacterInfoById(charId, infoType) {
             if (character) {
                 let infoBuffer;
                 switch (infoType) {
-                    case exports.CharacterInfoType.Name:
+                    case CharacterInfoType.Name:
                         infoBuffer = character.name;
                         break;
-                    case exports.CharacterInfoType.Description:
+                    case CharacterInfoType.Description:
                         infoBuffer = character.description;
                         break;
-                    case exports.CharacterInfoType.Personality:
+                    case CharacterInfoType.Personality:
                         infoBuffer = character.personality;
                         break;
-                    case exports.CharacterInfoType.Scenario:
+                    case CharacterInfoType.Scenario:
                         infoBuffer = character.scenario;
                         break;
-                    case exports.CharacterInfoType.DefaultMessage:
+                    case CharacterInfoType.DefaultMessage:
                         infoBuffer = character.first_mes;
                         break;
-                    case exports.CharacterInfoType.ExampleMessage:
+                    case CharacterInfoType.ExampleMessage:
                         infoBuffer = character.mes_example;
                         break;
-                    case exports.CharacterInfoType.CreatorComment:
+                    case CharacterInfoType.CreatorComment:
                         infoBuffer = character.creatorcomment;
                         break;
-                    case exports.CharacterInfoType.Avatar:
+                    case CharacterInfoType.Avatar:
                         infoBuffer = character.avatar;
                         break;
-                    case exports.CharacterInfoType.Talkativeness:
+                    case CharacterInfoType.Talkativeness:
                         infoBuffer = character.talkativeness;
                         break;
-                    case exports.CharacterInfoType.Favorited:
+                    case CharacterInfoType.Favorited:
                         infoBuffer = character.fav;
                         break;
-                    case exports.CharacterInfoType.Tags:
+                    case CharacterInfoType.Tags:
                         infoBuffer = character.tags;
                         break;
-                    case exports.CharacterInfoType.Spec:
+                    case CharacterInfoType.Spec:
                         infoBuffer = character.spec;
                         break;
-                    case exports.CharacterInfoType.SpecVersion:
+                    case CharacterInfoType.SpecVersion:
                         infoBuffer = character.spec_version;
                         break;
-                    case exports.CharacterInfoType.Data:
+                    case CharacterInfoType.Data:
                         infoBuffer = character.data;
                         break;
-                    case exports.CharacterInfoType.CreationDate:
+                    case CharacterInfoType.CreationDate:
                         infoBuffer = character.create_date;
                         break;
-                    case exports.CharacterInfoType.JsonData:
+                    case CharacterInfoType.JsonData:
                         infoBuffer = character.json_data;
                         break;
-                    case exports.CharacterInfoType.DateAdded:
+                    case CharacterInfoType.DateAdded:
                         infoBuffer = character.date_added;
                         break;
-                    case exports.CharacterInfoType.ChatSize:
+                    case CharacterInfoType.ChatSize:
                         infoBuffer = character.chat_size;
                         break;
-                    case exports.CharacterInfoType.DateSinceLastChat:
+                    case CharacterInfoType.DateSinceLastChat:
                         infoBuffer = character.date_last_chat;
                         break;
-                    case exports.CharacterInfoType.DataSize:
+                    case CharacterInfoType.DataSize:
                         infoBuffer = character.data_size;
                         break;
-                    case exports.CharacterInfoType.CharacterNotes:
+                    case CharacterInfoType.CharacterNotes:
                         infoBuffer = character.data.extensions.depth_prompt.prompt;
                         break;
                     default:
                         infoBuffer = null;
                         break;
                 }
-                (0, DebugLogger_1.debugLog)(`Character info field "${infoType}" successfully fetched from ID ${charId}`, null, 'info');
+                debugLog(`Character info field "${infoType}" successfully fetched from ID ${charId}`, null, 'info');
                 return infoBuffer;
             }
         }
-        (0, DebugLogger_1.debugLog)(`Resolving character information (${infoType}) from ID failed. Returning null. Faulty ID: ${charId}`, null, 'error');
+        debugLog(`Resolving character information (${infoType}) from ID failed. Returning null. Faulty ID: ${charId}`, null, 'error');
         return null;
     }
     catch (error) {
@@ -126,14 +120,14 @@ function getCharacterInfoById(charId, infoType) {
  * Gets a list of all loaded characters.
  * @returns {any[]|null} The list of character objects or null if not found
  */
-function getCharacters() {
+export function getCharacters() {
     var _a;
     const context = ((_a = window.SillyTavern) === null || _a === void 0 ? void 0 : _a.getContext) ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
     if (context && context.characters) {
-        (0, DebugLogger_1.debugLog)('Character array fetched successfully.', null, 'info');
+        debugLog('Character array fetched successfully.', null, 'info');
         return context.characters;
     }
-    (0, DebugLogger_1.debugLog)('Resolving character array failed.', null, 'error');
+    debugLog('Resolving character array failed.', null, 'error');
     return null;
 }
 /**
@@ -141,12 +135,12 @@ function getCharacters() {
  * @param {object} char_object The character object from the master array
  * @returns {number|null} The character ID or null if not found
  */
-function getCharacterIdByObject(char_object) {
+export function getCharacterIdByObject(char_object) {
     const characters = getCharacters();
     if (char_object && characters) {
-        (0, DebugLogger_1.debugLog)('Character ID via object fetched successfully.', null, 'info');
+        debugLog('Character ID via object fetched successfully.', null, 'info');
         return characters.indexOf(char_object);
     }
-    (0, DebugLogger_1.debugLog)('Resolving character id via object failed.', null, 'error');
+    debugLog('Resolving character id via object failed.', null, 'error');
     return null;
 }

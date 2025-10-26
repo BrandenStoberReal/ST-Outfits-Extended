@@ -1,4 +1,3 @@
-"use strict";
 /**
  * Utility functions for Outfit Tracker Extension
  */
@@ -11,17 +10,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.generateShortId = generateShortId;
-exports.generateMessageHash = generateMessageHash;
-exports.sleep = sleep;
-exports.isValidSlot = isValidSlot;
-exports.safeGet = safeGet;
-exports.deepClone = deepClone;
-exports.deepMerge = deepMerge;
-exports.formatSlotName = formatSlotName;
-exports.generateInstanceIdFromText = generateInstanceIdFromText;
-function generateShortId(id, maxLength = 8) {
+export function generateShortId(id, maxLength = 8) {
     if (!id) {
         return '';
     }
@@ -45,7 +34,7 @@ function generateShortId(id, maxLength = 8) {
  * @param {string} text - The text to hash
  * @returns {string} - 8-character hash string
  */
-function generateMessageHash(text) {
+export function generateMessageHash(text) {
     if (!text) {
         return '';
     }
@@ -63,7 +52,7 @@ function generateMessageHash(text) {
  * @param {number} ms - Milliseconds to sleep
  * @returns {Promise} - Promise that resolves after ms milliseconds
  */
-function sleep(ms) {
+export function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 /**
@@ -72,7 +61,7 @@ function sleep(ms) {
  * @param {Array} allSlots - Array of all valid slot names
  * @returns {boolean} - True if the slot name is valid
  */
-function isValidSlot(slotName, allSlots) {
+export function isValidSlot(slotName, allSlots) {
     return allSlots && Array.isArray(allSlots) && allSlots.includes(slotName);
 }
 /**
@@ -82,7 +71,7 @@ function isValidSlot(slotName, allSlots) {
  * @param {*} defaultValue - Value to return if path doesn't exist
  * @returns {*} - The value at the path or the default value
  */
-function safeGet(obj, path, defaultValue = null) {
+export function safeGet(obj, path, defaultValue = null) {
     try {
         return path.split('.').reduce((acc, key) => acc && acc[key], obj) || defaultValue;
     }
@@ -96,7 +85,7 @@ function safeGet(obj, path, defaultValue = null) {
  * @param {any} obj - The object to clone
  * @returns {any} A deep clone of the input object
  */
-function deepClone(obj) {
+export function deepClone(obj) {
     if (obj === null || typeof obj !== 'object') {
         return obj;
     }
@@ -124,7 +113,7 @@ function deepClone(obj) {
  * @param {object} source - The source object to merge from
  * @returns {object} A new object that is the deep merge of target and source
  */
-function deepMerge(target, source) {
+export function deepMerge(target, source) {
     const output = Object.assign({}, target);
     if (target && typeof target === 'object' && source && typeof source === 'object') {
         Object.keys(source).forEach((key) => {
@@ -146,7 +135,7 @@ function deepMerge(target, source) {
  * @param {string} slotName - The raw slot name to format
  * @returns {string} The formatted slot name
  */
-function formatSlotName(slotName) {
+export function formatSlotName(slotName) {
     const slotNameMap = {
         'topunderwear': 'Top Underwear / Inner Top',
         'bottomunderwear': 'Bottom Underwear / Inner Bottom',
@@ -220,7 +209,7 @@ function normalizeTextForInstanceId(text) {
  * @param {Array<string>} [valuesToRemove] - Optional array of values to remove from the text before hashing.
  * @returns {Promise<string>} A promise that resolves to the instance ID.
  */
-function generateInstanceIdFromText(text_1) {
+export function generateInstanceIdFromText(text_1) {
     return __awaiter(this, arguments, void 0, function* (text, valuesToRemove = null) {
         let processedText = text;
         // If specific values to remove are provided, remove them from the text

@@ -1,4 +1,3 @@
-"use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -8,11 +7,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.NewUserOutfitManager = void 0;
-const OutfitManager_1 = require("./OutfitManager");
-const Store_1 = require("../common/Store");
-class NewUserOutfitManager extends OutfitManager_1.OutfitManager {
+import { OutfitManager } from './OutfitManager';
+import { outfitStore } from '../common/Store';
+export class NewUserOutfitManager extends OutfitManager {
     constructor(slots) {
         super(slots);
         this.character = 'User';
@@ -31,7 +28,7 @@ class NewUserOutfitManager extends OutfitManager_1.OutfitManager {
             });
             return;
         }
-        const userOutfit = Store_1.outfitStore.getUserOutfit(this.outfitInstanceId);
+        const userOutfit = outfitStore.getUserOutfit(this.outfitInstanceId);
         this.slots.forEach(slot => {
             const value = userOutfit[slot] !== undefined ? userOutfit[slot] : 'None';
             this.currentValues[slot] = value;
@@ -46,8 +43,8 @@ class NewUserOutfitManager extends OutfitManager_1.OutfitManager {
         this.slots.forEach(slot => {
             userOutfit[slot] = this.currentValues[slot] || 'None';
         });
-        Store_1.outfitStore.setUserOutfit(this.outfitInstanceId, userOutfit);
-        Store_1.outfitStore.saveState();
+        outfitStore.setUserOutfit(this.outfitInstanceId, userOutfit);
+        outfitStore.saveState();
     }
     setOutfitItem(slot, value) {
         const _super = Object.create(null, {
@@ -71,8 +68,8 @@ class NewUserOutfitManager extends OutfitManager_1.OutfitManager {
         this.slots.forEach(slot => {
             presetData[slot] = this.currentValues[slot];
         });
-        Store_1.outfitStore.savePreset('user', actualInstanceId, presetName, presetData, 'user');
-        if (Store_1.outfitStore.getSetting('enableSysMessages')) {
+        outfitStore.savePreset('user', actualInstanceId, presetName, presetData, 'user');
+        if (outfitStore.getSetting('enableSysMessages')) {
             return `Saved "${presetName}" outfit for user character (instance: ${actualInstanceId}).`;
         }
         return '';
@@ -83,7 +80,7 @@ class NewUserOutfitManager extends OutfitManager_1.OutfitManager {
                 return `[Outfit System] Invalid preset name: ${presetName}`;
             }
             const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
-            const { user: presets } = Store_1.outfitStore.getPresets('user', actualInstanceId);
+            const { user: presets } = outfitStore.getPresets('user', actualInstanceId);
             if (!presets || !presets[presetName]) {
                 return `[Outfit System] Preset "${presetName}" not found for user instance ${actualInstanceId}.`;
             }
@@ -106,19 +103,19 @@ class NewUserOutfitManager extends OutfitManager_1.OutfitManager {
             return `[Outfit System] Invalid preset name: ${presetName}`;
         }
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
-        const { user: presets } = Store_1.outfitStore.getPresets('user', actualInstanceId);
+        const { user: presets } = outfitStore.getPresets('user', actualInstanceId);
         if (!presets || !presets[presetName]) {
             return `[Outfit System] Preset "${presetName}" not found for user instance ${actualInstanceId}.`;
         }
-        Store_1.outfitStore.deletePreset('user', actualInstanceId, presetName, 'user');
-        if (Store_1.outfitStore.getSetting('enableSysMessages')) {
+        outfitStore.deletePreset('user', actualInstanceId, presetName, 'user');
+        if (outfitStore.getSetting('enableSysMessages')) {
             return `Deleted your "${presetName}" outfit for instance ${actualInstanceId}.`;
         }
         return '';
     }
     getPresets(instanceId = null) {
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
-        const { user: presets } = Store_1.outfitStore.getPresets('user', actualInstanceId);
+        const { user: presets } = outfitStore.getPresets('user', actualInstanceId);
         if (!presets) {
             return [];
         }
@@ -127,7 +124,7 @@ class NewUserOutfitManager extends OutfitManager_1.OutfitManager {
     loadDefaultOutfit() {
         return __awaiter(this, arguments, void 0, function* (instanceId = null) {
             const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
-            const { user: presets } = Store_1.outfitStore.getPresets('user', actualInstanceId);
+            const { user: presets } = outfitStore.getPresets('user', actualInstanceId);
             if (!presets || !presets['default']) {
                 return `[Outfit System] No default outfit set for user (instance: ${actualInstanceId}).`;
             }
@@ -157,7 +154,7 @@ class NewUserOutfitManager extends OutfitManager_1.OutfitManager {
             return '[Outfit System] Invalid preset name provided.';
         }
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
-        const { user: presets } = Store_1.outfitStore.getPresets('user', actualInstanceId);
+        const { user: presets } = outfitStore.getPresets('user', actualInstanceId);
         if (!presets || !presets[presetName]) {
             return `[Outfit System] Preset "${presetName}" does not exist for user (instance: ${actualInstanceId}). Cannot overwrite.`;
         }
@@ -165,15 +162,15 @@ class NewUserOutfitManager extends OutfitManager_1.OutfitManager {
         this.slots.forEach(slot => {
             presetData[slot] = this.currentValues[slot];
         });
-        Store_1.outfitStore.savePreset('user', actualInstanceId, presetName, presetData, 'user');
-        if (Store_1.outfitStore.getSetting('enableSysMessages')) {
+        outfitStore.savePreset('user', actualInstanceId, presetName, presetData, 'user');
+        if (outfitStore.getSetting('enableSysMessages')) {
             return `Overwrote your "${presetName}" outfit (instance: ${actualInstanceId}).`;
         }
         return '';
     }
     getAllPresets(instanceId = null) {
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
-        return Store_1.outfitStore.getAllPresets('user', actualInstanceId, 'user');
+        return outfitStore.getAllPresets('user', actualInstanceId, 'user');
     }
     setPromptInjectionEnabled(enabled, instanceId = null) {
         const actualInstanceId = instanceId || this.outfitInstanceId;
@@ -181,13 +178,13 @@ class NewUserOutfitManager extends OutfitManager_1.OutfitManager {
             console.warn('[NewUserOutfitManager] Cannot set prompt injection - missing instanceId');
             return;
         }
-        if (!Store_1.outfitStore.state.userInstances[actualInstanceId]) {
-            Store_1.outfitStore.state.userInstances[actualInstanceId] = {};
+        if (!outfitStore.state.userInstances[actualInstanceId]) {
+            outfitStore.state.userInstances[actualInstanceId] = {};
         }
-        const updatedInstanceData = Object.assign(Object.assign({}, Store_1.outfitStore.state.userInstances[actualInstanceId]), { promptInjectionEnabled: Boolean(enabled) });
-        Store_1.outfitStore.state.userInstances[actualInstanceId] = updatedInstanceData;
-        Store_1.outfitStore.notifyListeners();
-        Store_1.outfitStore.saveState();
+        const updatedInstanceData = Object.assign(Object.assign({}, outfitStore.state.userInstances[actualInstanceId]), { promptInjectionEnabled: Boolean(enabled) });
+        outfitStore.state.userInstances[actualInstanceId] = updatedInstanceData;
+        outfitStore.notifyListeners();
+        outfitStore.saveState();
     }
     getPromptInjectionEnabled(instanceId = null) {
         const actualInstanceId = instanceId || this.outfitInstanceId;
@@ -195,18 +192,18 @@ class NewUserOutfitManager extends OutfitManager_1.OutfitManager {
             console.warn('[NewUserOutfitManager] Cannot get prompt injection - missing instanceId');
             return true;
         }
-        const instanceData = Store_1.outfitStore.state.userInstances[actualInstanceId];
+        const instanceData = outfitStore.state.userInstances[actualInstanceId];
         return (instanceData === null || instanceData === void 0 ? void 0 : instanceData.promptInjectionEnabled) !== undefined ?
             instanceData.promptInjectionEnabled : true;
     }
     hasDefaultOutfit(instanceId = null) {
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
-        const { user: presets } = Store_1.outfitStore.getPresets('user', actualInstanceId);
+        const { user: presets } = outfitStore.getPresets('user', actualInstanceId);
         return Boolean(presets && presets['default']);
     }
     getDefaultPresetName(instanceId = null) {
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
-        const { user: presets } = Store_1.outfitStore.getPresets('user', actualInstanceId);
+        const { user: presets } = outfitStore.getPresets('user', actualInstanceId);
         if (presets && presets['default']) {
             return 'default';
         }
@@ -215,13 +212,13 @@ class NewUserOutfitManager extends OutfitManager_1.OutfitManager {
     setPresetAsDefault(presetName_1) {
         return __awaiter(this, arguments, void 0, function* (presetName, instanceId = null) {
             const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
-            const { user: presets } = Store_1.outfitStore.getPresets('user', actualInstanceId);
+            const { user: presets } = outfitStore.getPresets('user', actualInstanceId);
             if (!presets || !presets[presetName]) {
                 return `[Outfit System] Preset "${presetName}" does not exist for user instance ${actualInstanceId}. Cannot set as default.`;
             }
             const presetToSetAsDefault = presets[presetName];
-            Store_1.outfitStore.savePreset('user', actualInstanceId, 'default', presetToSetAsDefault, 'user');
-            if (Store_1.outfitStore.getSetting('enableSysMessages')) {
+            outfitStore.savePreset('user', actualInstanceId, 'default', presetToSetAsDefault, 'user');
+            if (outfitStore.getSetting('enableSysMessages')) {
                 return `Set "${presetName}" as your default outfit (instance: ${actualInstanceId}).`;
             }
             return '';
@@ -230,12 +227,12 @@ class NewUserOutfitManager extends OutfitManager_1.OutfitManager {
     clearDefaultPreset() {
         return __awaiter(this, arguments, void 0, function* (instanceId = null) {
             const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
-            const { user: presets } = Store_1.outfitStore.getPresets('user', actualInstanceId);
+            const { user: presets } = outfitStore.getPresets('user', actualInstanceId);
             if (!presets || !presets['default']) {
                 return `[Outfit System] No default outfit set for user (instance: ${actualInstanceId}).`;
             }
-            Store_1.outfitStore.deletePreset('user', actualInstanceId, 'default', 'user');
-            if (Store_1.outfitStore.getSetting('enableSysMessages')) {
+            outfitStore.deletePreset('user', actualInstanceId, 'default', 'user');
+            if (outfitStore.getSetting('enableSysMessages')) {
                 return `Default outfit cleared for user (instance: ${actualInstanceId}).`;
             }
             return '';
@@ -250,15 +247,15 @@ class NewUserOutfitManager extends OutfitManager_1.OutfitManager {
             });
             return defaultOutfit;
         }
-        return Store_1.outfitStore.getUserOutfit(instanceId);
+        return outfitStore.getUserOutfit(instanceId);
     }
     saveOutfitToInstanceId(outfitData, instanceId) {
         if (!instanceId) {
             console.warn('[NewUserOutfitManager] Cannot save outfit - missing instanceId');
             return;
         }
-        Store_1.outfitStore.setUserOutfit(instanceId, outfitData);
-        Store_1.outfitStore.saveState();
+        outfitStore.setUserOutfit(instanceId, outfitData);
+        outfitStore.saveState();
     }
     applyDefaultOutfitAfterReset() {
         return __awaiter(this, arguments, void 0, function* (instanceId = null) {
@@ -275,4 +272,3 @@ class NewUserOutfitManager extends OutfitManager_1.OutfitManager {
         });
     }
 }
-exports.NewUserOutfitManager = NewUserOutfitManager;

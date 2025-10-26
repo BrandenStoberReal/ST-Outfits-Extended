@@ -1,17 +1,13 @@
-"use strict";
 /**
  * Utility functions for safely accessing extension settings
  */
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.getSettingValue = getSettingValue;
-exports.areSystemMessagesEnabled = areSystemMessagesEnabled;
 /**
  * Safely get a setting value from various possible sources
  * @param {string} key - The setting key to retrieve
  * @param {*} defaultValue - The default value to return if the setting is not found
  * @returns {*} The value of the setting or the default value
  */
-function getSettingValue(key, defaultValue = undefined) {
+export function getSettingValue(key, defaultValue = undefined) {
     var _a, _b, _c, _d, _e;
     try {
         // First try to get settings from the store
@@ -42,6 +38,6 @@ function getSettingValue(key, defaultValue = undefined) {
  * Check if system messages are enabled
  * @returns {boolean} True if system messages are enabled, false otherwise
  */
-function areSystemMessagesEnabled() {
+export function areSystemMessagesEnabled() {
     return getSettingValue('enableSysMessages', false);
 }

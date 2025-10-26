@@ -1,15 +1,12 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.invalidateSpecificMacroCaches = exports.updateMacroCacheOnOutfitChange = exports.customMacroSystem = void 0;
-const Store_1 = require("../common/Store");
-const constants_1 = require("../config/constants");
-const MacroProcessor_1 = require("../processors/MacroProcessor");
-const CharacterUtils_1 = require("../utils/CharacterUtils");
+import { outfitStore } from '../common/Store';
+import { ACCESSORY_SLOTS, CLOTHING_SLOTS } from '../config/constants';
+import { macroProcessor } from '../processors/MacroProcessor';
+import { getCharacters } from '../utils/CharacterUtils';
 class CustomMacroService {
     constructor() {
-        this.clothingSlots = constants_1.CLOTHING_SLOTS;
-        this.accessorySlots = constants_1.ACCESSORY_SLOTS;
-        this.allSlots = [...constants_1.CLOTHING_SLOTS, ...constants_1.ACCESSORY_SLOTS];
+        this.clothingSlots = CLOTHING_SLOTS;
+        this.accessorySlots = ACCESSORY_SLOTS;
+        this.allSlots = [...CLOTHING_SLOTS, ...ACCESSORY_SLOTS];
         this.macroValueCache = new Map();
         this.cacheExpiryTime = 5 * 60 * 1000;
     }
@@ -40,7 +37,7 @@ class CustomMacroService {
     registerCharacterSpecificMacros(context) {
         var _a;
         const ctx = context || (((_a = window.SillyTavern) === null || _a === void 0 ? void 0 : _a.getContext) ? window.SillyTavern.getContext() : window.getContext());
-        const characters = (0, CharacterUtils_1.getCharacters)();
+        const characters = getCharacters();
         if (ctx && ctx.registerMacro && characters) {
             for (const character of characters) {
                 if (character && character.name) {
@@ -57,7 +54,7 @@ class CustomMacroService {
     deregisterCharacterSpecificMacros(context) {
         var _a;
         const ctx = context || (((_a = window.SillyTavern) === null || _a === void 0 ? void 0 : _a.getContext) ? window.SillyTavern.getContext() : window.getContext());
-        const characters = (0, CharacterUtils_1.getCharacters)();
+        const characters = getCharacters();
         if (ctx && ctx.unregisterMacro && characters) {
             for (const character of characters) {
                 if (character && character.name) {
@@ -102,7 +99,7 @@ class CustomMacroService {
         }
         try {
             const context = ((_a = window.SillyTavern) === null || _a === void 0 ? void 0 : _a.getContext) ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
-            const characters = (0, CharacterUtils_1.getCharacters)();
+            const characters = getCharacters();
             let charId = null;
             if (charNameParam) {
                 if (context && characters) {
@@ -134,12 +131,12 @@ class CustomMacroService {
                     charId = context.characterId;
                 }
             }
-            const state = Store_1.outfitStore.getState();
+            const state = outfitStore.getState();
             let instanceId = state.currentOutfitInstanceId;
             if (!instanceId) {
                 const firstBotMessage = (_b = context === null || context === void 0 ? void 0 : context.chat) === null || _b === void 0 ? void 0 : _b.find((message) => !message.is_user && !message.is_system);
                 if (firstBotMessage) {
-                    const processedMessage = MacroProcessor_1.macroProcessor.cleanOutfitMacrosFromText(firstBotMessage.mes);
+                    const processedMessage = macroProcessor.cleanOutfitMacrosFromText(firstBotMessage.mes);
                     let hash = 0;
                     for (let i = 0; i < processedMessage.length; i++) {
                         const char = processedMessage.charCodeAt(i);
@@ -148,14 +145,14 @@ class CustomMacroService {
                     }
                     instanceId = Math.abs(hash).toString(36);
                     if (charId !== null && (macroType === 'char' || macroType === 'bot' || charNameParam || (this.isValidCharacterName(macroType) && !['user'].includes(macroType)))) {
-                        const charOutfitData = Store_1.outfitStore.getBotOutfit(charId.toString(), instanceId);
+                        const charOutfitData = outfitStore.getBotOutfit(charId.toString(), instanceId);
                         if (charOutfitData && charOutfitData[slotName]) {
                             this._setCache(cacheKey, charOutfitData[slotName]);
                             return charOutfitData[slotName];
                         }
                     }
                     else if (macroType === 'user') {
-                        const userOutfitData = Store_1.outfitStore.getUserOutfit(instanceId);
+                        const userOutfitData = outfitStore.getUserOutfit(instanceId);
                         if (userOutfitData && userOutfitData[slotName]) {
                             this._setCache(cacheKey, userOutfitData[slotName]);
                             return userOutfitData[slotName];
@@ -172,7 +169,7 @@ class CustomMacroService {
                 if (!botOutfitManager.getPromptInjectionEnabled()) {
                     return 'None';
                 }
-                const outfitData = Store_1.outfitStore.getBotOutfit(charId.toString(), instanceId);
+                const outfitData = outfitStore.getBotOutfit(charId.toString(), instanceId);
                 const result = outfitData[slotName] || 'None';
                 this._setCache(cacheKey, result);
                 return result;
@@ -182,8 +179,8 @@ class CustomMacroService {
                 if (!userOutfitManager.getPromptInjectionEnabled()) {
                     return 'None';
                 }
-                const currentInstanceId = typeof Store_1.outfitStore.getCurrentInstanceId === 'function' ? Store_1.outfitStore.getCurrentInstanceId() : null;
-                const userOutfitData = Store_1.outfitStore.getUserOutfit(currentInstanceId || 'default');
+                const currentInstanceId = typeof outfitStore.getCurrentInstanceId === 'function' ? outfitStore.getCurrentInstanceId() : null;
+                const userOutfitData = outfitStore.getUserOutfit(currentInstanceId || 'default');
                 const result = userOutfitData[slotName] || 'None';
                 this._setCache(cacheKey, result);
                 return result;
@@ -342,7 +339,7 @@ class CustomMacroService {
         var _a;
         const context = ((_a = window.SillyTavern) === null || _a === void 0 ? void 0 : _a.getContext) ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
         const currentCharacterId = (context === null || context === void 0 ? void 0 : context.characterId) || 'unknown';
-        const currentInstanceId = Store_1.outfitStore.getCurrentInstanceId() || 'unknown';
+        const currentInstanceId = outfitStore.getCurrentInstanceId() || 'unknown';
         return `${macroType}_${slotName}_${characterName || 'null'}_${currentCharacterId}_${currentInstanceId}`;
     }
     _setCache(cacheKey, value) {
@@ -391,16 +388,14 @@ class CustomMacroService {
         return result;
     }
 }
-exports.customMacroSystem = new CustomMacroService();
-const updateMacroCacheOnOutfitChange = (outfitType, characterId, instanceId, slotName) => {
-    exports.customMacroSystem.clearCache();
+export const customMacroSystem = new CustomMacroService();
+export const updateMacroCacheOnOutfitChange = (outfitType, characterId, instanceId, slotName) => {
+    customMacroSystem.clearCache();
 };
-exports.updateMacroCacheOnOutfitChange = updateMacroCacheOnOutfitChange;
-const invalidateSpecificMacroCaches = (outfitType, characterId, instanceId, slotName) => {
-    for (const [key, entry] of exports.customMacroSystem.macroValueCache.entries()) {
+export const invalidateSpecificMacroCaches = (outfitType, characterId, instanceId, slotName) => {
+    for (const [key, entry] of customMacroSystem.macroValueCache.entries()) {
         if (key.includes(characterId) && key.includes(instanceId) && key.includes(slotName)) {
-            exports.customMacroSystem.macroValueCache.delete(key);
+            customMacroSystem.macroValueCache.delete(key);
         }
     }
 };
-exports.invalidateSpecificMacroCaches = invalidateSpecificMacroCaches;

@@ -1,4 +1,3 @@
-"use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -8,9 +7,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.LLMUtility = void 0;
-const Store_1 = require("../common/Store");
+import { outfitStore } from '../common/Store';
 class ConnectionProfileHelper {
     static withConnectionProfile(profileId_1, generationFunc_1) {
         return __awaiter(this, arguments, void 0, function* (profileId, generationFunc, context = null) {
@@ -80,7 +77,7 @@ class ConnectionProfileHelper {
             return window.extension_settings.connectionManager.selectedProfile;
         }
         try {
-            const storeState = Store_1.outfitStore.getState();
+            const storeState = outfitStore.getState();
             return ((_c = storeState.settings) === null || _c === void 0 ? void 0 : _c.autoOutfitConnectionProfile) || null;
         }
         catch (error) {
@@ -100,7 +97,7 @@ class ConnectionProfileHelper {
             return window.extension_settings.connectionManager.profiles.find((p) => p.id === profileId);
         }
         try {
-            const storeState = Store_1.outfitStore.getState();
+            const storeState = outfitStore.getState();
             return null;
         }
         catch (error) {
@@ -117,7 +114,7 @@ class ConnectionProfileHelper {
             return window.extension_settings.connectionManager.profiles;
         }
         try {
-            const storeState = Store_1.outfitStore.getState();
+            const storeState = outfitStore.getState();
             return [];
         }
         catch (error) {
@@ -126,7 +123,7 @@ class ConnectionProfileHelper {
         return [];
     }
 }
-class LLMUtility {
+export class LLMUtility {
     static generateWithRetry(prompt_1) {
         return __awaiter(this, arguments, void 0, function* (prompt, systemPrompt = 'You are an AI assistant.', context = null, maxRetries = 3) {
             var _a;
@@ -196,4 +193,3 @@ class LLMUtility {
         });
     }
 }
-exports.LLMUtility = LLMUtility;

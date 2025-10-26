@@ -1,11 +1,4 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.debugLogger = void 0;
-exports.debugLog = debugLog;
-exports.forceDebugLog = forceDebugLog;
-exports.getLogs = getLogs;
-exports.clearLogs = clearLogs;
-const Store_1 = require("../common/Store");
+import { outfitStore } from '../common/Store';
 const logs = [];
 const MAX_LOGS = 1000;
 function addLogToStorage(message, data, level = 'log') {
@@ -21,9 +14,9 @@ function addLogToStorage(message, data, level = 'log') {
         logs.shift();
     }
 }
-function debugLog(message, data, level = 'log') {
+export function debugLog(message, data, level = 'log') {
     var _a;
-    const storeState = Store_1.outfitStore.getState();
+    const storeState = outfitStore.getState();
     const debugMode = (_a = storeState === null || storeState === void 0 ? void 0 : storeState.settings) === null || _a === void 0 ? void 0 : _a.debugMode;
     if (debugMode) {
         const timestamp = new Date().toISOString();
@@ -49,19 +42,19 @@ function debugLog(message, data, level = 'log') {
         addLogToStorage(message, data, level);
     }
 }
-function forceDebugLog(message, data) {
+export function forceDebugLog(message, data) {
     const timestamp = new Date().toISOString();
     const formattedMessage = `[OutfitTracker Debug - ${timestamp}] ${message}`;
     console.log(formattedMessage, data !== undefined ? data : '');
     addLogToStorage(message, data, 'log');
 }
-function getLogs() {
+export function getLogs() {
     return [...logs];
 }
-function clearLogs() {
+export function clearLogs() {
     logs.length = 0;
 }
-exports.debugLogger = {
+export const debugLogger = {
     log: debugLog,
     forceLog: forceDebugLog,
     getLogs: getLogs,

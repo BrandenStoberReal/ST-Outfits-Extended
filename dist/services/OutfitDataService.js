@@ -1,4 +1,3 @@
-"use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -8,9 +7,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.OutfitDataService = void 0;
-const constants_1 = require("../config/constants");
+import { ALL_SLOTS } from '../config/constants';
 class OutfitDataService {
     constructor(dataManager) {
         this.dataManager = dataManager;
@@ -21,7 +18,7 @@ class OutfitDataService {
             const extensionSettings = this.dataManager.load();
             if ((_a = extensionSettings === null || extensionSettings === void 0 ? void 0 : extensionSettings.variables) === null || _a === void 0 ? void 0 : _a.global) {
                 const globalVars = extensionSettings.variables.global;
-                const outfitVars = Object.keys(globalVars).filter(key => constants_1.ALL_SLOTS.some(slot => key.endsWith(`_${slot}`)));
+                const outfitVars = Object.keys(globalVars).filter(key => ALL_SLOTS.some(slot => key.endsWith(`_${slot}`)));
                 outfitVars.forEach(key => {
                     delete globalVars[key];
                 });
@@ -58,4 +55,4 @@ class OutfitDataService {
         });
     }
 }
-exports.OutfitDataService = OutfitDataService;
+export { OutfitDataService };

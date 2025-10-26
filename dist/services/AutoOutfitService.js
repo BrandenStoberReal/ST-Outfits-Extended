@@ -1,4 +1,3 @@
-"use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -8,14 +7,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.AutoOutfitService = void 0;
-const StringProcessor_1 = require("../processors/StringProcessor");
-const LLMService_1 = require("./LLMService");
-const CustomMacroService_1 = require("./CustomMacroService");
-const Store_1 = require("../common/Store");
-const CharacterUtils_1 = require("../utils/CharacterUtils");
-class AutoOutfitService {
+import { extractCommands } from '../processors/StringProcessor';
+import { generateOutfitFromLLM } from './LLMService';
+import { customMacroSystem } from './CustomMacroService';
+import { outfitStore } from '../common/Store';
+import { CharacterInfoType, getCharacterInfoById } from '../utils/CharacterUtils';
+export class AutoOutfitService {
     constructor(outfitManager) {
         this.outfitManager = outfitManager;
         this.isEnabled = false;
@@ -223,7 +220,7 @@ outfit-system_replace_topwear(\"T-shirt\")\
             const promptText = `${processedSystemPrompt}\n\nRecent Messages:\n${recentMessages}\n\nOutput:`;
             console.log('[AutoOutfitSystem] Generating outfit commands with LLMService...');
             try {
-                const result = yield (0, LLMService_1.generateOutfitFromLLM)({ prompt: promptText });
+                const result = yield generateOutfitFromLLM({ prompt: promptText });
                 this.llmOutput = result; // Store the LLM output
                 console.log('[AutoOutfitSystem] Generated result:', result);
                 const commands = this.parseGeneratedText(result);
@@ -252,13 +249,13 @@ outfit-system_replace_topwear(\"T-shirt\")\
         };
     }
     replaceMacrosInPrompt(prompt) {
-        return CustomMacroService_1.customMacroSystem.replaceMacrosInText(prompt);
+        return customMacroSystem.replaceMacrosInText(prompt);
     }
     parseGeneratedText(text) {
         if (!text || text.trim() === '[none]') {
             return [];
         }
-        const commands = (0, StringProcessor_1.extractCommands)(text);
+        const commands = extractCommands(text);
         console.log(`[AutoOutfitSystem] Found ${commands.length} commands:`, commands);
         return commands;
     }
@@ -294,7 +291,7 @@ outfit-system_replace_topwear(\"T-shirt\")\
                 }
             }
             if (successfulCommands.length > 0) {
-                const storeState = Store_1.outfitStore.getState();
+                const storeState = outfitStore.getState();
                 const enableSysMessages = (_b = (_a = storeState.settings) === null || _a === void 0 ? void 0 : _a.enableSysMessages) !== null && _b !== void 0 ? _b : true;
                 if (enableSysMessages) {
                     const activeCharName = this.getActiveCharacterName();
@@ -340,7 +337,7 @@ outfit-system_replace_topwear(\"T-shirt\")\
             const context = ((_a = window.SillyTavern) === null || _a === void 0 ? void 0 : _a.getContext) ? window.SillyTavern.getContext() : window.getContext();
             const charId = context.this_chid;
             if (charId !== undefined) {
-                const characterName = (0, CharacterUtils_1.getCharacterInfoById)(charId, CharacterUtils_1.CharacterInfoType.Name);
+                const characterName = getCharacterInfoById(charId, CharacterInfoType.Name);
                 return characterName || 'Character';
             }
             return 'Character';
@@ -534,7 +531,7 @@ outfit-system_replace_topwear(\"T-shirt\")\
         return this.replaceMacrosInPrompt(this.systemPrompt);
     }
     getUserName() {
-        return CustomMacroService_1.customMacroSystem.getCurrentUserName();
+        return customMacroSystem.getCurrentUserName();
     }
     resetToDefaultPrompt() {
         this.systemPrompt = this.getDefaultPrompt();
@@ -548,4 +545,3 @@ outfit-system_replace_topwear(\"T-shirt\")\
         return this.connectionProfile;
     }
 }
-exports.AutoOutfitService = AutoOutfitService;

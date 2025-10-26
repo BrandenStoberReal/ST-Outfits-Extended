@@ -1,16 +1,8 @@
-"use strict";
 /**
  * String processing utilities without regex
  */
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.replaceAll = replaceAll;
-exports.extractCommands = extractCommands;
-exports.extractValues = extractValues;
-exports.safeGet = safeGet;
-exports.safeSet = safeSet;
-exports.removeMacros = removeMacros;
 // Helper function to replace all occurrences of a substring without using regex
-function replaceAll(str, searchValue, replaceValue) {
+export function replaceAll(str, searchValue, replaceValue) {
     if (!searchValue) {
         return str;
     }
@@ -116,7 +108,7 @@ function findNextCommand(text, startIndex) {
     const fullCommand = text.substring(patternIndex, parenEnd + 1);
     return { command: fullCommand, nextIndex: parenEnd + 1 };
 }
-function extractCommands(text) {
+export function extractCommands(text) {
     if (!text || typeof text !== 'string') {
         return [];
     }
@@ -135,7 +127,7 @@ function extractCommands(text) {
     return commands;
 }
 // Function to extract multiple values from a text without using regex
-function extractValues(text, startMarker, endMarker) {
+export function extractValues(text, startMarker, endMarker) {
     if (!text || typeof text !== 'string') {
         return [];
     }
@@ -163,7 +155,7 @@ function extractValues(text, startMarker, endMarker) {
     return values;
 }
 // Function to safely access nested properties
-function safeGet(obj, path, defaultValue = null) {
+export function safeGet(obj, path, defaultValue = null) {
     if (!obj || typeof obj !== 'object') {
         return defaultValue;
     }
@@ -178,7 +170,7 @@ function safeGet(obj, path, defaultValue = null) {
     return current !== undefined ? current : defaultValue;
 }
 // Function to safely set nested properties
-function safeSet(obj, path, value) {
+export function safeSet(obj, path, value) {
     if (!obj || typeof obj !== 'object') {
         return;
     }
@@ -196,7 +188,7 @@ function safeSet(obj, path, value) {
     }
 }
 // Function to remove macros from a string
-function removeMacros(text) {
+export function removeMacros(text) {
     if (!text || typeof text !== 'string') {
         return text;
     }

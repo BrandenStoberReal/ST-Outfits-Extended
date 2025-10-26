@@ -1,4 +1,3 @@
-"use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -8,12 +7,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.setupEventListeners = setupEventListeners;
-const events_1 = require("../core/events");
-const CustomMacroService_1 = require("./CustomMacroService");
-const Store_1 = require("../common/Store");
-const utilities_1 = require("../utils/utilities");
+import { EXTENSION_EVENTS, extensionEventBus } from '../core/events';
+import { customMacroSystem } from './CustomMacroService';
+import { outfitStore } from '../common/Store';
+import { generateMessageHash } from '../utils/utilities';
 class EventService {
     constructor(context) {
         this.botManager = context.botManager;
@@ -53,7 +50,7 @@ class EventService {
         eventSource.on(event_types.MESSAGE_SWIPED, (index) => this.handleMessageSwiped(index));
     }
     setupExtensionEventListeners() {
-        events_1.extensionEventBus.on(events_1.EXTENSION_EVENTS.CONTEXT_UPDATED, () => this.handleContextUpdate());
+        extensionEventBus.on(EXTENSION_EVENTS.CONTEXT_UPDATED, () => this.handleContextUpdate());
     }
     handleAppReady() {
         console.log('[OutfitTracker] App ready, marking auto outfit system as initialized');
@@ -61,8 +58,8 @@ class EventService {
             this.autoOutfitSystem.markAppInitialized();
         }
         this.updateForCurrentCharacter();
-        CustomMacroService_1.customMacroSystem.deregisterCharacterSpecificMacros(this.context);
-        CustomMacroService_1.customMacroSystem.registerCharacterSpecificMacros(this.context);
+        customMacroSystem.deregisterCharacterSpecificMacros(this.context);
+        customMacroSystem.registerCharacterSpecificMacros(this.context);
     }
     handleChatChange() {
         var _a, _b;
@@ -77,8 +74,8 @@ class EventService {
                     console.log('[OutfitTracker] CHAT_CHANGED event fired and first message has changed - updating for new conversation context');
                     this.currentFirstMessageHash = firstMessageHash;
                     this.updateForCurrentCharacter();
-                    CustomMacroService_1.customMacroSystem.deregisterCharacterSpecificMacros(this.context);
-                    CustomMacroService_1.customMacroSystem.registerCharacterSpecificMacros(this.context);
+                    customMacroSystem.deregisterCharacterSpecificMacros(this.context);
+                    customMacroSystem.registerCharacterSpecificMacros(this.context);
                 }
                 else {
                     console.log('[OutfitTracker] CHAT_CHANGED event fired but first message unchanged - skipping update');
@@ -88,8 +85,8 @@ class EventService {
                 this.currentFirstMessageHash = null;
                 console.log('[OutfitTracker] CHAT_CHANGED event fired with no first bot message - updating for character switch');
                 this.updateForCurrentCharacter();
-                CustomMacroService_1.customMacroSystem.deregisterCharacterSpecificMacros(this.context);
-                CustomMacroService_1.customMacroSystem.registerCharacterSpecificMacros(this.context);
+                customMacroSystem.deregisterCharacterSpecificMacros(this.context);
+                customMacroSystem.registerCharacterSpecificMacros(this.context);
             }
         }
     }
@@ -108,11 +105,11 @@ class EventService {
                 const currentUserInstanceId = this.userManager.getOutfitInstanceId();
                 if (currentBotInstanceId && this.botManager.characterId) {
                     const botOutfitData = Object.assign({}, this.botManager.getCurrentOutfit());
-                    Store_1.outfitStore.setBotOutfit(this.botManager.characterId, currentBotInstanceId, botOutfitData);
+                    outfitStore.setBotOutfit(this.botManager.characterId, currentBotInstanceId, botOutfitData);
                 }
                 if (currentUserInstanceId) {
                     const userOutfitData = Object.assign({}, this.userManager.getCurrentOutfit());
-                    Store_1.outfitStore.setUserOutfit(currentUserInstanceId, userOutfitData);
+                    outfitStore.setUserOutfit(currentUserInstanceId, userOutfitData);
                 }
                 yield this.processMacrosInFirstMessage(this.context);
                 yield this.updateForCurrentCharacter();
@@ -141,13 +138,13 @@ class EventService {
                 const oldUserInstanceId = this.userManager.getOutfitInstanceId();
                 if (oldBotInstanceId && oldBotCharacterId) {
                     const oldBotOutfitData = Object.assign({}, this.botManager.getCurrentOutfit());
-                    Store_1.outfitStore.setBotOutfit(oldBotCharacterId, oldBotInstanceId, oldBotOutfitData);
+                    outfitStore.setBotOutfit(oldBotCharacterId, oldBotInstanceId, oldBotOutfitData);
                 }
                 if (oldUserInstanceId) {
                     const oldUserOutfitData = Object.assign({}, this.userManager.getCurrentOutfit());
-                    Store_1.outfitStore.setUserOutfit(oldUserInstanceId, oldUserOutfitData);
+                    outfitStore.setUserOutfit(oldUserInstanceId, oldUserOutfitData);
                 }
-                Store_1.outfitStore.saveState();
+                outfitStore.saveState();
                 yield this.processMacrosInFirstMessage(this.context);
                 yield this.updateForCurrentCharacter();
             }
@@ -156,12 +153,12 @@ class EventService {
     handleContextUpdate() {
         this.updateForCurrentCharacter();
         if (this.context) {
-            CustomMacroService_1.customMacroSystem.deregisterCharacterSpecificMacros(this.context);
-            CustomMacroService_1.customMacroSystem.registerCharacterSpecificMacros(this.context);
+            customMacroSystem.deregisterCharacterSpecificMacros(this.context);
+            customMacroSystem.registerCharacterSpecificMacros(this.context);
         }
     }
     generateMessageHash(text) {
-        return (0, utilities_1.generateMessageHash)(text);
+        return generateMessageHash(text);
     }
     overrideResetChat() {
         if (typeof window.restartLLM !== 'function') {
@@ -171,7 +168,7 @@ class EventService {
         const originalRestart = window.restartLLM;
         window.restartLLM = (...args) => __awaiter(this, void 0, void 0, function* () {
             console.log('[OutfitTracker] Chat reset triggered (restartLLM).');
-            Store_1.outfitStore.flush();
+            outfitStore.flush();
             const botOutfitInstanceId = this.botManager.getOutfitInstanceId();
             const userOutfitInstanceId = this.userManager.getOutfitInstanceId();
             if (botOutfitInstanceId) {
@@ -188,7 +185,7 @@ class EventService {
                 this.userManager.setOutfitInstanceId(userOutfitInstanceId);
             }
             if (botOutfitInstanceId) {
-                Store_1.outfitStore.setCurrentInstanceId(botOutfitInstanceId);
+                outfitStore.setCurrentInstanceId(botOutfitInstanceId);
             }
             yield this.updateForCurrentCharacter();
             if (botOutfitInstanceId) {
@@ -210,7 +207,7 @@ class EventService {
                 }
             }
             console.log('[OutfitTracker] Restored outfits after chat reset.');
-            events_1.extensionEventBus.emit(events_1.EXTENSION_EVENTS.CHAT_CLEARED);
+            extensionEventBus.emit(EXTENSION_EVENTS.CHAT_CLEARED);
             return result;
         });
     }
@@ -226,14 +223,14 @@ class EventService {
             if (botOutfitInstanceId) {
                 const botOutfitData = Object.assign({}, this.botManager.getCurrentOutfit());
                 if (this.botManager.characterId) {
-                    Store_1.outfitStore.setBotOutfit(this.botManager.characterId, botOutfitInstanceId, botOutfitData);
+                    outfitStore.setBotOutfit(this.botManager.characterId, botOutfitInstanceId, botOutfitData);
                 }
             }
             if (userOutfitInstanceId) {
                 const userOutfitData = Object.assign({}, this.userManager.getCurrentOutfit());
-                Store_1.outfitStore.setUserOutfit(userOutfitInstanceId, userOutfitData);
+                outfitStore.setUserOutfit(userOutfitInstanceId, userOutfitData);
             }
-            Store_1.outfitStore.saveState();
+            outfitStore.saveState();
             yield originalClearChat.apply(this, args);
             if (botOutfitInstanceId) {
                 this.botManager.setOutfitInstanceId(botOutfitInstanceId);
@@ -242,7 +239,7 @@ class EventService {
                 this.userManager.setOutfitInstanceId(userOutfitInstanceId);
             }
             if (botOutfitInstanceId) {
-                Store_1.outfitStore.setCurrentInstanceId(botOutfitInstanceId);
+                outfitStore.setCurrentInstanceId(botOutfitInstanceId);
             }
             yield this.updateForCurrentCharacter();
             if (botOutfitInstanceId) {
@@ -264,10 +261,10 @@ class EventService {
                 }
             }
             console.log('[OutfitTracker] Restored outfits after chat clear.');
-            events_1.extensionEventBus.emit(events_1.EXTENSION_EVENTS.CHAT_CLEARED);
+            extensionEventBus.emit(EXTENSION_EVENTS.CHAT_CLEARED);
         });
     }
 }
-function setupEventListeners(context) {
+export function setupEventListeners(context) {
     return new EventService(context);
 }

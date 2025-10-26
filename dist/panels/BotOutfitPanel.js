@@ -1,4 +1,3 @@
-"use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -8,21 +7,19 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.BotOutfitPanel = void 0;
-const shared_1 = require("../common/shared");
-const StringProcessor_1 = require("../processors/StringProcessor");
-const LLMUtility_1 = require("../utils/LLMUtility");
-const utilities_1 = require("../utils/utilities");
-const SettingsUtil_1 = require("../utils/SettingsUtil");
-const Store_1 = require("../common/Store");
-const CharacterUtils_1 = require("../utils/CharacterUtils");
+import { dragElementWithSave, resizeElement } from '../common/shared';
+import { extractCommands } from '../processors/StringProcessor';
+import { LLMUtility } from '../utils/LLMUtility';
+import { formatSlotName as utilsFormatSlotName } from '../utils/utilities';
+import { areSystemMessagesEnabled } from '../utils/SettingsUtil';
+import { outfitStore } from '../common/Store';
+import { CharacterInfoType, getCharacterInfoById } from '../utils/CharacterUtils';
 /**
  * BotOutfitPanel - Manages the UI for the bot character's outfit tracking
  * This class creates and manages a draggable panel for viewing and modifying
  * the bot character's outfit, including clothing, accessories, and saved presets
  */
-class BotOutfitPanel {
+export class BotOutfitPanel {
     /**
      * Creates a new BotOutfitPanel instance
      * @param {object} outfitManager - The outfit manager for the bot character
@@ -93,7 +90,7 @@ class BotOutfitPanel {
         var _a;
         try {
             const context = ((_a = window.SillyTavern) === null || _a === void 0 ? void 0 : _a.getContext) ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
-            const characterName = (0, CharacterUtils_1.getCharacterInfoById)(context.characterId, CharacterUtils_1.CharacterInfoType.Name);
+            const characterName = getCharacterInfoById(context.characterId, CharacterInfoType.Name);
             if (context && context.chat && Array.isArray(context.chat)) {
                 // Get the first AI message from the character (instance identifier)
                 const aiMessages = context.chat.filter((msg) => !msg.is_user && !msg.is_system &&
@@ -184,7 +181,7 @@ class BotOutfitPanel {
             `;
             slotElement.querySelector('.slot-change').addEventListener('click', () => __awaiter(this, void 0, void 0, function* () {
                 const message = yield this.outfitManager.changeOutfitItem(slot.name);
-                if (message && (0, SettingsUtil_1.areSystemMessagesEnabled)()) {
+                if (message && areSystemMessagesEnabled()) {
                     this.sendSystemMessage(message);
                 }
                 this.saveSettingsDebounced();
@@ -221,7 +218,7 @@ class BotOutfitPanel {
                 `;
                 defaultPresetElement.querySelector('.load-preset').addEventListener('click', () => __awaiter(this, void 0, void 0, function* () {
                     const message = yield this.outfitManager.loadDefaultOutfit();
-                    if (message && (0, SettingsUtil_1.areSystemMessagesEnabled)()) {
+                    if (message && areSystemMessagesEnabled()) {
                         this.sendSystemMessage(message);
                     }
                     this.saveSettingsDebounced();
@@ -246,7 +243,7 @@ class BotOutfitPanel {
                     `;
                     presetElement.querySelector('.load-preset').addEventListener('click', () => __awaiter(this, void 0, void 0, function* () {
                         const message = yield this.outfitManager.loadPreset(preset);
-                        if (message && (0, SettingsUtil_1.areSystemMessagesEnabled)()) {
+                        if (message && areSystemMessagesEnabled()) {
                             this.sendSystemMessage(message);
                         }
                         this.saveSettingsDebounced();
@@ -254,7 +251,7 @@ class BotOutfitPanel {
                     }));
                     presetElement.querySelector('.set-default-preset').addEventListener('click', () => __awaiter(this, void 0, void 0, function* () {
                         const message = yield this.outfitManager.setPresetAsDefault(preset);
-                        if (message && (0, SettingsUtil_1.areSystemMessagesEnabled)()) {
+                        if (message && areSystemMessagesEnabled()) {
                             this.sendSystemMessage(message);
                         }
                         this.saveSettingsDebounced();
@@ -266,7 +263,7 @@ class BotOutfitPanel {
                     clearDefaultButton.style.display = isDefault ? 'inline-block' : 'none';
                     clearDefaultButton.addEventListener('click', () => __awaiter(this, void 0, void 0, function* () {
                         const message = yield this.outfitManager.clearDefaultPreset();
-                        if (message && (0, SettingsUtil_1.areSystemMessagesEnabled)()) {
+                        if (message && areSystemMessagesEnabled()) {
                             this.sendSystemMessage(message);
                         }
                         this.saveSettingsDebounced();
@@ -276,7 +273,7 @@ class BotOutfitPanel {
                     presetElement.querySelector('.delete-preset').addEventListener('click', () => {
                         if (confirm(`Delete "${preset}" outfit?`)) {
                             const message = this.outfitManager.deletePreset(preset);
-                            if (message && (0, SettingsUtil_1.areSystemMessagesEnabled)()) {
+                            if (message && areSystemMessagesEnabled()) {
                                 this.sendSystemMessage(message);
                             }
                             this.saveSettingsDebounced();
@@ -287,7 +284,7 @@ class BotOutfitPanel {
                         // Confirmation dialog to confirm overwriting the preset
                         if (confirm(`Overwrite "${preset}" with current outfit?`)) {
                             const message = this.outfitManager.overwritePreset(preset);
-                            if (message && (0, SettingsUtil_1.areSystemMessagesEnabled)()) {
+                            if (message && areSystemMessagesEnabled()) {
                                 this.sendSystemMessage(message);
                             }
                             this.saveSettingsDebounced();
@@ -307,7 +304,7 @@ class BotOutfitPanel {
             const presetName = prompt('Name this outfit:');
             if (presetName && presetName.toLowerCase() !== 'default') {
                 const message = yield this.outfitManager.savePreset(presetName.trim());
-                if (message && (0, SettingsUtil_1.areSystemMessagesEnabled)()) {
+                if (message && areSystemMessagesEnabled()) {
                     this.sendSystemMessage(message);
                 }
                 this.saveSettingsDebounced();
@@ -326,7 +323,7 @@ class BotOutfitPanel {
         clearDefaultButton.style.display = this.outfitManager.hasDefaultOutfit() ? 'block' : 'none';
         clearDefaultButton.addEventListener('click', () => __awaiter(this, void 0, void 0, function* () {
             const message = yield this.outfitManager.clearDefaultPreset();
-            if (message && (0, SettingsUtil_1.areSystemMessagesEnabled)()) {
+            if (message && areSystemMessagesEnabled()) {
                 this.sendSystemMessage(message);
             }
             this.saveSettingsDebounced();
@@ -359,14 +356,14 @@ class BotOutfitPanel {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 // Show a notification that the process has started
-                if ((0, SettingsUtil_1.areSystemMessagesEnabled)()) {
+                if (areSystemMessagesEnabled()) {
                     this.sendSystemMessage('Generating outfit based on character info...');
                 }
                 // Get character data
                 const characterInfo = yield this.getCharacterData();
                 if (characterInfo.error) {
                     console.error('Error getting character data:', characterInfo.error);
-                    if ((0, SettingsUtil_1.areSystemMessagesEnabled)()) {
+                    if (areSystemMessagesEnabled()) {
                         this.sendSystemMessage(`Error: ${characterInfo.error}`);
                     }
                     return;
@@ -376,13 +373,13 @@ class BotOutfitPanel {
                 // Parse and apply the outfit commands
                 yield this.parseAndApplyOutfitCommands(response);
                 // Success message
-                if ((0, SettingsUtil_1.areSystemMessagesEnabled)()) {
+                if (areSystemMessagesEnabled()) {
                     this.sendSystemMessage('Outfit generated and applied successfully!');
                 }
             }
             catch (error) {
                 console.error('Error in generateOutfitFromCharacterInfo:', error);
-                if ((0, SettingsUtil_1.areSystemMessagesEnabled)()) {
+                if (areSystemMessagesEnabled()) {
                     this.sendSystemMessage(`Error generating outfit: ${error.message}`);
                 }
             }
@@ -395,7 +392,7 @@ class BotOutfitPanel {
      */
     sendSystemMessage(message) {
         // Use toastr popup instead of /sys command
-        if ((0, SettingsUtil_1.areSystemMessagesEnabled)()) {
+        if (areSystemMessagesEnabled()) {
             toastr.info(message, 'Outfit System', {
                 timeOut: 4000,
                 extendedTimeOut: 8000
@@ -408,7 +405,7 @@ class BotOutfitPanel {
      * @returns {string} The formatted slot name
      */
     formatSlotName(name) {
-        return (0, utilities_1.formatSlotName)(name);
+        return utilsFormatSlotName(name);
     }
     /**
      * Gets character data from the current context
@@ -425,12 +422,12 @@ class BotOutfitPanel {
             }
             // Get character information
             const characterInfo = {
-                name: (0, CharacterUtils_1.getCharacterInfoById)(context.characterId, CharacterUtils_1.CharacterInfoType.Name) || 'Unknown',
-                description: (0, CharacterUtils_1.getCharacterInfoById)(context.characterId, CharacterUtils_1.CharacterInfoType.Description) || '',
-                personality: (0, CharacterUtils_1.getCharacterInfoById)(context.characterId, CharacterUtils_1.CharacterInfoType.Personality) || '',
-                scenario: (0, CharacterUtils_1.getCharacterInfoById)(context.characterId, CharacterUtils_1.CharacterInfoType.Scenario) || '',
-                firstMessage: (0, CharacterUtils_1.getCharacterInfoById)(context.characterId, CharacterUtils_1.CharacterInfoType.DefaultMessage) || '',
-                characterNotes: (0, CharacterUtils_1.getCharacterInfoById)(context.characterId, CharacterUtils_1.CharacterInfoType.CharacterNotes) || '',
+                name: getCharacterInfoById(context.characterId, CharacterInfoType.Name) || 'Unknown',
+                description: getCharacterInfoById(context.characterId, CharacterInfoType.Description) || '',
+                personality: getCharacterInfoById(context.characterId, CharacterInfoType.Personality) || '',
+                scenario: getCharacterInfoById(context.characterId, CharacterInfoType.Scenario) || '',
+                firstMessage: getCharacterInfoById(context.characterId, CharacterInfoType.DefaultMessage) || '',
+                characterNotes: getCharacterInfoById(context.characterId, CharacterInfoType.CharacterNotes) || '',
             };
             // Get the first message from the current chat if it's different from the character's first_message
             if (context.chat && context.chat.length > 0) {
@@ -465,7 +462,7 @@ class BotOutfitPanel {
                     connectionProfile = window.autoOutfitSystem.getConnectionProfile();
                 }
                 // Use the unified LLM utility with profile if available
-                return yield LLMUtility_1.LLMUtility.generateWithProfile(prompt, 'You are an outfit generation system. Based on the character information provided, output outfit commands to set the character\'s clothing and accessories.', ((_a = window.SillyTavern) === null || _a === void 0 ? void 0 : _a.getContext) ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null), connectionProfile);
+                return yield LLMUtility.generateWithProfile(prompt, 'You are an outfit generation system. Based on the character information provided, output outfit commands to set the character\'s clothing and accessories.', ((_a = window.SillyTavern) === null || _a === void 0 ? void 0 : _a.getContext) ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null), connectionProfile);
             }
             catch (error) {
                 console.error('Error generating outfit from LLM:', error);
@@ -476,7 +473,7 @@ class BotOutfitPanel {
     parseAndApplyOutfitCommands(response) {
         return __awaiter(this, void 0, void 0, function* () {
             // Use the imported extractCommands function to extract outfit commands
-            const commands = (0, StringProcessor_1.extractCommands)(response);
+            const commands = extractCommands(response);
             if (!commands || commands.length === 0) {
                 console.log('[BotOutfitPanel] No outfit commands found in response');
                 return;
@@ -558,7 +555,7 @@ class BotOutfitPanel {
                 // Apply the outfit change to the bot manager
                 const message = yield this.outfitManager.setOutfitItem(slot, action === 'remove' ? 'None' : cleanValue);
                 // Show system message if enabled
-                if (message && (0, SettingsUtil_1.areSystemMessagesEnabled)()) {
+                if (message && areSystemMessagesEnabled()) {
                     this.sendSystemMessage(message);
                 }
             }
@@ -596,10 +593,10 @@ class BotOutfitPanel {
         // Set up dynamic refresh when panel becomes visible
         this.setupDynamicRefresh();
         if (this.domElement) {
-            (0, shared_1.dragElementWithSave)($(this.domElement), 'bot-outfit-panel');
+            dragElementWithSave($(this.domElement), 'bot-outfit-panel');
             // Initialize resizing with appropriate min/max dimensions
             setTimeout(() => {
-                (0, shared_1.resizeElement)($(this.domElement), 'bot-outfit-panel', {
+                resizeElement($(this.domElement), 'bot-outfit-panel', {
                     minWidth: 250,
                     minHeight: 200,
                     maxWidth: 600,
@@ -628,7 +625,7 @@ class BotOutfitPanel {
     applyPanelColors() {
         var _a;
         if (this.domElement) {
-            const storeState = Store_1.outfitStore.getState();
+            const storeState = outfitStore.getState();
             const colors = (_a = storeState.panelSettings) === null || _a === void 0 ? void 0 : _a.botPanelColors;
             if (colors) {
                 this.domElement.style.background = colors.primary;
@@ -797,4 +794,3 @@ class BotOutfitPanel {
         return Math.abs(hash).toString(36).substring(0, 8).padEnd(8, '0');
     }
 }
-exports.BotOutfitPanel = BotOutfitPanel;

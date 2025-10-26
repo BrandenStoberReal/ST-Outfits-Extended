@@ -1,4 +1,3 @@
-"use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -8,11 +7,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.NewBotOutfitManager = void 0;
-const OutfitManager_1 = require("./OutfitManager");
-const Store_1 = require("../common/Store");
-class NewBotOutfitManager extends OutfitManager_1.OutfitManager {
+import { OutfitManager } from './OutfitManager';
+import { outfitStore } from '../common/Store';
+export class NewBotOutfitManager extends OutfitManager {
     constructor(slots) {
         super(slots);
     }
@@ -22,20 +19,20 @@ class NewBotOutfitManager extends OutfitManager_1.OutfitManager {
             console.warn('[NewBotOutfitManager] Cannot set prompt injection - missing characterId or instanceId');
             return;
         }
-        if (!Store_1.outfitStore.state.botInstances[this.characterId]) {
-            Store_1.outfitStore.state.botInstances[this.characterId] = {};
+        if (!outfitStore.state.botInstances[this.characterId]) {
+            outfitStore.state.botInstances[this.characterId] = {};
         }
-        if (!Store_1.outfitStore.state.botInstances[this.characterId][actualInstanceId]) {
-            Store_1.outfitStore.state.botInstances[this.characterId][actualInstanceId] = {
+        if (!outfitStore.state.botInstances[this.characterId][actualInstanceId]) {
+            outfitStore.state.botInstances[this.characterId][actualInstanceId] = {
                 bot: {},
                 user: {},
                 promptInjectionEnabled: true
             };
         }
-        const updatedInstanceData = Object.assign(Object.assign({}, Store_1.outfitStore.state.botInstances[this.characterId][actualInstanceId]), { promptInjectionEnabled: Boolean(enabled) });
-        Store_1.outfitStore.state.botInstances[this.characterId][actualInstanceId] = updatedInstanceData;
-        Store_1.outfitStore.notifyListeners();
-        Store_1.outfitStore.saveState();
+        const updatedInstanceData = Object.assign(Object.assign({}, outfitStore.state.botInstances[this.characterId][actualInstanceId]), { promptInjectionEnabled: Boolean(enabled) });
+        outfitStore.state.botInstances[this.characterId][actualInstanceId] = updatedInstanceData;
+        outfitStore.notifyListeners();
+        outfitStore.saveState();
     }
     getPromptInjectionEnabled(instanceId = null) {
         var _a;
@@ -44,7 +41,7 @@ class NewBotOutfitManager extends OutfitManager_1.OutfitManager {
             console.warn('[NewBotOutfitManager] Cannot get prompt injection - missing characterId or instanceId');
             return true;
         }
-        const instanceData = (_a = Store_1.outfitStore.state.botInstances[this.characterId]) === null || _a === void 0 ? void 0 : _a[actualInstanceId];
+        const instanceData = (_a = outfitStore.state.botInstances[this.characterId]) === null || _a === void 0 ? void 0 : _a[actualInstanceId];
         return (instanceData === null || instanceData === void 0 ? void 0 : instanceData.promptInjectionEnabled) !== undefined ?
             instanceData.promptInjectionEnabled : true;
     }
@@ -62,7 +59,7 @@ class NewBotOutfitManager extends OutfitManager_1.OutfitManager {
             });
             return;
         }
-        const instanceOutfits = Store_1.outfitStore.getBotOutfit(this.characterId, this.outfitInstanceId);
+        const instanceOutfits = outfitStore.getBotOutfit(this.characterId, this.outfitInstanceId);
         this.slots.forEach(slot => {
             const value = instanceOutfits[slot] !== undefined ? instanceOutfits[slot] : 'None';
             this.currentValues[slot] = value;
@@ -77,8 +74,8 @@ class NewBotOutfitManager extends OutfitManager_1.OutfitManager {
         this.slots.forEach(slot => {
             botOutfit[slot] = this.currentValues[slot] || 'None';
         });
-        Store_1.outfitStore.setBotOutfit(this.characterId, this.outfitInstanceId, botOutfit);
-        Store_1.outfitStore.saveState();
+        outfitStore.setBotOutfit(this.characterId, this.outfitInstanceId, botOutfit);
+        outfitStore.saveState();
     }
     savePreset(presetName, instanceId = null) {
         if (!presetName || typeof presetName !== 'string' || presetName.trim() === '') {
@@ -90,8 +87,8 @@ class NewBotOutfitManager extends OutfitManager_1.OutfitManager {
         this.slots.forEach(slot => {
             presetData[slot] = this.currentValues[slot];
         });
-        Store_1.outfitStore.savePreset(this.character, actualInstanceId, presetName, presetData, 'bot');
-        if (Store_1.outfitStore.getSetting('enableSysMessages')) {
+        outfitStore.savePreset(this.character, actualInstanceId, presetName, presetData, 'bot');
+        if (outfitStore.getSetting('enableSysMessages')) {
             return `Saved "${presetName}" outfit for ${this.character} (instance: ${actualInstanceId}).`;
         }
         return '';
@@ -102,7 +99,7 @@ class NewBotOutfitManager extends OutfitManager_1.OutfitManager {
                 return `[Outfit System] Invalid preset name: ${presetName}`;
             }
             const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
-            const { bot: presets } = Store_1.outfitStore.getPresets(this.character, actualInstanceId);
+            const { bot: presets } = outfitStore.getPresets(this.character, actualInstanceId);
             if (!presets || !presets[presetName]) {
                 return `[Outfit System] Preset "${presetName}" not found for instance ${actualInstanceId}.`;
             }
@@ -125,19 +122,19 @@ class NewBotOutfitManager extends OutfitManager_1.OutfitManager {
             return `[Outfit System] Invalid preset name: ${presetName}`;
         }
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
-        const { bot: presets } = Store_1.outfitStore.getPresets(this.character, actualInstanceId);
+        const { bot: presets } = outfitStore.getPresets(this.character, actualInstanceId);
         if (!presets || !presets[presetName]) {
             return `[Outfit System] Preset "${presetName}" not found for instance ${actualInstanceId}.`;
         }
-        Store_1.outfitStore.deletePreset(this.character, actualInstanceId, presetName, 'bot');
-        if (Store_1.outfitStore.getSetting('enableSysMessages')) {
+        outfitStore.deletePreset(this.character, actualInstanceId, presetName, 'bot');
+        if (outfitStore.getSetting('enableSysMessages')) {
             return `Deleted "${presetName}" outfit for instance ${actualInstanceId}.`;
         }
         return '';
     }
     getPresets(instanceId = null) {
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
-        const { bot: presets } = Store_1.outfitStore.getPresets(this.character, actualInstanceId);
+        const { bot: presets } = outfitStore.getPresets(this.character, actualInstanceId);
         if (!presets) {
             return [];
         }
@@ -146,7 +143,7 @@ class NewBotOutfitManager extends OutfitManager_1.OutfitManager {
     loadDefaultOutfit() {
         return __awaiter(this, arguments, void 0, function* (instanceId = null) {
             const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
-            const { bot: presets } = Store_1.outfitStore.getPresets(this.character, actualInstanceId);
+            const { bot: presets } = outfitStore.getPresets(this.character, actualInstanceId);
             if (!presets || !presets['default']) {
                 return `[Outfit System] No default outfit set for ${this.character} (instance: ${actualInstanceId}).`;
             }
@@ -176,7 +173,7 @@ class NewBotOutfitManager extends OutfitManager_1.OutfitManager {
             return '[Outfit System] Invalid preset name provided.';
         }
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
-        const { bot: presets } = Store_1.outfitStore.getPresets(this.character, actualInstanceId);
+        const { bot: presets } = outfitStore.getPresets(this.character, actualInstanceId);
         if (!presets || !presets[presetName]) {
             return `[Outfit System] Preset "${presetName}" does not exist for instance ${actualInstanceId}. Cannot overwrite.`;
         }
@@ -184,24 +181,24 @@ class NewBotOutfitManager extends OutfitManager_1.OutfitManager {
         this.slots.forEach(slot => {
             presetData[slot] = this.currentValues[slot];
         });
-        Store_1.outfitStore.savePreset(this.character, actualInstanceId, presetName, presetData, 'bot');
-        if (Store_1.outfitStore.getSetting('enableSysMessages')) {
+        outfitStore.savePreset(this.character, actualInstanceId, presetName, presetData, 'bot');
+        if (outfitStore.getSetting('enableSysMessages')) {
             return `Overwrote "${presetName}" outfit for ${this.character} (instance: ${actualInstanceId}).`;
         }
         return '';
     }
     getAllPresets(instanceId = null) {
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
-        return Store_1.outfitStore.getAllPresets(this.character, actualInstanceId, 'bot');
+        return outfitStore.getAllPresets(this.character, actualInstanceId, 'bot');
     }
     hasDefaultOutfit(instanceId = null) {
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
-        const { bot: presets } = Store_1.outfitStore.getPresets(this.character, actualInstanceId);
+        const { bot: presets } = outfitStore.getPresets(this.character, actualInstanceId);
         return Boolean(presets && presets['default']);
     }
     getDefaultPresetName(instanceId = null) {
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
-        const { bot: presets } = Store_1.outfitStore.getPresets(this.character, actualInstanceId);
+        const { bot: presets } = outfitStore.getPresets(this.character, actualInstanceId);
         if (presets && presets['default']) {
             return 'default';
         }
@@ -210,13 +207,13 @@ class NewBotOutfitManager extends OutfitManager_1.OutfitManager {
     setPresetAsDefault(presetName_1) {
         return __awaiter(this, arguments, void 0, function* (presetName, instanceId = null) {
             const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
-            const { bot: presets } = Store_1.outfitStore.getPresets(this.character, actualInstanceId);
+            const { bot: presets } = outfitStore.getPresets(this.character, actualInstanceId);
             if (!presets || !presets[presetName]) {
                 return `[Outfit System] Preset "${presetName}" does not exist for instance ${actualInstanceId}. Cannot set as default.`;
             }
             const presetToSetAsDefault = presets[presetName];
-            Store_1.outfitStore.savePreset(this.character, actualInstanceId, 'default', presetToSetAsDefault, 'bot');
-            if (Store_1.outfitStore.getSetting('enableSysMessages')) {
+            outfitStore.savePreset(this.character, actualInstanceId, 'default', presetToSetAsDefault, 'bot');
+            if (outfitStore.getSetting('enableSysMessages')) {
                 return `Set "${presetName}" as the default outfit for ${this.character} (instance: ${actualInstanceId}).`;
             }
             return '';
@@ -225,12 +222,12 @@ class NewBotOutfitManager extends OutfitManager_1.OutfitManager {
     clearDefaultPreset() {
         return __awaiter(this, arguments, void 0, function* (instanceId = null) {
             const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
-            const { bot: presets } = Store_1.outfitStore.getPresets(this.character, actualInstanceId);
+            const { bot: presets } = outfitStore.getPresets(this.character, actualInstanceId);
             if (!presets || !presets['default']) {
                 return `[Outfit System] No default outfit set for ${this.character} (instance: ${actualInstanceId}).`;
             }
-            Store_1.outfitStore.deletePreset(this.character, actualInstanceId, 'default', 'bot');
-            if (Store_1.outfitStore.getSetting('enableSysMessages')) {
+            outfitStore.deletePreset(this.character, actualInstanceId, 'default', 'bot');
+            if (outfitStore.getSetting('enableSysMessages')) {
                 return `Default outfit cleared for ${this.character} (instance: ${actualInstanceId}).`;
             }
             return '';
@@ -245,15 +242,15 @@ class NewBotOutfitManager extends OutfitManager_1.OutfitManager {
             });
             return defaultOutfit;
         }
-        return Store_1.outfitStore.getBotOutfit(this.characterId, instanceId);
+        return outfitStore.getBotOutfit(this.characterId, instanceId);
     }
     saveOutfitToInstanceId(outfitData, instanceId) {
         if (!this.characterId || !instanceId) {
             console.warn('[NewBotOutfitManager] Cannot save outfit - missing characterId or instanceId');
             return;
         }
-        Store_1.outfitStore.setBotOutfit(this.characterId, instanceId, outfitData);
-        Store_1.outfitStore.saveState();
+        outfitStore.setBotOutfit(this.characterId, instanceId, outfitData);
+        outfitStore.saveState();
     }
     applyDefaultOutfitAfterReset() {
         return __awaiter(this, arguments, void 0, function* (instanceId = null) {
@@ -270,4 +267,3 @@ class NewBotOutfitManager extends OutfitManager_1.OutfitManager {
         });
     }
 }
-exports.NewBotOutfitManager = NewBotOutfitManager;

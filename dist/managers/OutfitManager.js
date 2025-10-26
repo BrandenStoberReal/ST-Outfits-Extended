@@ -1,4 +1,3 @@
-"use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -8,12 +7,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.OutfitManager = void 0;
-const constants_1 = require("../config/constants");
-const CustomMacroService_1 = require("../services/CustomMacroService");
-class OutfitManager {
-    constructor(slots = constants_1.ALL_SLOTS) {
+import { ALL_SLOTS } from '../config/constants';
+import { invalidateSpecificMacroCaches } from '../services/CustomMacroService';
+export class OutfitManager {
+    constructor(slots = ALL_SLOTS) {
         this.slots = slots;
         this.currentValues = {};
         this.outfitInstanceId = null;
@@ -109,7 +106,7 @@ class OutfitManager {
             this.currentValues[slot] = value;
             if (this.characterId && this.outfitInstanceId) {
                 this.saveOutfit();
-                (0, CustomMacroService_1.invalidateSpecificMacroCaches)(this.constructor.name.includes('Bot') ? 'bot' : 'user', this.characterId, this.outfitInstanceId, slot);
+                invalidateSpecificMacroCaches(this.constructor.name.includes('Bot') ? 'bot' : 'user', this.characterId, this.outfitInstanceId, slot);
             }
             if (previousValue === 'None' && value !== 'None') {
                 return `${this.character} put on ${value}.`;
@@ -163,4 +160,3 @@ class OutfitManager {
         }));
     }
 }
-exports.OutfitManager = OutfitManager;

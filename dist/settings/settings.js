@@ -1,15 +1,12 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.initSettings = initSettings;
-const constants_1 = require("../config/constants");
-const DebugLogger_1 = require("../logging/DebugLogger");
-function initSettings(autoOutfitSystem, AutoOutfitSystemClass, context) {
+import { DEFAULT_SETTINGS } from '../config/constants';
+import { debugLog } from '../logging/DebugLogger';
+export function initSettings(autoOutfitSystem, AutoOutfitSystemClass, context) {
     const settings = context.extensionSettings;
     const MODULE_NAME = 'outfit_tracker';
     if (!settings[MODULE_NAME]) {
-        settings[MODULE_NAME] = Object.assign({}, constants_1.DEFAULT_SETTINGS);
+        settings[MODULE_NAME] = Object.assign({}, DEFAULT_SETTINGS);
     }
-    for (const [key, value] of Object.entries(constants_1.DEFAULT_SETTINGS)) {
+    for (const [key, value] of Object.entries(DEFAULT_SETTINGS)) {
         if (settings[MODULE_NAME][key] === undefined) {
             settings[MODULE_NAME][key] = value;
         }
@@ -43,12 +40,12 @@ function initSettings(autoOutfitSystem, AutoOutfitSystemClass, context) {
         autoOutfitSystem.disable();
     }
     if (settings[MODULE_NAME].presets) {
-        (0, DebugLogger_1.debugLog)('[OutfitTracker] Loading presets from settings', null, 'info');
+        debugLog('[OutfitTracker] Loading presets from settings', null, 'info');
     }
     if (settings[MODULE_NAME].instances) {
-        (0, DebugLogger_1.debugLog)('[OutfitTracker] Loading bot instances from settings', null, 'info');
+        debugLog('[OutfitTracker] Loading bot instances from settings', null, 'info');
     }
     if (settings[MODULE_NAME].user_instances) {
-        (0, DebugLogger_1.debugLog)('[OutfitTracker] Loading user instances from settings', null, 'info');
+        debugLog('[OutfitTracker] Loading user instances from settings', null, 'info');
     }
 }

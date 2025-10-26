@@ -1,10 +1,5 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.extension_api = void 0;
-exports.dragElementWithSave = dragElementWithSave;
-exports.resizeElement = resizeElement;
 // Function to make an element draggable with position saving
-function dragElementWithSave(element, storageKey) {
+export function dragElementWithSave(element, storageKey) {
     if (!element) {
         return;
     }
@@ -76,7 +71,7 @@ function dragElementWithSave(element, storageKey) {
     }
 }
 // Function to make an element resizable with size saving
-function resizeElement(element, storageKey, options) {
+export function resizeElement(element, storageKey, options) {
     if (!element) {
         return;
     }
@@ -149,7 +144,7 @@ function resizeElement(element, storageKey, options) {
         e.preventDefault();
     });
 }
-exports.extension_api = {
+export const extension_api = {
     botOutfitPanel: null,
     userOutfitPanel: null,
     autoOutfitSystem: null,
