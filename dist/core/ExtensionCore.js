@@ -37,7 +37,7 @@ function loadAutoOutfitSystem() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             debugLog('Attempting to load AutoOutfitSystem module', null, 'debug');
-            const autoOutfitModule = yield import('../services/AutoOutfitService');
+            const autoOutfitModule = yield import('../services/AutoOutfitService.js');
             AutoOutfitSystem = autoOutfitModule.AutoOutfitService;
             debugLog('AutoOutfitSystem module loaded successfully', null, 'info');
         }

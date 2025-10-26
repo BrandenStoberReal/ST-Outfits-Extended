@@ -7,10 +7,21 @@ function addJsExtensionsToImports(distDir) {
     files.forEach(file => {
         let content = fs.readFileSync(file, 'utf8');
 
-        // Regular expression to match import statements that don't have .js extension
-        const importRegex = /(from\s+["'])([^"']*)(["'])/g;
+        // Regular expression to match static import statements that don't have .js extension
+        const staticImportRegex = /(from\s+["'])([^"']*)(["'])/g;
 
-        let updatedContent = content.replace(importRegex, (match, before, importPath, after) => {
+        let updatedContent = content.replace(staticImportRegex, (match, before, importPath, after) => {
+            // If the import path doesn't already end with .js and is a relative path
+            if (!importPath.endsWith('.js') && (importPath.startsWith('./') || importPath.startsWith('../'))) {
+                return before + importPath + '.js' + after;
+            }
+            return match;
+        });
+
+        // Regular expression to match dynamic import() calls that don't have .js extension
+        const dynamicImportRegex = /(import\s*\(\s*["'])([^"']*)(["']\s*\))/g;
+
+        updatedContent = updatedContent.replace(dynamicImportRegex, (match, before, importPath, after) => {
             // If the import path doesn't already end with .js and is a relative path
             if (!importPath.endsWith('.js') && (importPath.startsWith('./') || importPath.startsWith('../'))) {
                 return before + importPath + '.js' + after;

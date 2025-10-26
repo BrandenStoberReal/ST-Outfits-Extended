@@ -933,7 +933,7 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem, context) {
             // Create and show the debug panel
             // Create a global reference to the debug panel if it doesn't exist
             if (!window.outfitDebugPanel) {
-                const { DebugPanel } = yield import('../panels/DebugPanel');
+                const { DebugPanel } = yield import('../panels/DebugPanel.js');
                 window.outfitDebugPanel = new DebugPanel();
             }
             window.outfitDebugPanel.toggle();
