@@ -19,7 +19,6 @@ export class AutoOutfitService {
     constructor(outfitManager) {
         this.outfitManager = outfitManager;
         this.isEnabled = false;
-        this.systemPrompt = this.getDefaultPrompt();
         this.connectionProfile = null;
         this.isProcessing = false;
         this.consecutiveFailures = 0;
@@ -32,6 +31,10 @@ export class AutoOutfitService {
         this.lastSuccessfulProcessing = null;
         this.llmOutput = '';
         this.generatedCommands = [];
+    }
+
+    get systemPrompt() {
+        return outfitStore.getSetting('autoOutfitPrompt') || this.getDefaultPrompt();
     }
 
     /**
@@ -743,7 +746,9 @@ You have the following commands at your disposal:
      * @returns {string} A status message indicating the prompt was updated
      */
     setPrompt(prompt) {
-        this.systemPrompt = prompt || this.getDefaultPrompt();
+        const newPrompt = prompt || this.getDefaultPrompt();
+
+        outfitStore.setSetting('autoOutfitPrompt', newPrompt);
         return '[Outfit System] System prompt updated.';
     }
 
@@ -768,7 +773,7 @@ You have the following commands at your disposal:
      * @returns {string} A status message indicating the prompt was reset
      */
     resetToDefaultPrompt() {
-        this.systemPrompt = this.getDefaultPrompt();
+        outfitStore.setSetting('autoOutfitPrompt', this.getDefaultPrompt());
         return '[Outfit System] Reset to default prompt.';
     }
 
