@@ -1,0 +1,406 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.invalidateSpecificMacroCaches = exports.updateMacroCacheOnOutfitChange = exports.customMacroSystem = void 0;
+const Store_1 = require("../common/Store");
+const constants_1 = require("../config/constants");
+const MacroProcessor_1 = require("../processors/MacroProcessor");
+const CharacterUtils_1 = require("../utils/CharacterUtils");
+class CustomMacroService {
+    constructor() {
+        this.clothingSlots = constants_1.CLOTHING_SLOTS;
+        this.accessorySlots = constants_1.ACCESSORY_SLOTS;
+        this.allSlots = [...constants_1.CLOTHING_SLOTS, ...constants_1.ACCESSORY_SLOTS];
+        this.macroValueCache = new Map();
+        this.cacheExpiryTime = 5 * 60 * 1000;
+    }
+    registerMacros(context) {
+        var _a;
+        const ctx = context || (((_a = window.SillyTavern) === null || _a === void 0 ? void 0 : _a.getContext) ? window.SillyTavern.getContext() : window.getContext());
+        if (ctx && ctx.registerMacro) {
+            ctx.registerMacro('char', () => this.getCurrentCharName());
+            ctx.registerMacro('user', () => this.getCurrentUserName());
+            this.allSlots.forEach(slot => {
+                ctx.registerMacro(`char_${slot}`, () => this.getCurrentSlotValue('char', slot));
+                ctx.registerMacro(`user_${slot}`, () => this.getCurrentSlotValue('user', slot));
+            });
+        }
+    }
+    deregisterMacros(context) {
+        var _a;
+        const ctx = context || (((_a = window.SillyTavern) === null || _a === void 0 ? void 0 : _a.getContext) ? window.SillyTavern.getContext() : window.getContext());
+        if (ctx && ctx.unregisterMacro) {
+            ctx.unregisterMacro('char');
+            ctx.unregisterMacro('user');
+            this.allSlots.forEach(slot => {
+                ctx.unregisterMacro(`char_${slot}`);
+                ctx.unregisterMacro(`user_${slot}`);
+            });
+        }
+    }
+    registerCharacterSpecificMacros(context) {
+        var _a;
+        const ctx = context || (((_a = window.SillyTavern) === null || _a === void 0 ? void 0 : _a.getContext) ? window.SillyTavern.getContext() : window.getContext());
+        const characters = (0, CharacterUtils_1.getCharacters)();
+        if (ctx && ctx.registerMacro && characters) {
+            for (const character of characters) {
+                if (character && character.name) {
+                    const characterName = character.name;
+                    ctx.registerMacro(characterName, () => characterName);
+                    this.allSlots.forEach(slot => {
+                        const macroName = `${characterName}_${slot}`;
+                        ctx.registerMacro(macroName, () => this.getCurrentSlotValue(characterName, slot, characterName));
+                    });
+                }
+            }
+        }
+    }
+    deregisterCharacterSpecificMacros(context) {
+        var _a;
+        const ctx = context || (((_a = window.SillyTavern) === null || _a === void 0 ? void 0 : _a.getContext) ? window.SillyTavern.getContext() : window.getContext());
+        const characters = (0, CharacterUtils_1.getCharacters)();
+        if (ctx && ctx.unregisterMacro && characters) {
+            for (const character of characters) {
+                if (character && character.name) {
+                    const characterName = character.name;
+                    ctx.unregisterMacro(characterName);
+                    this.allSlots.forEach(slot => {
+                        const macroName = `${characterName}_${slot}`;
+                        ctx.unregisterMacro(macroName);
+                    });
+                }
+            }
+        }
+    }
+    getCurrentCharName() {
+        var _a;
+        try {
+            const context = ((_a = window.SillyTavern) === null || _a === void 0 ? void 0 : _a.getContext) ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
+            if (context && context.chat) {
+                for (let i = context.chat.length - 1; i >= 0; i--) {
+                    const message = context.chat[i];
+                    if (!message.is_user && !message.is_system && message.name) {
+                        return message.name;
+                    }
+                }
+            }
+            return typeof window.name2 !== 'undefined' ? window.name2 : 'Character';
+        }
+        catch (error) {
+            console.error('Error getting character name:', error);
+            return 'Character';
+        }
+    }
+    getCurrentSlotValue(macroType, slotName, charNameParam = null) {
+        var _a, _b;
+        if (!this.allSlots.includes(slotName)) {
+            return 'None';
+        }
+        const cacheKey = this._generateCacheKey(macroType, slotName, charNameParam);
+        const cachedValue = this.macroValueCache.get(cacheKey);
+        if (cachedValue && Date.now() - cachedValue.timestamp < this.cacheExpiryTime) {
+            return cachedValue.value;
+        }
+        try {
+            const context = ((_a = window.SillyTavern) === null || _a === void 0 ? void 0 : _a.getContext) ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
+            const characters = (0, CharacterUtils_1.getCharacters)();
+            let charId = null;
+            if (charNameParam) {
+                if (context && characters) {
+                    const character = characters.find((c) => c.name === charNameParam);
+                    if (character) {
+                        charId = characters.indexOf(character);
+                    }
+                    else if (context.characterId && context.getName) {
+                        const currentCharName = context.getName();
+                        if (currentCharName === charNameParam) {
+                            charId = context.characterId;
+                        }
+                    }
+                    if (charId === null) {
+                        this._setCache(cacheKey, 'None');
+                        return 'None';
+                    }
+                }
+            }
+            else if (macroType === 'char' || macroType === 'bot') {
+                charId = (context === null || context === void 0 ? void 0 : context.characterId) || null;
+            }
+            else if (['user'].includes(macroType)) {
+                charId = null;
+            }
+            else if (context && context.characterId && context.getName) {
+                const currentCharName = context.getName();
+                if (currentCharName === macroType) {
+                    charId = context.characterId;
+                }
+            }
+            const state = Store_1.outfitStore.getState();
+            let instanceId = state.currentOutfitInstanceId;
+            if (!instanceId) {
+                const firstBotMessage = (_b = context === null || context === void 0 ? void 0 : context.chat) === null || _b === void 0 ? void 0 : _b.find((message) => !message.is_user && !message.is_system);
+                if (firstBotMessage) {
+                    const processedMessage = MacroProcessor_1.macroProcessor.cleanOutfitMacrosFromText(firstBotMessage.mes);
+                    let hash = 0;
+                    for (let i = 0; i < processedMessage.length; i++) {
+                        const char = processedMessage.charCodeAt(i);
+                        hash = ((hash << 5) - hash) + char;
+                        hash |= 0;
+                    }
+                    instanceId = Math.abs(hash).toString(36);
+                    if (charId !== null && (macroType === 'char' || macroType === 'bot' || charNameParam || (this.isValidCharacterName(macroType) && !['user'].includes(macroType)))) {
+                        const charOutfitData = Store_1.outfitStore.getBotOutfit(charId.toString(), instanceId);
+                        if (charOutfitData && charOutfitData[slotName]) {
+                            this._setCache(cacheKey, charOutfitData[slotName]);
+                            return charOutfitData[slotName];
+                        }
+                    }
+                    else if (macroType === 'user') {
+                        const userOutfitData = Store_1.outfitStore.getUserOutfit(instanceId);
+                        if (userOutfitData && userOutfitData[slotName]) {
+                            this._setCache(cacheKey, userOutfitData[slotName]);
+                            return userOutfitData[slotName];
+                        }
+                    }
+                    this._setCache(cacheKey, 'None');
+                    return 'None';
+                }
+                this._setCache(cacheKey, 'None');
+                return 'None';
+            }
+            if (charId !== null && (macroType === 'char' || macroType === 'bot' || charNameParam || (this.isValidCharacterName(macroType) && !['user'].includes(macroType)))) {
+                const botOutfitManager = window.outfitTracker.botOutfitPanel.outfitManager;
+                if (!botOutfitManager.getPromptInjectionEnabled()) {
+                    return 'None';
+                }
+                const outfitData = Store_1.outfitStore.getBotOutfit(charId.toString(), instanceId);
+                const result = outfitData[slotName] || 'None';
+                this._setCache(cacheKey, result);
+                return result;
+            }
+            else if (macroType === 'user') {
+                const userOutfitManager = window.outfitTracker.userOutfitPanel.outfitManager;
+                if (!userOutfitManager.getPromptInjectionEnabled()) {
+                    return 'None';
+                }
+                const currentInstanceId = typeof Store_1.outfitStore.getCurrentInstanceId === 'function' ? Store_1.outfitStore.getCurrentInstanceId() : null;
+                const userOutfitData = Store_1.outfitStore.getUserOutfit(currentInstanceId || 'default');
+                const result = userOutfitData[slotName] || 'None';
+                this._setCache(cacheKey, result);
+                return result;
+            }
+        }
+        catch (error) {
+            console.error('Error getting slot value:', error);
+        }
+        const result = 'None';
+        this._setCache(cacheKey, result);
+        return result;
+    }
+    clearCache() {
+        this.macroValueCache.clear();
+    }
+    isValidCharacterName(name) {
+        return !['char', 'bot', 'user'].includes(name);
+    }
+    getCurrentUserName() {
+        var _a;
+        try {
+            const context = ((_a = window.SillyTavern) === null || _a === void 0 ? void 0 : _a.getContext) ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
+            if (context && context.chat) {
+                for (let i = context.chat.length - 1; i >= 0; i--) {
+                    const message = context.chat[i];
+                    if (message.is_user && message.name) {
+                        return message.name;
+                    }
+                }
+            }
+            if (typeof window.power_user !== 'undefined' && window.power_user &&
+                typeof window.user_avatar !== 'undefined' && window.user_avatar) {
+                const personaName = window.power_user.personas[window.user_avatar];
+                return personaName || 'User';
+            }
+            return typeof window.name1 !== 'undefined' ? window.name1 : 'User';
+        }
+        catch (error) {
+            console.error('Error getting user name:', error);
+            return 'User';
+        }
+    }
+    extractCustomMacros(text) {
+        if (!text || typeof text !== 'string') {
+            return [];
+        }
+        const macros = [];
+        let index = 0;
+        while (index < text.length) {
+            const openIdx = text.indexOf('{{', index);
+            if (openIdx === -1)
+                break;
+            const closeIdx = text.indexOf('}}', openIdx);
+            if (closeIdx === -1)
+                break;
+            const macroContent = text.substring(openIdx + 2, closeIdx);
+            const fullMatch = `{{${macroContent}}}`;
+            const parts = macroContent.split('_');
+            let macroType = '';
+            let slot = null;
+            if (parts.length === 1) {
+                const singlePart = parts[0];
+                if (this.allSlots.includes(singlePart)) {
+                    macroType = 'char';
+                    slot = singlePart;
+                }
+                else if (['user', 'char', 'bot'].includes(singlePart)) {
+                    macroType = singlePart;
+                    slot = null;
+                }
+                else {
+                    index = closeIdx + 2;
+                    continue;
+                }
+            }
+            else {
+                const potentialCharacterName = parts[0];
+                let potentialSlot = parts.slice(1).join('_');
+                if (this.allSlots.includes(potentialSlot)) {
+                    macroType = potentialCharacterName;
+                    slot = potentialSlot;
+                }
+                else {
+                    slot = null; // Ensure slot is initialized
+                    for (let i = 1; i < parts.length; i++) {
+                        const prefix = parts.slice(0, i).join('_');
+                        const suffix = parts.slice(i).join('_');
+                        if (this.allSlots.includes(suffix)) {
+                            macroType = prefix;
+                            slot = suffix;
+                            break;
+                        }
+                    }
+                    if (slot === null || !this.allSlots.includes(slot)) {
+                        index = closeIdx + 2;
+                        continue;
+                    }
+                }
+            }
+            if (slot !== null) {
+                macros.push({
+                    fullMatch: fullMatch,
+                    type: macroType,
+                    slot: slot,
+                    startIndex: openIdx
+                });
+            }
+            index = closeIdx + 2;
+        }
+        return macros;
+    }
+    generateOutfitInfoString(botManager, userManager) {
+        try {
+            const botOutfitData = (botManager === null || botManager === void 0 ? void 0 : botManager.getOutfitData(this.allSlots)) || [];
+            const userOutfitData = (userManager === null || userManager === void 0 ? void 0 : userManager.getOutfitData(this.allSlots)) || [];
+            let outfitInfo = '';
+            outfitInfo += this._formatOutfitSection('{{char}}', 'Outfit', this.clothingSlots, botOutfitData, 'char');
+            outfitInfo += this._formatOutfitSection('{{char}}', 'Accessories', this.accessorySlots, botOutfitData, 'char');
+            outfitInfo += this._formatOutfitSection('{{user}}', 'Outfit', this.clothingSlots, userOutfitData, 'user');
+            outfitInfo += this._formatOutfitSection('{{user}}', 'Accessories', this.accessorySlots, userOutfitData, 'user');
+            return outfitInfo;
+        }
+        catch (error) {
+            console.error('[CustomMacroSystem] Error generating outfit info string:', error);
+            return '';
+        }
+    }
+    replaceMacrosInText(text) {
+        if (!text || typeof text !== 'string') {
+            return text;
+        }
+        const macros = this.extractCustomMacros(text);
+        let result = text;
+        for (let i = macros.length - 1; i >= 0; i--) {
+            const macro = macros[i];
+            let replacement;
+            if (macro.slot) {
+                replacement = this.getCurrentSlotValue(macro.type, macro.slot, ['char', 'bot', 'user'].includes(macro.type) ? null : macro.type);
+            }
+            else if (macro.type === 'char' || macro.type === 'bot') {
+                replacement = this.getCurrentCharName();
+            }
+            else if (macro.type === 'user') {
+                replacement = this.getCurrentUserName();
+            }
+            else {
+                replacement = macro.type;
+            }
+            result = result.substring(0, macro.startIndex) +
+                replacement +
+                result.substring(macro.startIndex + macro.fullMatch.length);
+        }
+        return result;
+    }
+    _generateCacheKey(macroType, slotName, characterName) {
+        var _a;
+        const context = ((_a = window.SillyTavern) === null || _a === void 0 ? void 0 : _a.getContext) ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
+        const currentCharacterId = (context === null || context === void 0 ? void 0 : context.characterId) || 'unknown';
+        const currentInstanceId = Store_1.outfitStore.getCurrentInstanceId() || 'unknown';
+        return `${macroType}_${slotName}_${characterName || 'null'}_${currentCharacterId}_${currentInstanceId}`;
+    }
+    _setCache(cacheKey, value) {
+        this.macroValueCache.set(cacheKey, {
+            value: value,
+            timestamp: Date.now()
+        });
+    }
+    _cleanupExpiredCache() {
+        for (const [key, entry] of this.macroValueCache.entries()) {
+            if (Date.now() - entry.timestamp >= this.cacheExpiryTime) {
+                this.macroValueCache.delete(key);
+            }
+        }
+    }
+    _formatOutfitSection(entity, sectionTitle, slots, outfitData, macroPrefix) {
+        const hasItems = outfitData.some(data => slots.includes(data.name) && data.value !== 'None' && data.value !== '');
+        if (!hasItems) {
+            return '';
+        }
+        let section = `
+**${entity}'s Current ${sectionTitle}**
+`;
+        slots.forEach(slot => {
+            const slotData = outfitData.find((data) => data.name === slot);
+            if (slotData && slotData.value !== 'None' && slotData.value !== '') {
+                const formattedSlotName = this._formatSlotName(slot);
+                section += `**${formattedSlotName}:** {{${macroPrefix}_${slotData.name}}}
+`;
+            }
+        });
+        return section;
+    }
+    _formatSlotName(slot) {
+        let result = '';
+        for (let i = 0; i < slot.length; i++) {
+            if (i > 0 && slot[i] >= 'A' && slot[i] <= 'Z' && slot[i - 1] !== ' ') {
+                result += ' ' + slot[i];
+            }
+            else {
+                result += slot[i];
+            }
+        }
+        result = result.charAt(0).toUpperCase() + result.slice(1);
+        result = result.split('-').join(' ');
+        return result;
+    }
+}
+exports.customMacroSystem = new CustomMacroService();
+const updateMacroCacheOnOutfitChange = (outfitType, characterId, instanceId, slotName) => {
+    exports.customMacroSystem.clearCache();
+};
+exports.updateMacroCacheOnOutfitChange = updateMacroCacheOnOutfitChange;
+const invalidateSpecificMacroCaches = (outfitType, characterId, instanceId, slotName) => {
+    for (const [key, entry] of exports.customMacroSystem.macroValueCache.entries()) {
+        if (key.includes(characterId) && key.includes(instanceId) && key.includes(slotName)) {
+            exports.customMacroSystem.macroValueCache.delete(key);
+        }
+    }
+};
+exports.invalidateSpecificMacroCaches = invalidateSpecificMacroCaches;

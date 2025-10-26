@@ -1,0 +1,273 @@
+"use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.setupEventListeners = setupEventListeners;
+const events_1 = require("../core/events");
+const CustomMacroService_1 = require("./CustomMacroService");
+const Store_1 = require("../common/Store");
+const utilities_1 = require("../utils/utilities");
+class EventService {
+    constructor(context) {
+        this.botManager = context.botManager;
+        this.userManager = context.userManager;
+        this.botPanel = context.botPanel;
+        this.userPanel = context.userPanel;
+        this.autoOutfitSystem = context.autoOutfitSystem;
+        this.updateForCurrentCharacter = context.updateForCurrentCharacter;
+        this.processMacrosInFirstMessage = context.processMacrosInFirstMessage;
+        this.context = context.context || null;
+        this.currentFirstMessageHash = null;
+        this.initialize();
+    }
+    initialize() {
+        var _a;
+        this.context = this.context || (((_a = window.SillyTavern) === null || _a === void 0 ? void 0 : _a.getContext) ? window.SillyTavern.getContext() : window.getContext()) || null;
+        if (!this.context || !this.context.eventSource || !this.context.event_types) {
+            console.warn('[OutfitTracker] Context not fully available for event listeners yet, trying again later');
+            setTimeout(() => this.initialize(), 1000);
+            return;
+        }
+        this.setupSillyTavernEventListeners();
+        this.setupExtensionEventListeners();
+        this.overrideClearChat();
+        this.overrideResetChat();
+        this.updateForCurrentCharacter();
+    }
+    setupSillyTavernEventListeners() {
+        if (!this.context) {
+            console.warn('[EventService] Context is null, cannot setup event listeners');
+            return;
+        }
+        const { eventSource, event_types } = this.context;
+        eventSource.on(event_types.APP_READY, () => this.handleAppReady());
+        eventSource.on(event_types.CHAT_CHANGED, () => this.handleChatChange());
+        eventSource.on(event_types.MESSAGE_RECEIVED, (data) => this.handleMessageReceived(data));
+        eventSource.on(event_types.MESSAGE_SWIPED, (index) => this.handleMessageSwiped(index));
+    }
+    setupExtensionEventListeners() {
+        events_1.extensionEventBus.on(events_1.EXTENSION_EVENTS.CONTEXT_UPDATED, () => this.handleContextUpdate());
+    }
+    handleAppReady() {
+        console.log('[OutfitTracker] App ready, marking auto outfit system as initialized');
+        if (this.autoOutfitSystem) {
+            this.autoOutfitSystem.markAppInitialized();
+        }
+        this.updateForCurrentCharacter();
+        CustomMacroService_1.customMacroSystem.deregisterCharacterSpecificMacros(this.context);
+        CustomMacroService_1.customMacroSystem.registerCharacterSpecificMacros(this.context);
+    }
+    handleChatChange() {
+        var _a, _b;
+        if (!this.context || !((_a = this.context.chat) === null || _a === void 0 ? void 0 : _a.length)) {
+            return;
+        }
+        if (((_b = this.context.chat) === null || _b === void 0 ? void 0 : _b.length) > 0) {
+            const firstBotMessage = this.context.chat.find(msg => !msg.is_user && !msg.is_system);
+            if (firstBotMessage) {
+                const firstMessageHash = this.generateMessageHash(firstBotMessage.mes);
+                if (this.currentFirstMessageHash !== firstMessageHash) {
+                    console.log('[OutfitTracker] CHAT_CHANGED event fired and first message has changed - updating for new conversation context');
+                    this.currentFirstMessageHash = firstMessageHash;
+                    this.updateForCurrentCharacter();
+                    CustomMacroService_1.customMacroSystem.deregisterCharacterSpecificMacros(this.context);
+                    CustomMacroService_1.customMacroSystem.registerCharacterSpecificMacros(this.context);
+                }
+                else {
+                    console.log('[OutfitTracker] CHAT_CHANGED event fired but first message unchanged - skipping update');
+                }
+            }
+            else {
+                this.currentFirstMessageHash = null;
+                console.log('[OutfitTracker] CHAT_CHANGED event fired with no first bot message - updating for character switch');
+                this.updateForCurrentCharacter();
+                CustomMacroService_1.customMacroSystem.deregisterCharacterSpecificMacros(this.context);
+                CustomMacroService_1.customMacroSystem.registerCharacterSpecificMacros(this.context);
+            }
+        }
+    }
+    handleMessageReceived(data) {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!this.context) {
+                return;
+            }
+            const chat = this.context.chat;
+            const aiMessages = chat.filter(msg => !msg.is_user && !msg.is_system);
+            if (aiMessages.length === 1 && !data.is_user) {
+                console.log('[OutfitTracker] First AI message received, updating outfit instance.');
+                const firstBotMessage = aiMessages[0];
+                this.currentFirstMessageHash = this.generateMessageHash(firstBotMessage.mes);
+                const currentBotInstanceId = this.botManager.getOutfitInstanceId();
+                const currentUserInstanceId = this.userManager.getOutfitInstanceId();
+                if (currentBotInstanceId && this.botManager.characterId) {
+                    const botOutfitData = Object.assign({}, this.botManager.getCurrentOutfit());
+                    Store_1.outfitStore.setBotOutfit(this.botManager.characterId, currentBotInstanceId, botOutfitData);
+                }
+                if (currentUserInstanceId) {
+                    const userOutfitData = Object.assign({}, this.userManager.getCurrentOutfit());
+                    Store_1.outfitStore.setUserOutfit(currentUserInstanceId, userOutfitData);
+                }
+                yield this.processMacrosInFirstMessage(this.context);
+                yield this.updateForCurrentCharacter();
+            }
+        });
+    }
+    handleMessageSwiped(index) {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!this.context) {
+                return;
+            }
+            console.log(`[OutfitTracker] MESSAGE_SWIPED event fired with index: ${index}`);
+            const chat = this.context.chat;
+            if (!chat || index < 0 || index >= chat.length) {
+                return;
+            }
+            const aiMessages = chat.filter(msg => !msg.is_user && !msg.is_system);
+            if (aiMessages.length > 0 && chat.indexOf(aiMessages[0]) === index) {
+                console.log('[OutfitTracker] First message was swiped, updating outfit instance.');
+                const firstBotMessage = aiMessages[0];
+                if (firstBotMessage) {
+                    this.currentFirstMessageHash = this.generateMessageHash(firstBotMessage.mes);
+                }
+                const oldBotCharacterId = this.botManager.characterId;
+                const oldBotInstanceId = this.botManager.getOutfitInstanceId();
+                const oldUserInstanceId = this.userManager.getOutfitInstanceId();
+                if (oldBotInstanceId && oldBotCharacterId) {
+                    const oldBotOutfitData = Object.assign({}, this.botManager.getCurrentOutfit());
+                    Store_1.outfitStore.setBotOutfit(oldBotCharacterId, oldBotInstanceId, oldBotOutfitData);
+                }
+                if (oldUserInstanceId) {
+                    const oldUserOutfitData = Object.assign({}, this.userManager.getCurrentOutfit());
+                    Store_1.outfitStore.setUserOutfit(oldUserInstanceId, oldUserOutfitData);
+                }
+                Store_1.outfitStore.saveState();
+                yield this.processMacrosInFirstMessage(this.context);
+                yield this.updateForCurrentCharacter();
+            }
+        });
+    }
+    handleContextUpdate() {
+        this.updateForCurrentCharacter();
+        if (this.context) {
+            CustomMacroService_1.customMacroSystem.deregisterCharacterSpecificMacros(this.context);
+            CustomMacroService_1.customMacroSystem.registerCharacterSpecificMacros(this.context);
+        }
+    }
+    generateMessageHash(text) {
+        return (0, utilities_1.generateMessageHash)(text);
+    }
+    overrideResetChat() {
+        if (typeof window.restartLLM !== 'function') {
+            console.warn('[OutfitTracker] window.restartLLM not found. Cannot override chat reset.');
+            return;
+        }
+        const originalRestart = window.restartLLM;
+        window.restartLLM = (...args) => __awaiter(this, void 0, void 0, function* () {
+            console.log('[OutfitTracker] Chat reset triggered (restartLLM).');
+            Store_1.outfitStore.flush();
+            const botOutfitInstanceId = this.botManager.getOutfitInstanceId();
+            const userOutfitInstanceId = this.userManager.getOutfitInstanceId();
+            if (botOutfitInstanceId) {
+                yield this.botManager.saveOutfit();
+            }
+            if (userOutfitInstanceId) {
+                yield this.userManager.saveOutfit();
+            }
+            const result = yield originalRestart.apply(this, args);
+            if (botOutfitInstanceId) {
+                this.botManager.setOutfitInstanceId(botOutfitInstanceId);
+            }
+            if (userOutfitInstanceId) {
+                this.userManager.setOutfitInstanceId(userOutfitInstanceId);
+            }
+            if (botOutfitInstanceId) {
+                Store_1.outfitStore.setCurrentInstanceId(botOutfitInstanceId);
+            }
+            yield this.updateForCurrentCharacter();
+            if (botOutfitInstanceId) {
+                const appliedDefault = yield this.botManager.applyDefaultOutfitAfterReset();
+                if (!appliedDefault) {
+                    this.botManager.loadOutfit();
+                }
+                if (window.botOutfitPanel && typeof window.botOutfitPanel.renderContent === 'function') {
+                    window.botOutfitPanel.renderContent();
+                }
+            }
+            if (userOutfitInstanceId) {
+                const appliedDefault = yield this.userManager.applyDefaultOutfitAfterReset();
+                if (!appliedDefault) {
+                    this.userManager.loadOutfit();
+                }
+                if (window.userOutfitPanel && typeof window.userOutfitPanel.renderContent === 'function') {
+                    window.userOutfitPanel.renderContent();
+                }
+            }
+            console.log('[OutfitTracker] Restored outfits after chat reset.');
+            events_1.extensionEventBus.emit(events_1.EXTENSION_EVENTS.CHAT_CLEARED);
+            return result;
+        });
+    }
+    overrideClearChat() {
+        if (typeof window.clearChat !== 'function') {
+            console.warn('[OutfitTracker] window.clearChat not found. Cannot override chat clear.');
+            return;
+        }
+        const originalClearChat = window.clearChat;
+        window.clearChat = (...args) => __awaiter(this, void 0, void 0, function* () {
+            const botOutfitInstanceId = this.botManager.getOutfitInstanceId();
+            const userOutfitInstanceId = this.userManager.getOutfitInstanceId();
+            if (botOutfitInstanceId) {
+                const botOutfitData = Object.assign({}, this.botManager.getCurrentOutfit());
+                if (this.botManager.characterId) {
+                    Store_1.outfitStore.setBotOutfit(this.botManager.characterId, botOutfitInstanceId, botOutfitData);
+                }
+            }
+            if (userOutfitInstanceId) {
+                const userOutfitData = Object.assign({}, this.userManager.getCurrentOutfit());
+                Store_1.outfitStore.setUserOutfit(userOutfitInstanceId, userOutfitData);
+            }
+            Store_1.outfitStore.saveState();
+            yield originalClearChat.apply(this, args);
+            if (botOutfitInstanceId) {
+                this.botManager.setOutfitInstanceId(botOutfitInstanceId);
+            }
+            if (userOutfitInstanceId) {
+                this.userManager.setOutfitInstanceId(userOutfitInstanceId);
+            }
+            if (botOutfitInstanceId) {
+                Store_1.outfitStore.setCurrentInstanceId(botOutfitInstanceId);
+            }
+            yield this.updateForCurrentCharacter();
+            if (botOutfitInstanceId) {
+                const appliedDefault = yield this.botManager.applyDefaultOutfitAfterReset();
+                if (!appliedDefault) {
+                    this.botManager.loadOutfit();
+                }
+                if (window.botOutfitPanel && typeof window.botOutfitPanel.renderContent === 'function') {
+                    window.botOutfitPanel.renderContent();
+                }
+            }
+            if (userOutfitInstanceId) {
+                const appliedDefault = yield this.userManager.applyDefaultOutfitAfterReset();
+                if (!appliedDefault) {
+                    this.userManager.loadOutfit();
+                }
+                if (window.userOutfitPanel && typeof window.userOutfitPanel.renderContent === 'function') {
+                    window.userOutfitPanel.renderContent();
+                }
+            }
+            console.log('[OutfitTracker] Restored outfits after chat clear.');
+            events_1.extensionEventBus.emit(events_1.EXTENSION_EVENTS.CHAT_CLEARED);
+        });
+    }
+}
+function setupEventListeners(context) {
+    return new EventService(context);
+}
