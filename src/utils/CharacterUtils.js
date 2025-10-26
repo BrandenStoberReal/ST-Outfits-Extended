@@ -21,6 +21,7 @@ export const CharacterInfoType = {
     ChatSize: 'CharChatSize',
     DateSinceLastChat: 'CharDateSinceLastChat',
     DataSize: 'CharDataSize',
+    CharacterNotes: 'CharCharacterNotes',
 };
 
 /**
@@ -100,12 +101,15 @@ export function getCharacterInfoById(charId, infoType) {
                 case CharacterInfoType.DataSize:
                     infoBuffer = character.data_size;
                     break;
+                case CharacterInfoType.CharacterNotes:
+                    infoBuffer = character.data.extensions.depth_prompt.prompt;
+                    break;
                 default:
                     infoBuffer = null;
                     break;
                 }
 
-                debugLog('Character info field "' + infoType + '"successfully fetched from ID ' + charId);
+                debugLog('Character info field "' + infoType + '" successfully fetched from ID ' + charId, null, 'info');
                 return infoBuffer;
             }
         }
@@ -126,10 +130,27 @@ export function getCharacters() {
     const context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
 
     if (context && context.characters) {
-        debugLog('Character array fetched successfully.');
+        debugLog('Character array fetched successfully.', null, 'info');
         return context.characters;
     }
 
     debugLog('Resolving character array failed.', null, 'error');
+    return null;
+}
+
+/**
+ * Gets a list of all loaded characters.
+ * @param {object} char_object The character object from the master array
+ * @returns {int|null} The list of character objects or null if not found
+ */
+export function getCharacterIdByObject(char_object) {
+    const characters = getCharacters();
+
+    if (char_object && characters) {
+        debugLog('Character ID via object fetched successfully.', null, 'info');
+        return characters.indexOf(char_object);
+    }
+
+    debugLog('Resolving character id via object failed.', null, 'error');
     return null;
 }

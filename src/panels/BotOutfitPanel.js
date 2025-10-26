@@ -16,7 +16,7 @@ import {areSystemMessagesEnabled} from '../utils/SettingsUtil.js';
 // Import outfit store
 import {outfitStore} from '../common/Store.js';
 
-import {getCharacters} from '../utils/CharacterUtils.js';
+import {CharacterInfoType, getCharacterInfoById, getCharacters} from '../utils/CharacterUtils.js';
 
 /**
  * BotOutfitPanel - Manages the UI for the bot character's outfit tracking
@@ -494,30 +494,21 @@ export class BotOutfitPanel {
      */
     async getCharacterData() {
         const context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
-        const characters = getCharacters();
 
-        if (!context || !characters || context.characterId === undefined || context.characterId === null) {
+        if (!context || context.characterId === undefined || context.characterId === null) {
             return {
                 error: 'No character selected or context not ready'
             };
         }
 
-        const character = characters[context.characterId];
-
-        if (!character) {
-            return {
-                error: 'Character not found'
-            };
-        }
-
         // Get character information
         const characterInfo = {
-            name: character.name || 'Unknown',
-            description: character.description || '',
-            personality: character.personality || '',
-            scenario: character.scenario || '',
-            firstMessage: character.first_message || '',
-            characterNotes: character.character_notes || '',
+            name: getCharacterInfoById(context.characterId, CharacterInfoType.Name) || 'Unknown',
+            description: getCharacterInfoById(context.characterId, CharacterInfoType.Description) || '',
+            personality: getCharacterInfoById(context.characterId, CharacterInfoType.Personality) || '',
+            scenario: getCharacterInfoById(context.characterId, CharacterInfoType.Scenario) || '',
+            firstMessage: getCharacterInfoById(context.characterId, CharacterInfoType.DefaultMessage) || '',
+            characterNotes: getCharacterInfoById(context.characterId, CharacterInfoType.CharacterNotes) || '',
         };
 
         // Get the first message from the current chat if it's different from the character's first_message
