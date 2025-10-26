@@ -6,6 +6,7 @@
 import {outfitStore} from '../common/Store.js';
 import {ACCESSORY_SLOTS, CLOTHING_SLOTS} from '../config/constants.js';
 import {macroProcessor} from '../processors/MacroProcessor.js';
+import {getCharacters} from '../utils/CharacterUtils.js';
 
 class CustomMacroService {
     constructor() {
@@ -61,10 +62,11 @@ class CustomMacroService {
     registerCharacterSpecificMacros(context) {
         // Use provided context or fallback to window
         const ctx = context || (window.SillyTavern?.getContext ? window.SillyTavern.getContext() : window.getContext());
+        const characters = getCharacters();
 
-        if (ctx && ctx.registerMacro && ctx.characters) {
+        if (ctx && ctx.registerMacro && characters) {
             // Iterate through all available characters
-            for (const character of ctx.characters) {
+            for (const character of characters) {
                 if (character && character.name) {
                     const characterName = character.name;
 
@@ -88,10 +90,11 @@ class CustomMacroService {
     deregisterCharacterSpecificMacros(context) {
         // Use provided context or fallback to window
         const ctx = context || (window.SillyTavern?.getContext ? window.SillyTavern.getContext() : window.getContext());
+        const characters = getCharacters();
 
-        if (ctx && ctx.unregisterMacro && ctx.characters) {
+        if (ctx && ctx.unregisterMacro && characters) {
             // Iterate through all available characters
-            for (const character of ctx.characters) {
+            for (const character of characters) {
                 if (character && character.name) {
                     const characterName = character.name;
 
@@ -158,17 +161,18 @@ class CustomMacroService {
 
         try {
             const context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
+            const characters = getCharacters();
 
             // Determine characterId based on macro type and character name
             let charId = null;
 
             if (characterName) {
                 // Looking for a specific character by name
-                if (context && context.characters) {
-                    const character = context.characters.find(c => c.name === characterName);
+                if (context && characters) {
+                    const character = characters.find(c => c.name === characterName);
 
                     if (character) {
-                        charId = character.avatar;
+                        charId = characters.indexOf(character);
                     } else if (context.characterId && context.getName) {
                         // If character not found in the list, try to match by the currently active character if macroType matches
                         const currentCharName = context.getName();

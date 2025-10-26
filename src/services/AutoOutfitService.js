@@ -8,6 +8,7 @@ import {extractCommands} from '../processors/StringProcessor.js';
 import {generateOutfitFromLLM} from './LLMService.js';
 import {customMacroSystem} from './CustomMacroService.js';
 import {outfitStore} from '../common/Store.js';
+import {getCharacters} from '../utils/CharacterUtils.js';
 
 export class AutoOutfitService {
     /**
@@ -458,9 +459,10 @@ You have the following commands at your disposal:
     getActiveCharacterName() {
         try {
             const context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : window.getContext();
+            const characters = getCharacters();
 
-            if (context && context.characters && context.this_chid !== undefined) {
-                const character = context.characters[context.this_chid];
+            if (context && characters && context.this_chid !== undefined) {
+                const character = characters[context.this_chid];
 
                 return character?.name || 'Character';
             }

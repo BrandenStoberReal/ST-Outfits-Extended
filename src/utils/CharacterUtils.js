@@ -8,13 +8,26 @@ export const CharacterInfoType = {
     DefaultMessage: 'CharDefaultMessage',
     ExampleMessage: 'CharExampleMessage',
     CreatorComment: 'CharCreatorComment',
+    Avatar: 'CharAvatar',
+    Talkativeness: 'CharTalkativeness',
+    Favorited: 'CharFavorited',
+    Tags: 'CharTags',
+    Spec: 'CharSpec',
+    SpecVersion: 'CharSpecVersion',
+    Data: 'CharData',
+    CreationDate: 'CharCreationDate',
+    JsonData: 'CharJsonData',
+    DateAdded: 'CharDateAdded',
+    ChatSize: 'CharChatSize',
+    DateSinceLastChat: 'CharDateSinceLastChat',
+    DataSize: 'CharDataSize',
 };
 
 /**
  * Get character information by character ID
  * @param {string} charId - The character ID to look up
  * @param {string} infoType - A field from the CharacterInfoType enum representing the desired data
- * @returns {string|null} The character info or null if not found
+ * @returns {any|null} The character info or null if not found
  */
 export function getCharacterInfoById(charId, infoType) {
     try {
@@ -48,6 +61,45 @@ export function getCharacterInfoById(charId, infoType) {
                 case CharacterInfoType.CreatorComment:
                     infoBuffer = character.creatorcomment;
                     break;
+                case CharacterInfoType.Avatar:
+                    infoBuffer = character.avatar;
+                    break;
+                case CharacterInfoType.Talkativeness:
+                    infoBuffer = character.talkativeness;
+                    break;
+                case CharacterInfoType.Favorited:
+                    infoBuffer = character.fav;
+                    break;
+                case CharacterInfoType.Tags:
+                    infoBuffer = character.tags;
+                    break;
+                case CharacterInfoType.Spec:
+                    infoBuffer = character.spec;
+                    break;
+                case CharacterInfoType.SpecVersion:
+                    infoBuffer = character.spec_version;
+                    break;
+                case CharacterInfoType.Data:
+                    infoBuffer = character.data;
+                    break;
+                case CharacterInfoType.CreationDate:
+                    infoBuffer = character.create_date;
+                    break;
+                case CharacterInfoType.JsonData:
+                    infoBuffer = character.json_data;
+                    break;
+                case CharacterInfoType.DateAdded:
+                    infoBuffer = character.date_added;
+                    break;
+                case CharacterInfoType.ChatSize:
+                    infoBuffer = character.chat_size;
+                    break;
+                case CharacterInfoType.DateSinceLastChat:
+                    infoBuffer = character.date_last_chat;
+                    break;
+                case CharacterInfoType.DataSize:
+                    infoBuffer = character.data_size;
+                    break;
                 default:
                     infoBuffer = null;
                     break;
@@ -64,4 +116,20 @@ export function getCharacterInfoById(charId, infoType) {
         console.error('Error getting character info by ID:', error);
         return null;
     }
+}
+
+/**
+ * Gets a list of all loaded characters.
+ * @returns {array|null} The list of character objects or null if not found
+ */
+export function getCharacters() {
+    const context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
+
+    if (context && context.characters) {
+        debugLog('Character array fetched successfully.');
+        return context.characters;
+    }
+
+    debugLog('Resolving character array failed.', null, 'error');
+    return null;
 }

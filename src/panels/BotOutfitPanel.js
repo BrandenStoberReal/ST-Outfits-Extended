@@ -16,6 +16,8 @@ import {areSystemMessagesEnabled} from '../utils/SettingsUtil.js';
 // Import outfit store
 import {outfitStore} from '../common/Store.js';
 
+import {getCharacters} from '../utils/CharacterUtils.js';
+
 /**
  * BotOutfitPanel - Manages the UI for the bot character's outfit tracking
  * This class creates and manages a draggable panel for viewing and modifying
@@ -104,15 +106,16 @@ export class BotOutfitPanel {
     getFirstMessageText() {
         try {
             const context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
+            const characters = getCharacters();
 
             if (context && context.chat && Array.isArray(context.chat)) {
                 // Get the first AI message from the character (instance identifier)
                 const aiMessages = context.chat.filter(msg =>
                     !msg.is_user && !msg.is_system &&
                     (msg.name === this.outfitManager.character ||
-                        (context.characters &&
-                            context.characters[context.characterId] &&
-                            msg.name === context.characters[context.characterId].name)));
+                        (characters &&
+                            characters[context.characterId] &&
+                            msg.name === characters[context.characterId].name)));
 
                 if (aiMessages.length > 0) {
                     const firstMessage = aiMessages[0];
@@ -491,14 +494,15 @@ export class BotOutfitPanel {
      */
     async getCharacterData() {
         const context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
+        const characters = getCharacters();
 
-        if (!context || !context.characters || context.characterId === undefined || context.characterId === null) {
+        if (!context || !characters || context.characterId === undefined || context.characterId === null) {
             return {
                 error: 'No character selected or context not ready'
             };
         }
 
-        const character = context.characters[context.characterId];
+        const character = characters[context.characterId];
 
         if (!character) {
             return {

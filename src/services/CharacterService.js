@@ -1,4 +1,5 @@
 import {outfitStore} from '../common/Store.js';
+import {getCharacters} from '../utils/CharacterUtils.js';
 
 /**
  * CharacterService - Handles character updates for the Outfit Tracker extension
@@ -67,9 +68,10 @@ export async function updateForCurrentCharacter(botManager, userManager, botPane
 
         // Update the bot manager with the current character info
         const context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
+        const characters = getCharacters();
 
-        if (context && context.characters && context.characterId !== undefined && context.characterId !== null) {
-            const currentChar = context.characters[context.characterId];
+        if (context && characters && context.characterId !== undefined && context.characterId !== null) {
+            const currentChar = characters[context.characterId];
 
             if (currentChar && currentChar.name) {
                 botManager.setCharacter(currentChar.name, context.characterId.toString());
