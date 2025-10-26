@@ -1,5 +1,5 @@
-import {initializeExtension} from './src/core/ExtensionCore';
-import {debugLog} from './src/logging/DebugLogger';
+import {initializeExtension} from './core/ExtensionCore';
+import {debugLog} from './logging/DebugLogger';
 
 declare const $: any;
 

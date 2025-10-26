@@ -3,7 +3,7 @@
   "author": "Lucanna (Forked by Branden)",
   "version": "2.0.0-dev-unstable",
   "homePage": "https://github.com/BrandenStoberReal/ST-Outfits-Extended",
-  "js": "index.js",
+  "js": "./dist/index.js",
   "css": "style.css",
   "loading_order": 15,
   "generate_interceptor": "outfitTrackerInterceptor"
