@@ -1,11 +1,12 @@
 import {outfitStore} from '../common/Store.js';
+import SillyTavernApi from '../services/SillyTavernApi.js';
 
-export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem, context) {
+export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem) {
     const MODULE_NAME = 'outfit_tracker';
 
     const storeState = outfitStore.getState();
     const settings = {outfit_tracker: storeState.settings};
-    const saveSettingsFn = context?.saveSettingsDebounced || window.saveSettingsDebounced;
+    const saveSettingsFn = SillyTavernApi.getContext().saveSettingsDebounced;
     const hasAutoSystem = AutoOutfitSystem.name !== 'DummyAutoOutfitSystem';
 
     // Safely access settings, with fallback to default values
@@ -332,7 +333,7 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem, context) {
                 }
 
                 // Check event system status (check if event listeners were set up)
-                const context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
+                const context = SillyTavernApi.getContext();
 
                 if (context && context.eventSource) {
                     $('#status-events').removeClass('status-loading').addClass('status-active').text('Active');

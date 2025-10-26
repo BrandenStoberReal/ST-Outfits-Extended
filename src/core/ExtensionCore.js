@@ -18,6 +18,7 @@ import {DataManager} from '../managers/DataManager.js';
 import {OutfitDataService} from '../services/OutfitDataService.js';
 import {macroProcessor} from '../processors/MacroProcessor.js';
 import {debugLog} from '../logging/DebugLogger.js';
+import SillyTavernApi from '../services/SillyTavernApi.js';
 
 let AutoOutfitSystem;
 
@@ -99,21 +100,20 @@ function setupApi(botManager, userManager, botPanel, userPanel, autoOutfitSystem
     });
 
     // Register character-specific macros when the API is set up
-    if (typeof window.SillyTavern?.getContext !== 'undefined') {
-        const STContext = window.SillyTavern.getContext();
+    const STContext = SillyTavernApi.getContext();
 
-        if (STContext) {
-            // Wait for character data to be loaded before registering character-specific macros
-            setTimeout(() => {
-                customMacroSystem.deregisterCharacterSpecificMacros(STContext);
-                customMacroSystem.registerCharacterSpecificMacros(STContext);
-            }, 2000); // Wait a bit for character data to load
-        }
+    if (STContext) {
+        // Wait for character data to be loaded before registering character-specific macros
+        setTimeout(() => {
+            customMacroSystem.deregisterCharacterSpecificMacros(STContext);
+            customMacroSystem.registerCharacterSpecificMacros(STContext);
+        }, 2000); // Wait a bit for character data to load
     }
+
 
     // Also register a global function that can refresh macros when needed
     window.refreshOutfitMacros = function () {
-        const STContext = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : window.getContext();
+        const STContext = SillyTavernApi.getContext();
 
         if (STContext) {
             customMacroSystem.deregisterCharacterSpecificMacros(STContext);
@@ -240,7 +240,7 @@ export async function initializeExtension() {
     await loadAutoOutfitSystem();
     debugLog('Starting extension initialization', null, 'info');
 
-    const STContext = window.SillyTavern?.getContext?.() || window.getContext?.();
+    const STContext = SillyTavernApi.getContext();
 
     if (!STContext) {
         console.error('[OutfitTracker] Required SillyTavern context is not available.');

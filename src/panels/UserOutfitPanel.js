@@ -3,12 +3,14 @@ import {dragElementWithSave, resizeElement} from '../common/shared.js';
 
 // Import utility functions
 import {formatSlotName as utilsFormatSlotName} from '../utils/utilities.js';
+import * as SillyTavernUtility from '../utils/SillyTavernUtility.js';
 
 // Import settings utility
 import {areSystemMessagesEnabled} from '../utils/SettingsUtil.js';
 
 // Import outfit store
 import {outfitStore} from '../common/Store.js';
+import SillyTavernApi from '../services/SillyTavernApi.js';
 
 /**
  * UserOutfitPanel - Manages the UI for the user character's outfit tracking
@@ -94,18 +96,13 @@ export class UserOutfitPanel {
      */
     getFirstMessageText() {
         try {
-            const context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
+            const characterName = SillyTavernUtility.getCharacterName();
+            const aiMessages = SillyTavernUtility.findMessagesByCharacter(characterName);
 
-            if (context && context.chat && Array.isArray(context.chat)) {
-                // Get the first AI message from the character (instance identifier)
-                const aiMessages = context.chat.filter(msg =>
-                    !msg.is_user && !msg.is_system);
+            if (aiMessages.length > 0) {
+                const firstMessage = aiMessages[0];
 
-                if (aiMessages.length > 0) {
-                    const firstMessage = aiMessages[0];
-
-                    return firstMessage.mes || '';
-                }
+                return firstMessage.mes || '';
             }
             return '';
         } catch (error) {
@@ -550,7 +547,7 @@ export class UserOutfitPanel {
         }
 
         // Get context to set up event listeners
-        const context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
+        const context = SillyTavernApi.getContext();
 
         if (context && context.eventSource && context.event_types) {
             const {eventSource, event_types} = context;

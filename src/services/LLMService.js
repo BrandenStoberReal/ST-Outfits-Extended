@@ -4,6 +4,8 @@
 
 import {LLMUtility} from '../utils/LLMUtility.js';
 import {extractCommands} from '../processors/StringProcessor.js';
+import SillyTavernApi from './SillyTavernApi.js';
+import * as SillyTavernUtility from '../utils/SillyTavernUtility.js';
 
 /**
  * Process a single outfit command
@@ -59,7 +61,7 @@ export async function generateOutfitFromLLM(options) {
         const response = await LLMUtility.generateWithRetry(
             prompt,
             'You are an outfit generation system. Based on the character information provided, output outfit commands to set the character\'s clothing and accessories.',
-            window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null)
+            SillyTavernApi.getContext()
         );
 
         return response;
@@ -75,13 +77,7 @@ export async function generateOutfitFromLLM(options) {
  */
 export async function importOutfitFromCharacterCard() {
     try {
-        const context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
-
-        if (!context || !context.characters || context.characterId === undefined || context.characterId === null) {
-            throw new Error('No character selected or context not ready');
-        }
-
-        const character = context.characters[context.characterId];
+        const character = SillyTavernUtility.getCurrentCharacter();
 
         if (!character) {
             throw new Error('Character not found');
@@ -99,8 +95,8 @@ export async function importOutfitFromCharacterCard() {
         Description: ${character.description || ''}
         Personality: ${character.personality || ''}
         Scenario: ${character.scenario || ''}
-        First Message: ${character.first_message || ''}
-        Notes: ${character.character_notes || ''}
+        First Message: ${character.first_mes || ''}
+        Notes: ${character.creatorcomment || ''}
         
         OUTPUT ONLY OUTFIT COMMANDS, NO EXPLANATIONS:`;
 
@@ -108,7 +104,7 @@ export async function importOutfitFromCharacterCard() {
         const response = await LLMUtility.generateWithRetry(
             prompt,
             'You are an outfit extraction system. Extract clothing and accessory items from character descriptions and output outfit commands.',
-            context
+            SillyTavernApi.getContext()
         );
 
         // Extract commands from response

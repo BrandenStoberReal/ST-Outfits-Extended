@@ -2,6 +2,8 @@
  * Utility functions for safely accessing extension settings
  */
 
+import SillyTavernApi from '../services/SillyTavernApi.js';
+
 /**
  * Safely get a setting value from various possible sources
  * @param {string} key - The setting key to retrieve
@@ -16,15 +18,9 @@ export function getSettingValue(key, defaultValue = undefined) {
         }
 
         // Fallback to the extension settings through context
-        const context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() :
-            window.getContext ? window.getContext() :
-                null;
+        const context = SillyTavernApi.getContext();
 
-        if (context && typeof context === 'function') {
-            const settings = context().extensionSettings;
-
-            return settings?.outfit_tracker?.[key];
-        } else if (context && context.extensionSettings) {
+        if (context && context.extensionSettings) {
             return context.extensionSettings.outfit_tracker?.[key];
         }
 

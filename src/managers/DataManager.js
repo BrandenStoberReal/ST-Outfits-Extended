@@ -1,4 +1,4 @@
-import {deepMerge} from '../utils/utilities.js';
+import {deepMerge} from '../utils/SillyTavernUtility.js';
 
 const DATA_VERSION = '1.0.0';
 
