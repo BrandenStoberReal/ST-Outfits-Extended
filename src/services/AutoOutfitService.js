@@ -8,8 +8,6 @@ import {extractCommands} from '../processors/StringProcessor.js';
 import {generateOutfitFromLLM} from './LLMService.js';
 import {customMacroSystem} from './CustomMacroService.js';
 import {outfitStore} from '../common/Store.js';
-import SillyTavernApi from './SillyTavernApi.js';
-import * as SillyTavernUtility from '../utils/SillyTavernUtility.js';
 
 export class AutoOutfitService {
     /**
@@ -152,7 +150,7 @@ You have the following commands at your disposal:
 
         try {
             // Try to get the context from SillyTavern first, then fall back to window.getContext
-            const context = SillyTavernApi.getContext();
+            const context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
 
             if (!context || !context.eventSource || !context.event_types) {
                 console.error('[AutoOutfitSystem] Context not ready for event listeners');
@@ -189,7 +187,7 @@ You have the following commands at your disposal:
     removeEventListeners() {
         try {
             if (this.eventHandler) {
-                const context = SillyTavernApi.getContext();
+                const context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
 
                 if (context && context.eventSource && context.event_types) {
                     context.eventSource.off(context.event_types.MESSAGE_RECEIVED, this.eventHandler);
@@ -459,9 +457,14 @@ You have the following commands at your disposal:
      */
     getActiveCharacterName() {
         try {
-            const character = SillyTavernUtility.getCurrentCharacter();
+            const context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : window.getContext();
 
-            return character?.name || 'Character';
+            if (context && context.characters && context.this_chid !== undefined) {
+                const character = context.characters[context.this_chid];
+
+                return character?.name || 'Character';
+            }
+            return 'Character';
         } catch (error) {
             console.error('Error getting active character name:', error);
             return 'Character';
@@ -646,7 +649,8 @@ You have the following commands at your disposal:
      */
     getLastMessages(count = 3) {
         try {
-            const chat = SillyTavernApi.getChat();
+            const context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : window.getContext();
+            const chat = context?.chat;
 
             if (!chat || !Array.isArray(chat) || chat.length === 0) {
                 return '';

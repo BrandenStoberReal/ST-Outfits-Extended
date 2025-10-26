@@ -7,14 +7,14 @@ import {extractCommands} from '../processors/StringProcessor.js';
 // Import LLM utility for outfit generation
 import {LLMUtility} from '../utils/LLMUtility.js';
 
-import * as SillyTavernUtility from '../utils/SillyTavernUtility.js';
+// Import utility functions
+import {formatSlotName as utilsFormatSlotName} from '../utils/utilities.js';
 
 // Import settings utility
 import {areSystemMessagesEnabled} from '../utils/SettingsUtil.js';
 
 // Import outfit store
 import {outfitStore} from '../common/Store.js';
-import SillyTavernApi from '../services/SillyTavernApi.js';
 
 /**
  * BotOutfitPanel - Manages the UI for the bot character's outfit tracking
@@ -56,7 +56,7 @@ export class BotOutfitPanel {
         panel.className = 'outfit-panel';
 
         // Get the first message hash for display in the header (instance ID)
-        const messageHash = SillyTavernUtility.generateMessageHash(this.getFirstMessageText() || this.outfitManager.getOutfitInstanceId() || '');
+        const messageHash = this.generateMessageHash(this.getFirstMessageText() || this.outfitManager.getOutfitInstanceId() || '');
         const hashDisplay = messageHash ? ` (${messageHash})` : '';
 
         // Replace placeholder "{{char}}" with the actual character name
@@ -103,15 +103,23 @@ export class BotOutfitPanel {
      */
     getFirstMessageText() {
         try {
-            const characterName = this.outfitManager.character || SillyTavernUtility.getCharacterName();
-            const aiMessages = SillyTavernUtility.findMessagesByCharacter(characterName);
+            const context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
 
-            if (aiMessages.length > 0) {
-                const firstMessage = aiMessages[0];
+            if (context && context.chat && Array.isArray(context.chat)) {
+                // Get the first AI message from the character (instance identifier)
+                const aiMessages = context.chat.filter(msg =>
+                    !msg.is_user && !msg.is_system &&
+                    (msg.name === this.outfitManager.character ||
+                        (context.characters &&
+                            context.characters[context.characterId] &&
+                            msg.name === context.characters[context.characterId].name)));
 
-                return firstMessage.mes || '';
+                if (aiMessages.length > 0) {
+                    const firstMessage = aiMessages[0];
+
+                    return firstMessage.mes || '';
+                }
             }
-
             return '';
         } catch (error) {
             console.warn('Could not get first message text for hash generation:', error);
@@ -200,7 +208,7 @@ export class BotOutfitPanel {
             slotElement.dataset.slot = slot.name;
 
             slotElement.innerHTML = `
-                <div class="slot-label">${SillyTavernUtility.formatSlotName(slot.name)}</div>
+                <div class="slot-label">${this.formatSlotName(slot.name)}</div>
                 <div class="slot-value" title="${slot.value}">${slot.value}</div>
                 <div class="slot-actions">
                     <button class="slot-change">Change</button>
@@ -469,11 +477,28 @@ export class BotOutfitPanel {
 
 
     /**
+     * Formats a slot name for display
+     * @param {string} name - The slot name to format
+     * @returns {string} The formatted slot name
+     */
+    formatSlotName(name) {
+        return utilsFormatSlotName(name);
+    }
+
+    /**
      * Gets character data from the current context
      * @returns {Promise<object>} An object containing character information or an error
      */
     async getCharacterData() {
-        const character = SillyTavernUtility.getCurrentCharacter();
+        const context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
+
+        if (!context || !context.characters || context.characterId === undefined || context.characterId === null) {
+            return {
+                error: 'No character selected or context not ready'
+            };
+        }
+
+        const character = context.characters[context.characterId];
 
         if (!character) {
             return {
@@ -487,15 +512,17 @@ export class BotOutfitPanel {
             description: character.description || '',
             personality: character.personality || '',
             scenario: character.scenario || '',
-            firstMessage: character.first_mes || '',
-            characterNotes: character.creatorcomment || '',
+            firstMessage: character.first_message || '',
+            characterNotes: character.character_notes || '',
         };
 
         // Get the first message from the current chat if it's different from the character's first_message
-        const firstChatMessage = SillyTavernUtility.findMessagesByCharacter(character.name)[0];
+        if (context.chat && context.chat.length > 0) {
+            const firstChatMessage = context.chat.find(msg => !msg.is_user && !msg.is_system);
 
-        if (firstChatMessage && firstChatMessage.mes) {
-            characterInfo.firstMessage = firstChatMessage.mes;
+            if (firstChatMessage && firstChatMessage.mes) {
+                characterInfo.firstMessage = firstChatMessage.mes;
+            }
         }
 
         return characterInfo;
@@ -553,7 +580,7 @@ INSTRUCTIONS:
             return await LLMUtility.generateWithProfile(
                 prompt,
                 'You are an outfit generation system. Based on the character information provided, output outfit commands to set the character\'s clothing and accessories.',
-                SillyTavernApi.getContext(),
+                window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null),
                 connectionProfile
             );
         } catch (error) {
@@ -779,7 +806,7 @@ INSTRUCTIONS:
 
             if (header) {
                 // Get the first message hash for display in the header (instance ID)
-                const messageHash = SillyTavernUtility.generateMessageHash(this.getFirstMessageText() || this.outfitManager.getOutfitInstanceId() || '');
+                const messageHash = this.generateMessageHash(this.getFirstMessageText() || this.outfitManager.getOutfitInstanceId() || '');
                 const hashDisplay = messageHash ? ` (${messageHash})` : '';
 
                 // Use the name parameter or the manager's character property
@@ -824,7 +851,7 @@ INSTRUCTIONS:
         }
 
         // Get context to set up event listeners
-        const context = SillyTavernApi.getContext();
+        const context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
 
         if (context && context.eventSource && context.event_types) {
             const {eventSource, event_types} = context;
@@ -883,5 +910,65 @@ INSTRUCTIONS:
             }
         });
         this.eventListeners = [];
+    }
+
+    // Generate a short identifier from the instance ID
+    generateShortId(instanceId) {
+        if (!instanceId) {
+            return '';
+        }
+
+        // If the instance ID is already a short identifier, return it
+        if (instanceId.startsWith('temp_')) {
+            return 'temp';
+        }
+
+        // Create a simple short identifier by taking up to 6 characters of the instance ID
+        // but only alphanumeric characters for better readability
+        let cleanId = '';
+
+        for (let i = 0; i < instanceId.length; i++) {
+            const char = instanceId[i];
+            const code = char.charCodeAt(0);
+
+            // Check if character is digit (0-9)
+            if (code >= 48 && code <= 57) {
+                cleanId += char;
+                continue;
+            }
+            // Check if character is uppercase letter A-Z
+            if (code >= 65 && code <= 90) {
+                cleanId += char;
+                continue;
+            }
+            // Check if character is lowercase letter a-z
+            if (code >= 97 && code <= 122) {
+                cleanId += char;
+
+            }
+            // Otherwise, skip non-alphanumeric characters
+        }
+
+        return cleanId.substring(0, 6);
+    }
+
+    // Generate an 8-character hash from a text string
+    generateMessageHash(text) {
+        if (!text) {
+            return '';
+        }
+
+        let hash = 0;
+        const str = text.substring(0, 100); // Only use first 100 chars to keep ID manageable
+
+        for (let i = 0; i < str.length; i++) {
+            const char = str.charCodeAt(i);
+
+            hash = ((hash << 5) - hash) + char;
+            hash &= hash; // Convert to 32-bit integer
+        }
+
+        // Convert to positive and return 8-character string representation
+        return Math.abs(hash).toString(36).substring(0, 8).padEnd(8, '0');
     }
 }

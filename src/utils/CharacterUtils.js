@@ -1,5 +1,4 @@
 import {debugLog} from '../logging/DebugLogger';
-import * as SillyTavernUtility from './SillyTavernUtility.js';
 
 export const CharacterInfoType = {
     Name: 'CharName',
@@ -19,40 +18,44 @@ export const CharacterInfoType = {
  */
 export function getCharacterInfoById(charId, infoType) {
     try {
-        const character = SillyTavernUtility.getCharacterById(charId);
+        const context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
 
-        if (character) {
-            let infoBuffer;
+        if (context && context.characters) {
+            const character = context.characters[charId];
 
-            switch (infoType) {
-            case CharacterInfoType.Name:
-                infoBuffer = character.name;
-                break;
-            case CharacterInfoType.Description:
-                infoBuffer = character.description;
-                break;
-            case CharacterInfoType.Personality:
-                infoBuffer = character.personality;
-                break;
-            case CharacterInfoType.Scenario:
-                infoBuffer = character.scenario;
-                break;
-            case CharacterInfoType.DefaultMessage:
-                infoBuffer = character.first_mes;
-                break;
-            case CharacterInfoType.ExampleMessage:
-                infoBuffer = character.mes_example;
-                break;
-            case CharacterInfoType.CreatorComment:
-                infoBuffer = character.creatorcomment;
-                break;
-            default:
-                infoBuffer = null;
-                break;
+            if (character) {
+                let infoBuffer;
+
+                switch (infoType) {
+                case CharacterInfoType.Name:
+                    infoBuffer = character.name;
+                    break;
+                case CharacterInfoType.Description:
+                    infoBuffer = character.description;
+                    break;
+                case CharacterInfoType.Personality:
+                    infoBuffer = character.personality;
+                    break;
+                case CharacterInfoType.Scenario:
+                    infoBuffer = character.scenario;
+                    break;
+                case CharacterInfoType.DefaultMessage:
+                    infoBuffer = character.first_mes;
+                    break;
+                case CharacterInfoType.ExampleMessage:
+                    infoBuffer = character.mes_example;
+                    break;
+                case CharacterInfoType.CreatorComment:
+                    infoBuffer = character.creatorcomment;
+                    break;
+                default:
+                    infoBuffer = null;
+                    break;
+                }
+
+                debugLog('Character info field "' + infoType + '"successfully fetched from ID ' + charId);
+                return infoBuffer;
             }
-
-            debugLog('Character info field "' + infoType + '"successfully fetched from ID ' + charId);
-            return infoBuffer;
         }
 
         debugLog('Resolving character information (' + infoType + ') from ID failed. Returning null. Faulty ID: ' + charId, null, 'error');

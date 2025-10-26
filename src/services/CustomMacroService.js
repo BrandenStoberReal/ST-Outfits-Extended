@@ -6,8 +6,6 @@
 import {outfitStore} from '../common/Store.js';
 import {ACCESSORY_SLOTS, CLOTHING_SLOTS} from '../config/constants.js';
 import {macroProcessor} from '../processors/MacroProcessor.js';
-import SillyTavernApi from './SillyTavernApi.js';
-import * as SillyTavernUtility from '../utils/SillyTavernUtility.js';
 
 class CustomMacroService {
     constructor() {
@@ -22,7 +20,7 @@ class CustomMacroService {
 
     registerMacros(context) {
         // Use provided context or fallback to window
-        const ctx = context || SillyTavernApi.getContext();
+        const ctx = context || (window.SillyTavern?.getContext ? window.SillyTavern.getContext() : window.getContext());
 
         if (ctx && ctx.registerMacro) {
             // Register {{char}} and {{user}} macros
@@ -41,7 +39,7 @@ class CustomMacroService {
      * Deregister all outfit-related macros to prepare for re-registration
      */
     deregisterMacros(context) {
-        const ctx = context || SillyTavernApi.getContext();
+        const ctx = context || (window.SillyTavern?.getContext ? window.SillyTavern.getContext() : window.getContext());
 
         if (ctx && ctx.unregisterMacro) {
             // Deregister {{char}} and {{user}} macros
@@ -62,13 +60,11 @@ class CustomMacroService {
      */
     registerCharacterSpecificMacros(context) {
         // Use provided context or fallback to window
-        const ctx = context || SillyTavernApi.getContext();
+        const ctx = context || (window.SillyTavern?.getContext ? window.SillyTavern.getContext() : window.getContext());
 
-        if (ctx && ctx.registerMacro) {
-            const characters = SillyTavernApi.getCharacters();
-
+        if (ctx && ctx.registerMacro && ctx.characters) {
             // Iterate through all available characters
-            for (const character of characters) {
+            for (const character of ctx.characters) {
                 if (character && character.name) {
                     const characterName = character.name;
 
@@ -91,13 +87,11 @@ class CustomMacroService {
      */
     deregisterCharacterSpecificMacros(context) {
         // Use provided context or fallback to window
-        const ctx = context || SillyTavernApi.getContext();
+        const ctx = context || (window.SillyTavern?.getContext ? window.SillyTavern.getContext() : window.getContext());
 
-        if (ctx && ctx.unregisterMacro) {
-            const characters = SillyTavernApi.getCharacters();
-
+        if (ctx && ctx.unregisterMacro && ctx.characters) {
             // Iterate through all available characters
-            for (const character of characters) {
+            for (const character of ctx.characters) {
                 if (character && character.name) {
                     const characterName = character.name;
 
@@ -121,14 +115,19 @@ class CustomMacroService {
      */
     getCurrentCharName() {
         try {
-            const characterName = SillyTavernUtility.getCharacterName();
-            const messages = SillyTavernUtility.findMessagesByCharacter(characterName);
+            const context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
 
-            if (messages.length > 0) {
-                return messages[0].name;
+            if (context && context.chat) {
+                for (let i = context.chat.length - 1; i >= 0; i--) {
+                    const message = context.chat[i];
+
+                    if (!message.is_user && !message.is_system && message.name) {
+                        return message.name;
+                    }
+                }
             }
 
-            return characterName || 'Character';
+            return typeof window.name2 !== 'undefined' ? window.name2 : 'Character';
         } catch (error) {
             console.error('Error getting character name:', error);
             return 'Character';
@@ -158,46 +157,47 @@ class CustomMacroService {
         }
 
         try {
-            const context = SillyTavernApi.getContext();
+            const context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
 
             // Determine characterId based on macro type and character name
             let charId = null;
 
             if (characterName) {
                 // Looking for a specific character by name
-                const character = SillyTavernUtility.getCharacterByName(characterName);
+                if (context && context.characters) {
+                    const character = context.characters.find(c => c.name === characterName);
 
-                if (character) {
-                    charId = character.avatar;
-                } else {
-                    const currentChar = SillyTavernUtility.getCurrentCharacter();
+                    if (character) {
+                        charId = character.avatar;
+                    } else if (context.characterId && context.getName) {
+                        // If character not found in the list, try to match by the currently active character if macroType matches
+                        const currentCharName = context.getName();
 
-                    if (currentChar && currentChar.name === characterName) {
-                        charId = currentChar.id;
+                        if (currentCharName === characterName) {
+                            charId = context.characterId;
+                        }
                     }
-                }
 
-                // If we still don't have a character ID, return None
-                if (!charId) {
-                    // Cache the result to avoid repeated lookups
-                    this._setCache(cacheKey, 'None');
-                    return 'None'; // Character not found
+                    // If we still don't have a character ID, return None
+                    if (!charId) {
+                        // Cache the result to avoid repeated lookups
+                        this._setCache(cacheKey, 'None');
+                        return 'None'; // Character not found
+                    }
                 }
             } else if (macroType === 'char' || macroType === 'bot') {
                 // Using current character context
-                const currentChar = SillyTavernUtility.getCurrentCharacter();
-
-                charId = currentChar?.id || null;
+                charId = context?.characterId || null;
             } else if (['user'].includes(macroType)) {
                 // User-specific macro, don't need a character ID
                 charId = null;
-            } else if (this.isValidCharacterName(macroType)) {
+            } else if (context && context.characterId && context.getName) {
                 // The macroType might be a character name (e.g. when macro is "Emma_topwear")
                 // Try to match against current character
-                const currentChar = SillyTavernUtility.getCurrentCharacter();
+                const currentCharName = context.getName();
 
-                if (currentChar && currentChar.name === macroType) {
-                    charId = currentChar.id;
+                if (currentCharName === macroType) {
+                    charId = context.characterId;
                 }
             }
 
@@ -207,7 +207,7 @@ class CustomMacroService {
 
             // If no instance ID is available yet, calculate it synchronously from the first message
             if (!instanceId) {
-                const firstBotMessage = SillyTavernUtility.findMessagesByCharacter(SillyTavernUtility.getCharacterName())[0];
+                const firstBotMessage = context?.chat?.find(message => !message.is_user && !message.is_system);
 
                 if (firstBotMessage) {
                     // Use the global macro processor's function
@@ -303,8 +303,8 @@ class CustomMacroService {
      * @returns {string} A unique cache key
      */
     _generateCacheKey(macroType, slotName, characterName) {
-        const currentCharacter = SillyTavernUtility.getCurrentCharacter();
-        const currentCharacterId = currentCharacter?.id || 'unknown';
+        const context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
+        const currentCharacterId = context?.characterId || 'unknown';
         const currentInstanceId = outfitStore.getCurrentInstanceId() || 'unknown';
 
         // Create a unique identifier based on all relevant parameters
@@ -357,11 +357,16 @@ class CustomMacroService {
      */
     getCurrentUserName() {
         try {
-            const userName = SillyTavernUtility.getUserName();
-            const messages = SillyTavernUtility.findMessagesByUser(userName);
+            const context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
 
-            if (messages.length > 0) {
-                return messages[0].name;
+            if (context && context.chat) {
+                for (let i = context.chat.length - 1; i >= 0; i--) {
+                    const message = context.chat[i];
+
+                    if (message.is_user && message.name) {
+                        return message.name;
+                    }
+                }
             }
 
             if (typeof window.power_user !== 'undefined' && window.power_user &&
@@ -371,7 +376,7 @@ class CustomMacroService {
                 return personaName || 'User';
             }
 
-            return userName || 'User';
+            return typeof window.name1 !== 'undefined' ? window.name1 : 'User';
         } catch (error) {
             console.error('Error getting user name:', error);
             return 'User';

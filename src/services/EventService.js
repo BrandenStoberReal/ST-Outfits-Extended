@@ -1,8 +1,7 @@
 import {EXTENSION_EVENTS, extensionEventBus} from '../core/events.js';
 import {customMacroSystem} from './CustomMacroService.js';
 import {outfitStore} from '../common/Store.js';
-import {generateMessageHash} from '../utils/SillyTavernUtility.js';
-import SillyTavernApi from './SillyTavernApi.js';
+import {generateMessageHash} from '../utils/utilities.js';
 
 /**
  * EventSystem - Handles all event processing for the outfit tracker extension
@@ -18,6 +17,7 @@ class EventService {
      * @param {object} context.autoOutfitSystem - The auto outfit system instance
      * @param {Function} context.updateForCurrentCharacter - Function to update outfits for current character
      * @param {Function} context.processMacrosInFirstMessage - Function to process macros in first message
+     * @param {object} [context.context] - The SillyTavern context (optional)
      */
     constructor(context) {
         this.botManager = context.botManager;
@@ -25,7 +25,7 @@ class EventService {
         this.autoOutfitSystem = context.autoOutfitSystem;
         this.updateForCurrentCharacter = context.updateForCurrentCharacter;
         this.processMacrosInFirstMessage = context.processMacrosInFirstMessage;
-        this.context = SillyTavernApi.getContext();
+        this.context = context.context || null;
 
         // Track the first message hash to avoid unnecessary updates
         this.currentFirstMessageHash = null;
@@ -38,6 +38,9 @@ class EventService {
      * @returns {void}
      */
     initialize() {
+        // Use the provided context if available, otherwise try to get from window
+        this.context = this.context || (window.SillyTavern?.getContext ? window.SillyTavern.getContext() : window.getContext());
+
         if (!this.context || !this.context.eventSource || !this.context.event_types) {
             console.warn('[OutfitTracker] Context not fully available for event listeners yet, trying again later');
             setTimeout(() => this.initialize(), 1000);
@@ -93,11 +96,9 @@ class EventService {
      * @returns {void}
      */
     handleChatChange() {
-        const chat = SillyTavernApi.getChat();
-
-        if (chat.length > 0) {
+        if (this.context.chat?.length > 0) {
             // Check if the first AI message has actually changed before triggering update
-            const firstBotMessage = chat.find(msg => !msg.is_user && !msg.is_system);
+            const firstBotMessage = this.context.chat.find(msg => !msg.is_user && !msg.is_system);
 
             if (firstBotMessage) {
                 // Generate a hash of the first message to compare with the stored one
@@ -132,7 +133,7 @@ class EventService {
      * @returns {Promise<void>} A promise that resolves when the message has been processed
      */
     async handleMessageReceived(data) {
-        const chat = SillyTavernApi.getChat();
+        const chat = this.context.chat;
         const aiMessages = chat.filter(msg => !msg.is_user && !msg.is_system);
 
         if (aiMessages.length === 1 && !data.is_user) {
@@ -173,7 +174,7 @@ class EventService {
      */
     async handleMessageSwiped(index) {
         console.log(`[OutfitTracker] MESSAGE_SWIPED event fired with index: ${index}`);
-        const chat = SillyTavernApi.getChat();
+        const chat = this.context.chat;
 
         if (!chat || index < 0 || index >= chat.length) {
             return;

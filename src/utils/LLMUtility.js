@@ -2,7 +2,6 @@
  * Unified LLM utility with retry logic for outfit detection system
  */
 import {outfitStore} from '../common/Store.js';
-import SillyTavernApi from '../services/SillyTavernApi.js';
 
 class ConnectionProfileHelper {
     /**
@@ -154,7 +153,7 @@ export class LLMUtility {
      */
     static async generateWithRetry(prompt, systemPrompt = 'You are an AI assistant.', context = null, maxRetries = 3) {
         if (!context) {
-            context = SillyTavernApi.getContext();
+            context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
         }
 
         let attempt = 0;
@@ -202,7 +201,7 @@ export class LLMUtility {
      */
     static async generateWithProfile(prompt, systemPrompt = 'You are an AI assistant.', context = null, profile = null, maxRetries = 3) {
         if (!context) {
-            context = SillyTavernApi.getContext();
+            context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
         }
 
         const generationFunc = async () => {

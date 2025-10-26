@@ -1,6 +1,4 @@
 import {outfitStore} from '../common/Store.js';
-import SillyTavernApi from './SillyTavernApi.js';
-import * as SillyTavernUtility from '../utils/SillyTavernUtility.js';
 
 /**
  * CharacterService - Handles character updates for the Outfit Tracker extension
@@ -12,7 +10,7 @@ import * as SillyTavernUtility from '../utils/SillyTavernUtility.js';
 function refreshMacroProcessing() {
     try {
         if (window.customMacroSystem && typeof window.customMacroSystem.replaceMacrosInText === 'function') {
-            const context = SillyTavernApi.getContext();
+            const context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
 
             if (context && context.chat) {
                 const visibleMessages = Array.from(document.querySelectorAll('#chat .mes'));
@@ -68,10 +66,14 @@ export async function updateForCurrentCharacter(botManager, userManager, botPane
         }
 
         // Update the bot manager with the current character info
-        const currentChar = SillyTavernUtility.getCurrentCharacter();
+        const context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
 
-        if (currentChar && currentChar.name) {
-            botManager.setCharacter(currentChar.name, currentChar.id.toString());
+        if (context && context.characters && context.characterId !== undefined && context.characterId !== null) {
+            const currentChar = context.characters[context.characterId];
+
+            if (currentChar && currentChar.name) {
+                botManager.setCharacter(currentChar.name, context.characterId.toString());
+            }
         }
 
         // Reload the bot outfit for the new character/instance
@@ -98,8 +100,6 @@ export async function updateForCurrentCharacter(botManager, userManager, botPane
 
         // Update the outfit store with current context and save settings
         if (window.outfitStore) {
-            const context = SillyTavernApi.getContext();
-
             window.outfitStore.setCurrentCharacter(context?.characterId?.toString() || null);
             window.outfitStore.setCurrentChat(context?.chatId || null);
             outfitStore.saveState();
