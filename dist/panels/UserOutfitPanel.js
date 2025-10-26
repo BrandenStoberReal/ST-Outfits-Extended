@@ -7,10 +7,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-import { dragElementWithSave, resizeElement } from '../common/shared';
-import { formatSlotName as utilsFormatSlotName } from '../utils/utilities';
-import { areSystemMessagesEnabled } from '../utils/SettingsUtil';
-import { outfitStore } from '../common/Store';
+import { dragElementWithSave, resizeElement } from '../common/shared.js';
+import { formatSlotName as utilsFormatSlotName } from '../utils/utilities.js';
+import { areSystemMessagesEnabled } from '../utils/SettingsUtil.js';
+import { outfitStore } from '../common/Store.js';
 /**
  * UserOutfitPanel - Manages the UI for the user character's outfit tracking
  * This class creates and manages a draggable panel for viewing and modifying

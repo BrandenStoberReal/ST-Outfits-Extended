@@ -1,5 +1,5 @@
-import { DEFAULT_SETTINGS } from '../config/constants';
-import { debugLog } from '../logging/DebugLogger';
+import { DEFAULT_SETTINGS } from '../config/constants.js';
+import { debugLog } from '../logging/DebugLogger.js';
 export function initSettings(autoOutfitSystem, AutoOutfitSystemClass, context) {
     const settings = context.extensionSettings;
     const MODULE_NAME = 'outfit_tracker';

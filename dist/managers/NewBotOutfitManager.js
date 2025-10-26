@@ -7,8 +7,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-import { OutfitManager } from './OutfitManager';
-import { outfitStore } from '../common/Store';
+import { OutfitManager } from './OutfitManager.js';
+import { outfitStore } from '../common/Store.js';
 export class NewBotOutfitManager extends OutfitManager {
     constructor(slots) {
         super(slots);

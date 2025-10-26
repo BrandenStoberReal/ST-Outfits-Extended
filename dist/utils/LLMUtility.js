@@ -7,7 +7,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-import { outfitStore } from '../common/Store';
+import { outfitStore } from '../common/Store.js';
 class ConnectionProfileHelper {
     static withConnectionProfile(profileId_1, generationFunc_1) {
         return __awaiter(this, arguments, void 0, function* (profileId, generationFunc, context = null) {

@@ -7,8 +7,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-import { outfitStore } from '../common/Store';
-import { CharacterInfoType, getCharacterInfoById } from '../utils/CharacterUtils';
+import { outfitStore } from '../common/Store.js';
+import { CharacterInfoType, getCharacterInfoById } from '../utils/CharacterUtils.js';
 /**
  * CharacterService - Handles character updates for the Outfit Tracker extension
  */

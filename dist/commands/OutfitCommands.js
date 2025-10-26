@@ -7,9 +7,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-import { importOutfitFromCharacterCard } from '../services/LLMService';
-import { ACCESSORY_SLOTS, CLOTHING_SLOTS } from '../config/constants';
-import { areSystemMessagesEnabled } from '../utils/SettingsUtil';
+import { importOutfitFromCharacterCard } from '../services/LLMService.js';
+import { ACCESSORY_SLOTS, CLOTHING_SLOTS } from '../config/constants.js';
+import { areSystemMessagesEnabled } from '../utils/SettingsUtil.js';
 /**
  * Registers all outfit-related slash commands with SillyTavern's command system.
  * This function sets up commands for outfit management, auto outfit system control,

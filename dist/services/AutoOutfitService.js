@@ -7,11 +7,11 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-import { extractCommands } from '../processors/StringProcessor';
-import { generateOutfitFromLLM } from './LLMService';
-import { customMacroSystem } from './CustomMacroService';
-import { outfitStore } from '../common/Store';
-import { CharacterInfoType, getCharacterInfoById } from '../utils/CharacterUtils';
+import { extractCommands } from '../processors/StringProcessor.js';
+import { generateOutfitFromLLM } from './LLMService.js';
+import { customMacroSystem } from './CustomMacroService.js';
+import { outfitStore } from '../common/Store.js';
+import { CharacterInfoType, getCharacterInfoById } from '../utils/CharacterUtils.js';
 export class AutoOutfitService {
     constructor(outfitManager) {
         this.outfitManager = outfitManager;

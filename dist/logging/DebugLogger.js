@@ -1,4 +1,4 @@
-import { outfitStore } from '../common/Store';
+import { outfitStore } from '../common/Store.js';
 const logs = [];
 const MAX_LOGS = 1000;
 function addLogToStorage(message, data, level = 'log') {

@@ -1,4 +1,4 @@
-import { debugLog } from '../logging/DebugLogger';
+import { debugLog } from '../logging/DebugLogger.js';
 export const CharacterInfoType = {
     Name: 'CharName',
     Description: 'CharDesc',

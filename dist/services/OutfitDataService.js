@@ -7,7 +7,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-import { ALL_SLOTS } from '../config/constants';
+import { ALL_SLOTS } from '../config/constants.js';
 class OutfitDataService {
     constructor(dataManager) {
         this.dataManager = dataManager;

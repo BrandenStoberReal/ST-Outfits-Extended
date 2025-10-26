@@ -7,9 +7,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-import { LLMUtility } from '../utils/LLMUtility';
-import { extractCommands } from '../processors/StringProcessor';
-import { CharacterInfoType, getCharacterInfoById } from '../utils/CharacterUtils';
+import { LLMUtility } from '../utils/LLMUtility.js';
+import { extractCommands } from '../processors/StringProcessor.js';
+import { CharacterInfoType, getCharacterInfoById } from '../utils/CharacterUtils.js';
 /**
  * Process a single outfit command
  * @param {string} command - The command string to process

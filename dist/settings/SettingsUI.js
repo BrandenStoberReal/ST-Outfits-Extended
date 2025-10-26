@@ -7,7 +7,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-import { outfitStore } from '../common/Store';
+import { outfitStore } from '../common/Store.js';
 export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem, context) {
     var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m;
     const MODULE_NAME = 'outfit_tracker';

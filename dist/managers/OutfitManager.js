@@ -7,8 +7,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-import { ALL_SLOTS } from '../config/constants';
-import { invalidateSpecificMacroCaches } from '../services/CustomMacroService';
+import { ALL_SLOTS } from '../config/constants.js';
+import { invalidateSpecificMacroCaches } from '../services/CustomMacroService.js';
 export class OutfitManager {
     constructor(slots = ALL_SLOTS) {
         this.slots = slots;

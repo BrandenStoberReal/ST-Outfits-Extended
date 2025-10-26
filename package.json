@@ -4,6 +4,7 @@
   "description": "SillyTavern Outfit Engine",
   "main": "index.js",
   "scripts": {
+    "build": "npx tsc && node add-js-extensions.js",
     "lint": "eslint src/**/*.js index.js",
     "lint:fix": "eslint --fix src/**/*.js index.js",
     "test": "jest",

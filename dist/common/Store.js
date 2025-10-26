@@ -1,5 +1,5 @@
-import { DEFAULT_SETTINGS } from '../config/constants';
-import { deepClone } from '../utils/utilities';
+import { DEFAULT_SETTINGS } from '../config/constants.js';
+import { deepClone } from '../utils/utilities.js';
 class OutfitStore {
     constructor() {
         this.state = {

@@ -1,7 +1,7 @@
-import { outfitStore } from '../common/Store';
-import { ACCESSORY_SLOTS, CLOTHING_SLOTS } from '../config/constants';
-import { macroProcessor } from '../processors/MacroProcessor';
-import { getCharacters } from '../utils/CharacterUtils';
+import { outfitStore } from '../common/Store.js';
+import { ACCESSORY_SLOTS, CLOTHING_SLOTS } from '../config/constants.js';
+import { macroProcessor } from '../processors/MacroProcessor.js';
+import { getCharacters } from '../utils/CharacterUtils.js';
 class CustomMacroService {
     constructor() {
         this.clothingSlots = CLOTHING_SLOTS;

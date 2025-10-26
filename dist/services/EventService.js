@@ -7,10 +7,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-import { EXTENSION_EVENTS, extensionEventBus } from '../core/events';
-import { customMacroSystem } from './CustomMacroService';
-import { outfitStore } from '../common/Store';
-import { generateMessageHash } from '../utils/utilities';
+import { EXTENSION_EVENTS, extensionEventBus } from '../core/events.js';
+import { customMacroSystem } from './CustomMacroService.js';
+import { outfitStore } from '../common/Store.js';
+import { generateMessageHash } from '../utils/utilities.js';
 class EventService {
     constructor(context) {
         this.botManager = context.botManager;
