@@ -1,4 +1,4 @@
-import {debugLog} from '../logging/DebugLogger.js';
+import {debugLog} from '../logging/DebugLogger';
 import * as SillyTavernUtility from './SillyTavernUtility.js';
 
 export const CharacterInfoType = {
