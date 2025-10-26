@@ -1,7 +1,9 @@
 // Import shared UI utilities for drag and resize functionality
 import {dragElementWithSave, resizeElement} from '../common/shared.js';
 
+// Import utility functions
 import * as SillyTavernUtility from '../utils/SillyTavernUtility.js';
+import {formatSlotName as utilsFormatSlotName} from '../utils/SillyTavernUtility.js';
 
 // Import settings utility
 import {areSystemMessagesEnabled} from '../utils/SettingsUtil.js';
@@ -50,7 +52,7 @@ export class UserOutfitPanel {
         panel.className = 'outfit-panel';
 
         // Get the first message hash for display in the header (instance ID)
-        const messageHash = SillyTavernUtility.generateMessageHash(this.getFirstMessageText() || this.outfitManager.getOutfitInstanceId() || '');
+        const messageHash = this.generateMessageHash(this.getFirstMessageText() || this.outfitManager.getOutfitInstanceId() || '');
         const hashDisplay = messageHash ? ` (${messageHash})` : '';
 
         panel.innerHTML = `
@@ -99,6 +101,7 @@ export class UserOutfitPanel {
 
             if (aiMessages.length > 0) {
                 const firstMessage = aiMessages[0];
+
                 return firstMessage.mes || '';
             }
             return '';
@@ -179,7 +182,7 @@ export class UserOutfitPanel {
             slotElement.dataset.slot = slot.name;
 
             slotElement.innerHTML = `
-                <div class="slot-label">${SillyTavernUtility.formatSlotName(slot.name)}</div>
+                <div class="slot-label">${this.formatSlotName(slot.name)}</div>
                 <div class="slot-value" title="${slot.value}">${slot.value}</div>
                 <div class="slot-actions">
                     <button class="slot-change">Change</button>
@@ -402,6 +405,10 @@ export class UserOutfitPanel {
         container.appendChild(fillOutfitButton);
     }
 
+    formatSlotName(name) {
+        return utilsFormatSlotName(name);
+    }
+
     toggle() {
         if (this.isVisible) {
             this.hide();
@@ -496,7 +503,7 @@ export class UserOutfitPanel {
 
             if (header) {
                 // Get the first message hash for display in the header (instance ID)
-                const messageHash = SillyTavernUtility.generateMessageHash(this.getFirstMessageText() || this.outfitManager.getOutfitInstanceId() || '');
+                const messageHash = this.generateMessageHash(this.getFirstMessageText() || this.outfitManager.getOutfitInstanceId() || '');
                 const hashDisplay = messageHash ? ` (${messageHash})` : '';
 
                 header.textContent = `Your Outfit${hashDisplay}`;
@@ -602,5 +609,73 @@ export class UserOutfitPanel {
             }
         });
         this.eventListeners = [];
+    }
+
+    /**
+     * Generates a short identifier from the instance ID
+     * @param {string} instanceId - The instance ID to generate a short ID from
+     * @returns {string} A short identifier based on the instance ID
+     */
+    generateShortId(instanceId) {
+        if (!instanceId) {
+            return '';
+        }
+
+        // If the instance ID is already a short identifier, return it
+        if (instanceId.startsWith('temp_')) {
+            return 'temp';
+        }
+
+        // Create a simple short identifier by taking up to 6 characters of the instance ID
+        // but only alphanumeric characters for better readability
+        let cleanId = '';
+
+        for (let i = 0; i < instanceId.length; i++) {
+            const char = instanceId[i];
+            const code = char.charCodeAt(0);
+
+            // Check if character is digit (0-9)
+            if (code >= 48 && code <= 57) {
+                cleanId += char;
+                continue;
+            }
+            // Check if character is uppercase letter A-Z
+            if (code >= 65 && code <= 90) {
+                cleanId += char;
+                continue;
+            }
+            // Check if character is lowercase letter a-z
+            if (code >= 97 && code <= 122) {
+                cleanId += char;
+
+            }
+            // Otherwise, skip non-alphanumeric characters
+        }
+
+        return cleanId.substring(0, 6);
+    }
+
+    /**
+     * Generates an 8-character hash from a text string
+     * @param {string} text - The text to generate a hash from
+     * @returns {string} An 8-character hash string representation of the text
+     */
+    generateMessageHash(text) {
+        if (!text) {
+            return '';
+        }
+
+        let hash = 0;
+        const str = text.substring(0, 100); // Only use first 100 chars to keep ID manageable
+
+        for (let i = 0; i < str.length; i++) {
+            const char = str.charCodeAt(i);
+
+            hash = ((hash << 5) - hash) + char;
+            hash &= hash; // Convert to 32-bit integer
+        }
+
+        // Convert to positive and return 8-character string representation
+        return Math.abs(hash).toString(36).substring(0, 8).padEnd(8, '0');
     }
 }
