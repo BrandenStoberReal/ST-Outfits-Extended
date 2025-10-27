@@ -69,6 +69,7 @@ export class NewUserOutfitManager extends OutfitManager {
             presetData[slot] = this.currentValues[slot];
         });
         outfitStore.savePreset('user', actualInstanceId, presetName, presetData, 'user');
+        outfitStore.saveState(); // Ensure the presets are saved to persistent storage
         if (outfitStore.getSetting('enableSysMessages')) {
             return `Saved "${presetName}" outfit for user character (instance: ${actualInstanceId}).`;
         }
@@ -108,6 +109,7 @@ export class NewUserOutfitManager extends OutfitManager {
             return `[Outfit System] Preset "${presetName}" not found for user instance ${actualInstanceId}.`;
         }
         outfitStore.deletePreset('user', actualInstanceId, presetName, 'user');
+        outfitStore.saveState(); // Ensure the presets are saved to persistent storage
         if (outfitStore.getSetting('enableSysMessages')) {
             return `Deleted your "${presetName}" outfit for instance ${actualInstanceId}.`;
         }
@@ -218,6 +220,7 @@ export class NewUserOutfitManager extends OutfitManager {
             }
             const presetToSetAsDefault = presets[presetName];
             outfitStore.savePreset('user', actualInstanceId, 'default', presetToSetAsDefault, 'user');
+            outfitStore.saveState(); // Ensure the presets are saved to persistent storage
             if (outfitStore.getSetting('enableSysMessages')) {
                 return `Set "${presetName}" as your default outfit (instance: ${actualInstanceId}).`;
             }
@@ -232,6 +235,7 @@ export class NewUserOutfitManager extends OutfitManager {
                 return `[Outfit System] No default outfit set for user (instance: ${actualInstanceId}).`;
             }
             outfitStore.deletePreset('user', actualInstanceId, 'default', 'user');
+            outfitStore.saveState(); // Ensure the presets are saved to persistent storage
             if (outfitStore.getSetting('enableSysMessages')) {
                 return `Default outfit cleared for user (instance: ${actualInstanceId}).`;
             }
