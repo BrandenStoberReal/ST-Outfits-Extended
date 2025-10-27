@@ -29,10 +29,7 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem, context) {
             <label for="outfit-connection-profile">Connection Profile (Optional):</label>
             <select id="outfit-connection-profile" class="option">
                 <option value="">Default Connection</option>
-                <option value="openrouter" ${autoOutfitConnectionProfile === 'openrouter' ? 'selected' : ''}>OpenRouter</option>
-                <option value="ooba" ${autoOutfitConnectionProfile === 'ooba' ? 'selected' : ''}>Oobabooga</option>
-                <option value="openai" ${autoOutfitConnectionProfile === 'openai' ? 'selected' : ''}>OpenAI</option>
-                <option value="claude" ${autoOutfitConnectionProfile === 'claude' ? 'selected' : ''}>Claude</option>
+                <!-- Connection profiles will be populated dynamically -->
             </select>
         </div>
         <div class="flex-container setting-row">
@@ -843,6 +840,42 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem, context) {
     });
     // Initialize color pickers with current values when the settings UI loads
     setTimeout(updateColorPickersFromText, 100);
+    // Populate connection profile options
+    (() => __awaiter(this, void 0, void 0, function* () {
+        var _a;
+        try {
+            // Get context to access connection manager
+            const context = ((_a = window.SillyTavern) === null || _a === void 0 ? void 0 : _a.getContext) ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
+            // Import the LLMUtility module to access the connection helper
+            const LLMUtilityModule = yield import('../utils/LLMUtility.js');
+            const profiles = yield LLMUtilityModule.ConnectionProfileHelper.getAllProfiles(context);
+            const $selectElement = $('#outfit-connection-profile');
+            $selectElement.empty(); // Clear existing options
+            // Add default option
+            $selectElement.append('<option value="">Default Connection</option>');
+            // Add saved profile option (in case it doesn't exist in current profiles)
+            if (autoOutfitConnectionProfile && !profiles.some((p) => p.id === autoOutfitConnectionProfile)) {
+                $selectElement.append(`<option value="${autoOutfitConnectionProfile}" selected>${autoOutfitConnectionProfile} (Not Found)</option>`);
+            }
+            // Add all available profiles
+            profiles.forEach((profile) => {
+                const isSelected = profile.id === autoOutfitConnectionProfile;
+                const selectedAttr = isSelected ? 'selected' : '';
+                $selectElement.append(`<option value="${profile.id}" ${selectedAttr}>${profile.name || profile.id}</option>`);
+            });
+        }
+        catch (error) {
+            console.error('Error populating connection profiles:', error);
+            // Fallback to original behavior if dynamic population fails
+            const $selectElement = $('#outfit-connection-profile');
+            $selectElement.empty();
+            $selectElement.append('<option value="">Default Connection</option>');
+            $selectElement.append(`<option value="openrouter" ${autoOutfitConnectionProfile === 'openrouter' ? 'selected' : ''}>OpenRouter</option>`);
+            $selectElement.append(`<option value="ooba" ${autoOutfitConnectionProfile === 'ooba' ? 'selected' : ''}>Oobabooga</option>`);
+            $selectElement.append(`<option value="openai" ${autoOutfitConnectionProfile === 'openai' ? 'selected' : ''}>OpenAI</option>`);
+            $selectElement.append(`<option value="claude" ${autoOutfitConnectionProfile === 'claude' ? 'selected' : ''}>Claude</option>`);
+        }
+    }))();
     // Only add auto system event listeners if it loaded successfully
     if (hasAutoSystem) {
         $('#outfit-auto-system').on('input', function () {

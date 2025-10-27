@@ -220,6 +220,14 @@ outfit-system_replace_topwear(\"T-shirt\")\
             const promptText = `${processedSystemPrompt}\n\nRecent Messages:\n${recentMessages}\n\nOutput:`;
             console.log('[AutoOutfitSystem] Generating outfit commands with LLMService...');
             try {
+                // Get the connection profile to use for this generation
+                const connectionProfile = this.getConnectionProfile();
+                if (connectionProfile) {
+                    console.log(`[AutoOutfitSystem] Using connection profile: ${connectionProfile}`);
+                }
+                else {
+                    console.log('[AutoOutfitSystem] Using default connection');
+                }
                 const result = yield generateOutfitFromLLM({ prompt: promptText });
                 this.llmOutput = result; // Store the LLM output
                 console.log('[AutoOutfitSystem] Generated result:', result);

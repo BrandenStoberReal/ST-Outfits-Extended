@@ -7,10 +7,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-import { outfitStore } from '../common/Store.js';
-class ConnectionProfileHelper {
+export class ConnectionProfileHelper {
     static withConnectionProfile(profileId_1, generationFunc_1) {
         return __awaiter(this, arguments, void 0, function* (profileId, generationFunc, context = null) {
+            var _a;
             if (!profileId) {
                 if (context) {
                     return generationFunc(context);
@@ -19,108 +19,137 @@ class ConnectionProfileHelper {
                     throw new Error('Context is required for generation');
                 }
             }
-            const currentProfile = this.getCurrentConnectionProfile();
-            try {
-                yield this.applyConnectionProfile(profileId);
-                if (context) {
-                    return yield generationFunc(context);
-                }
-                else {
-                    throw new Error('Context is null but required for generation');
-                }
+            if (!context) {
+                context = ((_a = window.SillyTavern) === null || _a === void 0 ? void 0 : _a.getContext) ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
             }
-            catch (error) {
-                console.error(`[LLMUtility] Error during generation with connection profile ${profileId}:`, error);
-                throw error;
+            // Check if context is null and handle appropriately
+            if (!context) {
+                throw new Error('Context is required for generation but could not be retrieved');
             }
-            finally {
-                if (currentProfile && currentProfile !== profileId) {
-                    yield this.applyConnectionProfile(currentProfile);
-                }
+            // Get the Connection Manager service from the context
+            const connectionService = context.ConnectionManagerRequestService;
+            if (!connectionService) {
+                console.warn('[LLMUtility] Connection Manager is not available, using default connection');
+                return generationFunc(context);
             }
+            // Validate if the profile exists
+            const allProfiles = yield this.getAllProfiles(context);
+            const profile = allProfiles.find((p) => p.id === profileId);
+            if (!profile) {
+                console.warn(`[LLMUtility] Profile with ID ${profileId} not found, using default connection`);
+                return generationFunc(context);
+            }
+            // Use the connection manager service to send the request with the specified profile
+            return this.generateWithProfileUsingService(context, profileId, generationFunc);
         });
     }
-    static applyConnectionProfile(profileId) {
+    static generateWithProfileUsingService(context, profileId, generationFunc) {
         return __awaiter(this, void 0, void 0, function* () {
-            var _a, _b, _c, _d;
-            try {
-                if (window.connectionManager && typeof window.connectionManager.applyProfile === 'function') {
-                    const profile = this.getProfileById(profileId);
-                    if (profile) {
-                        yield window.connectionManager.applyProfile(profile);
-                    }
-                    else {
-                        console.warn(`[LLMUtility] Profile with ID ${profileId} not found. Falling back to slash command.`);
-                        if ((_b = (_a = window.SlashCommandParser) === null || _a === void 0 ? void 0 : _a.commands) === null || _b === void 0 ? void 0 : _b.profile) {
-                            yield window.SlashCommandParser.commands['profile'].callback({}, profileId);
+            // Create a modified context that uses the connection manager for requests
+            const modifiedContext = Object.assign(Object.assign({}, context), { 
+                // Create a wrapper function that uses the connection manager service
+                generateRaw(prompt_1) {
+                    return __awaiter(this, arguments, void 0, function* (prompt, systemPrompt = 'You are an AI assistant.') {
+                        var _a, _b;
+                        const connectionService = context.ConnectionManagerRequestService;
+                        // Format the prompt as messages for the chat completion API
+                        const messages = [
+                            { role: 'system', content: systemPrompt },
+                            { role: 'user', content: prompt }
+                        ];
+                        try {
+                            // Send the request using the connection manager service
+                            const result = yield connectionService.sendRequest(profileId, messages, 1000);
+                            // Extract the content from the response (the structure might differ based on the API)
+                            if (result && typeof result === 'object' && result.choices && ((_b = (_a = result.choices[0]) === null || _a === void 0 ? void 0 : _a.message) === null || _b === void 0 ? void 0 : _b.content)) {
+                                return result.choices[0].message.content;
+                            }
+                            else {
+                                // Fallback if the result doesn't match the expected structure
+                                if (typeof result === 'string') {
+                                    return result;
+                                }
+                                throw new Error('Unexpected response format from connection manager');
+                            }
                         }
-                    }
-                }
-                else if ((_d = (_c = window.SlashCommandParser) === null || _c === void 0 ? void 0 : _c.commands) === null || _d === void 0 ? void 0 : _d.profile) {
-                    yield window.SlashCommandParser.commands['profile'].callback({}, profileId);
-                }
-                else {
-                    console.warn('[LLMUtility] Could not apply connection profile, no implementation found.');
-                }
-            }
-            catch (error) {
-                console.error(`[LLMUtility] Failed to apply connection profile ${profileId}:`, error);
-            }
+                        catch (error) {
+                            console.error('Error sending request via connection manager:', error);
+                            throw error;
+                        }
+                    });
+                },
+                generateQuietPrompt(prompt) {
+                    return __awaiter(this, void 0, void 0, function* () {
+                        var _a, _b;
+                        const connectionService = context.ConnectionManagerRequestService;
+                        try {
+                            // Send the request using the connection manager service
+                            const result = yield connectionService.sendRequest(profileId, prompt, 1000);
+                            // Extract the content from the response
+                            if (result && typeof result === 'object' && result.choices && ((_b = (_a = result.choices[0]) === null || _a === void 0 ? void 0 : _a.message) === null || _b === void 0 ? void 0 : _b.content)) {
+                                return result.choices[0].message.content;
+                            }
+                            else {
+                                // Fallback if the result doesn't match the expected structure
+                                if (typeof result === 'string') {
+                                    return result;
+                                }
+                                throw new Error('Unexpected response format from connection manager');
+                            }
+                        }
+                        catch (error) {
+                            console.error('Error sending quiet prompt via connection manager:', error);
+                            throw error;
+                        }
+                    });
+                } });
+            return generationFunc(modifiedContext);
         });
     }
-    static getCurrentConnectionProfile() {
-        var _a, _b, _c;
-        if (window.connectionManager && typeof window.connectionManager.getCurrentProfileId === 'function') {
-            return window.connectionManager.getCurrentProfileId();
-        }
-        if ((_b = (_a = window.extension_settings) === null || _a === void 0 ? void 0 : _a.connectionManager) === null || _b === void 0 ? void 0 : _b.selectedProfile) {
-            return window.extension_settings.connectionManager.selectedProfile;
-        }
-        try {
-            const storeState = outfitStore.getState();
-            return ((_c = storeState.settings) === null || _c === void 0 ? void 0 : _c.autoOutfitConnectionProfile) || null;
-        }
-        catch (error) {
-            console.warn('Could not access store for connection profile:', error);
-        }
-        return null;
-    }
-    static getProfileById(profileId) {
-        var _a, _b;
-        if (!profileId) {
-            return null;
-        }
-        if (window.connectionManager && typeof window.connectionManager.getProfileById === 'function') {
-            return window.connectionManager.getProfileById(profileId);
-        }
-        if ((_b = (_a = window.extension_settings) === null || _a === void 0 ? void 0 : _a.connectionManager) === null || _b === void 0 ? void 0 : _b.profiles) {
-            return window.extension_settings.connectionManager.profiles.find((p) => p.id === profileId);
-        }
-        try {
-            const storeState = outfitStore.getState();
-            return null;
-        }
-        catch (error) {
-            console.warn('Could not access store for profiles:', error);
-        }
-        return null;
+    static getProfileById(profileId_1) {
+        return __awaiter(this, arguments, void 0, function* (profileId, context = null) {
+            var _a;
+            if (!profileId) {
+                return null;
+            }
+            if (!context) {
+                context = ((_a = window.SillyTavern) === null || _a === void 0 ? void 0 : _a.getContext) ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
+            }
+            // Check if context is null and handle appropriately
+            if (!context) {
+                throw new Error('Context is required for getting profile by ID but could not be retrieved');
+            }
+            const allProfiles = yield this.getAllProfiles(context);
+            return allProfiles.find((p) => p.id === profileId) || null;
+        });
     }
     static getAllProfiles() {
-        var _a, _b;
-        if (window.connectionManager && typeof window.connectionManager.getAllProfiles === 'function') {
-            return window.connectionManager.getAllProfiles();
-        }
-        if ((_b = (_a = window.extension_settings) === null || _a === void 0 ? void 0 : _a.connectionManager) === null || _b === void 0 ? void 0 : _b.profiles) {
-            return window.extension_settings.connectionManager.profiles;
-        }
-        try {
-            const storeState = outfitStore.getState();
-            return [];
-        }
-        catch (error) {
-            console.warn('Could not access store for profiles:', error);
-        }
-        return [];
+        return __awaiter(this, arguments, void 0, function* (context = null) {
+            var _a;
+            if (!context) {
+                context = ((_a = window.SillyTavern) === null || _a === void 0 ? void 0 : _a.getContext) ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
+            }
+            // Check if context is null and handle appropriately
+            if (!context) {
+                console.warn('Context is required for getting all profiles but could not be retrieved');
+                return [];
+            }
+            try {
+                // Use the connection manager service to get supported profiles
+                const connectionService = context.ConnectionManagerRequestService;
+                if (connectionService && typeof connectionService.getSupportedProfiles === 'function') {
+                    return yield connectionService.getSupportedProfiles();
+                }
+                else {
+                    console.warn('ConnectionManagerRequestService not available or getSupportedProfiles not found');
+                    return [];
+                }
+            }
+            catch (error) {
+                console.warn('Could not fetch profiles from ConnectionManagerRequestService:', error);
+                return [];
+            }
+        });
     }
 }
 export class LLMUtility {

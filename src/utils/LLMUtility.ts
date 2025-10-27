@@ -1,16 +1,18 @@
-import {outfitStore} from '../common/Store';
-
 declare global {
     interface Window {
-        connectionManager: any;
-        SlashCommandParser: any;
-        extension_settings: any;
         SillyTavern: any;
         getContext: any;
     }
+
+    interface SillyTavernContext {
+        ConnectionManagerRequestService?: {
+            getSupportedProfiles: () => Promise<any[]>;
+            sendRequest: (profileId: string, prompt: any, maxTokens: number, custom?: any, overridePayload?: any) => Promise<any>;
+        };
+    }
 }
 
-class ConnectionProfileHelper {
+export class ConnectionProfileHelper {
     static async withConnectionProfile(profileId: string, generationFunc: (context: SillyTavernContext) => Promise<any>, context: SillyTavernContext | null = null): Promise<any> {
         if (!profileId) {
             if (context) {
@@ -20,107 +22,136 @@ class ConnectionProfileHelper {
             }
         }
 
-        const currentProfile = this.getCurrentConnectionProfile();
-
-        try {
-            await this.applyConnectionProfile(profileId);
-            if (context) {
-                return await generationFunc(context);
-            } else {
-                throw new Error('Context is null but required for generation');
-            }
-        } catch (error: any) {
-            console.error(`[LLMUtility] Error during generation with connection profile ${profileId}:`, error);
-            throw error;
-        } finally {
-            if (currentProfile && currentProfile !== profileId) {
-                await this.applyConnectionProfile(currentProfile);
-            }
+        if (!context) {
+            context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
         }
+
+        // Check if context is null and handle appropriately
+        if (!context) {
+            throw new Error('Context is required for generation but could not be retrieved');
+        }
+
+        // Get the Connection Manager service from the context
+        const connectionService = context.ConnectionManagerRequestService;
+        if (!connectionService) {
+            console.warn('[LLMUtility] Connection Manager is not available, using default connection');
+            return generationFunc(context);
+        }
+
+        // Validate if the profile exists
+        const allProfiles = await this.getAllProfiles(context);
+        const profile = allProfiles.find((p: any) => p.id === profileId);
+        if (!profile) {
+            console.warn(`[LLMUtility] Profile with ID ${profileId} not found, using default connection`);
+            return generationFunc(context);
+        }
+
+        // Use the connection manager service to send the request with the specified profile
+        return this.generateWithProfileUsingService(context, profileId, generationFunc);
     }
 
-    static async applyConnectionProfile(profileId: string): Promise<void> {
-        try {
-            if (window.connectionManager && typeof window.connectionManager.applyProfile === 'function') {
-                const profile = this.getProfileById(profileId);
+    static async generateWithProfileUsingService(context: SillyTavernContext, profileId: string, generationFunc: (context: SillyTavernContext) => Promise<any>): Promise<any> {
+        // Create a modified context that uses the connection manager for requests
+        const modifiedContext = {
+            ...context,
+            // Create a wrapper function that uses the connection manager service
+            async generateRaw(prompt: string, systemPrompt: string = 'You are an AI assistant.'): Promise<string> {
+                const connectionService = context.ConnectionManagerRequestService!;
 
-                if (profile) {
-                    await window.connectionManager.applyProfile(profile);
-                } else {
-                    console.warn(`[LLMUtility] Profile with ID ${profileId} not found. Falling back to slash command.`);
-                    if (window.SlashCommandParser?.commands?.profile) {
-                        await window.SlashCommandParser.commands['profile'].callback({}, profileId);
+                // Format the prompt as messages for the chat completion API
+                const messages = [
+                    {role: 'system', content: systemPrompt},
+                    {role: 'user', content: prompt}
+                ];
+
+                try {
+                    // Send the request using the connection manager service
+                    const result = await connectionService.sendRequest(profileId, messages, 1000);
+
+                    // Extract the content from the response (the structure might differ based on the API)
+                    if (result && typeof result === 'object' && result.choices && result.choices[0]?.message?.content) {
+                        return result.choices[0].message.content as string;
+                    } else {
+                        // Fallback if the result doesn't match the expected structure
+                        if (typeof result === 'string') {
+                            return result;
+                        }
+                        throw new Error('Unexpected response format from connection manager');
                     }
+                } catch (error) {
+                    console.error('Error sending request via connection manager:', error);
+                    throw error;
                 }
-            } else if (window.SlashCommandParser?.commands?.profile) {
-                await window.SlashCommandParser.commands['profile'].callback({}, profileId);
-            } else {
-                console.warn('[LLMUtility] Could not apply connection profile, no implementation found.');
+            },
+            async generateQuietPrompt(prompt: string): Promise<string> {
+                const connectionService = context.ConnectionManagerRequestService!;
+
+                try {
+                    // Send the request using the connection manager service
+                    const result = await connectionService.sendRequest(profileId, prompt, 1000);
+
+                    // Extract the content from the response
+                    if (result && typeof result === 'object' && result.choices && result.choices[0]?.message?.content) {
+                        return result.choices[0].message.content as string;
+                    } else {
+                        // Fallback if the result doesn't match the expected structure
+                        if (typeof result === 'string') {
+                            return result;
+                        }
+                        throw new Error('Unexpected response format from connection manager');
+                    }
+                } catch (error) {
+                    console.error('Error sending quiet prompt via connection manager:', error);
+                    throw error;
+                }
             }
-        } catch (error: any) {
-            console.error(`[LLMUtility] Failed to apply connection profile ${profileId}:`, error);
-        }
+        } as SillyTavernContext;
+
+        return generationFunc(modifiedContext);
     }
 
-    static getCurrentConnectionProfile(): string | null {
-        if (window.connectionManager && typeof window.connectionManager.getCurrentProfileId === 'function') {
-            return window.connectionManager.getCurrentProfileId();
-        }
-
-        if (window.extension_settings?.connectionManager?.selectedProfile) {
-            return window.extension_settings.connectionManager.selectedProfile;
-        }
-
-        try {
-            const storeState = outfitStore.getState();
-            return storeState.settings?.autoOutfitConnectionProfile || null;
-        } catch (error: any) {
-            console.warn('Could not access store for connection profile:', error);
-        }
-
-        return null;
-    }
-
-    static getProfileById(profileId: string): any | null {
+    static async getProfileById(profileId: string, context: SillyTavernContext | null = null): Promise<any | null> {
         if (!profileId) {
             return null;
         }
 
-        if (window.connectionManager && typeof window.connectionManager.getProfileById === 'function') {
-            return window.connectionManager.getProfileById(profileId);
+        if (!context) {
+            context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
         }
 
-        if (window.extension_settings?.connectionManager?.profiles) {
-            return window.extension_settings.connectionManager.profiles.find((p: any) => p.id === profileId);
+        // Check if context is null and handle appropriately
+        if (!context) {
+            throw new Error('Context is required for getting profile by ID but could not be retrieved');
         }
 
-        try {
-            const storeState = outfitStore.getState();
-            return null;
-        } catch (error) {
-            console.warn('Could not access store for profiles:', error);
-        }
-
-        return null;
+        const allProfiles = await this.getAllProfiles(context);
+        return allProfiles.find((p: any) => p.id === profileId) || null;
     }
 
-    static getAllProfiles(): any[] {
-        if (window.connectionManager && typeof window.connectionManager.getAllProfiles === 'function') {
-            return window.connectionManager.getAllProfiles();
+    static async getAllProfiles(context: SillyTavernContext | null = null): Promise<any[]> {
+        if (!context) {
+            context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
         }
 
-        if (window.extension_settings?.connectionManager?.profiles) {
-            return window.extension_settings.connectionManager.profiles;
+        // Check if context is null and handle appropriately
+        if (!context) {
+            console.warn('Context is required for getting all profiles but could not be retrieved');
+            return [];
         }
 
         try {
-            const storeState = outfitStore.getState();
-            return [];
+            // Use the connection manager service to get supported profiles
+            const connectionService = context.ConnectionManagerRequestService;
+            if (connectionService && typeof connectionService.getSupportedProfiles === 'function') {
+                return await connectionService.getSupportedProfiles();
+            } else {
+                console.warn('ConnectionManagerRequestService not available or getSupportedProfiles not found');
+                return [];
+            }
         } catch (error) {
-            console.warn('Could not access store for profiles:', error);
+            console.warn('Could not fetch profiles from ConnectionManagerRequestService:', error);
+            return [];
         }
-
-        return [];
     }
 }
 
