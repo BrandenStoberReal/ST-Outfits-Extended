@@ -62,13 +62,9 @@ class OutfitDataService {
                 userPresetsCount: Object.keys(storeAfterWipe.presets.user).length
             });
 
-            // Update the data manager with wiped data - this should be the primary way to clear data
-            console.log('[OutfitDataService] Saving wiped data to data manager');
-            this.dataManager.saveOutfitData({
-                botInstances: {},
-                userInstances: {},
-                presets: {bot: {}, user: {}}
-            });
+            // Update the data manager with wiped data using the direct wipe method
+            console.log('[OutfitDataService] Saving wiped data to data manager using direct wipe method');
+            this.dataManager.saveWipedOutfitData();
 
             // Update settings too
             this.dataManager.saveSettings(outfitStore.getState().settings);

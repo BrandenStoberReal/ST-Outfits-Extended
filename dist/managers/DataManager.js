@@ -44,6 +44,15 @@ class DataManager {
             presets: outfitData.presets || {},
         });
     }
+    // Direct method to save wiped outfit data that bypasses deepMerge for complete wipe operations
+    saveWipedOutfitData() {
+        // Directly set the properties without using deepMerge
+        this.data.instances = {};
+        this.data.user_instances = {};
+        this.data.presets = {};
+        // Save the updated data to storage
+        this.storageService.save(this.data);
+    }
     loadOutfitData() {
         const data = this.load();
         return {
