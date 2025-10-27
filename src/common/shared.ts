@@ -8,6 +8,7 @@ export function dragElementWithSave(element: HTMLElement, storageKey: string): v
         return;
     }
     let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+    let animationFrameId: number | null = null;
 
     // Define functions before using them
     function elementDrag(e: MouseEvent) {
@@ -27,10 +28,17 @@ export function dragElementWithSave(element: HTMLElement, storageKey: string): v
         const newTop = elementTop - pos2;
         const newLeft = elementLeft - pos1;
 
-        // Set the element's new position
-        $element.css({
-            top: newTop + 'px',
-            left: newLeft + 'px'
+        // Cancel any pending animation frame to avoid multiple updates
+        if (animationFrameId) {
+            cancelAnimationFrame(animationFrameId);
+        }
+
+        // Use requestAnimationFrame for better performance
+        animationFrameId = requestAnimationFrame(() => {
+            // Use CSS transform instead of top/left for better performance
+            $element.css({
+                transform: `translate(${newLeft}px, ${newTop}px)`
+            });
         });
     }
 
@@ -39,10 +47,28 @@ export function dragElementWithSave(element: HTMLElement, storageKey: string): v
         $(document).off('mousemove', elementDrag as any);
         $(document).off('mouseup', closeDragElement);
 
+        // Cancel any pending animation frame
+        if (animationFrameId) {
+            cancelAnimationFrame(animationFrameId);
+        }
+
+        // Determine the final position and update CSS properties to apply it
+        const transformValue = $element.css('transform');
+        const matrix = new DOMMatrix(transformValue);
+        const finalLeft = matrix.m41;
+        const finalTop = matrix.m42;
+
+        // Remove transform and set actual top/left values
+        $element.css({
+            transform: 'none',
+            top: finalTop + 'px',
+            left: finalLeft + 'px'
+        });
+
         // Save the position to localStorage
         const position = {
-            top: parseInt($element.css('top')) || 0,
-            left: parseInt($element.css('left')) || 0
+            top: finalTop || 0,
+            left: finalLeft || 0
         };
 
         localStorage.setItem(`outfitPanel_${storageKey}_position`, JSON.stringify(position));

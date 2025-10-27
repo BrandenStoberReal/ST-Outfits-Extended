@@ -20,6 +20,8 @@
     backdrop-filter: blur(10px); /* Added backdrop filter for better visual effect */
     /* Ensure smooth transitions when not dragging */
     transition: transform 0.2s ease;
+    will-change: transform; /* Optimize for transform animations */
+    transform: translateZ(0); /* Enable hardware acceleration */
 }
 
 #bot-outfit-panel {
@@ -957,6 +959,8 @@ input:checked + .slider:before {
     backdrop-filter: blur(10px);
     /* Ensure smooth transitions when not dragging */
     transition: transform 0.2s ease;
+    will-change: transform; /* Optimize for transform animations */
+    transform: translateZ(0); /* Enable hardware acceleration */
 }
 
 .outfit-debug-header {
