@@ -53,7 +53,16 @@ class OutfitDataService {
             console.log('[OutfitDataService] Clearing store in memory');
             outfitStore.wipeAllOutfitData();
 
-            // Update the data manager with wiped data
+            // Verify the store has been cleared
+            const storeAfterWipe = outfitStore.getState();
+            console.log('[OutfitDataService] Store state after wiping in memory:', {
+                botInstancesCount: Object.keys(storeAfterWipe.botInstances).length,
+                userInstancesCount: Object.keys(storeAfterWipe.userInstances).length,
+                botPresetsCount: Object.keys(storeAfterWipe.presets.bot).length,
+                userPresetsCount: Object.keys(storeAfterWipe.presets.user).length
+            });
+
+            // Update the data manager with wiped data - this should be the primary way to clear data
             console.log('[OutfitDataService] Saving wiped data to data manager');
             this.dataManager.saveOutfitData({
                 botInstances: {},
@@ -64,9 +73,26 @@ class OutfitDataService {
             // Update settings too
             this.dataManager.saveSettings(outfitStore.getState().settings);
 
-            // Now ensure the wiped state is saved through the main saveState flow
-            console.log('[OutfitDataService] Syncing wiped state to data manager');
-            outfitStore.saveState();
+            // Check data manager state after the direct save operation
+            const dataManagerAfterDirectSave = this.dataManager.load();
+            console.log('[OutfitDataService] Data manager state after direct saveOutfitData:', {
+                instancesCount: dataManagerAfterDirectSave?.instances ? Object.keys(dataManagerAfterDirectSave.instances).length : 0,
+                userInstancesCount: dataManagerAfterDirectSave?.user_instances ? Object.keys(dataManagerAfterDirectSave.user_instances).length : 0,
+                presetsCount: dataManagerAfterDirectSave?.presets ? Object.keys(dataManagerAfterDirectSave.presets).length : 0
+            });
+
+            // Now sync the store with the wiped data in the data manager
+            console.log('[OutfitDataService] Loading wiped data from data manager to store');
+            outfitStore.loadState(); // This should load the wiped data from the data manager to the store
+
+            // Verify the store now has the wiped data
+            const storeAfterLoadState = outfitStore.getState();
+            console.log('[OutfitDataService] Store state after loading from data manager:', {
+                botInstancesCount: Object.keys(storeAfterLoadState.botInstances).length,
+                userInstancesCount: Object.keys(storeAfterLoadState.userInstances).length,
+                botPresetsCount: Object.keys(storeAfterLoadState.presets.bot).length,
+                userPresetsCount: Object.keys(storeAfterLoadState.presets.user).length
+            });
 
             // IMPORTANT: Access the SillyTavern context directly to ensure immediate save
             const STContext = window.SillyTavern?.getContext?.() || window.getContext?.();
@@ -118,12 +144,13 @@ class OutfitDataService {
 
             this.clearGlobalOutfitVariables();
 
+            // Update the UI to reflect the cleared state
             if (window.botOutfitPanel) {
-                window.botOutfitPanel.renderContent();
+                window.botOutfitPanel.renderContent(); // Refresh bot panel to show cleared state
             }
 
             if (window.userOutfitPanel) {
-                window.userOutfitPanel.renderContent();
+                window.userOutfitPanel.renderContent(); // Refresh user panel to show cleared state
             }
 
             console.log('[OutfitTracker] All outfit data wiped successfully');
