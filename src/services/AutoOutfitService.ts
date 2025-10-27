@@ -614,8 +614,8 @@ outfit-system_replace_topwear(\"T-shirt\")\
         }
     }
 
-    setPrompt(prompt: string | null): string {
-        this.systemPrompt = prompt || this.getDefaultPrompt();
+    setPrompt(prompt: string | null | undefined): string {
+        this.systemPrompt = prompt ? prompt : this.getDefaultPrompt();
         return '[Outfit System] System prompt updated.';
     }
 

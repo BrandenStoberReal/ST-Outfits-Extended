@@ -26,9 +26,8 @@ export function initSettings(autoOutfitSystem, AutoOutfitSystemClass, context) {
         };
     }
     if (settings[MODULE_NAME].autoOutfitSystem && autoOutfitSystem) {
-        if (settings[MODULE_NAME].autoOutfitPrompt) {
-            autoOutfitSystem.setPrompt(settings[MODULE_NAME].autoOutfitPrompt);
-        }
+        // Set the prompt regardless of whether it's truthy - if not set, use default
+        autoOutfitSystem.setPrompt(settings[MODULE_NAME].autoOutfitPrompt || DEFAULT_SETTINGS.autoOutfitPrompt);
         if (settings[MODULE_NAME].autoOutfitConnectionProfile) {
             autoOutfitSystem.setConnectionProfile(settings[MODULE_NAME].autoOutfitConnectionProfile);
         }
@@ -37,6 +36,8 @@ export function initSettings(autoOutfitSystem, AutoOutfitSystemClass, context) {
         }, 1000);
     }
     else if (autoOutfitSystem) {
+        // Even if disabled, still set the prompt from settings so it's ready when enabled
+        autoOutfitSystem.setPrompt(settings[MODULE_NAME].autoOutfitPrompt || DEFAULT_SETTINGS.autoOutfitPrompt);
         autoOutfitSystem.disable();
     }
     if (settings[MODULE_NAME].presets) {
