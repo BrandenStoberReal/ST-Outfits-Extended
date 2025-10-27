@@ -36,11 +36,14 @@ class OutfitDataService {
             try {
                 // Clear the store in memory first
                 outfitStore.wipeAllOutfitData();
+                // Save the wiped data to storage
                 this.dataManager.saveOutfitData({
                     botInstances: {},
                     userInstances: {},
                     presets: { bot: {}, user: {} }
                 });
+                // Also save the updated store state to ensure everything is properly persisted
+                outfitStore.saveState();
                 this.clearGlobalOutfitVariables();
                 if (window.botOutfitPanel) {
                     window.botOutfitPanel.renderContent();
