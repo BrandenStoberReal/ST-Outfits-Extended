@@ -211,10 +211,10 @@ export class UserOutfitPanel {
                     const presetElement = document.createElement('div');
                     presetElement.className = `outfit-preset ${isDefault ? 'default-preset-highlight' : ''}`;
                     presetElement.innerHTML = `
-                        <div class="preset-name">${preset}${isDefault ? ' (Default)' : ''}</div>
+                        <div class="preset-name">${isDefault ? '👑 ' : ''}${preset}${isDefault ? '' : ''}</div>
                         <div class="preset-actions">
                             <button class="load-preset" data-preset="${preset}">Wear</button>
-                            <button class="set-default-preset" data-preset="${preset}" ${isDefault ? 'style="display:none;"' : ''}>Set Default</button>
+                            <button class="set-default-preset" data-preset="${preset}" ${isDefault ? 'style="display:none;"' : ''}>👑</button>
                             <button class="overwrite-preset" data-preset="${preset}">Overwrite</button>
                             <button class="delete-preset" data-preset="${preset}">×</button>
                         </div>
@@ -237,7 +237,8 @@ export class UserOutfitPanel {
                     }));
                     const clearDefaultButton = document.createElement('button');
                     clearDefaultButton.className = 'clear-default-preset';
-                    clearDefaultButton.textContent = 'Clear Default';
+                    clearDefaultButton.textContent = '👑';
+                    clearDefaultButton.title = 'Clear Default';
                     clearDefaultButton.style.display = isDefault ? 'inline-block' : 'none';
                     clearDefaultButton.addEventListener('click', () => __awaiter(this, void 0, void 0, function* () {
                         const message = yield this.outfitManager.clearDefaultPreset();
@@ -273,7 +274,7 @@ export class UserOutfitPanel {
                 });
             }
         }
-        // Add save regular outfit button
+        // Add clear regular outfit button
         const saveButton = document.createElement('button');
         saveButton.className = 'save-outfit-btn';
         saveButton.textContent = 'Save Current Outfit';
@@ -296,7 +297,8 @@ export class UserOutfitPanel {
         // Add clear default outfit button
         const clearDefaultButton = document.createElement('button');
         clearDefaultButton.className = 'clear-default-preset-btn';
-        clearDefaultButton.textContent = 'Clear Default Outfit';
+        clearDefaultButton.textContent = '👑 Clear Default Outfit';
+        clearDefaultButton.title = 'Clear the current default outfit';
         clearDefaultButton.style.marginTop = '5px';
         clearDefaultButton.style.display = this.outfitManager.hasDefaultOutfit() ? 'block' : 'none';
         clearDefaultButton.addEventListener('click', () => __awaiter(this, void 0, void 0, function* () {

@@ -261,7 +261,7 @@
 }
 
 .outfit-preset.default-preset-highlight .preset-name::before {
-    content: "⭐ "; /* Gold star emoji */
+    content: "👑 "; /* Crown emoji */
     margin-right: 5px;
 }
 
