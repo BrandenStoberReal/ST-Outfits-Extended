@@ -36,10 +36,10 @@ class OutfitDataService {
             // Log initial state before wiping
             const initialStoreState = outfitStore.getState();
             console.log('[OutfitDataService] Initial store state:', {
-                botInstancesCount: Object.keys(initialStoreState.botInstances).length,
-                userInstancesCount: Object.keys(initialStoreState.userInstances).length,
-                botPresetsCount: Object.keys(initialStoreState.presets.bot).length,
-                userPresetsCount: Object.keys(initialStoreState.presets.user).length
+                botInstancesCount: initialStoreState.botInstances ? Object.keys(initialStoreState.botInstances).length : 0,
+                userInstancesCount: initialStoreState.userInstances ? Object.keys(initialStoreState.userInstances).length : 0,
+                botPresetsCount: (initialStoreState.presets && initialStoreState.presets.bot) ? Object.keys(initialStoreState.presets.bot).length : 0,
+                userPresetsCount: (initialStoreState.presets && initialStoreState.presets.user) ? Object.keys(initialStoreState.presets.user).length : 0
             });
 
             const initialDataManagerState = this.dataManager.load();
