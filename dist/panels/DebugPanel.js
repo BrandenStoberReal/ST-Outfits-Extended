@@ -441,6 +441,7 @@ export class DebugPanel {
         miscHtml += '<div class="debug-functions">';
         miscHtml += '<button id="debug-refresh-store" class="menu_button">Refresh Store State</button>';
         miscHtml += '<button id="debug-clear-cache" class="menu_button">Clear Macro Cache</button>';
+        miscHtml += '<button id="debug-wipe-all" class="menu_button danger-button">WIPE ALL DATA</button>';
         miscHtml += '<button id="debug-export-data" class="menu_button">Export All Data</button>';
         miscHtml += '<button id="debug-import-data" class="menu_button">Import Data</button>';
         miscHtml += '<input type="file" id="debug-import-file" style="display: none;" accept=".json">';

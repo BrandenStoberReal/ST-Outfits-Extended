@@ -8,6 +8,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 import { ALL_SLOTS } from '../config/constants.js';
+import { outfitStore } from '../common/Store.js';
 class OutfitDataService {
     constructor(dataManager) {
         this.dataManager = dataManager;
@@ -33,6 +34,8 @@ class OutfitDataService {
     wipeAllOutfits() {
         return __awaiter(this, void 0, void 0, function* () {
             try {
+                // Clear the store in memory first
+                outfitStore.wipeAllOutfitData();
                 this.dataManager.saveOutfitData({
                     botInstances: {},
                     userInstances: {},

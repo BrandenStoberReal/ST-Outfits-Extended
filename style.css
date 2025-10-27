@@ -1271,6 +1271,23 @@ input:checked + .slider:before {
     border-color: #f39c12 !important;
 }
 
+.debug-functions .danger-button {
+    background: linear-gradient(135deg, #c0392b 0%, #a93226 100%) !important;
+    border: 1px solid #e74c3c !important;
+}
+
+.debug-functions .danger-button:hover {
+    background: linear-gradient(135deg, #d35400 0%, #c0392b 100%) !important;
+    border-color: #f39c12 !important;
+    transform: scale(1.05) translateY(-1px);
+    box-shadow: 0 6px 12px rgba(231, 76, 60, 0.4) !important;
+}
+
+.debug-functions .danger-button:active {
+    transform: scale(1.05) translateY(0);
+    box-shadow: 0 3px 6px rgba(231, 76, 60, 0.4) !important;
+}
+
 /* Scrollbar styling for debug panel */
 .outfit-debug-content::-webkit-scrollbar {
     width: 8px;

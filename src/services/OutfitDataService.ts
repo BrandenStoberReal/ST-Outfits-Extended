@@ -1,5 +1,6 @@
 import {ALL_SLOTS} from '../config/constants';
 import {DataManager} from '../managers/DataManager';
+import {outfitStore} from '../common/Store';
 
 class OutfitDataService {
     dataManager: DataManager;
@@ -30,6 +31,9 @@ class OutfitDataService {
 
     async wipeAllOutfits(): Promise<string> {
         try {
+            // Clear the store in memory first
+            outfitStore.wipeAllOutfitData();
+
             this.dataManager.saveOutfitData({
                 botInstances: {},
                 userInstances: {},

@@ -455,6 +455,25 @@ class OutfitStore {
         }
         this.notifyListeners();
     }
+
+    /**
+     * Wipes all outfit data including bot instances, user instances, and presets
+     */
+    wipeAllOutfitData(): void {
+        // Clear all bot instances
+        this.state.botInstances = {};
+
+        // Clear all user instances
+        this.state.userInstances = {};
+
+        // Clear all presets
+        this.state.presets = {
+            bot: {},
+            user: {}
+        };
+
+        this.notifyListeners();
+    }
 }
 
 const outfitStore = new OutfitStore();
