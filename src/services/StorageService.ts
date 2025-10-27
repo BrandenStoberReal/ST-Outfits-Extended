@@ -22,6 +22,8 @@ class StorageService {
         }
         return this.loadFn();
     }
+
+
 }
 
 export {StorageService};

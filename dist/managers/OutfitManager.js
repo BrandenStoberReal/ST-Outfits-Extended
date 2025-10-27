@@ -38,9 +38,19 @@ export class OutfitManager {
         }
         this.outfitInstanceId = instanceId;
         this.loadOutfit();
+        // Load presets for this instance ID after setting it
+        this.loadPresetsForInstanceId(instanceId);
     }
     getOutfitInstanceId() {
         return this.outfitInstanceId;
+    }
+    /**
+     * Loads presets specifically for the given instance ID
+     * @param instanceId The instance ID to load presets for
+     */
+    loadPresetsForInstanceId(instanceId) {
+        // This method can be overridden by subclasses if needed
+        // For now, we just ensure the presets are available when the instance ID is set
     }
     getCurrentOutfit() {
         return Object.assign({}, this.currentValues);

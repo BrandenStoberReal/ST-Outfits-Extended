@@ -365,6 +365,25 @@ class CustomMacroService {
         }
         return result;
     }
+    /**
+     * Returns an array of currently registered macro names for debugging purposes
+     */
+    getRegisteredMacros() {
+        return Array.from(this.registeredMacros);
+    }
+    /**
+     * Returns the count of currently registered macros
+     */
+    getRegisteredMacroCount() {
+        return this.registeredMacros.size;
+    }
+    /**
+     * Clears all registered macros without unregistering them from SillyTavern
+     * This should only be used when SillyTavern is resetting all macros
+     */
+    clearRegisteredMacros() {
+        this.registeredMacros.clear();
+    }
     _generateCacheKey(macroType, slotName, characterName) {
         var _a;
         const context = ((_a = window.SillyTavern) === null || _a === void 0 ? void 0 : _a.getContext) ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
@@ -416,25 +435,6 @@ class CustomMacroService {
         result = result.charAt(0).toUpperCase() + result.slice(1);
         result = result.split('-').join(' ');
         return result;
-    }
-    /**
-     * Returns an array of currently registered macro names for debugging purposes
-     */
-    getRegisteredMacros() {
-        return Array.from(this.registeredMacros);
-    }
-    /**
-     * Returns the count of currently registered macros
-     */
-    getRegisteredMacroCount() {
-        return this.registeredMacros.size;
-    }
-    /**
-     * Clears all registered macros without unregistering them from SillyTavern
-     * This should only be used when SillyTavern is resetting all macros
-     */
-    clearRegisteredMacros() {
-        this.registeredMacros.clear();
     }
 }
 export const customMacroSystem = new CustomMacroService();

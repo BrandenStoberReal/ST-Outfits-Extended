@@ -41,7 +41,7 @@ async function processSingleCommand(command: string, botManager: any): Promise<v
     }
 }
 
-/** 
+/**
  * Generates outfit from LLM based on provided options
  * @param {object} options - Generation options containing the prompt
  * @param {string | null} [profile] - Connection profile to use for generation (defaults to auto outfit system profile if available)
@@ -77,7 +77,7 @@ export async function generateOutfitFromLLM(options: { prompt: string }, profile
     }
 }
 
-/** 
+/**
  * Imports outfit from character card using LLM analysis
  * @returns {Promise<object>} - Result with message and any extracted outfit information
  */

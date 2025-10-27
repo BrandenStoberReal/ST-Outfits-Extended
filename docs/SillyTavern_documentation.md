@@ -45,24 +45,24 @@ To use relative imports from the bundle, you may need to create an import wrappe
 
 ```js
 /**
-* Import a member from a module by URL, bypassing webpack.
-* @param {string} url URL to import from
-* @param {string} what Name of the member to import
-* @param {any} defaultValue Fallback value
-* @returns {Promise<any>} Imported member
-  */
-  export async function importFromUrl(url, what, defaultValue = null) {
-  try {
-  const module = await import(/* webpackIgnore: true */ url);
-  if (!Object.hasOwn(module, what)) {
-  throw new Error(`No ${what} in module`);
-  }
-  return module[what];
-  } catch (error) {
-  console.error(`Failed to import ${what} from ${url}: ${error}`);
-  return defaultValue;
-  }
-  }
+ * Import a member from a module by URL, bypassing webpack.
+ * @param {string} url URL to import from
+ * @param {string} what Name of the member to import
+ * @param {any} defaultValue Fallback value
+ * @returns {Promise<any>} Imported member
+ */
+export async function importFromUrl(url, what, defaultValue = null) {
+    try {
+        const module = await import(/* webpackIgnore: true */ url);
+        if (!Object.hasOwn(module, what)) {
+            throw new Error(`No ${what} in module`);
+        }
+        return module[what];
+    } catch (error) {
+        console.error(`Failed to import ${what} from ${url}: ${error}`);
+        return defaultValue;
+    }
+}
 
 // Import a function from 'script.js' module
 const generateRaw = await importFromUrl('/script.js', 'generateRaw');
@@ -79,21 +79,21 @@ imports should be used based on that. To ease local development, consider placin
 
 ```json
 {
-"display_name": "The name of the extension",
-"loading_order": 1,
-"requires": [],
-"optional": [],
-"dependencies": [],
-"js": "index.js",
-"css": "style.css",
-"author": "Your name",
-"version": "1.0.0",
-"homePage": "https://github.com/your/extension",
-"auto_update": true,
-"minimum_client_version": "1.0.0",
-"i18n": {
-"de-de": "i18n/de-de.json"
-}
+  "display_name": "The name of the extension",
+  "loading_order": 1,
+  "requires": [],
+  "optional": [],
+  "dependencies": [],
+  "js": "index.js",
+  "css": "style.css",
+  "author": "Your name",
+  "version": "1.0.0",
+  "homePage": "https://github.com/your/extension",
+  "auto_update": true,
+  "minimum_client_version": "1.0.0",
+  "i18n": {
+    "de-de": "i18n/de-de.json"
+  }
 }
 ```
 
@@ -171,7 +171,7 @@ You can find the full list of exported libraries in the SillyTavern source code.
 Example: Using the DOMPurify library.
 
 ```js
-const { DOMPurify } = SillyTavern.libs;
+const {DOMPurify} = SillyTavern.libs;
 
 const sanitizedHtml = DOMPurify.sanitize('<script>"dirty HTML"</script>');
 ```
@@ -209,11 +209,11 @@ Unless you're building a bundled extension, you can import variables and functio
 For example, this code snippet will generate a reply from the currently selected API in the background:
 
 ```js
-import { generateQuietPrompt } from "../../../../script.js";
+import {generateQuietPrompt} from "../../../../script.js";
 
 async function handleMessage(data) {
-const text = data.message;
-const translated = await generateQuietPrompt({ quietPrompt: text });
+    const text = data.message;
+    const translated = await generateQuietPrompt({quietPrompt: text});
 // ...
 }
 ```
@@ -277,7 +277,7 @@ Do not save the reference to chatMetadata in a long-lived variable, as the refer
 switched. Always use SillyTavern.getContext().chatMetadata to access the current chat metadata.
 
 ```js
-const { chatMetadata, saveMetadata } = SillyTavern.getContext();
+const {chatMetadata, saveMetadata} = SillyTavern.getContext();
 
 // Set some metadata for the current chat
 chatMetadata['my_key'] = 'my_value';
@@ -315,12 +315,12 @@ character, find the index by searching for the character in the characters array
 Caution: characterId is undefined in group chats or when no character is selected!
 
 ```js
-const { writeExtensionField, characterId } = SillyTavern.getContext();
+const {writeExtensionField, characterId} = SillyTavern.getContext();
 
 // Write some data to the character card
 await writeExtensionField(characterId, 'my_extension_key', {
-someData: 'value',
-anotherData: 42
+    someData: 'value',
+    anotherData: 42
 });
 
 // Read the data back from the character card
@@ -343,7 +343,7 @@ support data extensions in settings presets:
 To read or write the data, you first need to get the PresetManager instance from the context:
 
 ```js
-const { getPresetManager } = SillyTavern.getContext();
+const {getPresetManager} = SillyTavern.getContext();
 
 // Get the preset manager for the current API type
 const pm = getPresetManager();
@@ -352,12 +352,12 @@ const pm = getPresetManager();
 // - path: the path to the field in the preset data
 // - value: the value to write
 // - name (optional): the name of the preset to write to, defaults to the currently selected preset
-await pm.writePresetExtensionField({ path: 'hello', value: 'world' });
+await pm.writePresetExtensionField({path: 'hello', value: 'world'});
 
 // Read data from the preset extension field:
 // - path: the path to the field in the preset data
 // - name (optional): the name of the preset to read from, defaults to the currently selected preset
-const value = pm.readPresetExtensionField({ path: 'hello' });
+const value = pm.readPresetExtensionField({path: 'hello'});
 ```
 
 The PRESET_CHANGED and MAIN_API_CHANGED events are emitted when the preset is changed or the main API is switched, so
@@ -380,8 +380,8 @@ Pass a locale code and an object with the translations to the addLocaleData func
 allowed. If the passed locale code is not a currently chosen locale, the data will be silently ignored.
 
 ```js
-SillyTavern.getContext().addLocaleData('fr-fr', { 'Hello': 'Bonjour' });
-SillyTavern.getContext().addLocaleData('de-de', { 'Hello': 'Hallo' });
+SillyTavern.getContext().addLocaleData('fr-fr', {'Hello': 'Bonjour'});
+SillyTavern.getContext().addLocaleData('de-de', {'Hello': 'Hallo'});
 ```
 
 ## Via the extension manifest
@@ -391,13 +391,13 @@ extension's directory) to the manifest.
 
 ```json
 {
-"display_name": "Foobar",
-"js": "index.js",
-// rest of the fields
-"i18n": {
-"fr-fr": "i18n/french.json",
-"de-de": "i18n/german.json"
-}
+  "display_name": "Foobar",
+  "js": "index.js",
+  // rest of the fields
+  "i18n": {
+    "fr-fr": "i18n/french.json",
+    "de-de": "i18n/german.json"
+  }
 }
 ```
 
@@ -531,10 +531,11 @@ should be the name of a global function that will be called by SillyTavern.
 
 ```json
 {
-"display_name": "My Interceptor Extension",
-"loading_order": 10, // Affects execution order
-"generate_interceptor": "myCustomInterceptorFunction",
-// ... other manifest properties
+  "display_name": "My Interceptor Extension",
+  "loading_order": 10,
+  // Affects execution order
+  "generate_interceptor": "myCustomInterceptorFunction"
+  // ... other manifest properties
 }
 ```
 
@@ -554,16 +555,16 @@ The interceptor function receives the following arguments:
 Example Implementation:
 
 ```js
-globalThis.myCustomInterceptorFunction = async function(chat, contextSize, abort, type) {
+globalThis.myCustomInterceptorFunction = async function (chat, contextSize, abort, type) {
 // Example: Add a system note before the last user message
-const systemNote = {
-is_user: false,
-name: "System Note",
-send_date: Date.now(),
-mes: "This was added by my extension!"
-};
+    const systemNote = {
+        is_user: false,
+        name: "System Note",
+        send_date: Date.now(),
+        mes: "This was added by my extension!"
+    };
 // Insert before the last message
-chat.splice(chat.length - 1, 0, systemNote);
+    chat.splice(chat.length - 1, 0, systemNote);
 }
 ```
 
@@ -581,12 +582,12 @@ without interrupting the user experience while also keeping the relevant chat an
 generating a summary or an image prompt.
 
 ```js
-const { generateQuietPrompt } = SillyTavern.getContext();
+const {generateQuietPrompt} = SillyTavern.getContext();
 
 const quietPrompt = 'Generate a summary of the chat history.';
 
 const result = await generateQuietPrompt({
-quietPrompt,
+    quietPrompt,
 });
 ```
 
@@ -601,7 +602,7 @@ formatting, etc. You can also pass an additional systemPrompt and a prefill to t
 the generation process.
 
 ```js
-const { generateRaw } = SillyTavern.getContext();
+const {generateRaw} = SillyTavern.getContext();
 
 const systemPrompt = 'You are a helpful assistant.';
 const prompt = 'Generate a story about a brave knight.';
@@ -623,9 +624,9 @@ In Text Completion mode (no instruct), will produce a prompt like this:
 */
 
 const result = await generateRaw({
-systemPrompt,
-prompt,
-prefill,
+    systemPrompt,
+    prompt,
+    prefill,
 });
 ```
 
@@ -648,49 +649,49 @@ yourself. If the model fails to generate a valid JSON object, the function will 
 Zod is a popular library to generate and validate JSON schemas. Its use will not be covered here.
 
 ```js
-const { generateRaw, generateQuietPrompt } = SillyTavern.getContext();
+const {generateRaw, generateQuietPrompt} = SillyTavern.getContext();
 
 // Define a JSON schema for the expected output
 const jsonSchema = {
 // Required: a name for the schema
-name: 'StoryStateModel',
+    name: 'StoryStateModel',
 // Optional: a description of the schema
-description: 'A schema for a story state with location, plans, and memories.',
+    description: 'A schema for a story state with location, plans, and memories.',
 // Optional:  the schema will be used in strict mode, meaning that only the fields defined in the schema will be allowed
-strict: true,
+    strict: true,
 // Required: a definition of the schema
-value: {
-'$schema': 'http://json-schema.org/draft-04/schema#',
-'type': 'object',
-'properties': {
-'location': {
-'type': 'string'
-},
-'plans': {
-'type': 'string'
-},
-'memories': {
-'type': 'string'
-}
-},
-'required': [
-'location',
-'plans',
-'memories'
-],
-},
+    value: {
+        '$schema': 'http://json-schema.org/draft-04/schema#',
+        'type': 'object',
+        'properties': {
+            'location': {
+                'type': 'string'
+            },
+            'plans': {
+                'type': 'string'
+            },
+            'memories': {
+                'type': 'string'
+            }
+        },
+        'required': [
+            'location',
+            'plans',
+            'memories'
+        ],
+    },
 };
 
 const prompt = 'Generate a story state with location, plans, and memories. Output as a JSON object.';
 
 const rawResult = await generateRaw({
-prompt,
-jsonSchema,
+    prompt,
+    jsonSchema,
 });
 
 const quietResult = await generateQuietPrompt({
-quietPrompt: prompt,
-jsonSchema,
+    quietPrompt: prompt,
+    jsonSchema,
 });
 ```
 
@@ -704,20 +705,20 @@ macro name that should be a unique string, and a string or a function that retur
 with a unique nonce string that will be different between each substituteParams call.
 
 ```js
-const { registerMacro } = SillyTavern.getContext();
+const {registerMacro} = SillyTavern.getContext();
 
 // Simple string macro
 registerMacro('fizz', 'buzz');
 // Function macro
 registerMacro('tomorrow', () => {
-return new Date(Date.now() + 24 * 60 * 60 * 1000).toLocaleDateString();
+    return new Date(Date.now() + 24 * 60 * 60 * 1000).toLocaleDateString();
 });
 ```
 
 When a custom macro is no longer needed, remove it using the unregisterMacro() function:
 
 ```js
-const { unregisterMacro } = SillyTavern.getContext();
+const {unregisterMacro} = SillyTavern.getContext();
 
 // Unregister the 'fizz' macro
 unregisterMacro('fizz');
@@ -739,20 +740,20 @@ The doExtrasFetch() function allows you to make requests to your SillyTavern Ext
 For example, to call the /api/summarize endpoint:
 
 ```js
-import { getApiUrl, doExtrasFetch } from "../../extensions.js";
+import {getApiUrl, doExtrasFetch} from "../../extensions.js";
 
 const url = new URL(getApiUrl());
 url.pathname = '/api/summarize';
 
 const apiResult = await doExtrasFetch(url, {
-method: 'POST',
-headers: {
-'Content-Type': 'application/json',
-'Bypass-Tunnel-Reminder': 'bypass',
-},
-body: JSON.stringify({
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json',
+        'Bypass-Tunnel-Reminder': 'bypass',
+    },
+    body: JSON.stringify({
 // Request body
-})
+    })
 });
 ```
 
