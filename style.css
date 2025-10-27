@@ -18,6 +18,8 @@
     min-height: 250px;
     overflow: hidden;
     backdrop-filter: blur(10px); /* Added backdrop filter for better visual effect */
+    /* Ensure smooth transitions when not dragging */
+    transition: transform 0.2s ease;
 }
 
 #bot-outfit-panel {
@@ -953,6 +955,8 @@ input:checked + .slider:before {
     border: 1px solid #5d6d7e;
     box-shadow: 0 8px 32px rgba(44, 62, 80, 0.4);
     backdrop-filter: blur(10px);
+    /* Ensure smooth transitions when not dragging */
+    transition: transform 0.2s ease;
 }
 
 .outfit-debug-header {
