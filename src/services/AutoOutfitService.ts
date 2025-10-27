@@ -248,7 +248,7 @@ outfit-system_replace_topwear(\"T-shirt\")\
             throw new Error('No valid messages to process');
         }
 
-        const processedSystemPrompt = this.replaceMacrosInPrompt(this.systemPrompt);
+        const processedSystemPrompt = await this.replaceMacrosInPrompt(this.systemPrompt);
         const promptText = `${processedSystemPrompt}\n\nRecent Messages:\n${recentMessages}\n\nOutput:`
 
         console.log('[AutoOutfitSystem] Generating outfit commands with LLMService...');
@@ -293,8 +293,8 @@ outfit-system_replace_topwear(\"T-shirt\")\
         };
     }
 
-    replaceMacrosInPrompt(prompt: string): string {
-        return customMacroSystem.replaceMacrosInText(prompt);
+    async replaceMacrosInPrompt(prompt: string): Promise<string> {
+        return await customMacroSystem.replaceMacrosInText(prompt);
     }
 
     parseGeneratedText(text: string): string[] {
@@ -631,8 +631,8 @@ outfit-system_replace_topwear(\"T-shirt\")\
         return '[Outfit System] System prompt updated.';
     }
 
-    getProcessedSystemPrompt(): string {
-        return this.replaceMacrosInPrompt(this.systemPrompt);
+    async getProcessedSystemPrompt(): Promise<string> {
+        return await this.replaceMacrosInPrompt(this.systemPrompt);
     }
 
     getUserName(): string {

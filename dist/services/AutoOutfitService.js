@@ -216,7 +216,7 @@ outfit-system_replace_topwear(\"T-shirt\")\
             if (!recentMessages.trim()) {
                 throw new Error('No valid messages to process');
             }
-            const processedSystemPrompt = this.replaceMacrosInPrompt(this.systemPrompt);
+            const processedSystemPrompt = yield this.replaceMacrosInPrompt(this.systemPrompt);
             const promptText = `${processedSystemPrompt}\n\nRecent Messages:\n${recentMessages}\n\nOutput:`;
             console.log('[AutoOutfitSystem] Generating outfit commands with LLMService...');
             try {
@@ -257,7 +257,9 @@ outfit-system_replace_topwear(\"T-shirt\")\
         };
     }
     replaceMacrosInPrompt(prompt) {
-        return customMacroSystem.replaceMacrosInText(prompt);
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield customMacroSystem.replaceMacrosInText(prompt);
+        });
     }
     parseGeneratedText(text) {
         if (!text || text.trim() === '[none]') {
@@ -538,7 +540,9 @@ outfit-system_replace_topwear(\"T-shirt\")\
         return '[Outfit System] System prompt updated.';
     }
     getProcessedSystemPrompt() {
-        return this.replaceMacrosInPrompt(this.systemPrompt);
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield this.replaceMacrosInPrompt(this.systemPrompt);
+        });
     }
     getUserName() {
         return customMacroSystem.getCurrentUserName();

@@ -2,6 +2,7 @@ import {outfitStore} from '../common/Store';
 import {ACCESSORY_SLOTS, CLOTHING_SLOTS} from '../config/constants';
 import {macroProcessor} from '../processors/MacroProcessor';
 import {getCharacters} from '../utils/CharacterUtils';
+import {generateInstanceIdFromText} from '../utils/utilities';
 
 declare const window: any;
 
@@ -40,8 +41,8 @@ class CustomMacroService {
             ctx.registerMacro('user', () => this.getCurrentUserName());
 
             this.allSlots.forEach(slot => {
-                ctx.registerMacro(`char_${slot}`, () => this.getCurrentSlotValue('char', slot));
-                ctx.registerMacro(`user_${slot}`, () => this.getCurrentSlotValue('user', slot));
+                ctx.registerMacro(`char_${slot}`, async () => await this.getCurrentSlotValue('char', slot));
+                ctx.registerMacro(`user_${slot}`, async () => await this.getCurrentSlotValue('user', slot));
             });
         }
     }
@@ -73,7 +74,7 @@ class CustomMacroService {
 
                     this.allSlots.forEach(slot => {
                         const macroName = `${characterName}_${slot}`;
-                        ctx.registerMacro(macroName, () => this.getCurrentSlotValue(characterName, slot, characterName));
+                        ctx.registerMacro(macroName, async () => await this.getCurrentSlotValue(characterName, slot, characterName));
                     });
                 }
             }
@@ -120,7 +121,7 @@ class CustomMacroService {
         }
     }
 
-    getCurrentSlotValue(macroType: string, slotName: string, charNameParam: string | null = null): string {
+    async getCurrentSlotValue(macroType: string, slotName: string, charNameParam: string | null = null): Promise<string> {
         if (!this.allSlots.includes(slotName)) {
             return 'None';
         }
@@ -170,14 +171,9 @@ class CustomMacroService {
                 const firstBotMessage = context?.chat?.find((message: any) => !message.is_user && !message.is_system);
                 if (firstBotMessage) {
                     const processedMessage = macroProcessor.cleanOutfitMacrosFromText(firstBotMessage.mes);
-                    let hash = 0;
-                    for (let i = 0; i < processedMessage.length; i++) {
-                        const char = processedMessage.charCodeAt(i);
-                        hash = ((hash << 5) - hash) + char;
-                        hash |= 0;
-                    }
-                    instanceId = Math.abs(hash).toString(36);
-
+                    // Use the same function that is used in MacroProcessor to ensure consistency
+                    instanceId = await generateInstanceIdFromText(processedMessage);
+                    
                     if (charId !== null && (macroType === 'char' || macroType === 'bot' || charNameParam || (this.isValidCharacterName(macroType) && !['user'].includes(macroType)))) {
                         const charOutfitData = outfitStore.getBotOutfit(charId.toString(), instanceId);
                         if (charOutfitData && charOutfitData[slotName]) {
@@ -355,7 +351,7 @@ class CustomMacroService {
         }
     }
 
-    replaceMacrosInText(text: string): string {
+    async replaceMacrosInText(text: string): Promise<string> {
         if (!text || typeof text !== 'string') {
             return text;
         }
@@ -368,7 +364,7 @@ class CustomMacroService {
             let replacement: string;
 
             if (macro.slot) {
-                replacement = this.getCurrentSlotValue(macro.type, macro.slot,
+                replacement = await this.getCurrentSlotValue(macro.type, macro.slot,
                     ['char', 'bot', 'user'].includes(macro.type) ? null : macro.type);
             } else if (macro.type === 'char' || macro.type === 'bot') {
                 replacement = this.getCurrentCharName();
