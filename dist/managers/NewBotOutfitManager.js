@@ -127,10 +127,22 @@ export class NewBotOutfitManager extends OutfitManager {
         if (!presets || !presets[presetName]) {
             return `[Outfit System] Preset "${presetName}" not found for instance ${actualInstanceId}.`;
         }
+        // Check if the preset being deleted is the same as the current default preset
+        const defaultPresetName = this.getDefaultPresetName(actualInstanceId);
+        let message = '';
+        if (defaultPresetName === presetName) {
+            // If we're deleting the preset that's currently set as default, 
+            // we need to clear the default status
+            outfitStore.deletePreset(this.character, actualInstanceId, 'default', 'bot');
+            message = `Deleted "${presetName}" and cleared it as the default outfit for ${this.character} (instance: ${actualInstanceId}).`;
+        }
+        else {
+            message = `Deleted "${presetName}" outfit for instance ${actualInstanceId}.`;
+        }
         outfitStore.deletePreset(this.character, actualInstanceId, presetName, 'bot');
         outfitStore.saveState(); // Ensure the presets are saved to persistent storage
         if (outfitStore.getSetting('enableSysMessages')) {
-            return `Deleted "${presetName}" outfit for instance ${actualInstanceId}.`;
+            return message;
         }
         return '';
     }
@@ -142,12 +154,18 @@ export class NewBotOutfitManager extends OutfitManager {
         }
         return Object.keys(presets);
     }
+    /**
+     * Loads the default outfit for this character.
+     * Default outfits are HEAVILY encouraged and provide a fallback appearance for characters.
+     * @param {string | null} instanceId - The instance ID to load the default outfit for
+     * @returns {Promise<string>} A message indicating the result of loading the default outfit
+     */
     loadDefaultOutfit() {
         return __awaiter(this, arguments, void 0, function* (instanceId = null) {
             const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
             const { bot: presets } = outfitStore.getPresets(this.character, actualInstanceId);
             if (!presets || !presets['default']) {
-                return `[Outfit System] No default outfit set for ${this.character} (instance: ${actualInstanceId}).`;
+                return `[Outfit System] No default outfit set for ${this.character} (instance: ${actualInstanceId}). Having a default outfit is HEAVILY encouraged.`;
             }
             const preset = presets['default'];
             let changed = false;
@@ -218,21 +236,6 @@ export class NewBotOutfitManager extends OutfitManager {
             outfitStore.saveState(); // Ensure the presets are saved to persistent storage
             if (outfitStore.getSetting('enableSysMessages')) {
                 return `Set "${presetName}" as the default outfit for ${this.character} (instance: ${actualInstanceId}).`;
-            }
-            return '';
-        });
-    }
-    clearDefaultPreset() {
-        return __awaiter(this, arguments, void 0, function* (instanceId = null) {
-            const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
-            const { bot: presets } = outfitStore.getPresets(this.character, actualInstanceId);
-            if (!presets || !presets['default']) {
-                return `[Outfit System] No default outfit set for ${this.character} (instance: ${actualInstanceId}).`;
-            }
-            outfitStore.deletePreset(this.character, actualInstanceId, 'default', 'bot');
-            outfitStore.saveState(); // Ensure the presets are saved to persistent storage
-            if (outfitStore.getSetting('enableSysMessages')) {
-                return `Default outfit cleared for ${this.character} (instance: ${actualInstanceId}).`;
             }
             return '';
         });

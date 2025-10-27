@@ -311,22 +311,7 @@ export class BotOutfitPanel {
                         this.renderContent();
                     });
 
-                    const clearDefaultButton = document.createElement('button');
 
-                    clearDefaultButton.className = 'clear-default-preset';
-                    clearDefaultButton.textContent = '👑';
-                    clearDefaultButton.title = 'Clear Default';
-                    clearDefaultButton.style.display = isDefault ? 'inline-block' : 'none';
-                    clearDefaultButton.addEventListener('click', async () => {
-                        const message = await this.outfitManager.clearDefaultPreset();
-
-                        if (message && areSystemMessagesEnabled()) {
-                            this.sendSystemMessage(message);
-                        }
-                        this.saveSettingsDebounced();
-                        this.renderContent();
-                    });
-                    presetElement.querySelector('.preset-actions')!.appendChild(clearDefaultButton);
 
 
                     presetElement.querySelector('.delete-preset')!.addEventListener('click', () => {
@@ -383,24 +368,7 @@ export class BotOutfitPanel {
 
         container.appendChild(saveButton);
 
-        // Add clear default outfit button
-        const clearDefaultButton = document.createElement('button');
 
-        clearDefaultButton.className = 'clear-default-preset-btn';
-        clearDefaultButton.textContent = '👑 Clear Default Outfit';
-        clearDefaultButton.title = 'Clear the current default outfit';
-        clearDefaultButton.style.marginTop = '5px';
-        clearDefaultButton.style.display = this.outfitManager.hasDefaultOutfit() ? 'block' : 'none';
-        clearDefaultButton.addEventListener('click', async () => {
-            const message = await this.outfitManager.clearDefaultPreset();
-
-            if (message && areSystemMessagesEnabled()) {
-                this.sendSystemMessage(message);
-            }
-            this.saveSettingsDebounced();
-            this.renderContent();
-        });
-        container.appendChild(clearDefaultButton);
     }
 
     /**
