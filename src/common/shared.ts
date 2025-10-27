@@ -8,6 +8,8 @@ export function dragElementWithSave(element: HTMLElement, storageKey: string): v
         return;
     }
     let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+    let initialX = 0, initialY = 0;  // Track initial position when drag starts
+    let currentX = 0, currentY = 0;  // Track current transform position
     let animationFrameId: number | null = null;
 
     // Define functions before using them
@@ -15,18 +17,17 @@ export function dragElementWithSave(element: HTMLElement, storageKey: string): v
         e = e || window.event;
         e.preventDefault();
 
-        // Calculate the new cursor position
-        pos1 = pos3 - e.clientX;
-        pos2 = pos4 - e.clientY;
+        // Calculate the mouse movement since the last drag event
+        const deltaX = e.clientX - pos3;  // How much the mouse has moved since last event
+        const deltaY = e.clientY - pos4;  // How much the mouse has moved since last event
+
+        // Update positions
         pos3 = e.clientX;
         pos4 = e.clientY;
 
-        // Calculate new position
-        const elementTop = parseInt($element.css('top')) || $element[0].offsetTop || 0;
-        const elementLeft = parseInt($element.css('left')) || $element[0].offsetLeft || 0;
-
-        const newTop = elementTop - pos2;
-        const newLeft = elementLeft - pos1;
+        // Update the transform values based on the mouse movement
+        currentX += deltaX;
+        currentY += deltaY;
 
         // Cancel any pending animation frame to avoid multiple updates
         if (animationFrameId) {
@@ -37,7 +38,7 @@ export function dragElementWithSave(element: HTMLElement, storageKey: string): v
         animationFrameId = requestAnimationFrame(() => {
             // Use CSS transform instead of top/left for better performance
             $element.css({
-                transform: `translate(${newLeft}px, ${newTop}px)`
+                transform: `translate(${currentX}px, ${currentY}px)`
             });
         });
     }
@@ -52,11 +53,9 @@ export function dragElementWithSave(element: HTMLElement, storageKey: string): v
             cancelAnimationFrame(animationFrameId);
         }
 
-        // Determine the final position and update CSS properties to apply it
-        const transformValue = $element.css('transform');
-        const matrix = new DOMMatrix(transformValue);
-        const finalLeft = matrix.m41;
-        const finalTop = matrix.m42;
+        // Calculate final position based on initial position + transforms
+        const finalTop = initialY + currentY;
+        const finalLeft = initialX + currentX;
 
         // Remove transform and set actual top/left values
         $element.css({
@@ -81,6 +80,18 @@ export function dragElementWithSave(element: HTMLElement, storageKey: string): v
         // Get the mouse cursor position at startup
         pos3 = e.clientX;
         pos4 = e.clientY;
+
+        // Get the current position for reference
+        const elementTop = parseInt($element.css('top')) || $element[0].offsetTop || 0;
+        const elementLeft = parseInt($element.css('left')) || $element[0].offsetLeft || 0;
+
+        // Store initial position
+        initialX = elementLeft;
+        initialY = elementTop;
+
+        // Reset current transform values to 0
+        currentX = 0;
+        currentY = 0;
 
         $(document).on('mousemove', elementDrag as any);
         $(document).on('mouseup', closeDragElement);
