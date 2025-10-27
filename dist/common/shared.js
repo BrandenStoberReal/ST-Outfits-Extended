@@ -21,7 +21,7 @@ export function dragElementWithSave(element, storageKey) {
         // Update positions
         pos3 = e.clientX;
         pos4 = e.clientY;
-        // Calculate new position by adding deltas to current position
+        // Update the transform values based on the mouse movement
         currentX += deltaX;
         currentY += deltaY;
         // Cancel any pending animation frame to avoid multiple updates
@@ -30,10 +30,9 @@ export function dragElementWithSave(element, storageKey) {
         }
         // Use requestAnimationFrame for better performance
         animationFrameId = requestAnimationFrame(() => {
-            // Use CSS top/left instead of transform to maintain consistency with storage
+            // Use CSS transform instead of top/left for better performance during drag
             $element.css({
-                top: (initialY + currentY) + 'px',
-                left: (initialX + currentX) + 'px'
+                transform: `translate(${currentX}px, ${currentY}px)`
             });
         });
     }
@@ -48,22 +47,17 @@ export function dragElementWithSave(element, storageKey) {
         // Calculate final position based on initial position + movement
         const finalTop = initialY + currentY;
         const finalLeft = initialX + currentX;
-        // Apply smooth transition for position change
+        // Apply transitions to both top/left and transform
         $element.css({
-            'transition': 'top 0.15s ease, left 0.15s ease'
+            'transition': 'top 0.15s ease, left 0.15s ease, transform 0.15s ease'
         });
-        // Set actual top/left values
+        // Animate to final position: transform settles to 0 while element moves to final position
         $element.css({
-            top: finalTop + 'px',
-            left: finalLeft + 'px'
+            'top': finalTop + 'px',
+            'left': finalLeft + 'px',
+            'transform': 'translate(0px, 0px)' // Reset the transform
         });
-        // Reset transition after a short delay to avoid affecting future drags
-        setTimeout(() => {
-            $element.css({
-                'transition': 'none'
-            });
-        }, 150); // Match the transition duration
-        // Update initialX and initialY to the final position for next drag, and reset currentX and currentY
+        // Update initialX and initialY to the final position for next drag
         initialX = finalLeft;
         initialY = finalTop;
         currentX = 0;
@@ -74,6 +68,12 @@ export function dragElementWithSave(element, storageKey) {
             left: finalLeft || 0
         };
         localStorage.setItem(`outfitPanel_${storageKey}_position`, JSON.stringify(position));
+        // Remove transitions after animation completes to avoid affecting future drags
+        setTimeout(() => {
+            $element.css({
+                'transition': 'none'
+            });
+        }, 150); // Match the transition duration
     }
     function dragMouseDown(e) {
         e = e || window.event;
@@ -81,7 +81,14 @@ export function dragElementWithSave(element, storageKey) {
         // Get the mouse cursor position at startup
         pos3 = e.clientX;
         pos4 = e.clientY;
-        // Store current relative movement (reset to 0 for new drag)
+        // Get the current position for reference
+        // We need to account for any existing transform when starting a new drag
+        const elementTop = parseInt($element.css('top')) || 0;
+        const elementLeft = parseInt($element.css('left')) || 0;
+        // Store initial position
+        initialX = elementLeft;
+        initialY = elementTop;
+        // Reset current transform values to 0
         currentX = 0;
         currentY = 0;
         $(document).on('mousemove', elementDrag);
