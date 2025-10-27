@@ -700,7 +700,7 @@ export class BotOutfitPanel {
         this.setupDynamicRefresh();
 
         if (this.domElement) {
-            dragElementWithSave($(this.domElement), 'bot-outfit-panel');
+            dragElementWithSave(this.domElement, 'bot-outfit-panel');
             // Initialize resizing with appropriate min/max dimensions
             setTimeout(() => {
                 resizeElement($(this.domElement), 'bot-outfit-panel', {

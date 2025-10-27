@@ -445,7 +445,7 @@ export class UserOutfitPanel {
         this.setupDynamicRefresh();
 
         if (this.domElement) {
-            dragElementWithSave($(this.domElement), 'user-outfit-panel');
+            dragElementWithSave(this.domElement, 'user-outfit-panel');
             // Initialize resizing with appropriate min/max dimensions
             setTimeout(() => {
                 resizeElement($(this.domElement), 'user-outfit-panel', {

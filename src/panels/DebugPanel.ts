@@ -706,7 +706,7 @@ export class DebugPanel {
         }
 
         if (this.domElement) {
-            dragElementWithSave($(this.domElement), 'outfit-debug-panel');
+            dragElementWithSave(this.domElement, 'outfit-debug-panel');
             // Initialize resizing with appropriate min/max dimensions
             setTimeout(() => {
                 resizeElement($(this.domElement), 'outfit-debug-panel');

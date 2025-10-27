@@ -8,7 +8,6 @@ export function dragElementWithSave(element: HTMLElement, storageKey: string): v
         return;
     }
     let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
-    let animationFrameId: number | null = null;
 
     // Define functions before using them
     function elementDrag(e: MouseEvent) {
@@ -21,22 +20,17 @@ export function dragElementWithSave(element: HTMLElement, storageKey: string): v
         pos3 = e.clientX;
         pos4 = e.clientY;
 
-        // Update position variables without immediately updating DOM
-        const newTop = $element[0].offsetTop - pos2;
-        const newLeft = $element[0].offsetLeft - pos1;
+        // Calculate new position
+        const elementTop = parseInt($element.css('top')) || $element[0].offsetTop || 0;
+        const elementLeft = parseInt($element.css('left')) || $element[0].offsetLeft || 0;
 
-        // Use requestAnimationFrame to optimize DOM updates
-        if (animationFrameId) {
-            cancelAnimationFrame(animationFrameId);
-        }
+        const newTop = elementTop - pos2;
+        const newLeft = elementLeft - pos1;
 
-        animationFrameId = requestAnimationFrame(() => {
-            // Use transform for better performance instead of changing top/left
-            $element.css({
-                transform: `translate(${newLeft}px, ${newTop}px)`,
-                // Temporarily disable transitions during drag for better performance
-                'transition': 'none'
-            });
+        // Set the element's new position
+        $element.css({
+            top: newTop + 'px',
+            left: newLeft + 'px'
         });
     }
 
@@ -45,29 +39,13 @@ export function dragElementWithSave(element: HTMLElement, storageKey: string): v
         $(document).off('mousemove', elementDrag as any);
         $(document).off('mouseup', closeDragElement);
 
-        // Clear any pending animation frame
-        if (animationFrameId) {
-            cancelAnimationFrame(animationFrameId);
-            animationFrameId = null;
-        }
-
-        // Calculate final position based on current transform
-        const matrix = new DOMMatrix(getComputedStyle($element[0]).transform);
-        const currentLeft = matrix.m41;
-        const currentTop = matrix.m42;
-
-        // Save the final position to localStorage
+        // Save the position to localStorage
         const position = {
-            top: currentTop,
-            left: currentLeft
+            top: parseInt($element.css('top')) || 0,
+            left: parseInt($element.css('left')) || 0
         };
 
         localStorage.setItem(`outfitPanel_${storageKey}_position`, JSON.stringify(position));
-
-        // Re-enable transitions after drag ends
-        $element.css({
-            'transition': ''
-        });
     }
 
     function dragMouseDown(e: MouseEvent) {
@@ -78,11 +56,6 @@ export function dragElementWithSave(element: HTMLElement, storageKey: string): v
         pos3 = e.clientX;
         pos4 = e.clientY;
 
-        // Capture initial position from transform if it exists
-        const matrix = new DOMMatrix(getComputedStyle($element[0]).transform);
-        pos3 = e.clientX;
-        pos4 = e.clientY;
-        
         $(document).on('mousemove', elementDrag as any);
         $(document).on('mouseup', closeDragElement);
     }
@@ -93,15 +66,21 @@ export function dragElementWithSave(element: HTMLElement, storageKey: string): v
     if (savedPosition) {
         const position = JSON.parse(savedPosition);
 
-        // Apply initial position using transform
         $element.css({
-            transform: `translate(${position.left}px, ${position.top}px)`
+            top: position.top + 'px',
+            left: position.left + 'px'
+        });
+    } else {
+        // Default position if no saved position
+        $element.css({
+            top: '10px',
+            left: '10px'
         });
     }
 
     // Set the element's style
     $element.css({
-        position: 'fixed', // Use fixed positioning for better performance
+        position: 'fixed',
         cursor: 'move'
     });
 
