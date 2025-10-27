@@ -84,10 +84,10 @@ class OutfitDataService {
             // Verify the store now has the wiped data
             const storeAfterLoadState = outfitStore.getState();
             console.log('[OutfitDataService] Store state after loading from data manager:', {
-                botInstancesCount: Object.keys(storeAfterLoadState.botInstances).length,
-                userInstancesCount: Object.keys(storeAfterLoadState.userInstances).length,
-                botPresetsCount: Object.keys(storeAfterLoadState.presets.bot).length,
-                userPresetsCount: Object.keys(storeAfterLoadState.presets.user).length
+                botInstancesCount: storeAfterLoadState.botInstances ? Object.keys(storeAfterLoadState.botInstances).length : 0,
+                userInstancesCount: storeAfterLoadState.userInstances ? Object.keys(storeAfterLoadState.userInstances).length : 0,
+                botPresetsCount: (storeAfterLoadState.presets && storeAfterLoadState.presets.bot) ? Object.keys(storeAfterLoadState.presets.bot).length : 0,
+                userPresetsCount: (storeAfterLoadState.presets && storeAfterLoadState.presets.user) ? Object.keys(storeAfterLoadState.presets.user).length : 0
             });
 
             // IMPORTANT: Access the SillyTavern context directly to ensure immediate save
@@ -110,9 +110,9 @@ class OutfitDataService {
                 };
 
                 console.log('[OutfitDataService] Attempting immediate save with wiped data:', {
-                    instancesCount: Object.keys(outfitTrackerData.instances || {}).length,
-                    userInstancesCount: Object.keys(outfitTrackerData.user_instances || {}).length,
-                    presetsCount: Object.keys(outfitTrackerData.presets || {}).length
+                    instancesCount: outfitTrackerData.instances ? Object.keys(outfitTrackerData.instances).length : 0,
+                    userInstancesCount: outfitTrackerData.user_instances ? Object.keys(outfitTrackerData.user_instances).length : 0,
+                    presetsCount: outfitTrackerData.presets ? Object.keys(outfitTrackerData.presets).length : 0
                 });
 
                 // Try to call the save function directly
