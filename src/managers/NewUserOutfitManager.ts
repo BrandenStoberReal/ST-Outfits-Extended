@@ -300,6 +300,12 @@ export class NewUserOutfitManager extends OutfitManager {
     }
 
 
+    async applyDefaultOutfitAfterSetCharacter(): Promise<void> {
+        if (this.outfitInstanceId) {
+            await this.applyDefaultOutfitAfterReset(this.outfitInstanceId);
+        }
+    }
+
     loadOutfitFromInstanceId(instanceId: string): { [key: string]: string } {
         if (!instanceId) {
             console.warn('[NewUserOutfitManager] Cannot load outfit - missing instanceId');

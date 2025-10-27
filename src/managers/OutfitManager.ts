@@ -36,6 +36,8 @@ export abstract class OutfitManager {
         this.loadOutfit();
     }
 
+    abstract applyDefaultOutfitAfterReset(instanceId?: string | null): Promise<boolean>;
+
     setOutfitInstanceId(instanceId: string): void {
         if (this.outfitInstanceId) {
             this.saveOutfit();
