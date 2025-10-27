@@ -41,15 +41,20 @@ class OutfitDataService {
                 presets: {bot: {}, user: {}}
             });
 
+            // Also save settings to make sure everything is up to date
+            this.dataManager.saveSettings(outfitStore.getState().settings);
+
             // Trigger saveState to ensure all changes are persisted
             // This internally calls the data manager's save methods
             outfitStore.saveState();
 
-            // Now directly access the save function to ensure immediate saving
-            // We need to bypass the debounced nature of the save
+            // The issue is that the save operation is debounced and may not execute before page reload
+            // We need to call the save function directly with the raw data (the save function will wrap it)
             if (this.dataManager.storageService && this.dataManager.storageService.saveFn) {
-                // Call the save function directly with the current state
+                // Load the current data - this is already in the correct format
                 const currentData = this.dataManager.load();
+
+                // Call the save function directly (it will wrap the data as {outfit_tracker: currentData})
                 this.dataManager.storageService.saveFn(currentData);
             }
 
