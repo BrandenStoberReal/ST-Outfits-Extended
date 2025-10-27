@@ -22,6 +22,7 @@ class CustomMacroService {
     private accessorySlots: string[];
     private allSlots: string[];
     private cacheExpiryTime: number;
+    private registeredMacros: Set<string>; // Track which macros are currently registered
 
     constructor() {
         this.clothingSlots = CLOTHING_SLOTS;
@@ -29,20 +30,42 @@ class CustomMacroService {
         this.allSlots = [...CLOTHING_SLOTS, ...ACCESSORY_SLOTS];
         this.macroValueCache = new Map<string, MacroCacheEntry>();
         this.cacheExpiryTime = 5 * 60 * 1000;
+        this.registeredMacros = new Set<string>();
     }
 
     registerMacros(context: any): void {
         const ctx = context || (window.SillyTavern?.getContext ? window.SillyTavern.getContext() : window.getContext());
 
         if (ctx && ctx.registerMacro) {
-            ctx.registerMacro('char', () => this.getCurrentCharName());
-            ctx.registerMacro('user', () => this.getCurrentUserName());
+            // Register 'char' macro
+            if (!this.registeredMacros.has('char')) {
+                ctx.registerMacro('char', () => this.getCurrentCharName());
+                this.registeredMacros.add('char');
+            }
+
+            // Register 'user' macro
+            if (!this.registeredMacros.has('user')) {
+                ctx.registerMacro('user', () => this.getCurrentUserName());
+                this.registeredMacros.add('user');
+            }
 
             this.allSlots.forEach(slot => {
-                // For macro registration, we need to use synchronous resolution when possible
-                // and fallback to async when needed for instance ID generation
-                ctx.registerMacro(`char_${slot}`, () => this.getCurrentSlotValue('char', slot));
-                ctx.registerMacro(`user_${slot}`, () => this.getCurrentSlotValue('user', slot));
+                const charSlotMacro = `char_${slot}`;
+                const userSlotMacro = `user_${slot}`;
+
+                // Register char slot macro
+                if (!this.registeredMacros.has(charSlotMacro)) {
+                    // For macro registration, we need to use synchronous resolution when possible
+                    // and fallback to async when needed for instance ID generation
+                    ctx.registerMacro(charSlotMacro, () => this.getCurrentSlotValue('char', slot));
+                    this.registeredMacros.add(charSlotMacro);
+                }
+
+                // Register user slot macro
+                if (!this.registeredMacros.has(userSlotMacro)) {
+                    ctx.registerMacro(userSlotMacro, () => this.getCurrentSlotValue('user', slot));
+                    this.registeredMacros.add(userSlotMacro);
+                }
             });
         }
     }
@@ -51,12 +74,33 @@ class CustomMacroService {
         const ctx = context || (window.SillyTavern?.getContext ? window.SillyTavern.getContext() : window.getContext());
 
         if (ctx && ctx.unregisterMacro) {
-            ctx.unregisterMacro('char');
-            ctx.unregisterMacro('user');
+            // Unregister 'char' macro if it's registered
+            if (this.registeredMacros.has('char')) {
+                ctx.unregisterMacro('char');
+                this.registeredMacros.delete('char');
+            }
+
+            // Unregister 'user' macro if it's registered
+            if (this.registeredMacros.has('user')) {
+                ctx.unregisterMacro('user');
+                this.registeredMacros.delete('user');
+            }
 
             this.allSlots.forEach(slot => {
-                ctx.unregisterMacro(`char_${slot}`);
-                ctx.unregisterMacro(`user_${slot}`);
+                const charSlotMacro = `char_${slot}`;
+                const userSlotMacro = `user_${slot}`;
+
+                // Unregister char slot macro if it's registered
+                if (this.registeredMacros.has(charSlotMacro)) {
+                    ctx.unregisterMacro(charSlotMacro);
+                    this.registeredMacros.delete(charSlotMacro);
+                }
+
+                // Unregister user slot macro if it's registered
+                if (this.registeredMacros.has(userSlotMacro)) {
+                    ctx.unregisterMacro(userSlotMacro);
+                    this.registeredMacros.delete(userSlotMacro);
+                }
             });
         }
     }
@@ -70,11 +114,20 @@ class CustomMacroService {
                 if (character && character.name) {
                     const characterName = character.name;
 
-                    ctx.registerMacro(characterName, () => characterName);
+                    // Register character name macro if not already registered
+                    if (!this.registeredMacros.has(characterName)) {
+                        ctx.registerMacro(characterName, () => characterName);
+                        this.registeredMacros.add(characterName);
+                    }
 
                     this.allSlots.forEach(slot => {
                         const macroName = `${characterName}_${slot}`;
-                        ctx.registerMacro(macroName, () => this.getCurrentSlotValue(characterName, slot, characterName));
+
+                        // Register character slot macro if not already registered
+                        if (!this.registeredMacros.has(macroName)) {
+                            ctx.registerMacro(macroName, () => this.getCurrentSlotValue(characterName, slot, characterName));
+                            this.registeredMacros.add(macroName);
+                        }
                     });
                 }
             }
@@ -90,11 +143,20 @@ class CustomMacroService {
                 if (character && character.name) {
                     const characterName = character.name;
 
-                    ctx.unregisterMacro(characterName);
+                    // Unregister character name macro if it's registered
+                    if (this.registeredMacros.has(characterName)) {
+                        ctx.unregisterMacro(characterName);
+                        this.registeredMacros.delete(characterName);
+                    }
 
                     this.allSlots.forEach(slot => {
                         const macroName = `${characterName}_${slot}`;
-                        ctx.unregisterMacro(macroName);
+
+                        // Unregister character slot macro if it's registered
+                        if (this.registeredMacros.has(macroName)) {
+                            ctx.unregisterMacro(macroName);
+                            this.registeredMacros.delete(macroName);
+                        }
                     });
                 }
             }
@@ -423,6 +485,28 @@ class CustomMacroService {
         result = result.split('-').join(' ');
 
         return result;
+    }
+
+    /**
+     * Returns an array of currently registered macro names for debugging purposes
+     */
+    getRegisteredMacros(): string[] {
+        return Array.from(this.registeredMacros);
+    }
+
+    /**
+     * Returns the count of currently registered macros
+     */
+    getRegisteredMacroCount(): number {
+        return this.registeredMacros.size;
+    }
+
+    /**
+     * Clears all registered macros without unregistering them from SillyTavern
+     * This should only be used when SillyTavern is resetting all macros
+     */
+    clearRegisteredMacros(): void {
+        this.registeredMacros.clear();
     }
 }
 
