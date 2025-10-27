@@ -42,8 +42,16 @@ class OutfitDataService {
                     userInstances: {},
                     presets: { bot: {}, user: {} }
                 });
-                // Also save the updated store state to ensure everything is properly persisted
+                // Trigger saveState to ensure all changes are persisted
+                // This internally calls the data manager's save methods
                 outfitStore.saveState();
+                // Now directly access the save function to ensure immediate saving
+                // We need to bypass the debounced nature of the save
+                if (this.dataManager.storageService && this.dataManager.storageService.saveFn) {
+                    // Call the save function directly with the current state
+                    const currentData = this.dataManager.load();
+                    this.dataManager.storageService.saveFn(currentData);
+                }
                 this.clearGlobalOutfitVariables();
                 if (window.botOutfitPanel) {
                     window.botOutfitPanel.renderContent();
