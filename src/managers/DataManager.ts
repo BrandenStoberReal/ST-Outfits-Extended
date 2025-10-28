@@ -37,6 +37,11 @@ class DataManager {
 
     save(data: any): void {
         try {
+            debugLog('DataManager: Starting full save operation', {
+                incomingDataKeys: data ? Object.keys(data) : 'null',
+                currentDataExists: !!this.data
+            }, 'debug');
+
             // Validate the data before saving to prevent corruption
             if (!data || typeof data !== 'object') {
                 debugLog('Invalid data provided to save, using empty object', null, 'error');
@@ -44,7 +49,14 @@ class DataManager {
             }
 
             this.data = data;
+            debugLog('DataManager: Saving data to StorageService', {
+                dataKeys: Object.keys(this.data),
+                dataSize: JSON.stringify(this.data).length
+            }, 'debug');
+            
             this.storageService.save(this.data);
+
+            debugLog('DataManager: Full save operation completed', null, 'debug');
         } catch (error) {
             debugLog('Error during save', error, 'error');
         }
@@ -52,6 +64,11 @@ class DataManager {
 
     savePartial(data: any): void {
         try {
+            debugLog('DataManager: Starting partial save operation', {
+                incomingDataKeys: data ? Object.keys(data) : 'null',
+                currentDataExists: !!this.data
+            }, 'debug');
+
             // Validate the data before saving to prevent corruption
             if (!data || typeof data !== 'object') {
                 debugLog('Invalid partial data provided to savePartial', null, 'error');
@@ -60,11 +77,22 @@ class DataManager {
 
             // Ensure this.data is not null/undefined before merging
             if (!this.data || typeof this.data !== 'object') {
+                debugLog('DataManager: Initializing empty data object for partial save', null, 'debug');
                 this.data = {};
             }
 
-            this.data = {...this.data, ...data};
+            const newData = {...this.data, ...data};
+            debugLog('DataManager: Merged data for partial save', {
+                originalKeys: Object.keys(this.data),
+                newKeys: Object.keys(data),
+                mergedKeys: Object.keys(newData),
+                dataSize: JSON.stringify(newData).length
+            }, 'debug');
+
+            this.data = newData;
             this.storageService.save(this.data);
+
+            debugLog('DataManager: Partial save operation completed', null, 'debug');
         } catch (error) {
             debugLog('Error during savePartial', error, 'error');
         }
@@ -117,13 +145,21 @@ class DataManager {
     }
 
     saveSettings(settings: any): void {
+        debugLog('DataManager: Starting saveSettings operation', {
+            settingsProvided: !!settings,
+            settingsType: typeof settings
+        }, 'debug');
+
         // Validate settings before saving
         if (!settings || typeof settings !== 'object') {
             debugLog('Invalid settings provided to saveSettings, using empty object', null, 'error');
             settings = {};
         }
-        
+
+        debugLog('DataManager: Saving settings', {settingKeys: Object.keys(settings)}, 'debug');
         this.savePartial({settings});
+
+        debugLog('DataManager: Settings save operation completed', null, 'debug');
     }
 
     loadSettings(): any {
