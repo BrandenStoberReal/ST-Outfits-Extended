@@ -7,6 +7,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+import { PresetItem } from './PresetItem.js';
 import { dragElementWithSave, resizeElement } from '../common/shared.js';
 import { formatSlotName as utilsFormatSlotName } from '../utils/utilities.js';
 import { areSystemMessagesEnabled } from '../utils/SettingsUtil.js';
@@ -24,8 +25,8 @@ export class UserOutfitPanel {
      * @param {Array<string>} accessorySlots - Array of accessory slot names
      * @param {Function} saveSettingsDebounced - Debounced function to save settings
      */
-    constructor(outfitManager, clothingSlots, accessorySlots, saveSettingsDebounced) {
-        this.outfitManager = outfitManager;
+    constructor(userOutfitManager, clothingSlots, accessorySlots, saveSettingsDebounced) {
+        this.userOutfitManager = userOutfitManager;
         this.clothingSlots = clothingSlots;
         this.accessorySlots = accessorySlots;
         this.isVisible = false;
@@ -47,7 +48,7 @@ export class UserOutfitPanel {
         panel.id = 'user-outfit-panel';
         panel.className = 'outfit-panel';
         // Get the first message hash for display in the header (instance ID)
-        const messageHash = this.generateMessageHash(this.getFirstMessageText() || this.outfitManager.getOutfitInstanceId() || '');
+        const messageHash = this.generateMessageHash(this.getFirstMessageText() || this.userOutfitManager.getOutfitInstanceId() || '');
         const hashDisplay = messageHash ? ` (${messageHash})` : '';
         panel.innerHTML = `
             <div class="outfit-header">
@@ -128,7 +129,7 @@ export class UserOutfitPanel {
         }
     }
     renderPromptInjectionToggle(container) {
-        const isPromptInjectionEnabled = this.outfitManager.getPromptInjectionEnabled();
+        const isPromptInjectionEnabled = this.userOutfitManager.getPromptInjectionEnabled();
         const toggleContainer = document.createElement('div');
         toggleContainer.className = 'prompt-injection-container';
         toggleContainer.innerHTML = `
@@ -144,13 +145,13 @@ export class UserOutfitPanel {
         if (promptInjectionToggle) {
             promptInjectionToggle.addEventListener('change', (event) => {
                 const isChecked = event.target.checked;
-                this.outfitManager.setPromptInjectionEnabled(isChecked);
+                this.userOutfitManager.setPromptInjectionEnabled(isChecked);
                 this.saveSettingsDebounced();
             });
         }
     }
     renderSlots(slots, container) {
-        const outfitData = this.outfitManager.getOutfitData(slots);
+        const outfitData = this.userOutfitManager.getOutfitData(slots);
         outfitData.forEach((slot) => {
             const slotElement = document.createElement('div');
             slotElement.className = 'outfit-slot';
@@ -163,7 +164,7 @@ export class UserOutfitPanel {
                 </div>
             `;
             slotElement.querySelector('.slot-change').addEventListener('click', () => __awaiter(this, void 0, void 0, function* () {
-                const message = yield this.outfitManager.changeOutfitItem(slot.name);
+                const message = yield this.userOutfitManager.changeOutfitItem(slot.name);
                 if (message && areSystemMessagesEnabled()) {
                     this.sendSystemMessage(message);
                 }
@@ -174,93 +175,20 @@ export class UserOutfitPanel {
         });
     }
     renderPresets(container) {
-        const presets = this.outfitManager.getPresets();
-        // Filter out the 'default' preset from the list of regular presets
-        const regularPresets = presets.filter((preset) => preset !== 'default');
-        // Get the name of the preset that is currently set as default
-        const defaultPresetName = this.outfitManager.getDefaultPresetName();
-        if (regularPresets.length === 0 && !this.outfitManager.hasDefaultOutfit()) {
+        const instanceId = this.userOutfitManager.getOutfitInstanceId() || 'default';
+        const presets = this.userOutfitManager.getAllPresets(instanceId);
+        if (Object.keys(presets).length === 0) {
             container.innerHTML = '<div>No saved outfits for this instance.</div>';
         }
         else {
-            // Check if we have a default that doesn't match any saved preset (like 'default' preset)
-            if (defaultPresetName === 'default') {
-                // Create a special entry for the unmatched default
-                const defaultPresetElement = document.createElement('div');
-                defaultPresetElement.className = 'outfit-preset default-preset';
-                defaultPresetElement.innerHTML = `
-                    <div class="preset-name">Default: Current Setup</div>
-                    <div class="preset-actions">
-                        <button class="load-preset" data-preset="default">Wear</button>
-                    </div>
-                `;
-                defaultPresetElement.querySelector('.load-preset').addEventListener('click', () => __awaiter(this, void 0, void 0, function* () {
-                    const message = yield this.outfitManager.loadDefaultOutfit();
-                    if (areSystemMessagesEnabled()) {
-                        this.sendSystemMessage(message);
-                    }
-                    this.saveSettingsDebounced();
-                    this.renderContent();
-                }));
-                container.appendChild(defaultPresetElement);
-            }
-            // Render all presets if the default is not 'default' (meaning we have named presets)
-            if (defaultPresetName !== 'default' && regularPresets.length > 0) {
-                regularPresets.forEach((preset) => {
-                    const isDefault = (defaultPresetName === preset);
-                    const presetElement = document.createElement('div');
-                    presetElement.className = `outfit-preset ${isDefault ? 'default-preset-highlight' : ''}`;
-                    presetElement.innerHTML = `
-                        <div class="preset-name">${isDefault ? '👑 ' : ''}${preset}${isDefault ? '' : ''}</div>
-                        <div class="preset-actions">
-                            <button class="load-preset" data-preset="${preset}">Wear</button>
-                            <button class="set-default-preset" data-preset="${preset}" ${isDefault ? 'style="display:none;"' : ''}>👑</button>
-                            <button class="overwrite-preset" data-preset="${preset}">Overwrite</button>
-                            <button class="delete-preset" data-preset="${preset}">×</button>
-                        </div>
-                    `;
-                    presetElement.querySelector('.load-preset').addEventListener('click', () => __awaiter(this, void 0, void 0, function* () {
-                        const message = yield this.outfitManager.loadPreset(preset);
-                        if (message && areSystemMessagesEnabled()) {
-                            this.sendSystemMessage(message);
-                        }
-                        this.saveSettingsDebounced();
-                        this.renderContent();
-                    }));
-                    presetElement.querySelector('.set-default-preset').addEventListener('click', () => __awaiter(this, void 0, void 0, function* () {
-                        const message = yield this.outfitManager.setPresetAsDefault(preset);
-                        if (message && areSystemMessagesEnabled()) {
-                            this.sendSystemMessage(message);
-                        }
-                        this.saveSettingsDebounced();
-                        this.renderContent();
-                    }));
-                    presetElement.querySelector('.delete-preset').addEventListener('click', () => {
-                        if (confirm(`Delete "${preset}" outfit?`)) {
-                            const message = this.outfitManager.deletePreset(preset);
-                            if (areSystemMessagesEnabled()) {
-                                this.sendSystemMessage(message);
-                            }
-                            this.saveSettingsDebounced();
-                            this.renderContent();
-                        }
-                    });
-                    presetElement.querySelector('.overwrite-preset').addEventListener('click', () => {
-                        // Confirmation dialog to confirm overwriting the preset
-                        if (confirm(`Overwrite "${preset}" with current outfit?`)) {
-                            const message = this.outfitManager.overwritePreset(preset);
-                            if (message && areSystemMessagesEnabled()) {
-                                this.sendSystemMessage(message);
-                            }
-                            this.saveSettingsDebounced();
-                            this.renderContent();
-                        }
-                    });
-                    container.appendChild(presetElement);
-                });
+            for (const presetName in presets) {
+                if (presets.hasOwnProperty(presetName)) {
+                    const presetItem = new PresetItem(presetName, presets[presetName], instanceId, 'user', this.userOutfitManager);
+                    container.appendChild(presetItem.render());
+                }
             }
         }
-        // Add clear regular outfit button
+        // Add save regular outfit button
         const saveButton = document.createElement('button');
         saveButton.className = 'save-outfit-btn';
         saveButton.textContent = 'Save Current Outfit';
@@ -268,11 +196,10 @@ export class UserOutfitPanel {
         saveButton.addEventListener('click', () => __awaiter(this, void 0, void 0, function* () {
             const presetName = prompt('Name this outfit:');
             if (presetName && presetName.toLowerCase() !== 'default') {
-                const message = yield this.outfitManager.savePreset(presetName.trim());
+                const message = yield this.userOutfitManager.savePreset(presetName.trim());
                 if (message && areSystemMessagesEnabled()) {
                     this.sendSystemMessage(message);
                 }
-                this.saveSettingsDebounced();
                 this.renderContent();
             }
             else if (presetName && presetName.toLowerCase() === 'default') {
@@ -348,8 +275,8 @@ export class UserOutfitPanel {
                 });
             }, 10); // Small delay to ensure panel is rendered first
             (_a = this.domElement.querySelector('#user-outfit-refresh')) === null || _a === void 0 ? void 0 : _a.addEventListener('click', () => {
-                const outfitInstanceId = this.outfitManager.getOutfitInstanceId();
-                this.outfitManager.loadOutfit(outfitInstanceId);
+                const outfitInstanceId = this.userOutfitManager.getOutfitInstanceId();
+                this.userOutfitManager.loadOutfit(outfitInstanceId);
                 this.renderContent();
             });
             (_b = this.domElement.querySelector('#user-outfit-close')) === null || _b === void 0 ? void 0 : _b.addEventListener('click', () => this.hide());
@@ -396,7 +323,7 @@ export class UserOutfitPanel {
             const header = this.domElement.querySelector('.outfit-header h3');
             if (header) {
                 // Get the first message hash for display in the header (instance ID)
-                const messageHash = this.generateMessageHash(this.getFirstMessageText() || this.outfitManager.getOutfitInstanceId() || '');
+                const messageHash = this.generateMessageHash(this.getFirstMessageText() || this.userOutfitManager.getOutfitInstanceId() || '');
                 const hashDisplay = messageHash ? ` (${messageHash})` : '';
                 header.textContent = `Your Outfit${hashDisplay}`;
             }
@@ -415,13 +342,13 @@ export class UserOutfitPanel {
             // Listen for changes in user outfit data
             this.outfitSubscription = window.outfitStore.subscribe((state) => {
                 // Check if this panel's outfit instance has changed
-                if (this.outfitManager.outfitInstanceId) {
-                    const currentUserOutfit = state.userInstances[this.outfitManager.outfitInstanceId];
+                if (this.userOutfitManager.outfitInstanceId) {
+                    const currentUserOutfit = state.userInstances[this.userOutfitManager.outfitInstanceId];
                     if (currentUserOutfit) {
                         // Only refresh if the outfit data has actually changed
                         let hasChanged = false;
                         for (const [slot, value] of Object.entries(currentUserOutfit)) {
-                            if (this.outfitManager.currentValues[slot] !== value) {
+                            if (this.userOutfitManager.currentValues[slot] !== value) {
                                 hasChanged = true;
                                 break;
                             }
@@ -440,24 +367,24 @@ export class UserOutfitPanel {
             // Listen for chat-related events that might affect outfit data
             this.eventListeners.push(() => eventSource.on(event_types.CHAT_CHANGED, () => {
                 if (this.isVisible) {
-                    const outfitInstanceId = this.outfitManager.getOutfitInstanceId();
-                    this.outfitManager.loadOutfit(outfitInstanceId);
+                    const outfitInstanceId = this.userOutfitManager.getOutfitInstanceId();
+                    this.userOutfitManager.loadOutfit(outfitInstanceId);
                     this.updateHeader();
                     this.renderContent();
                 }
             }));
             this.eventListeners.push(() => eventSource.on(event_types.CHAT_ID_CHANGED, () => {
                 if (this.isVisible) {
-                    const outfitInstanceId = this.outfitManager.getOutfitInstanceId();
-                    this.outfitManager.loadOutfit(outfitInstanceId);
+                    const outfitInstanceId = this.userOutfitManager.getOutfitInstanceId();
+                    this.userOutfitManager.loadOutfit(outfitInstanceId);
                     this.updateHeader();
                     this.renderContent();
                 }
             }));
             this.eventListeners.push(() => eventSource.on(event_types.CHAT_CREATED, () => {
                 if (this.isVisible) {
-                    const outfitInstanceId = this.outfitManager.getOutfitInstanceId();
-                    this.outfitManager.loadOutfit(outfitInstanceId);
+                    const outfitInstanceId = this.userOutfitManager.getOutfitInstanceId();
+                    this.userOutfitManager.loadOutfit(outfitInstanceId);
                     this.updateHeader();
                     this.renderContent();
                 }

@@ -1,7 +1,7 @@
 import {extractCommands} from '../processors/StringProcessor';
 import {generateOutfitFromLLM} from './LLMService';
 import {customMacroSystem} from './CustomMacroService';
-import {outfitStore} from '../common/Store';
+import {outfitStore} from '../stores/Store';
 import {CharacterInfoType, getCharacterInfoById} from '../utils/CharacterUtils';
 
 declare const window: any;

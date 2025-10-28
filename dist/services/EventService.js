@@ -11,6 +11,7 @@ import { EXTENSION_EVENTS, extensionEventBus } from '../core/events.js';
 import { customMacroSystem } from './CustomMacroService.js';
 import { outfitStore } from '../common/Store.js';
 import { generateMessageHash } from '../utils/utilities.js';
+import { debouncedStore } from '../common/DebouncedStore.js';
 class EventService {
     constructor(context) {
         this.botManager = context.botManager;
@@ -150,7 +151,7 @@ class EventService {
                     const oldUserOutfitData = Object.assign({}, this.userManager.getCurrentOutfit());
                     outfitStore.setUserOutfit(oldUserInstanceId, oldUserOutfitData);
                 }
-                outfitStore.saveState();
+                debouncedStore.saveState();
                 yield this.processMacrosInFirstMessage(this.context);
                 yield this.updateForCurrentCharacter();
                 // Clear macro cache after processing first message to ensure fresh data
@@ -178,7 +179,6 @@ class EventService {
         const originalRestart = window.restartLLM;
         window.restartLLM = (...args) => __awaiter(this, void 0, void 0, function* () {
             console.log('[OutfitTracker] Chat reset triggered (restartLLM).');
-            outfitStore.flush();
             const botOutfitInstanceId = this.botManager.getOutfitInstanceId();
             const userOutfitInstanceId = this.userManager.getOutfitInstanceId();
             if (botOutfitInstanceId) {
@@ -242,7 +242,7 @@ class EventService {
                 const userOutfitData = Object.assign({}, this.userManager.getCurrentOutfit());
                 outfitStore.setUserOutfit(userOutfitInstanceId, userOutfitData);
             }
-            outfitStore.saveState();
+            debouncedStore.saveState();
             yield originalClearChat.apply(this, args);
             if (botOutfitInstanceId) {
                 this.botManager.setOutfitInstanceId(botOutfitInstanceId);

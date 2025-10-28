@@ -1,4 +1,4 @@
-import {outfitStore} from '../common/Store';
+import {outfitStore} from '../stores/Store';
 
 interface LogEntry {
     timestamp: string;
