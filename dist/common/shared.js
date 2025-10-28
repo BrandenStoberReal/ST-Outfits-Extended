@@ -33,10 +33,9 @@ export function dragElementWithSave(element, storageKey) {
         }
         // Use requestAnimationFrame for better performance
         animationFrameId = requestAnimationFrame(() => {
-            // Use CSS transform to position the element at the correct screen coordinates
-            // Combine initial position with current movement to get absolute position
+            // Use CSS transform instead of top/left for better performance during drag
             $element.css({
-                transform: `translate(${initialX + currentX}px, ${initialY + currentY}px)`
+                transform: `translate(${currentX}px, ${currentY}px)`
             });
         });
     }
