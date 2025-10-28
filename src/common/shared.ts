@@ -7,15 +7,18 @@ export function dragElementWithSave(element: HTMLElement, storageKey: string): v
     if (!$element || $element.length === 0) {
         return;
     }
-    let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+    let pos3 = 0, pos4 = 0;
     let initialX = 0, initialY = 0;  // Track initial position when drag starts
     let currentX = 0, currentY = 0;  // Track current movement
     let animationFrameId: number | null = null;
+    let isDragging = false;  // Track if currently dragging
 
     // Define functions before using them
     function elementDrag(e: MouseEvent) {
         e = e || window.event;
         e.preventDefault();
+
+        if (!isDragging) return;
 
         // Calculate the mouse movement since the last drag event
         const deltaX = e.clientX - pos3;  // How much the mouse has moved since last event
@@ -48,6 +51,8 @@ export function dragElementWithSave(element: HTMLElement, storageKey: string): v
         $(document).off('mousemove', elementDrag as any);
         $(document).off('mouseup', closeDragElement);
 
+        isDragging = false;
+
         // Cancel any pending animation frame
         if (animationFrameId) {
             cancelAnimationFrame(animationFrameId);
@@ -75,7 +80,7 @@ export function dragElementWithSave(element: HTMLElement, storageKey: string): v
         currentX = 0;
         currentY = 0;
 
-        // Save the position to localStorage
+        // Save the position to localStorage only when drag ends
         const position = {
             top: finalTop || 0,
             left: finalLeft || 0
@@ -111,6 +116,9 @@ export function dragElementWithSave(element: HTMLElement, storageKey: string): v
         // Reset current transform values to 0
         currentX = 0;
         currentY = 0;
+
+        // Mark as dragging
+        isDragging = true;
 
         $(document).on('mousemove', elementDrag as any);
         $(document).on('mouseup', closeDragElement);
@@ -177,9 +185,16 @@ export function resizeElement(element: HTMLElement, storageKey: string, options?
     }
 
     let originalWidth: number, originalHeight: number, originalMouseX: number, originalMouseY: number;
+    let isResizing = false;  // Track if currently resizing
+    let animationFrameId: number | null = null;  // For optimizing updates
 
     // Define functions before using them
     function resizeElementHandler(e: MouseEvent) {
+        e.preventDefault();
+
+        if (!isResizing) return;
+
+        // Calculate new dimensions
         const width = originalWidth + (e.pageX - originalMouseX);
         const height = originalHeight + (e.pageY - originalMouseY);
 
@@ -192,17 +207,32 @@ export function resizeElement(element: HTMLElement, storageKey: string, options?
         const newWidth = Math.max(options?.minWidth ?? 200, Math.min(width, maxWidth));
         const newHeight = Math.max(options?.minHeight ?? 150, Math.min(height, maxHeight));
 
-        $element.css({
-            width: newWidth + 'px',
-            height: newHeight + 'px'
+        // Cancel any pending animation frame to avoid multiple updates
+        if (animationFrameId) {
+            cancelAnimationFrame(animationFrameId);
+        }
+
+        // Use requestAnimationFrame for better performance
+        animationFrameId = requestAnimationFrame(() => {
+            $element.css({
+                width: newWidth + 'px',
+                height: newHeight + 'px'
+            });
         });
     }
 
     function stopResize() {
+        isResizing = false;
+        
         $(document).off('mousemove.resizer');
         $(document).off('mouseup.resizer');
 
-        // Save the size to localStorage
+        // Cancel any pending animation frame
+        if (animationFrameId) {
+            cancelAnimationFrame(animationFrameId);
+        }
+
+        // Save the size to localStorage only when resize ends
         if (typeof $ !== 'undefined' && typeof $.fn.outerWidth === 'function' && typeof $.fn.outerHeight === 'function') {
             const width = $element.outerWidth();
             const height = $element.outerHeight();
@@ -246,6 +276,8 @@ export function resizeElement(element: HTMLElement, storageKey: string, options?
         originalHeight = parseFloat(height.toString());
         originalMouseX = e.pageX;
         originalMouseY = e.pageY;
+
+        isResizing = true;
 
         $(document).on('mousemove.resizer', resizeElementHandler as any);
         $(document).on('mouseup.resizer', stopResize);

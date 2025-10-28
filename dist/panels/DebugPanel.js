@@ -10,10 +10,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 import { dragElementWithSave, resizeElement } from '../common/shared.js';
 import { outfitStore } from '../stores/Store.js';
 import { customMacroSystem } from '../services/CustomMacroService.js';
-import { debugLogger } from '../logging/DebugLogger.js';
+import { debugLog, debugLogger } from '../logging/DebugLogger.js';
 import { CharacterInfoType, getCharacterInfoById } from '../utils/CharacterUtils.js';
 import { debouncedStore } from '../stores/DebouncedStore.js';
-import { debugLog } from "../logging/DebugLogger.js";
 export class DebugPanel {
     constructor() {
         this.isVisible = false;

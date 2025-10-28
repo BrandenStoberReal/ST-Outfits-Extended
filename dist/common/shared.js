@@ -7,14 +7,17 @@ export function dragElementWithSave(element, storageKey) {
     if (!$element || $element.length === 0) {
         return;
     }
-    let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+    let pos3 = 0, pos4 = 0;
     let initialX = 0, initialY = 0; // Track initial position when drag starts
     let currentX = 0, currentY = 0; // Track current movement
     let animationFrameId = null;
+    let isDragging = false; // Track if currently dragging
     // Define functions before using them
     function elementDrag(e) {
         e = e || window.event;
         e.preventDefault();
+        if (!isDragging)
+            return;
         // Calculate the mouse movement since the last drag event
         const deltaX = e.clientX - pos3; // How much the mouse has moved since last event
         const deltaY = e.clientY - pos4; // How much the mouse has moved since last event
@@ -40,6 +43,7 @@ export function dragElementWithSave(element, storageKey) {
         // Stop moving when mouse button is released
         $(document).off('mousemove', elementDrag);
         $(document).off('mouseup', closeDragElement);
+        isDragging = false;
         // Cancel any pending animation frame
         if (animationFrameId) {
             cancelAnimationFrame(animationFrameId);
@@ -62,7 +66,7 @@ export function dragElementWithSave(element, storageKey) {
         initialY = finalTop;
         currentX = 0;
         currentY = 0;
-        // Save the position to localStorage
+        // Save the position to localStorage only when drag ends
         const position = {
             top: finalTop || 0,
             left: finalLeft || 0
@@ -91,6 +95,8 @@ export function dragElementWithSave(element, storageKey) {
         // Reset current transform values to 0
         currentX = 0;
         currentY = 0;
+        // Mark as dragging
+        isDragging = true;
         $(document).on('mousemove', elementDrag);
         $(document).on('mouseup', closeDragElement);
     }
@@ -142,9 +148,15 @@ export function resizeElement(element, storageKey, options) {
         return;
     }
     let originalWidth, originalHeight, originalMouseX, originalMouseY;
+    let isResizing = false; // Track if currently resizing
+    let animationFrameId = null; // For optimizing updates
     // Define functions before using them
     function resizeElementHandler(e) {
         var _a, _b, _c, _d;
+        e.preventDefault();
+        if (!isResizing)
+            return;
+        // Calculate new dimensions
         const width = originalWidth + (e.pageX - originalMouseX);
         const height = originalHeight + (e.pageY - originalMouseY);
         // Calculate the maximum width and height based on current position to stay within viewport
@@ -154,15 +166,27 @@ export function resizeElement(element, storageKey, options) {
         // Set minimum and maximum sizes to prevent the element from becoming too small or too large
         const newWidth = Math.max((_c = options === null || options === void 0 ? void 0 : options.minWidth) !== null && _c !== void 0 ? _c : 200, Math.min(width, maxWidth));
         const newHeight = Math.max((_d = options === null || options === void 0 ? void 0 : options.minHeight) !== null && _d !== void 0 ? _d : 150, Math.min(height, maxHeight));
-        $element.css({
-            width: newWidth + 'px',
-            height: newHeight + 'px'
+        // Cancel any pending animation frame to avoid multiple updates
+        if (animationFrameId) {
+            cancelAnimationFrame(animationFrameId);
+        }
+        // Use requestAnimationFrame for better performance
+        animationFrameId = requestAnimationFrame(() => {
+            $element.css({
+                width: newWidth + 'px',
+                height: newHeight + 'px'
+            });
         });
     }
     function stopResize() {
+        isResizing = false;
         $(document).off('mousemove.resizer');
         $(document).off('mouseup.resizer');
-        // Save the size to localStorage
+        // Cancel any pending animation frame
+        if (animationFrameId) {
+            cancelAnimationFrame(animationFrameId);
+        }
+        // Save the size to localStorage only when resize ends
         if (typeof $ !== 'undefined' && typeof $.fn.outerWidth === 'function' && typeof $.fn.outerHeight === 'function') {
             const width = $element.outerWidth();
             const height = $element.outerHeight();
@@ -200,6 +224,7 @@ export function resizeElement(element, storageKey, options) {
         originalHeight = parseFloat(height.toString());
         originalMouseX = e.pageX;
         originalMouseY = e.pageY;
+        isResizing = true;
         $(document).on('mousemove.resizer', resizeElementHandler);
         $(document).on('mouseup.resizer', stopResize);
         e.stopPropagation();
