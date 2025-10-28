@@ -57,27 +57,29 @@ class PersistenceService {
     }
 
     loadState(): void {
-        const {botInstances, userInstances, presets} = this.dataManager.loadOutfitData();
+        const outfitData = this.dataManager.loadOutfitData();
         const settings = this.dataManager.loadSettings();
 
-        const safePresets = presets || {
+        const botInstances = outfitData?.botInstances || {};
+        const userInstances = outfitData?.userInstances || {};
+        const presets = outfitData?.presets || {
             bot: {},
             user: {}
         };
 
         // Load the data into the outfit store
         outfitStore.setState({
-            botInstances: botInstances || {},
-            userInstances: userInstances || {},
-            presets: safePresets,
+            botInstances,
+            userInstances,
+            presets,
             settings: settings || {}
         });
 
         debugLog('PersistenceService: State loaded from DataManager to outfit store', {
-            botInstancesCount: Object.keys(botInstances || {}).length,
-            userInstancesCount: Object.keys(userInstances || {}).length,
-            presetsBotCount: Object.keys(safePresets.bot).length,
-            presetsUserCount: Object.keys(safePresets.user).length
+            botInstancesCount: Object.keys(botInstances).length,
+            userInstancesCount: Object.keys(userInstances).length,
+            presetsBotCount: Object.keys(presets.bot).length,
+            presetsUserCount: Object.keys(presets.user).length
         }, 'debug');
     }
 }

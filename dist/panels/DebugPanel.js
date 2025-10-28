@@ -27,166 +27,6 @@ export class DebugPanel {
         }
     }
     /**
-     * Gets instance data from the new data system (DataManager) if available, otherwise falls back to the store
-     * @returns {{botInstances: any, userInstances: any}} The instance data
-     */
-    getInstanceData() {
-        // If DataManager is available, use data from there
-        if (this.dataManager) {
-            const data = this.dataManager.loadOutfitData();
-            return {
-                botInstances: data.botInstances || {},
-                userInstances: data.userInstances || {}
-            };
-        }
-        else {
-            // Fallback to outfit store data
-            const state = outfitStore.getState();
-            return {
-                botInstances: state.botInstances || {},
-                userInstances: state.userInstances || {}
-            };
-        }
-    }
-    /**
-     * Gets the complete state, prioritizing DataManager if available
-     * @returns The complete state object
-     */
-    getState() {
-        if (this.dataManager) {
-            const data = this.dataManager.load();
-            const storeState = outfitStore.getState();
-            // Merge the data from both sources, with DataManager taking priority for instance data
-            return Object.assign(Object.assign(Object.assign({}, storeState), data), { botInstances: this.getInstanceData().botInstances, userInstances: this.getInstanceData().userInstances });
-        }
-        else {
-            return outfitStore.getState();
-        }
-    }
-    /**
-     * Creates the debug panel DOM element and sets up its basic functionality
-     * @returns {HTMLElement} The created panel element
-     */
-    createPanel() {
-        if (this.domElement) {
-            return this.domElement;
-        }
-        const panel = document.createElement('div');
-        panel.id = 'outfit-debug-panel';
-        panel.className = 'outfit-debug-panel';
-        panel.innerHTML = `
-            <div class="outfit-debug-header">
-                <h3>Outfit Debug Panel</h3>
-                <div class="outfit-debug-actions">
-                    <span class="outfit-debug-action" id="outfit-debug-close">×</span>
-                </div>
-            </div>
-            <div class="outfit-debug-tabs">
-                <button class="outfit-debug-tab ${this.currentTab === 'instances' ? 'active' : ''}" data-tab="instances">Instances</button>
-                <button class="outfit-debug-tab ${this.currentTab === 'macros' ? 'active' : ''}" data-tab="macros">Macros</button>
-                <button class="outfit-debug-tab ${this.currentTab === 'pointers' ? 'active' : ''}" data-tab="pointers">Pointers</button>
-                <button class="outfit-debug-tab ${this.currentTab === 'performance' ? 'active' : ''}" data-tab="performance">Performance</button>
-                <button class="outfit-debug-tab ${this.currentTab === 'logs' ? 'active' : ''}" data-tab="logs">Logs</button>
-                <button class="outfit-debug-tab ${this.currentTab === 'misc' ? 'active' : ''}" data-tab="misc">Misc</button>
-            </div>
-            <div class="outfit-debug-content" id="outfit-debug-tab-content"></div>
-        `;
-        document.body.appendChild(panel);
-        // Set up tab switching
-        const tabs = panel.querySelectorAll('.outfit-debug-tab');
-        tabs.forEach(tab => {
-            tab.addEventListener('click', (event) => {
-                const tabName = event.target.dataset.tab;
-                if (tabName == null)
-                    return;
-                this.currentTab = tabName;
-                this.renderContent();
-                tabs.forEach(t => t.classList.remove('active'));
-                event.target.classList.add('active');
-            });
-        });
-        return panel;
-    }
-    /**
-     * Renders the content of the currently selected tab
-     */
-    renderContent() {
-        if (!this.domElement) {
-            return;
-        }
-        const contentArea = this.domElement.querySelector('.outfit-debug-content');
-        if (!contentArea) {
-            return;
-        }
-        contentArea.innerHTML = '';
-        contentArea.setAttribute('data-tab', this.currentTab);
-        const tabRenderers = {
-            instances: this.renderInstancesTab.bind(this),
-            macros: this.renderMacrosTab.bind(this),
-            pointers: this.renderPointersTab.bind(this),
-            performance: this.renderPerformanceTab.bind(this),
-            logs: this.renderLogsTab.bind(this),
-            misc: this.renderMiscTab.bind(this),
-        };
-        const renderer = tabRenderers[this.currentTab];
-        if (renderer) {
-            renderer(contentArea);
-        }
-    }
-    /**
-     * Renders the 'Logs' tab with logs from the DebugLogger
-     */
-    renderLogsTab(container) {
-        const logs = debugLogger.getLogs();
-        let logsHtml = '<div class="debug-logs-list">';
-        if (logs.length === 0) {
-            logsHtml += '<p>No logs available.</p>';
-        }
-        else {
-            logsHtml += logs.map(log => {
-                // Check if log.data is not null or not empty
-                const hasData = log.data !== null && log.data !== undefined &&
-                    ((typeof log.data === 'object' && Object.keys(log.data).length > 0) ||
-                        (typeof log.data === 'string' && log.data.length > 0));
-                return `
-                    <div class="log-item log-${log.level.toLowerCase()}">
-                        <div class="log-header" ${hasData ? 'style="cursor: pointer;"' : ''}>
-                            <span class="log-timestamp">${new Date(log.timestamp).toISOString()}</span>
-                            <span class="log-level">[${log.level}]</span>
-                            <span class="log-message">${log.message}</span>
-                            ${hasData ? '<span class="log-expand">[+]</span>' : ''}
-                        </div>
-                        ${hasData ? `
-                            <div class="log-data" style="display: none;">
-                                <pre>${JSON.stringify(log.data, null, 2)}</pre>
-                            </div>
-                        ` : ''}
-                    </div>
-                `;
-            }).join('');
-        }
-        logsHtml += '</div>';
-        container.innerHTML = logsHtml;
-        // Add click handlers for logs that have data
-        container.querySelectorAll('.log-header').forEach(header => {
-            const hasData = header.nextElementSibling && header.nextElementSibling.classList.contains('log-data');
-            if (hasData) {
-                header.addEventListener('click', () => {
-                    const dataElement = header.nextElementSibling;
-                    const expandElement = header.querySelector('.log-expand');
-                    if (dataElement.style.display === 'none') {
-                        dataElement.style.display = 'block';
-                        expandElement.textContent = '[-]';
-                    }
-                    else {
-                        dataElement.style.display = 'none';
-                        expandElement.textContent = '[+]';
-                    }
-                });
-            }
-        });
-    }
-    /**
      * Renders the 'Instances' tab with instance browser functionality
      */
     renderInstancesTab(container) {
@@ -361,6 +201,129 @@ export class DebugPanel {
         }, 100);
     }
     /**
+     * Creates the debug panel DOM element and sets up its basic functionality
+     * @returns {HTMLElement} The created panel element
+     */
+    createPanel() {
+        if (this.domElement) {
+            return this.domElement;
+        }
+        const panel = document.createElement('div');
+        panel.id = 'outfit-debug-panel';
+        panel.className = 'outfit-debug-panel';
+        panel.innerHTML = `
+            <div class="outfit-debug-header">
+                <h3>Outfit Debug Panel</h3>
+                <div class="outfit-debug-actions">
+                    <span class="outfit-debug-action" id="outfit-debug-close">×</span>
+                </div>
+            </div>
+            <div class="outfit-debug-tabs">
+                <button class="outfit-debug-tab ${this.currentTab === 'instances' ? 'active' : ''}" data-tab="instances">Instances</button>
+                <button class="outfit-debug-tab ${this.currentTab === 'macros' ? 'active' : ''}" data-tab="macros">Macros</button>
+                <button class="outfit-debug-tab ${this.currentTab === 'pointers' ? 'active' : ''}" data-tab="pointers">Pointers</button>
+                <button class="outfit-debug-tab ${this.currentTab === 'performance' ? 'active' : ''}" data-tab="performance">Performance</button>
+                <button class="outfit-debug-tab ${this.currentTab === 'logs' ? 'active' : ''}" data-tab="logs">Logs</button>
+                <button class="outfit-debug-tab ${this.currentTab === 'misc' ? 'active' : ''}" data-tab="misc">Misc</button>
+            </div>
+            <div class="outfit-debug-content" id="outfit-debug-tab-content"></div>
+        `;
+        document.body.appendChild(panel);
+        // Set up tab switching
+        const tabs = panel.querySelectorAll('.outfit-debug-tab');
+        tabs.forEach(tab => {
+            tab.addEventListener('click', (event) => {
+                const tabName = event.target.dataset.tab;
+                if (tabName == null)
+                    return;
+                this.currentTab = tabName;
+                this.renderContent();
+                tabs.forEach(t => t.classList.remove('active'));
+                event.target.classList.add('active');
+            });
+        });
+        return panel;
+    }
+    /**
+     * Renders the content of the currently selected tab
+     */
+    renderContent() {
+        if (!this.domElement) {
+            return;
+        }
+        const contentArea = this.domElement.querySelector('.outfit-debug-content');
+        if (!contentArea) {
+            return;
+        }
+        contentArea.innerHTML = '';
+        contentArea.setAttribute('data-tab', this.currentTab);
+        const tabRenderers = {
+            instances: this.renderInstancesTab.bind(this),
+            macros: this.renderMacrosTab.bind(this),
+            pointers: this.renderPointersTab.bind(this),
+            performance: this.renderPerformanceTab.bind(this),
+            logs: this.renderLogsTab.bind(this),
+            misc: this.renderMiscTab.bind(this),
+        };
+        const renderer = tabRenderers[this.currentTab];
+        if (renderer) {
+            renderer(contentArea);
+        }
+    }
+    /**
+     * Renders the 'Logs' tab with logs from the DebugLogger
+     */
+    renderLogsTab(container) {
+        const logs = debugLogger.getLogs();
+        let logsHtml = '<div class="debug-logs-list">';
+        if (logs.length === 0) {
+            logsHtml += '<p>No logs available.</p>';
+        }
+        else {
+            logsHtml += logs.map(log => {
+                // Check if log.data is not null or not empty
+                const hasData = log.data !== null && log.data !== undefined &&
+                    ((typeof log.data === 'object' && Object.keys(log.data).length > 0) ||
+                        (typeof log.data === 'string' && log.data.length > 0));
+                return `
+                    <div class="log-item log-${log.level.toLowerCase()}">
+                        <div class="log-header" ${hasData ? 'style="cursor: pointer;"' : ''}>
+                            <span class="log-timestamp">${new Date(log.timestamp).toISOString()}</span>
+                            <span class="log-level">[${log.level}]</span>
+                            <span class="log-message">${log.message}</span>
+                            ${hasData ? '<span class="log-expand">[+]</span>' : ''}
+                        </div>
+                        ${hasData ? `
+                            <div class="log-data" style="display: none;">
+                                <pre>${JSON.stringify(log.data, null, 2)}</pre>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+        logsHtml += '</div>';
+        container.innerHTML = logsHtml;
+        // Add click handlers for logs that have data
+        container.querySelectorAll('.log-header').forEach(header => {
+            const hasData = header.nextElementSibling && header.nextElementSibling.classList.contains('log-data');
+            if (hasData) {
+                header.addEventListener('click', () => {
+                    const dataElement = header.nextElementSibling;
+                    const expandElement = header.querySelector('.log-expand');
+                    if (dataElement.style.display === 'none') {
+                        dataElement.style.display = 'block';
+                        expandElement.textContent = '[-]';
+                    }
+                    else {
+                        dataElement.style.display = 'none';
+                        expandElement.textContent = '[+]';
+                    }
+                });
+            }
+        });
+    }
+    /**
      * Renders the 'Pointers' tab
      */
     renderPointersTab(container) {
@@ -466,43 +429,6 @@ export class DebugPanel {
         }, 100);
     }
     /**
-     * Runs performance tests and displays results
-     */
-    runPerformanceTest() {
-        const resultsDiv = document.getElementById('performance-test-results');
-        if (!resultsDiv) {
-            return;
-        }
-        resultsDiv.innerHTML = '<p>Running performance tests...</p>';
-        // Test macro resolution performance
-        const startTime = performance.now();
-        // Perform several macro resolutions to test performance
-        for (let i = 0; i < 100; i++) {
-            // Try to resolve a common macro pattern using the correct method
-            customMacroSystem.getCurrentSlotValue('char', 'headwear');
-            customMacroSystem.getCurrentSlotValue('user', 'topwear');
-        }
-        const endTime = performance.now();
-        const macroTestTime = endTime - startTime;
-        // Test store access performance
-        const storeStartTime = performance.now();
-        for (let i = 0; i < 1000; i++) {
-            outfitStore.getState();
-        }
-        const storeEndTime = performance.now();
-        const storeTestTime = storeEndTime - storeStartTime;
-        // Display results
-        resultsDiv.innerHTML = `
-            <h6>Test Results:</h6>
-            <ul>
-                <li>Macro resolution test (100 iterations): ${macroTestTime.toFixed(2)}ms</li>
-                <li>Store access test (1000 iterations): ${storeTestTime.toFixed(2)}ms</li>
-                <li>Avg macro resolution: ${(macroTestTime / 100).toFixed(4)}ms</li>
-                <li>Avg store access: ${(storeTestTime / 1000).toFixed(4)}ms</li>
-            </ul>
-        `;
-    }
-    /**
      * Renders the 'Misc' tab for other functions
      */
     renderMiscTab(container) {
@@ -566,6 +492,106 @@ export class DebugPanel {
         }, 100);
     }
     /**
+     * Shows the debug panel UI
+     */
+    show() {
+        var _a;
+        // Check if debug mode is enabled
+        const state = this.getState();
+        if (!state.settings.debugMode) {
+            debugLog('Debug mode is disabled. Not showing debug panel.', null, 'log');
+            return;
+        }
+        if (!this.domElement) {
+            this.domElement = this.createPanel();
+        }
+        // Initialize the previous instance ID to the current one when showing the panel
+        this.previousInstanceId = state.currentOutfitInstanceId;
+        this.renderContent();
+        this.domElement.style.display = 'flex';
+        this.isVisible = true;
+        // Subscribe to store changes to update highlighting when current instance changes
+        if (!this.storeSubscription) {
+            this.storeSubscription = outfitStore.subscribe((newState) => {
+                // Check if the current outfit instance ID has changed
+                if (this.previousInstanceId !== newState.currentOutfitInstanceId) {
+                    this.previousInstanceId = newState.currentOutfitInstanceId;
+                    // Only re-render if the debug panel is visible to avoid unnecessary updates
+                    if (this.isVisible && this.currentTab === 'instances') {
+                        this.renderContent();
+                    }
+                }
+            });
+        }
+        if (this.domElement) {
+            dragElementWithSave(this.domElement, 'outfit-debug-panel');
+            // Initialize resizing with appropriate min/max dimensions
+            setTimeout(() => {
+                resizeElement($(this.domElement), 'outfit-debug-panel');
+            }, 10); // Small delay to ensure panel is rendered first
+            (_a = this.domElement.querySelector('#outfit-debug-close')) === null || _a === void 0 ? void 0 : _a.addEventListener('click', () => this.hide());
+        }
+    }
+    /**
+     * Runs performance tests and displays results
+     */
+    runPerformanceTest() {
+        const resultsDiv = document.getElementById('performance-test-results');
+        if (!resultsDiv) {
+            return;
+        }
+        resultsDiv.innerHTML = '<p>Running performance tests...</p>';
+        // Test macro resolution performance
+        const startTime = performance.now();
+        // Perform several macro resolutions to test performance
+        for (let i = 0; i < 100; i++) {
+            // Try to resolve a common macro pattern using the correct method
+            customMacroSystem.getCurrentSlotValue('char', 'headwear');
+            customMacroSystem.getCurrentSlotValue('user', 'topwear');
+        }
+        const endTime = performance.now();
+        const macroTestTime = endTime - startTime;
+        // Test store access performance
+        const storeStartTime = performance.now();
+        for (let i = 0; i < 1000; i++) {
+            outfitStore.getState();
+        }
+        const storeEndTime = performance.now();
+        const storeTestTime = storeEndTime - storeStartTime;
+        // Display results
+        resultsDiv.innerHTML = `
+            <h6>Test Results:</h6>
+            <ul>
+                <li>Macro resolution test (100 iterations): ${macroTestTime.toFixed(2)}ms</li>
+                <li>Store access test (1000 iterations): ${storeTestTime.toFixed(2)}ms</li>
+                <li>Avg macro resolution: ${(macroTestTime / 100).toFixed(4)}ms</li>
+                <li>Avg store access: ${(storeTestTime / 1000).toFixed(4)}ms</li>
+            </ul>
+        `;
+    }
+    /**
+     * Gets instance data from the new data system (DataManager) if available, otherwise falls back to the store
+     * @returns {{botInstances: any, userInstances: any}} The instance data
+     */
+    getInstanceData() {
+        // If DataManager is available, use data from there
+        if (this.dataManager) {
+            const data = this.dataManager.loadOutfitData();
+            return {
+                botInstances: data.botInstances || {},
+                userInstances: data.userInstances || {}
+            };
+        }
+        else {
+            // Fallback to outfit store data
+            const state = outfitStore.getState();
+            return {
+                botInstances: state.botInstances || {},
+                userInstances: state.userInstances || {}
+            };
+        }
+    }
+    /**
      * Export all outfit data to a JSON file
      */
     exportOutfitData() {
@@ -624,44 +650,18 @@ export class DebugPanel {
         }
     }
     /**
-     * Shows the debug panel UI
+     * Gets the complete state, prioritizing DataManager if available
+     * @returns The complete state object
      */
-    show() {
-        var _a;
-        // Check if debug mode is enabled
-        const state = this.getState();
-        if (!state.settings.debugMode) {
-            debugLog('Debug mode is disabled. Not showing debug panel.', null, 'log');
-            return;
+    getState() {
+        if (this.dataManager) {
+            const data = this.dataManager.load();
+            const storeState = outfitStore.getState();
+            // Merge the data from both sources, with DataManager taking priority for instance data
+            return Object.assign(Object.assign(Object.assign({}, storeState), data), { botInstances: this.getInstanceData().botInstances, userInstances: this.getInstanceData().userInstances });
         }
-        if (!this.domElement) {
-            this.domElement = this.createPanel();
-        }
-        // Initialize the previous instance ID to the current one when showing the panel
-        this.previousInstanceId = state.currentOutfitInstanceId;
-        this.renderContent();
-        this.domElement.style.display = 'flex';
-        this.isVisible = true;
-        // Subscribe to store changes to update highlighting when current instance changes
-        if (!this.storeSubscription) {
-            this.storeSubscription = outfitStore.subscribe((newState) => {
-                // Check if the current outfit instance ID has changed
-                if (this.previousInstanceId !== newState.currentOutfitInstanceId) {
-                    this.previousInstanceId = newState.currentOutfitInstanceId;
-                    // Only re-render if the debug panel is visible to avoid unnecessary updates
-                    if (this.isVisible && this.currentTab === 'instances') {
-                        this.renderContent();
-                    }
-                }
-            });
-        }
-        if (this.domElement) {
-            dragElementWithSave(this.domElement, 'outfit-debug-panel');
-            // Initialize resizing with appropriate min/max dimensions
-            setTimeout(() => {
-                resizeElement($(this.domElement), 'outfit-debug-panel');
-            }, 10); // Small delay to ensure panel is rendered first
-            (_a = this.domElement.querySelector('#outfit-debug-close')) === null || _a === void 0 ? void 0 : _a.addEventListener('click', () => this.hide());
+        else {
+            return outfitStore.getState();
         }
     }
     /**
