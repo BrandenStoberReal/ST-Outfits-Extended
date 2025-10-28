@@ -76,10 +76,10 @@ class PersistenceService {
         });
 
         debugLog('PersistenceService: State loaded from DataManager to outfit store', {
-            botInstancesCount: Object.keys(botInstances).length,
-            userInstancesCount: Object.keys(userInstances).length,
-            presetsBotCount: Object.keys(presets.bot).length,
-            presetsUserCount: Object.keys(presets.user).length
+            botInstancesCount: Object.keys(botInstances || {}).length,
+            userInstancesCount: Object.keys(userInstances || {}).length,
+            presetsBotCount: Object.keys((presets && presets.bot) || {}).length,
+            presetsUserCount: Object.keys((presets && presets.user) || {}).length
         }, 'debug');
     }
 }
