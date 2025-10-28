@@ -85,9 +85,10 @@ function isMobileUserAgent(userAgent) {
  * @param {any} userPanel - The user outfit panel instance
  * @param {any} autoOutfitSystem - The auto outfit system instance
  * @param {any} outfitDataService - The outfit data service instance
+ * @param {any} dataManager - The data manager instance
  * @returns {void}
  */
-function setupApi(botManager, userManager, botPanel, userPanel, autoOutfitSystem, outfitDataService) {
+function setupApi(botManager, userManager, botPanel, userPanel, autoOutfitSystem, outfitDataService, dataManager) {
     var _a;
     extension_api.botOutfitPanel = botPanel;
     extension_api.userOutfitPanel = userPanel;
@@ -126,7 +127,7 @@ function setupApi(botManager, userManager, botPanel, userPanel, autoOutfitSystem
         }
     };
     // Create and set up the debug panel
-    const debugPanel = new DebugPanel();
+    const debugPanel = new DebugPanel(dataManager);
     window.outfitDebugPanel = debugPanel;
     extension_api.debugPanel = debugPanel;
     globalThis.outfitTracker = extension_api;
@@ -242,8 +243,11 @@ export function initializeExtension() {
         yield dataManager.initialize();
         const persistenceService = new PersistenceService(dataManager);
         debouncedStore.setPersistenceService(persistenceService);
+        // Set the data manager in the outfit store for synchronization
+        outfitStore.setDataManager(dataManager);
+        // Load initial state from DataManager to outfit store
         persistenceService.loadState();
-        debugLog('Data manager and outfit store initialized', null, 'info');
+        debugLog('Data manager and outfit store initialized and synchronized', null, 'info');
         const outfitDataService = new OutfitDataService(dataManager);
         const settings = dataManager.loadSettings();
         debugLog('Settings loaded', settings, 'info');
@@ -262,7 +266,7 @@ export function initializeExtension() {
         outfitStore.setPanelRef('user', userPanel);
         outfitStore.setAutoOutfitSystem(autoOutfitSystem);
         debugLog('Global references set', null, 'info');
-        setupApi(botManager, userManager, botPanel, userPanel, autoOutfitSystem, outfitDataService);
+        setupApi(botManager, userManager, botPanel, userPanel, autoOutfitSystem, outfitDataService, dataManager);
         initSettings(autoOutfitSystem, AutoOutfitSystem, STContext);
         yield registerOutfitCommands(botManager, userManager, autoOutfitSystem);
         customMacroSystem.registerMacros(STContext);

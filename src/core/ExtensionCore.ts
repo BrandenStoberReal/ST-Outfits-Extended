@@ -83,9 +83,10 @@ function isMobileUserAgent(userAgent: string): boolean {
  * @param {any} userPanel - The user outfit panel instance
  * @param {any} autoOutfitSystem - The auto outfit system instance
  * @param {any} outfitDataService - The outfit data service instance
+ * @param {any} dataManager - The data manager instance
  * @returns {void}
  */
-function setupApi(botManager: any, userManager: any, botPanel: any, userPanel: any, autoOutfitSystem: any, outfitDataService: any): void {
+function setupApi(botManager: any, userManager: any, botPanel: any, userPanel: any, autoOutfitSystem: any, outfitDataService: any, dataManager: any): void {
     extension_api.botOutfitPanel = botPanel;
     extension_api.userOutfitPanel = userPanel;
     extension_api.autoOutfitSystem = autoOutfitSystem;
@@ -124,7 +125,7 @@ function setupApi(botManager: any, userManager: any, botPanel: any, userPanel: a
     };
 
     // Create and set up the debug panel
-    const debugPanel = new DebugPanel();
+    const debugPanel = new DebugPanel(dataManager);
 
     window.outfitDebugPanel = debugPanel;
     extension_api.debugPanel = debugPanel;
@@ -259,8 +260,13 @@ export async function initializeExtension(): Promise<void> {
     const persistenceService = new PersistenceService(dataManager);
     debouncedStore.setPersistenceService(persistenceService);
 
+    // Set the data manager in the outfit store for synchronization
+    outfitStore.setDataManager(dataManager);
+
+    // Load initial state from DataManager to outfit store
     persistenceService.loadState();
-    debugLog('Data manager and outfit store initialized', null, 'info');
+
+    debugLog('Data manager and outfit store initialized and synchronized', null, 'info');
 
     const outfitDataService = new OutfitDataService(dataManager);
 
@@ -291,7 +297,7 @@ export async function initializeExtension(): Promise<void> {
     outfitStore.setAutoOutfitSystem(autoOutfitSystem);
     debugLog('Global references set', null, 'info');
 
-    setupApi(botManager, userManager, botPanel, userPanel, autoOutfitSystem, outfitDataService);
+    setupApi(botManager, userManager, botPanel, userPanel, autoOutfitSystem, outfitDataService, dataManager);
     initSettings(autoOutfitSystem, AutoOutfitSystem, STContext);
     await registerOutfitCommands(botManager, userManager, autoOutfitSystem);
     customMacroSystem.registerMacros(STContext);

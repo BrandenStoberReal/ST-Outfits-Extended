@@ -52,8 +52,19 @@ class PersistenceService {
             bot: {},
             user: {}
         };
-        outfitStore.setState({ botInstances, userInstances, presets: safePresets, settings });
-        outfitStore.notifyListeners();
+        // Load the data into the outfit store
+        outfitStore.setState({
+            botInstances: botInstances || {},
+            userInstances: userInstances || {},
+            presets: safePresets,
+            settings: settings || {}
+        });
+        debugLog('PersistenceService: State loaded from DataManager to outfit store', {
+            botInstancesCount: Object.keys(botInstances || {}).length,
+            userInstancesCount: Object.keys(userInstances || {}).length,
+            presetsBotCount: Object.keys(safePresets.bot).length,
+            presetsUserCount: Object.keys(safePresets.user).length
+        }, 'debug');
     }
 }
 export { PersistenceService };

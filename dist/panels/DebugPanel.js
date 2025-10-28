@@ -14,13 +14,54 @@ import { debugLog, debugLogger } from '../logging/DebugLogger.js';
 import { CharacterInfoType, getCharacterInfoById } from '../utils/CharacterUtils.js';
 import { debouncedStore } from '../stores/DebouncedStore.js';
 export class DebugPanel {
-    constructor() {
+    constructor(dataManager) {
         this.isVisible = false;
         this.domElement = null;
         this.currentTab = 'instances';
         this.eventListeners = [];
         this.storeSubscription = null;
         this.previousInstanceId = null;
+        this.dataManager = null;
+        if (dataManager) {
+            this.dataManager = dataManager;
+        }
+    }
+    /**
+     * Gets instance data from the new data system (DataManager) if available, otherwise falls back to the store
+     * @returns {{botInstances: any, userInstances: any}} The instance data
+     */
+    getInstanceData() {
+        // If DataManager is available, use data from there
+        if (this.dataManager) {
+            const data = this.dataManager.loadOutfitData();
+            return {
+                botInstances: data.botInstances || {},
+                userInstances: data.userInstances || {}
+            };
+        }
+        else {
+            // Fallback to outfit store data
+            const state = outfitStore.getState();
+            return {
+                botInstances: state.botInstances || {},
+                userInstances: state.userInstances || {}
+            };
+        }
+    }
+    /**
+     * Gets the complete state, prioritizing DataManager if available
+     * @returns The complete state object
+     */
+    getState() {
+        if (this.dataManager) {
+            const data = this.dataManager.load();
+            const storeState = outfitStore.getState();
+            // Merge the data from both sources, with DataManager taking priority for instance data
+            return Object.assign(Object.assign(Object.assign({}, storeState), data), { botInstances: this.getInstanceData().botInstances, userInstances: this.getInstanceData().userInstances });
+        }
+        else {
+            return outfitStore.getState();
+        }
     }
     /**
      * Creates the debug panel DOM element and sets up its basic functionality
@@ -149,9 +190,9 @@ export class DebugPanel {
      * Renders the 'Instances' tab with instance browser functionality
      */
     renderInstancesTab(container) {
-        const state = outfitStore.getState();
-        const botInstances = state.botInstances;
-        const userInstances = state.userInstances;
+        const state = this.getState();
+        const botInstances = this.getInstanceData().botInstances;
+        const userInstances = this.getInstanceData().userInstances;
         let instancesHtml = '<div class="debug-instances-list">';
         // Add search input
         instancesHtml += '<div class="instance-search-container"><input type="text" id="instance-search" placeholder="Search instances..."></div>';
@@ -250,9 +291,9 @@ export class DebugPanel {
      * Renders the 'Macros' tab to showcase current instances and derivations
      */
     renderMacrosTab(container) {
-        const state = outfitStore.getState();
-        const botInstances = state.botInstances;
-        const userInstances = state.userInstances;
+        const state = this.getState();
+        const botInstances = this.getInstanceData().botInstances;
+        const userInstances = this.getInstanceData().userInstances;
         let macrosHtml = '<div class="debug-macros-list">';
         // Show macro information
         macrosHtml += '<h4>Current Macro Values</h4>';
@@ -323,7 +364,7 @@ export class DebugPanel {
      * Renders the 'Pointers' tab
      */
     renderPointersTab(container) {
-        const state = outfitStore.getState();
+        const state = this.getState();
         const references = state.references;
         let pointersHtml = '<div class="debug-pointers-list">';
         pointersHtml += '<h4>Global References</h4>';
@@ -357,13 +398,14 @@ export class DebugPanel {
      * Renders the 'Performance' tab with performance metrics
      */
     renderPerformanceTab(container) {
-        const state = outfitStore.getState();
+        const state = this.getState();
+        const instanceData = this.getInstanceData();
         // Calculate performance metrics
-        const botInstanceCount = Object.keys(state.botInstances).reduce((total, charId) => {
-            return total + Object.keys(state.botInstances[charId]).length;
+        const botInstanceCount = Object.keys(instanceData.botInstances).reduce((total, charId) => {
+            return total + Object.keys(instanceData.botInstances[charId]).length;
         }, 0);
-        const userInstanceCount = Object.keys(state.userInstances).length;
-        // Estimate storage size
+        const userInstanceCount = Object.keys(instanceData.userInstances).length;
+        // Estimate storage size using the full state data for consistency
         const stateStr = JSON.stringify(state);
         const estimatedStorageSize = `${(new Blob([stateStr]).size / 1024).toFixed(2)} KB`;
         let performanceHtml = '<div class="debug-performance-content">';
@@ -464,7 +506,7 @@ export class DebugPanel {
      * Renders the 'Misc' tab for other functions
      */
     renderMiscTab(container) {
-        const state = outfitStore.getState();
+        const state = this.getState();
         let miscHtml = '<div class="debug-misc-content">';
         miscHtml += '<h4>Store State Information</h4>';
         miscHtml += '<div class="store-info">';
@@ -587,7 +629,7 @@ export class DebugPanel {
     show() {
         var _a;
         // Check if debug mode is enabled
-        const state = outfitStore.getState();
+        const state = this.getState();
         if (!state.settings.debugMode) {
             debugLog('Debug mode is disabled. Not showing debug panel.', null, 'log');
             return;

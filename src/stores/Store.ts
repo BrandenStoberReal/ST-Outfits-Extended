@@ -2,6 +2,7 @@ import {DEFAULT_SETTINGS} from '../config/constants';
 import {deepClone} from '../utils/utilities';
 import {debouncedStore} from './DebouncedStore';
 import {debugLog} from '../logging/DebugLogger';
+import {DataManager} from '../managers/DataManager';
 
 export interface OutfitData {
     [key: string]: string;
@@ -101,6 +102,7 @@ export interface State {
 
 class OutfitStore {
     state: State;
+    private dataManager: DataManager | null = null;
 
     constructor() {
         this.state = {
@@ -133,23 +135,86 @@ class OutfitStore {
         };
     }
 
-    subscribe(listener: (state: State) => void): () => void {
-        this.state.listeners.push(listener);
-        return () => {
-            this.state.listeners = this.state.listeners.filter(l => l !== listener);
-        };
+    /**
+     * Sets the DataManager for synchronization
+     * @param dataManager The DataManager instance to sync with
+     */
+    setDataManager(dataManager: DataManager): void {
+        this.dataManager = dataManager;
+
+        // Load initial data from DataManager to sync the store
+        this.syncFromDataManager();
     }
 
-    notifyListeners(): void {
-        this.state.listeners.forEach(listener => {
-            try {
-                listener(this.state);
-            } catch (error) {
-                debugLog('Error in store listener', error, 'error');
+    /**
+     * Synchronizes the store state from the DataManager
+     */
+    syncFromDataManager(): void {
+        if (!this.dataManager) {
+            debugLog('DataManager not available for synchronization', null, 'warn');
+            return;
+        }
+
+        try {
+            const data = this.dataManager.loadOutfitData();
+
+            // Update the store's instance data from DataManager
+            this.state.botInstances = data.botInstances || {};
+            this.state.userInstances = data.userInstances || {};
+
+            // Also update presets if they exist in the DataManager
+            const allData = this.dataManager.load();
+            if (allData && allData.presets) {
+                this.state.presets = {
+                    bot: {...this.state.presets.bot, ...allData.presets.bot},
+                    user: {...this.state.presets.user, ...allData.presets.user}
+                };
             }
-        });
+
+            // Notify listeners that the state has been updated
+            this.notifyListeners();
+
+            debugLog('Store synchronized from DataManager', {
+                botInstanceCount: Object.keys(this.state.botInstances).length,
+                userInstanceCount: Object.keys(this.state.userInstances).length
+            }, 'debug');
+        } catch (error) {
+            debugLog('Error during synchronization from DataManager', error, 'error');
+        }
     }
 
+    /**
+     * Synchronizes the store state to the DataManager
+     */
+    syncToDataManager(): void {
+        if (!this.dataManager) {
+            debugLog('DataManager not available for synchronization', null, 'warn');
+            return;
+        }
+
+        try {
+            // Prepare the outfit data to save to DataManager
+            const outfitData = {
+                botInstances: this.state.botInstances,
+                userInstances: this.state.userInstances,
+                presets: this.state.presets
+            };
+
+            // Save the instance data to DataManager
+            this.dataManager.savePartial(outfitData);
+
+            debugLog('Store synchronized to DataManager', {
+                botInstanceCount: Object.keys(this.state.botInstances).length,
+                userInstanceCount: Object.keys(this.state.userInstances).length
+            }, 'debug');
+        } catch (error) {
+            debugLog('Error during synchronization to DataManager', error, 'error');
+        }
+    }
+
+    /**
+     * Updates the state and synchronizes with DataManager
+     */
     setState(updates: Partial<State>): void {
         // Deep clone the current state to avoid reference issues
         const currentStateClone = deepClone(this.state);
@@ -197,8 +262,60 @@ class OutfitStore {
                 ...((updatesClone as any)?.references || {})
             }
         };
+
+        // Synchronize changes to the DataManager if it's available
+        if (this.dataManager) {
+            // Check if any data that should be persisted to DataManager has changed
+            const syncData: any = {};
+
+            // Only sync properties that actually changed and are managed by DataManager
+            if ('botInstances' in updatesClone) {
+                syncData.botInstances = this.state.botInstances;
+            }
+            if ('userInstances' in updatesClone) {
+                syncData.userInstances = this.state.userInstances;
+            }
+            if ('presets' in updatesClone) {
+                syncData.presets = this.state.presets;
+            }
+            if ('settings' in updatesClone) {
+                syncData.settings = this.state.settings;
+            }
+
+            if (Object.keys(syncData).length > 0) {
+                this.dataManager.savePartial(syncData);
+            }
+        }
+        
         this.notifyListeners();
     }
+
+    /**
+     * Updates the state and saves to storage
+     */
+    updateAndSave(updates: Partial<State>): void {
+        this.setState(updates);
+        debouncedStore.saveState();
+    }
+
+    subscribe(listener: (state: State) => void): () => void {
+        this.state.listeners.push(listener);
+        return () => {
+            this.state.listeners = this.state.listeners.filter(l => l !== listener);
+        };
+    }
+
+    notifyListeners(): void {
+        this.state.listeners.forEach(listener => {
+            try {
+                listener(this.state);
+            } catch (error) {
+                debugLog('Error in store listener', error, 'error');
+            }
+        });
+    }
+
+
 
     getState(): State {
         return deepClone(this.state);
@@ -235,6 +352,14 @@ class OutfitStore {
             user: this.state.botInstances[characterId][instanceId].user || {},
             promptInjectionEnabled
         };
+
+        // Synchronize changes to the DataManager if it's available
+        if (this.dataManager) {
+            this.dataManager.savePartial({
+                botInstances: this.state.botInstances
+            });
+        }
+        
         this.notifyListeners();
     }
 
@@ -262,6 +387,14 @@ class OutfitStore {
         this.state.userInstances[instanceId] = updatedInstanceData as { [key: string]: string | boolean } & {
             promptInjectionEnabled?: boolean
         };
+
+        // Synchronize changes to the DataManager if it's available
+        if (this.dataManager) {
+            this.dataManager.savePartial({
+                userInstances: this.state.userInstances
+            });
+        }
+        
         this.notifyListeners();
     }
 
@@ -271,6 +404,14 @@ class OutfitStore {
 
     setSetting<K extends keyof Settings>(key: K, value: Settings[K]): void {
         this.state.settings[key] = value;
+
+        // Synchronize settings changes to the DataManager
+        if (this.dataManager) {
+            this.dataManager.savePartial({
+                settings: this.state.settings
+            });
+        }
+        
         this.notifyListeners();
     }
 
@@ -328,11 +469,6 @@ class OutfitStore {
         return this.state.currentChatId;
     }
 
-    updateAndSave(updates: Partial<State>): void {
-        this.setState(updates);
-        debouncedStore.saveState();
-    }
-
     cleanupUnusedInstances(characterId: string, validInstanceIds: string[]): void {
         if (!characterId || !this.state.botInstances[characterId]) {
             return;
@@ -349,6 +485,14 @@ class OutfitStore {
         if (Object.keys(characterData).length === 0) {
             delete this.state.botInstances[characterId];
         }
+
+        // Synchronize changes to the DataManager if it's available
+        if (this.dataManager) {
+            this.dataManager.savePartial({
+                botInstances: this.state.botInstances
+            });
+        }
+        
         this.notifyListeners();
     }
 
@@ -371,6 +515,15 @@ class OutfitStore {
                 delete this.state.presets.bot[key];
             }
         }
+
+        // Synchronize changes to the DataManager if it's available
+        if (this.dataManager) {
+            this.dataManager.savePartial({
+                botInstances: this.state.botInstances,
+                presets: this.state.presets
+            });
+        }
+        
         this.notifyListeners();
     }
 
@@ -390,7 +543,28 @@ class OutfitStore {
             user: {}
         };
 
+        // Synchronize changes to the DataManager if it's available
+        if (this.dataManager) {
+            this.dataManager.savePartial({
+                botInstances: this.state.botInstances,
+                userInstances: this.state.userInstances,
+                presets: this.state.presets
+            });
+        }
+
         this.notifyListeners();
+    }
+
+    /**
+     * Forces a complete resynchronization of the outfit store from the DataManager.
+     * This can be used to fix any potential desynchronization between the store and DataManager.
+     */
+    forceResyncFromDataManager(): void {
+        if (this.dataManager) {
+            this.syncFromDataManager();
+        } else {
+            debugLog('Cannot force resync: DataManager not available', null, 'warn');
+        }
     }
 }
 
