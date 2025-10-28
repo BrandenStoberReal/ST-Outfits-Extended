@@ -1,6 +1,7 @@
 import {ALL_SLOTS} from '../config/constants';
 import {DataManager} from '../managers/DataManager';
 import {outfitStore} from '../stores/Store';
+import {debugLog} from '../logging/DebugLogger';
 
 class OutfitDataService {
     dataManager: DataManager;
@@ -22,10 +23,10 @@ class OutfitDataService {
                 });
 
                 this.dataManager.save({variables: {global: globalVars}});
-                console.log(`[OutfitTracker] Removed ${outfitVars.length} outfit-related global variables`);
+                debugLog(`Removed ${outfitVars.length} outfit-related global variables`, null, 'log');
             }
         } catch (error) {
-            console.error('[OutfitTracker] Error clearing global outfit variables:', error);
+            debugLog('Error clearing global outfit variables', error, 'error');
         }
     }
 
@@ -42,10 +43,10 @@ class OutfitDataService {
                 window.userOutfitPanel.renderContent();
             }
 
-            console.log('[OutfitTracker] All outfit data wiped successfully');
+            debugLog('All outfit data wiped successfully', null, 'log');
             return '[Outfit System] All outfit data has been wiped.';
         } catch (error) {
-            console.error('[OutfitTracker] Error wiping outfit data:', error);
+            debugLog('Error wiping outfit data', error, 'error');
             throw error;
         }
     }

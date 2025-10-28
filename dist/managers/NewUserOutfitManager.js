@@ -9,8 +9,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 import { presetManager } from './PresetManager.js';
 import { OutfitManager } from './OutfitManager.js';
-import { debouncedStore } from '../common/DebouncedStore.js';
-import { outfitStore } from '../common/Store.js';
+import { debouncedStore } from '../stores/DebouncedStore.js';
+import { outfitStore } from '../stores/Store.js';
+import { debugLog } from '../logging/DebugLogger.js';
 export class NewUserOutfitManager extends OutfitManager {
     constructor(slots) {
         super(slots);
@@ -24,7 +25,7 @@ export class NewUserOutfitManager extends OutfitManager {
     }
     loadOutfit() {
         if (!this.outfitInstanceId) {
-            console.warn('[NewUserOutfitManager] Cannot load outfit - missing outfitInstanceId');
+            debugLog('Cannot load outfit - missing outfitInstanceId', null, 'warn');
             this.slots.forEach(slot => {
                 this.currentValues[slot] = 'None';
             });
@@ -38,7 +39,7 @@ export class NewUserOutfitManager extends OutfitManager {
     }
     saveOutfit() {
         if (!this.outfitInstanceId) {
-            console.warn('[NewUserOutfitManager] Cannot save outfit - missing outfitInstanceId');
+            debugLog('Cannot save outfit - missing outfitInstanceId', null, 'warn');
             return;
         }
         const userOutfit = {};
@@ -62,7 +63,7 @@ export class NewUserOutfitManager extends OutfitManager {
     }
     savePreset(presetName, instanceId = null) {
         if (!presetName || typeof presetName !== 'string' || presetName.trim() === '') {
-            console.error('[NewUserOutfitManager] Invalid preset name provided');
+            debugLog('Invalid preset name provided', null, 'error');
             return '[Outfit System] Invalid preset name provided.';
         }
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
@@ -170,7 +171,7 @@ export class NewUserOutfitManager extends OutfitManager {
     }
     overwritePreset(presetName, instanceId = null) {
         if (!presetName || typeof presetName !== 'string' || presetName.trim() === '') {
-            console.error('[NewUserOutfitManager] Invalid preset name provided');
+            debugLog('Invalid preset name provided', null, 'error');
             return '[Outfit System] Invalid preset name provided.';
         }
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
@@ -195,7 +196,7 @@ export class NewUserOutfitManager extends OutfitManager {
     setPromptInjectionEnabled(enabled, instanceId = null) {
         const actualInstanceId = instanceId || this.outfitInstanceId;
         if (!actualInstanceId) {
-            console.warn('[NewUserOutfitManager] Cannot set prompt injection - missing instanceId');
+            debugLog('Cannot set prompt injection - missing instanceId', null, 'warn');
             return;
         }
         if (!outfitStore.state.userInstances[actualInstanceId]) {
@@ -209,7 +210,7 @@ export class NewUserOutfitManager extends OutfitManager {
     getPromptInjectionEnabled(instanceId = null) {
         const actualInstanceId = instanceId || this.outfitInstanceId;
         if (!actualInstanceId) {
-            console.warn('[NewUserOutfitManager] Cannot get prompt injection - missing instanceId');
+            debugLog('Cannot get prompt injection - missing instanceId', null, 'warn');
             return true;
         }
         const instanceData = outfitStore.state.userInstances[actualInstanceId];

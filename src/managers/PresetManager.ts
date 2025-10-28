@@ -1,5 +1,6 @@
 import {OutfitData, outfitStore} from '../stores/Store';
 import {debouncedStore} from '../stores/DebouncedStore';
+import {debugLog} from '../logging/DebugLogger';
 
 class PresetManager {
     getPresets(instanceId: string, type: 'bot' | 'user'): { [presetName: string]: OutfitData } {
@@ -9,6 +10,22 @@ class PresetManager {
     }
 
     savePreset(instanceId: string, presetName: string, outfitData: OutfitData, type: 'bot' | 'user'): void {
+        // Validate inputs
+        if (!instanceId) {
+            debugLog('Instance ID is required for saving preset', null, 'error');
+            return;
+        }
+
+        if (!presetName || typeof presetName !== 'string' || presetName.trim() === '') {
+            debugLog('Valid preset name is required', null, 'error');
+            return;
+        }
+
+        if (!outfitData || typeof outfitData !== 'object') {
+            debugLog('Valid outfit data is required', null, 'error');
+            return;
+        }
+
         const presetKey = this._generatePresetKey(instanceId, type);
 
         if (!outfitStore.state.presets[type]) {
@@ -18,11 +35,23 @@ class PresetManager {
             outfitStore.state.presets[type][presetKey] = {};
         }
 
+        // Create a deep clone to avoid reference issues
         outfitStore.state.presets[type][presetKey][presetName] = {...outfitData};
         debouncedStore.saveState();
     }
 
     deletePreset(instanceId: string, presetName: string, type: 'bot' | 'user'): void {
+        // Validate inputs
+        if (!instanceId) {
+            debugLog('Instance ID is required for deleting preset', null, 'error');
+            return;
+        }
+
+        if (!presetName || typeof presetName !== 'string' || presetName.trim() === '') {
+            debugLog('Valid preset name is required for deletion', null, 'error');
+            return;
+        }
+
         const presetKey = this._generatePresetKey(instanceId, type);
 
         if (outfitStore.state.presets[type]?.[presetKey]?.[presetName]) {

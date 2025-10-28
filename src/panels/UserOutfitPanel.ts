@@ -4,6 +4,7 @@ import {dragElementWithSave, resizeElement} from '../common/shared';
 import {formatSlotName as utilsFormatSlotName} from '../utils/utilities';
 import {areSystemMessagesEnabled} from '../utils/SettingsUtil';
 import {outfitStore} from '../stores/Store';
+import {debugLog} from '../logging/DebugLogger';
 
 declare const window: any;
 declare const toastr: any;
@@ -118,7 +119,7 @@ export class UserOutfitPanel {
             }
             return '';
         } catch (error) {
-            console.warn('Could not get first message text for hash generation:', error);
+            debugLog('Could not get first message text for hash generation', error, 'warn');
             return '';
         }
     }
@@ -239,13 +240,20 @@ export class UserOutfitPanel {
         saveButton.addEventListener('click', async () => {
             const presetName = prompt('Name this outfit:');
 
-            if (presetName && presetName.toLowerCase() !== 'default') {
+            if (presetName === null) {
+                // User cancelled the prompt
+                return;
+            }
+
+            if (presetName && presetName.trim() !== '' && presetName.toLowerCase() !== 'default') {
                 const message = await this.userOutfitManager.savePreset(presetName.trim());
 
                 if (message && areSystemMessagesEnabled()) {
                     this.sendSystemMessage(message);
                 }
                 this.renderContent();
+            } else if (presetName && presetName.trim() === '') {
+                alert('Preset name cannot be empty.');
             } else if (presetName && presetName.toLowerCase() === 'default') {
                 alert('Please save this outfit with a different name, then use the "Set Default" button on that outfit.');
             }

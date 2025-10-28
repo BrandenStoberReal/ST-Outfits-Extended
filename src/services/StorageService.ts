@@ -1,3 +1,5 @@
+import {debugLog} from "../logging/DebugLogger";
+
 class StorageService {
     saveFn: (data: any) => void;
     loadFn: () => any;
@@ -9,7 +11,7 @@ class StorageService {
 
     save(data: any): void {
         if (typeof this.saveFn !== 'function') {
-            console.error('[StorageService] Save function is not configured.');
+            debugLog('Save function is not configured.', null, 'error');
             return;
         }
         this.saveFn(data);
@@ -17,7 +19,7 @@ class StorageService {
 
     load(): any {
         if (typeof this.loadFn !== 'function') {
-            console.error('[StorageService] Load function is not configured.');
+            debugLog('Load function is not configured.', null, 'error');
             return null;
         }
         return this.loadFn();

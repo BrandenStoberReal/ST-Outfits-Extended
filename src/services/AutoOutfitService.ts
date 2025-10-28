@@ -3,6 +3,7 @@ import {generateOutfitFromLLM} from './LLMService';
 import {customMacroSystem} from './CustomMacroService';
 import {outfitStore} from '../stores/Store';
 import {CharacterInfoType, getCharacterInfoById} from '../utils/CharacterUtils';
+import {debugLog} from '../logging/DebugLogger';
 
 declare const window: any;
 declare const toastr: any;
@@ -140,7 +141,7 @@ outfit-system_replace_topwear(\"T-shirt\")\
             const context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
 
             if (!context || !context.eventSource || !context.event_types) {
-                console.error('[AutoOutfitSystem] Context not ready for event listeners');
+                debugLog('Context not ready for event listeners', null, 'error');
                 return;
             }
 
@@ -148,11 +149,11 @@ outfit-system_replace_topwear(\"T-shirt\")\
 
             this.eventHandler = (data: any) => {
                 if (this.isEnabled && !this.isProcessing && this.appInitialized && data && !data.is_user) {
-                    console.log('[AutoOutfitSystem] New AI message received, processing...');
+                    debugLog('New AI message received, processing...', null, 'log');
 
                     setTimeout(() => {
                         this.processOutfitCommands().catch((error: any) => {
-                            console.error('Auto outfit processing failed:', error);
+                            debugLog('Auto outfit processing failed', error, 'error');
                             this.consecutiveFailures++;
                         });
                     }, 1000);
@@ -160,9 +161,9 @@ outfit-system_replace_topwear(\"T-shirt\")\
             };
 
             eventSource.on(event_types.MESSAGE_RECEIVED, this.eventHandler);
-            console.log('[AutoOutfitSystem] Event listener registered for MESSAGE_RECEIVED');
+            debugLog('Event listener registered for MESSAGE_RECEIVED', null, 'log');
         } catch (error) {
-            console.error('[AutoOutfitSystem] Failed to set up event listeners:', error);
+            debugLog('Failed to set up event listeners', error, 'error');
         }
     }
 
@@ -175,17 +176,17 @@ outfit-system_replace_topwear(\"T-shirt\")\
                     context.eventSource.off(context.event_types.MESSAGE_RECEIVED, this.eventHandler);
                 }
                 this.eventHandler = null;
-                console.log('[AutoOutfitSystem] Event listener removed');
+                debugLog('Event listener removed', null, 'log');
             }
         } catch (error) {
-            console.error('[AutoOutfitSystem] Failed to remove event listeners:', error);
+            debugLog('Failed to remove event listeners', error, 'error');
         }
     }
 
     markAppInitialized(): void {
         if (!this.appInitialized) {
             this.appInitialized = true;
-            console.log('[AutoOutfitSystem] App marked as initialized - will now process new AI messages');
+            debugLog('App marked as initialized - will now process new AI messages', null, 'log');
         }
     }
 
@@ -197,12 +198,12 @@ outfit-system_replace_topwear(\"T-shirt\")\
         }
 
         if (this.isProcessing) {
-            console.log('[AutoOutfitSystem] Already processing, skipping');
+            debugLog('Already processing, skipping', null, 'log');
             return;
         }
 
         if (!this.outfitManager || !this.outfitManager.setCharacter) {
-            console.error('[AutoOutfitSystem] Outfit manager not properly initialized');
+            debugLog('Outfit manager not properly initialized', null, 'error');
             return;
         }
 
@@ -213,7 +214,7 @@ outfit-system_replace_topwear(\"T-shirt\")\
             await this.processWithRetry();
             this.lastSuccessfulProcessing = new Date();
         } catch (error) {
-            console.error('Outfit command processing failed after retries:', error);
+            debugLog('Outfit command processing failed after retries', error, 'error');
             this.consecutiveFailures++;
             this.showPopup(`Outfit check failed ${this.consecutiveFailures} time(s).`, 'error');
         } finally {
@@ -232,7 +233,7 @@ outfit-system_replace_topwear(\"T-shirt\")\
             } catch (error) {
                 this.currentRetryCount++;
                 if (this.currentRetryCount < this.maxRetries) {
-                    console.log(`[AutoOutfitSystem] Attempt ${this.currentRetryCount} failed, retrying in ${this.retryDelay}ms...`, error);
+                    debugLog(`Attempt ${this.currentRetryCount} failed, retrying in ${this.retryDelay}ms...`, error, 'log');
                     await this.delay(this.retryDelay);
                 } else {
                     throw error;
@@ -251,37 +252,37 @@ outfit-system_replace_topwear(\"T-shirt\")\
         const processedSystemPrompt = await this.replaceMacrosInPrompt(this.systemPrompt);
         const promptText = `${processedSystemPrompt}\n\nRecent Messages:\n${recentMessages}\n\nOutput:`
 
-        console.log('[AutoOutfitSystem] Generating outfit commands with LLMService...');
+        debugLog('Generating outfit commands with LLMService...', null, 'log');
 
         try {
             // Get the connection profile to use for this generation
             const connectionProfile = this.getConnectionProfile();
             if (connectionProfile) {
-                console.log(`[AutoOutfitSystem] Using connection profile: ${connectionProfile}`);
+                debugLog(`Using connection profile: ${connectionProfile}`, null, 'log');
             } else {
-                console.log('[AutoOutfitSystem] Using default connection');
+                debugLog('Using default connection', null, 'log');
             }
 
             const result = await generateOutfitFromLLM({prompt: promptText});
 
             this.llmOutput = result; // Store the LLM output
-            console.log('[AutoOutfitSystem] Generated result:', result);
+            debugLog('Generated result', {result}, 'log');
 
             const commands = this.parseGeneratedText(result);
 
             this.generatedCommands = commands; // Store the generated commands
 
             if (commands.length > 0) {
-                console.log(`[AutoOutfitSystem] Found ${commands.length} commands, processing...`);
+                debugLog(`Found ${commands.length} commands, processing...`, null, 'log');
                 await this.processCommandBatch(commands);
             } else {
-                console.log('[AutoOutfitSystem] No outfit commands found in response');
+                debugLog('No outfit commands found in response', null, 'log');
                 if (result.trim() !== '[none]') {
                     this.showPopup('LLM could not parse any clothing data from the character.', 'warning');
                 }
             }
         } catch (error) {
-            console.error('[AutoOutfitSystem] Generation failed:', error);
+            debugLog('Generation failed', error, 'error');
             throw error;
         }
     }
@@ -304,17 +305,17 @@ outfit-system_replace_topwear(\"T-shirt\")\
 
         const commands = extractCommands(text);
 
-        console.log(`[AutoOutfitSystem] Found ${commands.length} commands:`, commands);
+        debugLog(`Found ${commands.length} commands`, {commands}, 'log');
         return commands;
     }
 
     async processCommandBatch(commands: string[]): Promise<void> {
         if (!commands || commands.length === 0) {
-            console.log('[AutoOutfitSystem] No commands to process');
+            debugLog('No commands to process', null, 'log');
             return;
         }
 
-        console.log(`[AutoOutfitSystem] Processing batch of ${commands.length} commands`);
+        debugLog(`Processing batch of ${commands.length} commands`, null, 'log');
 
         const successfulCommands: any[] = [];
         const failedCommands: any[] = [];
@@ -338,7 +339,7 @@ outfit-system_replace_topwear(\"T-shirt\")\
                 }
             } catch (error: any) {
                 failedCommands.push({command, error: error.message});
-                console.error(`Error processing command "${command}":`, error);
+                debugLog(`Error processing command "${command}":`, error, 'error');
             }
         }
 
@@ -360,14 +361,14 @@ outfit-system_replace_topwear(\"T-shirt\")\
         }
 
         if (failedCommands.length > 0) {
-            console.warn(`[AutoOutfitSystem] ${failedCommands.length} commands failed:`, failedCommands);
+            debugLog(`${failedCommands.length} commands failed`, {failedCommands}, 'warn');
         }
 
         if (lowConfidenceCommands.length > 0) {
-            console.warn(`[AutoOutfitSystem] ${lowConfidenceCommands.length} commands with low confidence were ignored:`, lowConfidenceCommands);
+            debugLog(`${lowConfidenceCommands.length} commands with low confidence were ignored`, {lowConfidenceCommands}, 'warn');
         }
 
-        console.log(`[AutoOutfitSystem] Batch completed: ${successfulCommands.length} successful, ${failedCommands.length} failed, ${lowConfidenceCommands.length} low confidence`);
+        debugLog(`Batch completed: ${successfulCommands.length} successful, ${failedCommands.length} failed, ${lowConfidenceCommands.length} low confidence`, null, 'log');
     }
 
     calculateConfidenceScore(command: string): number {
@@ -408,7 +409,7 @@ outfit-system_replace_topwear(\"T-shirt\")\
             }
             return 'Character';
         } catch (error) {
-            console.error('Error getting active character name:', error);
+            debugLog('Error getting active character name', error, 'error');
             return 'Character';
         }
     }
@@ -493,7 +494,7 @@ outfit-system_replace_topwear(\"T-shirt\")\
             const {action, slot, value} = parsedCommand;
             const cleanValue = value !== undefined ? this.replaceAll(value, '"', '').trim() : '';
 
-            console.log(`[AutoOutfitSystem] Processing: ${action} ${slot} "${cleanValue}"`);
+            debugLog(`Processing: ${action} ${slot} "${cleanValue}"`, null, 'log');
 
             const message = await this.executeCommand(action, slot, cleanValue);
 
@@ -546,9 +547,9 @@ outfit-system_replace_topwear(\"T-shirt\")\
 
                     window.botOutfitPanel.outfitManager.loadOutfit(outfitInstanceId);
                     window.botOutfitPanel.renderContent();
-                    console.log('[AutoOutfitSystem] Outfit panel updated');
+                    debugLog('Outfit panel updated', null, 'log');
                 } catch (error) {
-                    console.error('Failed to update outfit panel:', error);
+                    debugLog('Failed to update outfit panel', error, 'error');
                 }
             }, 500);
         }
@@ -572,7 +573,7 @@ outfit-system_replace_topwear(\"T-shirt\")\
                 return `${prefix}: ${msg.mes}`;
             }).join('\n');
         } catch (error) {
-            console.error('Error getting last messages:', error);
+            debugLog('Error getting last messages', error, 'error');
             return '';
         }
     }
@@ -588,7 +589,7 @@ outfit-system_replace_topwear(\"T-shirt\")\
                 toastr[type](message, 'Outfit System', options);
             }
         } catch (error) {
-            console.error('Failed to show popup:', error);
+            debugLog('Failed to show popup', error, 'error');
         }
     }
 

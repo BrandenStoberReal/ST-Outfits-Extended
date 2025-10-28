@@ -1,4 +1,5 @@
 import {outfitStore} from '../stores/Store';
+import {debugLog} from '../logging/DebugLogger';
 
 interface IDummyAutoOutfitSystem {
     name: string;
@@ -366,7 +367,7 @@ export function createSettingsUI(AutoOutfitSystem: IDummyAutoOutfitSystem, autoO
                     $('#status-managers').removeClass('status-loading').addClass('status-inactive').text('Inactive');
                 }
             } catch (error) {
-                console.error('[OutfitTracker] Error in fallback status check:', error);
+                debugLog('Error in fallback status check', error, 'error');
 
                 // Set all statuses to error state
                 $('#status-core').removeClass('status-loading').addClass('status-error').text('Error');
@@ -987,7 +988,7 @@ export function createSettingsUI(AutoOutfitSystem: IDummyAutoOutfitSystem, autoO
                 $selectElement.append(`<option value="${profile.id}" ${selectedAttr}>${profile.name || profile.id}</option>`);
             });
         } catch (error) {
-            console.error('Error populating connection profiles:', error);
+            debugLog('Error populating connection profiles', error, 'error');
             // Fallback to original behavior if dynamic population fails
             const $selectElement = $('#outfit-connection-profile');
             $selectElement.empty();
@@ -1147,7 +1148,7 @@ export function createSettingsUI(AutoOutfitSystem: IDummyAutoOutfitSystem, autoO
                     toastr.warning('No output data returned from the system.', 'No Data');
                 }
             } catch (error: any) {
-                console.error('Error during outfit processing:', error);
+                debugLog('Error during outfit processing', error, 'error');
                 $('#outfit-llm-output').val(`Error: ${error.message}`);
                 $('#outfit-generated-commands').empty().append(`<li>Error: ${error.message}</li>`);
                 toastr.error(`Outfit processing failed: ${error.message}`, 'Processing Error');
@@ -1179,7 +1180,7 @@ export function createSettingsUI(AutoOutfitSystem: IDummyAutoOutfitSystem, autoO
                 }
             }
         } catch (error) {
-            console.error('Error initializing LLM output display:', error);
+            debugLog('Error initializing LLM output display', error, 'error');
         }
     }
 }

@@ -51,14 +51,18 @@ export class PresetItem {
                 toastr.info(message);
             }
         }));
-        presetElement.querySelector('.rename-preset').addEventListener('click', () => {
+        presetElement.querySelector('.rename-preset').addEventListener('click', () => __awaiter(this, void 0, void 0, function* () {
             const newName = prompt('Enter new name for the preset:', this.presetName);
             if (newName && newName.trim() !== '') {
-                presetManager.savePreset(this.instanceId, newName.trim(), this.outfitData, this.type);
-                presetManager.deletePreset(this.instanceId, this.presetName, this.type);
+                // First save the preset with the new name
+                yield presetManager.savePreset(this.instanceId, newName.trim(), this.outfitData, this.type);
+                // Then delete the old preset to prevent race conditions
+                yield presetManager.deletePreset(this.instanceId, this.presetName, this.type);
+                // Update this preset item's name for consistency
+                this.presetName = newName.trim();
                 toastr.info(`Preset "${this.presetName}" renamed to "${newName.trim()}"`);
             }
-        });
+        }));
         presetElement.querySelector('.delete-preset').addEventListener('click', () => {
             if (confirm(`Delete "${this.presetName}" outfit?`)) {
                 const message = this.getManager().deletePreset(this.presetName, this.instanceId);

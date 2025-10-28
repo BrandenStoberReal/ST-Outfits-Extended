@@ -2,6 +2,7 @@ import {presetManager} from './PresetManager';
 import {OutfitManager} from './OutfitManager';
 import {debouncedStore} from '../stores/DebouncedStore';
 import {outfitStore} from '../stores/Store';
+import {debugLog} from '../logging/DebugLogger';
 
 
 export class NewUserOutfitManager extends OutfitManager {
@@ -20,7 +21,7 @@ export class NewUserOutfitManager extends OutfitManager {
 
     loadOutfit(): void {
         if (!this.outfitInstanceId) {
-            console.warn('[NewUserOutfitManager] Cannot load outfit - missing outfitInstanceId');
+            debugLog('Cannot load outfit - missing outfitInstanceId', null, 'warn');
             this.slots.forEach(slot => {
                 this.currentValues[slot] = 'None';
             });
@@ -37,7 +38,7 @@ export class NewUserOutfitManager extends OutfitManager {
 
     saveOutfit(): void {
         if (!this.outfitInstanceId) {
-            console.warn('[NewUserOutfitManager] Cannot save outfit - missing outfitInstanceId');
+            debugLog('Cannot save outfit - missing outfitInstanceId', null, 'warn');
             return;
         }
 
@@ -61,7 +62,7 @@ export class NewUserOutfitManager extends OutfitManager {
 
     savePreset(presetName: string, instanceId: string | null = null): string {
         if (!presetName || typeof presetName !== 'string' || presetName.trim() === '') {
-            console.error('[NewUserOutfitManager] Invalid preset name provided');
+            debugLog('Invalid preset name provided', null, 'error');
             return '[Outfit System] Invalid preset name provided.';
         }
 
@@ -195,7 +196,7 @@ export class NewUserOutfitManager extends OutfitManager {
 
     overwritePreset(presetName: string, instanceId: string | null = null): string {
         if (!presetName || typeof presetName !== 'string' || presetName.trim() === '') {
-            console.error('[NewUserOutfitManager] Invalid preset name provided');
+            debugLog('Invalid preset name provided', null, 'error');
             return '[Outfit System] Invalid preset name provided.';
         }
 
@@ -230,7 +231,7 @@ export class NewUserOutfitManager extends OutfitManager {
         const actualInstanceId = instanceId || this.outfitInstanceId;
 
         if (!actualInstanceId) {
-            console.warn('[NewUserOutfitManager] Cannot set prompt injection - missing instanceId');
+            debugLog('Cannot set prompt injection - missing instanceId', null, 'warn');
             return;
         }
 
@@ -253,7 +254,7 @@ export class NewUserOutfitManager extends OutfitManager {
         const actualInstanceId = instanceId || this.outfitInstanceId;
 
         if (!actualInstanceId) {
-            console.warn('[NewUserOutfitManager] Cannot get prompt injection - missing instanceId');
+            debugLog('Cannot get prompt injection - missing instanceId', null, 'warn');
             return true;
         }
 

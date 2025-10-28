@@ -7,7 +7,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-import { outfitStore } from '../common/Store.js';
+import { outfitStore } from '../stores/Store.js';
+import { debugLog } from '../logging/DebugLogger.js';
 export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem, context) {
     var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m;
     const MODULE_NAME = 'outfit_tracker';
@@ -357,7 +358,7 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem, context) {
                 }
             }
             catch (error) {
-                console.error('[OutfitTracker] Error in fallback status check:', error);
+                debugLog('Error in fallback status check', error, 'error');
                 // Set all statuses to error state
                 $('#status-core').removeClass('status-loading').addClass('status-error').text('Error');
                 $('#status-auto-outfit').removeClass('status-loading').addClass('status-error').text('Error');
@@ -865,7 +866,7 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem, context) {
             });
         }
         catch (error) {
-            console.error('Error populating connection profiles:', error);
+            debugLog('Error populating connection profiles', error, 'error');
             // Fallback to original behavior if dynamic population fails
             const $selectElement = $('#outfit-connection-profile');
             $selectElement.empty();
@@ -1006,7 +1007,7 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem, context) {
                     }
                 }
                 catch (error) {
-                    console.error('Error during outfit processing:', error);
+                    debugLog('Error during outfit processing', error, 'error');
                     $('#outfit-llm-output').val(`Error: ${error.message}`);
                     $('#outfit-generated-commands').empty().append(`<li>Error: ${error.message}</li>`);
                     toastr.error(`Outfit processing failed: ${error.message}`, 'Processing Error');
@@ -1037,7 +1038,7 @@ export function createSettingsUI(AutoOutfitSystem, autoOutfitSystem, context) {
             }
         }
         catch (error) {
-            console.error('Error initializing LLM output display:', error);
+            debugLog('Error initializing LLM output display', error, 'error');
         }
     }
 }

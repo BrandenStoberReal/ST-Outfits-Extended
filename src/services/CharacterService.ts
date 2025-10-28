@@ -1,5 +1,6 @@
 import {outfitStore} from '../stores/Store';
 import {debouncedStore} from '../stores/DebouncedStore';
+import {debugLog} from '../logging/DebugLogger';
 import {CharacterInfoType, getCharacterInfoById} from '../utils/CharacterUtils';
 
 /**
@@ -40,7 +41,7 @@ function refreshMacroProcessing() {
             }
         }
     } catch (error) {
-        console.error('[OutfitTracker] Error refreshing macro processing:', error);
+        debugLog('Error refreshing macro processing', error, 'error');
     }
 }
 
@@ -114,9 +115,9 @@ export async function updateForCurrentCharacter(botManager: any, userManager: an
         // Optionally trigger a refresh of macro processing after character change
         refreshMacroProcessing();
 
-        console.log('[OutfitTracker] Updated outfit managers for current character');
+        debugLog('Updated outfit managers for current character', null, 'log');
     } catch (error) {
-        console.error('[OutfitTracker] Error updating for current character:', error);
+        debugLog('Error updating for current character', error, 'error');
         throw error;
     }
 }

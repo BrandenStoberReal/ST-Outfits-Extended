@@ -1,11 +1,35 @@
-import { outfitStore } from '../common/Store.js';
+import { outfitStore } from '../stores/Store.js';
+import { debugLog } from '../logging/DebugLogger.js';
 class PersistenceService {
     constructor(dataManager) {
         this.dataManager = dataManager;
     }
     saveState() {
-        const { botInstances, userInstances, presets, settings } = outfitStore.state;
-        this.dataManager.savePartial({ botInstances, userInstances, presets, settings });
+        try {
+            const { botInstances, userInstances, presets, settings } = outfitStore.state;
+            // Validate the data before saving to prevent corruption
+            if (!botInstances || typeof botInstances !== 'object') {
+                debugLog('Invalid botInstances data, using empty object', null, 'warn');
+            }
+            if (!userInstances || typeof userInstances !== 'object') {
+                debugLog('Invalid userInstances data, using empty object', null, 'warn');
+            }
+            if (!presets || typeof presets !== 'object') {
+                debugLog('Invalid presets data, using empty object', null, 'warn');
+            }
+            if (!settings || typeof settings !== 'object') {
+                debugLog('Invalid settings data, using empty object', null, 'warn');
+            }
+            this.dataManager.savePartial({
+                botInstances: botInstances || {},
+                userInstances: userInstances || {},
+                presets: presets || { bot: {}, user: {} },
+                settings: settings || {}
+            });
+        }
+        catch (error) {
+            debugLog('Error during saveState', error, 'error');
+        }
     }
     loadState() {
         const { botInstances, userInstances, presets } = this.dataManager.loadOutfitData();

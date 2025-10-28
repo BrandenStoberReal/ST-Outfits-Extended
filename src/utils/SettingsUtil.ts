@@ -1,3 +1,5 @@
+import {debugLog} from '../logging/DebugLogger';
+
 /**
  * Utility functions for safely accessing extension settings
  */
@@ -32,7 +34,7 @@ export function getSettingValue(key: string, defaultValue: any = undefined): any
         return (window as any).extension_settings?.outfit_tracker?.[key];
     } catch (error) {
         // If all methods fail, return a safe default
-        console.warn('Could not access outfit tracker settings, using default behavior:', error);
+        debugLog('Could not access outfit tracker settings, using default behavior', error, 'warn');
         return defaultValue;
     }
 }

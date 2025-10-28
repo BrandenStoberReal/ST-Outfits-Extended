@@ -8,7 +8,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 import { ALL_SLOTS } from '../config/constants.js';
-import { outfitStore } from '../common/Store.js';
+import { outfitStore } from '../stores/Store.js';
+import { debugLog } from '../logging/DebugLogger.js';
 class OutfitDataService {
     constructor(dataManager) {
         this.dataManager = dataManager;
@@ -24,11 +25,11 @@ class OutfitDataService {
                     delete globalVars[key];
                 });
                 this.dataManager.save({ variables: { global: globalVars } });
-                console.log(`[OutfitTracker] Removed ${outfitVars.length} outfit-related global variables`);
+                debugLog(`Removed ${outfitVars.length} outfit-related global variables`, null, 'log');
             }
         }
         catch (error) {
-            console.error('[OutfitTracker] Error clearing global outfit variables:', error);
+            debugLog('Error clearing global outfit variables', error, 'error');
         }
     }
     wipeAllOutfits() {
@@ -42,11 +43,11 @@ class OutfitDataService {
                 if (window.userOutfitPanel) {
                     window.userOutfitPanel.renderContent();
                 }
-                console.log('[OutfitTracker] All outfit data wiped successfully');
+                debugLog('All outfit data wiped successfully', null, 'log');
                 return '[Outfit System] All outfit data has been wiped.';
             }
             catch (error) {
-                console.error('[OutfitTracker] Error wiping outfit data:', error);
+                debugLog('Error wiping outfit data', error, 'error');
                 throw error;
             }
         });

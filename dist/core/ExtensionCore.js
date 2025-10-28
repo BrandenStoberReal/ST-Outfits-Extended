@@ -10,7 +10,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 import { updateForCurrentCharacter } from '../services/CharacterService.js';
 import { customMacroSystem } from '../services/CustomMacroService.js';
 import { extension_api } from '../common/shared.js';
-import { outfitStore } from '../common/Store.js';
+import { outfitStore } from '../stores/Store.js';
 import { NewBotOutfitManager } from '../managers/NewBotOutfitManager.js';
 import { BotOutfitPanel } from '../panels/BotOutfitPanel.js';
 import { NewUserOutfitManager } from '../managers/NewUserOutfitManager.js';
@@ -26,6 +26,8 @@ import { DataManager } from '../managers/DataManager.js';
 import { OutfitDataService } from '../services/OutfitDataService.js';
 import { macroProcessor } from '../processors/MacroProcessor.js';
 import { debugLog } from '../logging/DebugLogger.js';
+import { PersistenceService } from "../services/PersistenceService.js";
+import { debouncedStore } from "../stores/DebouncedStore.js";
 let AutoOutfitSystem;
 /**
  * Loads the AutoOutfitSystem module dynamically.
@@ -42,7 +44,6 @@ function loadAutoOutfitSystem() {
             debugLog('AutoOutfitSystem module loaded successfully', null, 'info');
         }
         catch (error) {
-            console.error('[OutfitTracker] Failed to load AutoOutfitSystem:', error);
             debugLog('Failed to load AutoOutfitSystem, using dummy class', error, 'error');
             AutoOutfitSystem = class DummyAutoOutfitSystem {
             };
@@ -215,13 +216,10 @@ globalThis.outfitTrackerInterceptor = function (chat) {
             }
         }
         catch (error) {
-            console.error('[OutfitTracker] Error in interceptor:', error);
             debugLog('Error in interceptor', error, 'error');
         }
     });
 };
-import { PersistenceService } from "../services/PersistenceService.js";
-import { debouncedStore } from "../common/DebouncedStore.js";
 /**
  * Initializes the outfit extension.
  * This is the main initialization function that loads all components of the system,
@@ -236,7 +234,7 @@ export function initializeExtension() {
         debugLog('Starting extension initialization', null, 'info');
         const STContext = ((_b = (_a = window.SillyTavern) === null || _a === void 0 ? void 0 : _a.getContext) === null || _b === void 0 ? void 0 : _b.call(_a)) || ((_c = window.getContext) === null || _c === void 0 ? void 0 : _c.call(window));
         if (!STContext) {
-            console.error('[OutfitTracker] Required SillyTavern context is not available.');
+            debugLog('Required SillyTavern context is not available.', null, 'error');
             throw new Error('Missing required SillyTavern globals.');
         }
         const storageService = new StorageService((data) => STContext.saveSettingsDebounced({ outfit_tracker: data }), () => STContext.extensionSettings.outfit_tracker);

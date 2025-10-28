@@ -7,6 +7,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+import { debugLog } from '../logging/DebugLogger.js';
 export class ConnectionProfileHelper {
     static withConnectionProfile(profileId_1, generationFunc_1) {
         return __awaiter(this, arguments, void 0, function* (profileId, generationFunc, context = null) {
@@ -29,14 +30,14 @@ export class ConnectionProfileHelper {
             // Get the Connection Manager service from the context
             const connectionService = context.ConnectionManagerRequestService;
             if (!connectionService) {
-                console.warn('[LLMUtility] Connection Manager is not available, using default connection');
+                debugLog('Connection Manager is not available, using default connection', null, 'warn');
                 return generationFunc(context);
             }
             // Validate if the profile exists
             const allProfiles = yield this.getAllProfiles(context);
             const profile = allProfiles.find((p) => p.id === profileId);
             if (!profile) {
-                console.warn(`[LLMUtility] Profile with ID ${profileId} not found, using default connection`);
+                debugLog(`Profile with ID ${profileId} not found, using default connection`, null, 'warn');
                 return generationFunc(context);
             }
             // Use the connection manager service to send the request with the specified profile
@@ -73,7 +74,7 @@ export class ConnectionProfileHelper {
                             }
                         }
                         catch (error) {
-                            console.error('Error sending request via connection manager:', error);
+                            debugLog('Error sending request via connection manager', error, 'error');
                             throw error;
                         }
                     });
@@ -98,7 +99,7 @@ export class ConnectionProfileHelper {
                             }
                         }
                         catch (error) {
-                            console.error('Error sending quiet prompt via connection manager:', error);
+                            debugLog('Error sending quiet prompt via connection manager', error, 'error');
                             throw error;
                         }
                     });
@@ -131,7 +132,7 @@ export class ConnectionProfileHelper {
             }
             // Check if context is null and handle appropriately
             if (!context) {
-                console.warn('Context is required for getting all profiles but could not be retrieved');
+                debugLog('Context is required for getting all profiles but could not be retrieved', null, 'warn');
                 return [];
             }
             try {
@@ -141,12 +142,12 @@ export class ConnectionProfileHelper {
                     return yield connectionService.getSupportedProfiles();
                 }
                 else {
-                    console.warn('ConnectionManagerRequestService not available or getSupportedProfiles not found');
+                    debugLog('ConnectionManagerRequestService not available or getSupportedProfiles not found', null, 'warn');
                     return [];
                 }
             }
             catch (error) {
-                console.warn('Could not fetch profiles from ConnectionManagerRequestService:', error);
+                debugLog('Could not fetch profiles from ConnectionManagerRequestService', error, 'warn');
                 return [];
             }
         });
@@ -173,7 +174,7 @@ export class LLMUtility {
                         throw new Error('No generation method available in context');
                     }
                     if (!result || result.trim() === '') {
-                        console.warn(`[LLMUtility] Empty response from LLM (attempt ${attempt + 1}/${maxRetries})`);
+                        debugLog(`Empty response from LLM (attempt ${attempt + 1}/${maxRetries})`, null, 'warn');
                         attempt++;
                         if (attempt >= maxRetries) {
                             throw new Error('Empty response from LLM after retries');
@@ -183,7 +184,7 @@ export class LLMUtility {
                     return result;
                 }
                 catch (error) {
-                    console.error(`[LLMUtility] Generation attempt ${attempt + 1}/${maxRetries} failed:`, error);
+                    debugLog(`Generation attempt ${attempt + 1}/${maxRetries} failed`, error, 'error');
                     attempt++;
                     if (attempt >= maxRetries) {
                         throw new Error(`Generation failed after ${maxRetries} attempts: ${error.message}`);
@@ -215,8 +216,8 @@ export class LLMUtility {
                 return yield this.generateWithRetry(prompt, systemPrompt, context, maxRetries);
             }
             catch (error) {
-                console.error(`[LLMUtility] Profile generation with ${profile !== null && profile !== void 0 ? profile : 'null'} failed:`, error);
-                console.log('[LLMUtility] Falling back to default generation after profile failures...');
+                debugLog(`Profile generation with ${profile !== null && profile !== void 0 ? profile : 'null'} failed`, error, 'error');
+                debugLog('Falling back to default generation after profile failures...', null, 'log');
                 return this.generateWithRetry(prompt, systemPrompt, context, maxRetries);
             }
         });

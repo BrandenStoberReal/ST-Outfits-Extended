@@ -1,6 +1,7 @@
 import {importOutfitFromCharacterCard} from '../services/LLMService';
 import {ACCESSORY_SLOTS, CLOTHING_SLOTS} from '../config/constants';
 import {areSystemMessagesEnabled} from '../utils/SettingsUtil';
+import {debugLog} from '../logging/DebugLogger';
 
 declare const window: any;
 declare const toastr: any;
@@ -33,11 +34,11 @@ export async function registerOutfitCommands(botManager: any, userManager: any, 
         window.SlashCommandParser.addCommandObject(window.SlashCommand.fromProps({
             name: 'outfit-bot',
             callback: async function (args: any) {
-                console.log('Bot Outfit command triggered');
+                debugLog('Bot Outfit command triggered', null, 'log');
                 if (window.botOutfitPanel) {
                     window.botOutfitPanel.toggle();
                 } else {
-                    console.error('[OutfitTracker] Bot outfit panel not available');
+                    debugLog('Bot outfit panel not available', null, 'error');
                     if (!args?.quiet) {
                         toastr.error('Bot outfit panel not available', 'Outfit System');
                     }
@@ -89,11 +90,11 @@ export async function registerOutfitCommands(botManager: any, userManager: any, 
         SlashCommandParser.addCommandObject(SlashCommand.fromProps({
             name: 'outfit-user',
             callback: async function (args: any) {
-                console.log('User Outfit command triggered');
+                debugLog('User Outfit command triggered', null, 'log');
                 if (window.userOutfitPanel) {
                     window.userOutfitPanel.toggle();
                 } else {
-                    console.error('[OutfitTracker] User outfit panel not available');
+                    debugLog('User outfit panel not available', null, 'error');
                     if (!args?.quiet) {
                         toastr.error('User outfit panel not available', 'Outfit System');
                     }
