@@ -78,7 +78,6 @@ export class NewBotOutfitManager extends OutfitManager {
         outfitStore.saveState();
     }
     savePreset(presetName, instanceId = null) {
-        var _a;
         if (!presetName || typeof presetName !== 'string' || presetName.trim() === '') {
             console.error('[NewBotOutfitManager] Invalid preset name provided');
             return '[Outfit System] Invalid preset name provided.';
@@ -89,17 +88,7 @@ export class NewBotOutfitManager extends OutfitManager {
             presetData[slot] = this.currentValues[slot];
         });
         // Use characterId instead of character name for bot presets
-        let characterId = this.characterId;
-        if (!characterId) {
-            // Try to get characterId from global context if not available on manager
-            const context = ((_a = window.SillyTavern) === null || _a === void 0 ? void 0 : _a.getContext) ? window.SillyTavern.getContext() : window.getContext ? window.getContext() : null;
-            if (context === null || context === void 0 ? void 0 : context.characterId) {
-                characterId = context.characterId.toString();
-                // Update the manager's characterId for future operations
-                this.characterId = characterId;
-                console.debug(`[NewBotOutfitManager] Retrieved characterId from context: ${characterId}`);
-            }
-        }
+        const characterId = this.characterId;
         if (!characterId) {
             console.error('[NewBotOutfitManager] Cannot save preset - missing characterId');
             return '[Outfit System] Cannot save preset - missing characterId';
@@ -113,22 +102,11 @@ export class NewBotOutfitManager extends OutfitManager {
     }
     loadPreset(presetName_1) {
         return __awaiter(this, arguments, void 0, function* (presetName, instanceId = null) {
-            var _a;
             if (!presetName || typeof presetName !== 'string') {
                 return `[Outfit System] Invalid preset name: ${presetName}`;
             }
             const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
-            let characterId = this.characterId;
-            if (!characterId) {
-                // Try to get characterId from global context if not available on manager
-                const context = ((_a = window.SillyTavern) === null || _a === void 0 ? void 0 : _a.getContext) ? window.SillyTavern.getContext() : window.getContext ? window.getContext() : null;
-                if (context === null || context === void 0 ? void 0 : context.characterId) {
-                    characterId = context.characterId.toString();
-                    // Update the manager's characterId for future operations
-                    this.characterId = characterId;
-                    console.debug(`[NewBotOutfitManager] Retrieved characterId from context: ${characterId}`);
-                }
-            }
+            const characterId = this.characterId;
             if (!characterId) {
                 console.error('[NewBotOutfitManager] Cannot load preset - missing characterId');
                 return `[Outfit System] Cannot load preset - missing characterId`;
@@ -152,22 +130,11 @@ export class NewBotOutfitManager extends OutfitManager {
         });
     }
     deletePreset(presetName, instanceId = null) {
-        var _a;
         if (!presetName || typeof presetName !== 'string') {
             return `[Outfit System] Invalid preset name: ${presetName}`;
         }
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
-        let characterId = this.characterId;
-        if (!characterId) {
-            // Try to get characterId from global context if not available on manager
-            const context = ((_a = window.SillyTavern) === null || _a === void 0 ? void 0 : _a.getContext) ? window.SillyTavern.getContext() : window.getContext ? window.getContext() : null;
-            if (context === null || context === void 0 ? void 0 : context.characterId) {
-                characterId = context.characterId.toString();
-                // Update the manager's characterId for future operations
-                this.characterId = characterId;
-                console.debug(`[NewBotOutfitManager] Retrieved characterId from context: ${characterId}`);
-            }
-        }
+        const characterId = this.characterId;
         if (!characterId) {
             console.error('[NewBotOutfitManager] Cannot delete preset - missing characterId');
             return `[Outfit System] Cannot delete preset - missing characterId`;
@@ -196,19 +163,8 @@ export class NewBotOutfitManager extends OutfitManager {
         return '';
     }
     getPresets(instanceId = null) {
-        var _a;
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
-        let characterId = this.characterId;
-        if (!characterId) {
-            // Try to get characterId from global context if not available on manager
-            const context = ((_a = window.SillyTavern) === null || _a === void 0 ? void 0 : _a.getContext) ? window.SillyTavern.getContext() : window.getContext ? window.getContext() : null;
-            if (context === null || context === void 0 ? void 0 : context.characterId) {
-                characterId = context.characterId.toString();
-                // Update the manager's characterId for future operations
-                this.characterId = characterId;
-                console.debug(`[NewBotOutfitManager] Retrieved characterId from context: ${characterId}`);
-            }
-        }
+        const characterId = this.characterId;
         if (!characterId) {
             console.error('[NewBotOutfitManager] Cannot get presets - missing characterId');
             return [];
