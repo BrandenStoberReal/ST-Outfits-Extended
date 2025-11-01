@@ -181,25 +181,15 @@ export class BotOutfitPanel {
                     <button class="slot-change">Change</button>
                 </div>
             `;
+            slotElement.querySelector('.slot-change').addEventListener('click', () => __awaiter(this, void 0, void 0, function* () {
+                const message = yield this.botOutfitManager.changeOutfitItem(slot.name);
+                if (message && areSystemMessagesEnabled()) {
+                    this.sendSystemMessage(message);
+                }
+                this.renderContent();
+            }));
             container.appendChild(slotElement);
         });
-        container.addEventListener('click', (event) => __awaiter(this, void 0, void 0, function* () {
-            const target = event.target;
-            if (target.classList.contains('slot-change')) {
-                const slotElement = target.closest('.outfit-slot');
-                if (slotElement) {
-                    const slotName = slotElement.dataset.slot;
-                    if (slotName) {
-                        debugLog('Change button clicked', { slot: slotName }, 'debug');
-                        const message = yield this.botOutfitManager.changeOutfitItem(slotName);
-                        if (message && areSystemMessagesEnabled()) {
-                            this.sendSystemMessage(message);
-                        }
-                        this.renderContent();
-                    }
-                }
-            }
-        }));
     }
     /**
      * Renders the presets UI elements for saved outfits

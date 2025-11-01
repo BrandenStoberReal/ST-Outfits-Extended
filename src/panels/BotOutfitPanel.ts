@@ -220,26 +220,16 @@ export class BotOutfitPanel {
                 </div>
             `;
 
-            container.appendChild(slotElement);
-        });
+            slotElement.querySelector('.slot-change')!.addEventListener('click', async () => {
+                const message = await this.botOutfitManager.changeOutfitItem(slot.name);
 
-        container.addEventListener('click', async (event) => {
-            const target = event.target as HTMLElement;
-            if (target.classList.contains('slot-change')) {
-                const slotElement = target.closest('.outfit-slot') as HTMLElement;
-                if (slotElement) {
-                    const slotName = slotElement.dataset.slot;
-                    if (slotName) {
-                        debugLog('Change button clicked', {slot: slotName}, 'debug');
-                        const message = await this.botOutfitManager.changeOutfitItem(slotName);
-
-                        if (message && areSystemMessagesEnabled()) {
-                            this.sendSystemMessage(message);
-                        }
-                        this.renderContent();
-                    }
+                if (message && areSystemMessagesEnabled()) {
+                    this.sendSystemMessage(message);
                 }
-            }
+                this.renderContent();
+            });
+
+            container.appendChild(slotElement);
         });
     }
 
