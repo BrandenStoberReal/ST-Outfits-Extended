@@ -120,18 +120,8 @@ export function deepMerge(target, source) {
             const sourceKey = key;
             const targetKey = key;
             const sourceValue = source[sourceKey];
-            if (sourceValue && typeof sourceValue === 'object' &&
-                targetKey in target && target[targetKey] && typeof target[targetKey] === 'object') {
-                // Only deep merge if both source and target values are non-empty objects
-                // If source value is an empty object, preserve the target's value
-                if (Object.keys(sourceValue).length === 0) {
-                    // If source is empty object, keep the target value
-                    output[key] = target[targetKey];
-                }
-                else {
-                    // Both are non-empty objects, perform deep merge
-                    output[key] = deepMerge(target[targetKey], sourceValue);
-                }
+            if (sourceValue && typeof sourceValue === 'object' && targetKey in target) {
+                output[key] = deepMerge(target[targetKey], sourceValue);
             }
             else {
                 output[key] = sourceValue;
