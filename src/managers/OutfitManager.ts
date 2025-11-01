@@ -209,6 +209,7 @@ export abstract class OutfitManager {
             }
         }
 
+        debugLog('changeOutfitItem', {currentValue, newValue}, 'debug');
         if (newValue !== currentValue) {
             return this.setOutfitItem(slot, newValue);
         }

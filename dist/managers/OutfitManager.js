@@ -98,7 +98,12 @@ export class OutfitManager {
     }
     setOutfitItem(slot, value) {
         return __awaiter(this, void 0, void 0, function* () {
-            debugLog('setOutfitItem called', { slot, value, characterId: this.characterId, outfitInstanceId: this.outfitInstanceId }, 'debug');
+            debugLog('setOutfitItem called', {
+                slot,
+                value,
+                characterId: this.characterId,
+                outfitInstanceId: this.outfitInstanceId
+            }, 'debug');
             if (!this.slots.includes(slot)) {
                 debugLog(`Invalid slot: ${slot}`, null, 'error');
                 return null;
@@ -158,6 +163,7 @@ export class OutfitManager {
                     newValue = choice.toLowerCase() === 'remove' ? 'None' : choice;
                 }
             }
+            debugLog('changeOutfitItem', { currentValue, newValue }, 'debug');
             if (newValue !== currentValue) {
                 return this.setOutfitItem(slot, newValue);
             }
