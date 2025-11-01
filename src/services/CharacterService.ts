@@ -74,6 +74,13 @@ export async function updateForCurrentCharacter(botManager: any, userManager: an
         // Update the bot manager with the current character info
         const context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
         const charId = context.characterId;
+        const chatId = context.chatId;
+
+        if (chatId) {
+            botManager.setOutfitInstanceId(chatId);
+            userManager.setOutfitInstanceId(chatId);
+            outfitStore.setCurrentInstanceId(chatId);
+        }
 
         if (charId !== undefined && charId !== null) {
             const characterName = getCharacterInfoById(charId, CharacterInfoType.Name);
