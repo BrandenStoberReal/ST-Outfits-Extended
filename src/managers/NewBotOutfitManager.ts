@@ -106,7 +106,6 @@ export class NewBotOutfitManager extends OutfitManager {
         });
 
         outfitStore.savePreset(this.character, actualInstanceId, presetName, presetData, 'bot');
-        outfitStore.saveState(); // Ensure the presets are saved to persistent storage
 
         if (outfitStore.getSetting('enableSysMessages')) {
             return `Saved "${presetName}" outfit for ${this.character} (instance: ${actualInstanceId}).`;
@@ -157,7 +156,6 @@ export class NewBotOutfitManager extends OutfitManager {
         }
 
         outfitStore.deletePreset(this.character, actualInstanceId, presetName, 'bot');
-        outfitStore.saveState(); // Ensure the presets are saved to persistent storage
 
         if (outfitStore.getSetting('enableSysMessages')) {
             return `Deleted "${presetName}" outfit for instance ${actualInstanceId}.`;
@@ -271,7 +269,6 @@ export class NewBotOutfitManager extends OutfitManager {
         const presetToSetAsDefault = presets[presetName];
 
         outfitStore.savePreset(this.character, actualInstanceId, 'default', presetToSetAsDefault, 'bot');
-        outfitStore.saveState(); // Ensure the presets are saved to persistent storage
 
         if (outfitStore.getSetting('enableSysMessages')) {
             return `Set "${presetName}" as the default outfit for ${this.character} (instance: ${actualInstanceId}).`;
@@ -288,7 +285,6 @@ export class NewBotOutfitManager extends OutfitManager {
         }
 
         outfitStore.deletePreset(this.character, actualInstanceId, 'default', 'bot');
-        outfitStore.saveState(); // Ensure the presets are saved to persistent storage
 
         if (outfitStore.getSetting('enableSysMessages')) {
             return `Default outfit cleared for ${this.character} (instance: ${actualInstanceId}).`;
