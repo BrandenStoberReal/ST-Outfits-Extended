@@ -32,28 +32,14 @@ class MacroProcessor {
             const firstBotMessage = ctx.chat.find((message: any) => !message.is_user && !message.is_system);
 
             if (firstBotMessage) {
-                // Get all outfit data for the character to remove from the first message
-                const allOutfitData = this.getAllOutfitDataForCharacter(ctx.characterId);
+                // Clean outfit macros from the text (replace {{char_topwear}} with {{}})
+                const processedMessage = this.cleanOutfitMacrosFromText(firstBotMessage.mes);
 
-                // Create a cleaned version of the first message with outfit data removed
-                let cleanedMessage = firstBotMessage.mes;
+                // Get all outfit values for the character to remove from the processed message during ID calculation
+                const outfitValues = this.getAllOutfitValuesForCharacter(ctx.characterId);
 
-                // Remove all outfit data values from the message
-                Object.values(allOutfitData).forEach((outfitInstanceData: any) => {
-                    if (outfitInstanceData && outfitInstanceData.bot) {
-                        Object.values(outfitInstanceData.bot).forEach((value: any) => {
-                            if (value && typeof value === 'string') {  // Removed !== 'None' condition to also remove "None"
-                                // Remove this value from the message
-                                cleanedMessage = this.removeValueFromText(cleanedMessage, value);
-                            }
-                        });
-                    }
-                });
-
-                // Also process any remaining outfit macros
-                cleanedMessage = this.cleanOutfitMacrosFromText(cleanedMessage);
-
-                const instanceId = await generateInstanceIdFromText(cleanedMessage);
+                // Generate instance ID from the processed message with outfit values removed for consistent ID calculation
+                const instanceId = await generateInstanceIdFromText(processedMessage, outfitValues);
 
                 outfitStore.setCurrentInstanceId(instanceId);
 
@@ -69,81 +55,6 @@ class MacroProcessor {
         }
     }
 
-    getAllOutfitDataForCharacter(characterId: string | number): any {
-        if (!characterId) {
-            return {};
-        }
-
-        const actualCharacterId = characterId.toString();
-        const state = outfitStore.getState();
-        const allOutfitData: any = {};
-
-        // Get all bot instances for this character
-        if (state.botInstances && state.botInstances[actualCharacterId]) {
-            Object.keys(state.botInstances[actualCharacterId]).forEach(instanceId => {
-                allOutfitData[instanceId] = state.botInstances[actualCharacterId][instanceId];
-            });
-        }
-
-        // Get all presets for this character
-        if (state.presets && state.presets.bot) {
-            Object.keys(state.presets.bot).forEach(key => {
-                if (key.startsWith(actualCharacterId + '_')) {
-                    const presets = state.presets.bot[key];
-                    if (presets) {
-                        // Create a dummy instance for presets to match the structure
-                        const presetInstanceId = `preset_${key}`;
-                        if (!allOutfitData[presetInstanceId]) {
-                            allOutfitData[presetInstanceId] = {bot: {}};
-                        }
-                        Object.keys(presets).forEach(presetName => {
-                            Object.assign(allOutfitData[presetInstanceId].bot, presets[presetName]);
-                        });
-                    }
-                }
-            });
-        }
-
-        return allOutfitData;
-    }
-
-    removeValueFromText(text: string, value: string): string {
-        if (!text || !value || typeof text !== 'string' || typeof value !== 'string') {
-            return text || '';
-        }
-
-        let result = text;
-        let lowerText = result.toLowerCase();
-        let lowerValue = value.toLowerCase();
-
-        let startIndex = 0;
-        while ((startIndex = lowerText.indexOf(lowerValue, startIndex)) !== -1) {
-            const endIndex = startIndex + lowerValue.length;
-            const beforeChar = startIndex > 0 ? lowerText.charAt(startIndex - 1) : ' ';
-            const afterChar = endIndex < lowerText.length ? lowerText.charAt(endIndex) : ' ';
-
-            // Check if the match is at word boundaries to avoid partial matches
-            const isWordBoundary = (beforeChar === ' ' || beforeChar === '.' || beforeChar === ',' ||
-                    beforeChar === '"' || beforeChar === '\'' ||
-                    beforeChar === '(' || beforeChar === '[' ||
-                    beforeChar === '\n' || beforeChar === '\t') &&
-                (afterChar === ' ' || afterChar === '.' || afterChar === ',' ||
-                    afterChar === '"' || afterChar === '\'' ||
-                    afterChar === ')' || afterChar === ']'
-                    || afterChar === '\n' || afterChar === '\t');
-
-            if (isWordBoundary) {
-                result = result.substring(0, startIndex) + '[OUTFIT_REMOVED]' + result.substring(endIndex);
-                lowerText = result.toLowerCase();
-                startIndex += '[OUTFIT_REMOVED]'.length;
-            } else {
-                startIndex = endIndex;
-            }
-        }
-
-        return result;
-    }
-
     getAllOutfitValuesForCharacter(characterId: string | number): string[] {
         if (!characterId) {
             return [];
@@ -157,7 +68,7 @@ class MacroProcessor {
             Object.values(state.botInstances[actualCharacterId]).forEach(instanceData => {
                 if (instanceData && instanceData.bot) {
                     Object.values(instanceData.bot).forEach(value => {
-                        if (value && typeof value === 'string' && value !== 'None') {
+                        if (value && typeof value === 'string') { // Include 'None' values as requested
                             outfitValues.add(value);
                         }
                     });
@@ -174,7 +85,7 @@ class MacroProcessor {
                         Object.values(presets).forEach(preset => {
                             if (preset) {
                                 Object.values(preset).forEach(value => {
-                                    if (value && typeof value === 'string' && value !== 'None') {
+                                    if (value && typeof value === 'string') { // Include 'None' values as requested
                                         outfitValues.add(value);
                                     }
                                 });
