@@ -12,7 +12,7 @@ declare const window: any;
  */
 async function processSingleCommand(command: string, botManager: any): Promise<void> {
     try {
-        const commandRegex = /^outfit-system_(wear|remove|change|replace|unequip)_([a-zA-Z0-9_-]+)\\((?:\"([^\"]*)\"|)\\)$/;
+        const commandRegex = /^outfit-system_(wear|remove|change|replace|unequip)_([a-zA-Z0-9_-]+)\(?:\"([^\"]*\)\"|)\)$/;
         const match = command.match(commandRegex);
 
         if (!match) {
@@ -22,7 +22,7 @@ async function processSingleCommand(command: string, botManager: any): Promise<v
         const [, action, slot, value] = match;
         const cleanValue = value || '';
 
-        console.log(`[LLMService] Processing: ${action} ${slot} \"${cleanValue}\"`);
+        console.log(`[LLMService] Processing: ${action} ${slot} "${cleanValue}"`);
 
         let finalAction = action;
 
@@ -41,13 +41,12 @@ async function processSingleCommand(command: string, botManager: any): Promise<v
     }
 }
 
-/** 
+/**
  * Generates outfit from LLM based on provided options
  * @param {object} options - Generation options containing the prompt
- * @param {string | null} [profile] - Connection profile to use for generation (defaults to auto outfit system profile if available)
  * @returns {Promise<string>} - The LLM response containing outfit commands
  */
-export async function generateOutfitFromLLM(options: { prompt: string }, profile?: string | null): Promise<string> {
+export async function generateOutfitFromLLM(options: { prompt: string }): Promise<string> {
     try {
         const prompt = options?.prompt || '';
 
@@ -55,19 +54,11 @@ export async function generateOutfitFromLLM(options: { prompt: string }, profile
             throw new Error('Prompt is required for LLM generation');
         }
 
-        // Use provided profile or get from auto outfit system
-        let connectionProfile = profile;
-        if (!connectionProfile && window.outfitTracker?.autoOutfitSystem) {
-            const outfitSystem = window.outfitTracker.autoOutfitSystem;
-            connectionProfile = outfitSystem.getConnectionProfile ? outfitSystem.getConnectionProfile() : null;
-        }
-
-        // Use LLMUtility to generate with retry logic and optional connection profile
-        const response = await LLMUtility.generateWithProfile(
+        // Use LLMUtility to generate with retry logic
+        const response = await LLMUtility.generateWithRetry(
             prompt,
             'You are an outfit generation system. Based on the character information provided, output outfit commands to set the character\'s clothing and accessories.', // Corrected escaping for \'
-            null, // Let generateWithProfile get the context internally,
-            connectionProfile
+            window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null)
         );
 
         return response;
@@ -77,7 +68,7 @@ export async function generateOutfitFromLLM(options: { prompt: string }, profile
     }
 }
 
-/** 
+/**
  * Imports outfit from character card using LLM analysis
  * @returns {Promise<object>} - Result with message and any extracted outfit information
  */
@@ -119,16 +110,11 @@ export async function importOutfitFromCharacterCard(): Promise<{
         
         OUTPUT ONLY OUTFIT COMMANDS, NO EXPLANATIONS:`;
 
-        // Use the auto outfit system's connection profile if available
-        const outfitSystem = window.outfitTracker?.autoOutfitSystem;
-        const connectionProfile = outfitSystem?.getConnectionProfile ? outfitSystem.getConnectionProfile() : null;
-
-        // Generate response from LLM with optional connection profile
-        const response = await LLMUtility.generateWithProfile(
+        // Generate response from LLM
+        const response = await LLMUtility.generateWithRetry(
             prompt,
             'You are an outfit extraction system. Extract clothing and accessory items from character descriptions and output outfit commands.',
-            null, // Let generateWithProfile get the context internally
-            connectionProfile
+            context
         );
 
         // Extract commands from response
@@ -147,7 +133,7 @@ export async function importOutfitFromCharacterCard(): Promise<{
                     try {
                         await processSingleCommand(command, botManager);
                     } catch (cmdError) {
-                        console.error(`Error processing command \"${command}\":`, cmdError);
+                        console.error(`Error processing command "${command}":`, cmdError);
                     }
                 }
 

@@ -19,14 +19,14 @@ import { CharacterInfoType, getCharacterInfoById } from '../utils/CharacterUtils
 function processSingleCommand(command, botManager) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            const commandRegex = /^outfit-system_(wear|remove|change|replace|unequip)_([a-zA-Z0-9_-]+)\\((?:\"([^\"]*)\"|)\\)$/;
+            const commandRegex = /^outfit-system_(wear|remove|change|replace|unequip)_([a-zA-Z0-9_-]+)\(?:\"([^\"]*\)\"|)\)$/;
             const match = command.match(commandRegex);
             if (!match) {
                 throw new Error(`Invalid command format: ${command}`);
             }
             const [, action, slot, value] = match;
             const cleanValue = value || '';
-            console.log(`[LLMService] Processing: ${action} ${slot} \"${cleanValue}\"`);
+            console.log(`[LLMService] Processing: ${action} ${slot} "${cleanValue}"`);
             let finalAction = action;
             if (action === 'replace') {
                 finalAction = 'change';
@@ -46,10 +46,9 @@ function processSingleCommand(command, botManager) {
 /**
  * Generates outfit from LLM based on provided options
  * @param {object} options - Generation options containing the prompt
- * @param {string | null} [profile] - Connection profile to use for generation (defaults to auto outfit system profile if available)
  * @returns {Promise<string>} - The LLM response containing outfit commands
  */
-export function generateOutfitFromLLM(options, profile) {
+export function generateOutfitFromLLM(options) {
     return __awaiter(this, void 0, void 0, function* () {
         var _a;
         try {
@@ -57,16 +56,9 @@ export function generateOutfitFromLLM(options, profile) {
             if (!prompt) {
                 throw new Error('Prompt is required for LLM generation');
             }
-            // Use provided profile or get from auto outfit system
-            let connectionProfile = profile;
-            if (!connectionProfile && ((_a = window.outfitTracker) === null || _a === void 0 ? void 0 : _a.autoOutfitSystem)) {
-                const outfitSystem = window.outfitTracker.autoOutfitSystem;
-                connectionProfile = outfitSystem.getConnectionProfile ? outfitSystem.getConnectionProfile() : null;
-            }
-            // Use LLMUtility to generate with retry logic and optional connection profile
-            const response = yield LLMUtility.generateWithProfile(prompt, 'You are an outfit generation system. Based on the character information provided, output outfit commands to set the character\'s clothing and accessories.', // Corrected escaping for \'
-            null, // Let generateWithProfile get the context internally,
-            connectionProfile);
+            // Use LLMUtility to generate with retry logic
+            const response = yield LLMUtility.generateWithRetry(prompt, 'You are an outfit generation system. Based on the character information provided, output outfit commands to set the character\'s clothing and accessories.', // Corrected escaping for \'
+            ((_a = window.SillyTavern) === null || _a === void 0 ? void 0 : _a.getContext) ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null));
             return response;
         }
         catch (error) {
@@ -81,7 +73,7 @@ export function generateOutfitFromLLM(options, profile) {
  */
 export function importOutfitFromCharacterCard() {
     return __awaiter(this, void 0, void 0, function* () {
-        var _a, _b;
+        var _a;
         try {
             const context = ((_a = window.SillyTavern) === null || _a === void 0 ? void 0 : _a.getContext) ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
             const charId = context.characterId;
@@ -110,12 +102,8 @@ export function importOutfitFromCharacterCard() {
         Notes: ${characterNotes}
         
         OUTPUT ONLY OUTFIT COMMANDS, NO EXPLANATIONS:`;
-            // Use the auto outfit system's connection profile if available
-            const outfitSystem = (_b = window.outfitTracker) === null || _b === void 0 ? void 0 : _b.autoOutfitSystem;
-            const connectionProfile = (outfitSystem === null || outfitSystem === void 0 ? void 0 : outfitSystem.getConnectionProfile) ? outfitSystem.getConnectionProfile() : null;
-            // Generate response from LLM with optional connection profile
-            const response = yield LLMUtility.generateWithProfile(prompt, 'You are an outfit extraction system. Extract clothing and accessory items from character descriptions and output outfit commands.', null, // Let generateWithProfile get the context internally
-            connectionProfile);
+            // Generate response from LLM
+            const response = yield LLMUtility.generateWithRetry(prompt, 'You are an outfit extraction system. Extract clothing and accessory items from character descriptions and output outfit commands.', context);
             // Extract commands from response
             const commands = extractCommands(response);
             // Process the commands to update the current bot outfit
@@ -130,7 +118,7 @@ export function importOutfitFromCharacterCard() {
                             yield processSingleCommand(command, botManager);
                         }
                         catch (cmdError) {
-                            console.error(`Error processing command \"${command}\":`, cmdError);
+                            console.error(`Error processing command "${command}":`, cmdError);
                         }
                     }
                     // Save the updated outfit
