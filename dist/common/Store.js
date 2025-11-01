@@ -1,5 +1,6 @@
 import { DEFAULT_SETTINGS } from '../config/constants.js';
 import { deepClone } from '../utils/utilities.js';
+import { debugLog } from '../logging/DebugLogger.js';
 class OutfitStore {
     constructor() {
         this.state = {
@@ -47,7 +48,7 @@ class OutfitStore {
                 listener(this.state);
             }
             catch (error) {
-                console.error('Error in store listener:', error);
+                debugLog('Error in store listener:', error, 'error');
             }
         });
     }
@@ -109,7 +110,7 @@ class OutfitStore {
         var _a, _b;
         // Check if characterId or instanceId are undefined/null to prevent errors
         if (!characterId || !instanceId) {
-            console.warn(`[OutfitStore] getPresets called with invalid parameters: characterId=${characterId}, instanceId=${instanceId}`);
+            debugLog(`[OutfitStore] getPresets called with invalid parameters: characterId=${characterId}, instanceId=${instanceId}`, null, 'warn');
             return {
                 bot: {},
                 user: deepClone(this.state.presets.user[instanceId || 'default'] || {})
@@ -130,7 +131,7 @@ class OutfitStore {
         if (type === 'bot') {
             // Check if characterId or instanceId are undefined/null to prevent errors
             if (!characterId || !instanceId) {
-                console.warn(`[OutfitStore] savePreset called with invalid parameters: characterId=${characterId}, instanceId=${instanceId}`);
+                debugLog(`[OutfitStore] savePreset called with invalid parameters: characterId=${characterId}, instanceId=${instanceId}`, null, 'warn');
                 return;
             }
             const key = this._generateBotPresetKey(characterId, instanceId);
@@ -157,7 +158,7 @@ class OutfitStore {
         if (type === 'bot') {
             // Check if characterId or instanceId are undefined/null to prevent errors
             if (!characterId || !instanceId) {
-                console.warn(`[OutfitStore] deletePreset called with invalid parameters: characterId=${characterId}, instanceId=${instanceId}`);
+                debugLog(`[OutfitStore] deletePreset called with invalid parameters: characterId=${characterId}, instanceId=${instanceId}`, null, 'warn');
                 return;
             }
             const key = this._generateBotPresetKey(characterId, instanceId);
@@ -188,7 +189,7 @@ class OutfitStore {
         if (type === 'bot') {
             // Check if characterId or instanceId are undefined/null to prevent errors
             if (!characterId || !instanceId) {
-                console.warn(`[OutfitStore] deleteAllPresetsForCharacter called with invalid parameters: characterId=${characterId}, instanceId=${instanceId}`);
+                debugLog(`[OutfitStore] deleteAllPresetsForCharacter called with invalid parameters: characterId=${characterId}, instanceId=${instanceId}`, null, 'warn');
                 return;
             }
             const key = this._generateBotPresetKey(characterId, instanceId);
@@ -213,7 +214,7 @@ class OutfitStore {
         if (type === 'bot') {
             // Check if characterId or instanceId are undefined/null to prevent errors
             if (!characterId || !instanceId) {
-                console.warn(`[OutfitStore] getAllPresets called with invalid parameters: characterId=${characterId}, instanceId=${instanceId}`);
+                debugLog(`[OutfitStore] getAllPresets called with invalid parameters: characterId=${characterId}, instanceId=${instanceId}`, null, 'warn');
                 return {};
             }
             const key = this._generateBotPresetKey(characterId, instanceId);
@@ -306,7 +307,7 @@ class OutfitStore {
         // Emit an event when outfit data is loaded to allow UI refresh
         import('../core/events.js').then(({ extensionEventBus, EXTENSION_EVENTS }) => {
             extensionEventBus.emit(EXTENSION_EVENTS.OUTFIT_DATA_LOADED);
-        }).catch(console.error);
+        }).catch(error => debugLog('Error in store operation', error, 'error'));
     }
     flush() {
         if (!this.dataManager) {

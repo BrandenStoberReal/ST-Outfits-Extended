@@ -1,3 +1,5 @@
+import {debugLog} from '../logging/DebugLogger';
+
 /**
  * Utility functions for Outfit Tracker Extension
  */
@@ -79,7 +81,7 @@ export function safeGet(obj: any, path: string, defaultValue: any = null): any {
     try {
         return path.split('.').reduce((acc, key) => acc && acc[key], obj) || defaultValue;
     } catch (error) {
-        console.error(`Error in safeGet for path "${path}":`, error);
+        debugLog(`Error in safeGet for path "${path}":`, error, 'error');
         return defaultValue;
     }
 }
@@ -280,7 +282,7 @@ export async function generateInstanceIdFromText(text: string, valuesToRemove: s
 
             return hashArray.map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 16);
         } catch (err) {
-            console.warn('Crypto API failed, falling back to simple hash for instance ID generation', err);
+            debugLog('Crypto API failed, falling back to simple hash for instance ID generation', err, 'warn');
             return generateInstanceIdFromTextSimple(normalizedText);
         }
     } else {

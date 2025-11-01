@@ -1,6 +1,7 @@
 import {outfitStore} from '../common/Store';
 import {ACCESSORY_SLOTS, CLOTHING_SLOTS} from '../config/constants';
 import {getCharacters} from '../utils/CharacterUtils';
+import {debugLog} from '../logging/DebugLogger';
 
 declare const window: any;
 
@@ -111,7 +112,7 @@ class CustomMacroService {
 
             return typeof window.name2 !== 'undefined' ? window.name2 : 'Character';
         } catch (error) {
-            console.error('Error getting character name:', error);
+            debugLog('Error getting character name:', error, 'error');
             return 'Character';
         }
     }
@@ -221,7 +222,7 @@ class CustomMacroService {
                 return result;
             }
         } catch (error) {
-            console.error('Error getting slot value:', error);
+            debugLog('Error getting slot value:', error, 'error');
         }
 
         const result = 'None';
@@ -258,7 +259,7 @@ class CustomMacroService {
 
             return typeof window.name1 !== 'undefined' ? window.name1 : 'User';
         } catch (error) {
-            console.error('Error getting user name:', error);
+            debugLog('Error getting user name:', error, 'error');
             return 'User';
         }
     }
@@ -352,7 +353,7 @@ class CustomMacroService {
 
             return outfitInfo;
         } catch (error) {
-            console.error('[CustomMacroSystem] Error generating outfit info string:', error);
+            debugLog('[CustomMacroSystem] Error generating outfit info string:', error, 'error');
             return '';
         }
     }

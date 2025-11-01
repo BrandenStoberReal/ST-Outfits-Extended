@@ -14,6 +14,7 @@ import { formatSlotName as utilsFormatSlotName } from '../utils/utilities.js';
 import { areSystemMessagesEnabled } from '../utils/SettingsUtil.js';
 import { outfitStore } from '../common/Store.js';
 import { CharacterInfoType, getCharacterInfoById } from '../utils/CharacterUtils.js';
+import { debugLog } from '../logging/DebugLogger.js';
 /**
  * BotOutfitPanel - Manages the UI for the bot character's outfit tracking
  * This class creates and manages a draggable panel for viewing and modifying
@@ -105,7 +106,7 @@ export class BotOutfitPanel {
             return '';
         }
         catch (error) {
-            console.warn('Could not get first message text for hash generation:', error);
+            debugLog('Could not get first message text for hash generation:', error, 'warn');
             return '';
         }
     }
@@ -339,7 +340,7 @@ export class BotOutfitPanel {
                 // Get character data
                 const characterInfo = yield this.getCharacterData();
                 if (characterInfo.error) {
-                    console.error('Error getting character data:', characterInfo.error);
+                    debugLog('Error getting character data:', characterInfo.error, 'error');
                     if (areSystemMessagesEnabled()) {
                         this.sendSystemMessage(`Error: ${characterInfo.error}`);
                     }
@@ -355,7 +356,7 @@ export class BotOutfitPanel {
                 }
             }
             catch (error) {
-                console.error('Error in generateOutfitFromCharacterInfo:', error);
+                debugLog('Error in generateOutfitFromCharacterInfo:', error, 'error');
                 if (areSystemMessagesEnabled()) {
                     this.sendSystemMessage(`Error generating outfit: ${error.message}`);
                 }
@@ -442,7 +443,7 @@ export class BotOutfitPanel {
                 return yield LLMUtility.generateWithProfile(prompt, 'You are an outfit generation system. Based on the character information provided, output outfit commands to set the character\'s clothing and accessories.', ((_a = window.SillyTavern) === null || _a === void 0 ? void 0 : _a.getContext) ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null), connectionProfile);
             }
             catch (error) {
-                console.error('Error generating outfit from LLM:', error);
+                debugLog('Error generating outfit from LLM:', error, 'error');
                 throw error;
             }
         });
@@ -452,17 +453,17 @@ export class BotOutfitPanel {
             // Use the imported extractCommands function to extract outfit commands
             const commands = extractCommands(response);
             if (!commands || commands.length === 0) {
-                console.log('[BotOutfitPanel] No outfit commands found in response');
+                debugLog('[BotOutfitPanel] No outfit commands found in response');
                 return;
             }
-            console.log(`[BotOutfitPanel] Found ${commands.length} commands to process:`, commands);
+            debugLog(`[BotOutfitPanel] Found ${commands.length} commands to process:`, commands);
             // Process each command
             for (const command of commands) {
                 try {
                     yield this.processSingleCommand(command);
                 }
                 catch (error) {
-                    console.error(`Error processing command "${command}":`, error);
+                    debugLog(`Error processing command "${command}":`, error, 'error');
                 }
             }
             // Update the outfit panel UI
@@ -528,7 +529,7 @@ export class BotOutfitPanel {
                     }
                 }
                 const cleanValue = value.split('"').join('').trim();
-                console.log(`[BotOutfitPanel] Processing: ${action} ${slot} "${cleanValue}"`);
+                debugLog(`[BotOutfitPanel] Processing: ${action} ${slot} "${cleanValue}"`);
                 // Apply the outfit change to the bot manager
                 const message = yield this.outfitManager.setOutfitItem(slot, action === 'remove' ? 'None' : cleanValue);
                 // Show system message if enabled
@@ -537,7 +538,7 @@ export class BotOutfitPanel {
                 }
             }
             catch (error) {
-                console.error('Error processing single command:', error);
+                debugLog('Error processing single command:', error, 'error');
                 throw error;
             }
         });

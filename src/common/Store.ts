@@ -1,6 +1,7 @@
 import {DEFAULT_SETTINGS} from '../config/constants';
 import {deepClone} from '../utils/utilities';
 import {DataManager} from '../managers/DataManager';
+import {debugLog} from '../logging/DebugLogger';
 
 interface OutfitData {
     [key: string]: string;
@@ -150,7 +151,7 @@ class OutfitStore {
             try {
                 listener(this.state);
             } catch (error) {
-                console.error('Error in store listener:', error);
+                debugLog('Error in store listener:', error, 'error');
             }
         });
     }
@@ -231,7 +232,7 @@ class OutfitStore {
     } {
         // Check if characterId or instanceId are undefined/null to prevent errors
         if (!characterId || !instanceId) {
-            console.warn(`[OutfitStore] getPresets called with invalid parameters: characterId=${characterId}, instanceId=${instanceId}`);
+            debugLog(`[OutfitStore] getPresets called with invalid parameters: characterId=${characterId}, instanceId=${instanceId}`, null, 'warn');
             return {
                 bot: {},
                 user: deepClone(this.state.presets.user[instanceId || 'default'] || {})
@@ -255,7 +256,7 @@ class OutfitStore {
         if (type === 'bot') {
             // Check if characterId or instanceId are undefined/null to prevent errors
             if (!characterId || !instanceId) {
-                console.warn(`[OutfitStore] savePreset called with invalid parameters: characterId=${characterId}, instanceId=${instanceId}`);
+                debugLog(`[OutfitStore] savePreset called with invalid parameters: characterId=${characterId}, instanceId=${instanceId}`, null, 'warn');
                 return;
             }
             
@@ -284,7 +285,7 @@ class OutfitStore {
         if (type === 'bot') {
             // Check if characterId or instanceId are undefined/null to prevent errors
             if (!characterId || !instanceId) {
-                console.warn(`[OutfitStore] deletePreset called with invalid parameters: characterId=${characterId}, instanceId=${instanceId}`);
+                debugLog(`[OutfitStore] deletePreset called with invalid parameters: characterId=${characterId}, instanceId=${instanceId}`, null, 'warn');
                 return;
             }
             
@@ -317,7 +318,7 @@ class OutfitStore {
         if (type === 'bot') {
             // Check if characterId or instanceId are undefined/null to prevent errors
             if (!characterId || !instanceId) {
-                console.warn(`[OutfitStore] deleteAllPresetsForCharacter called with invalid parameters: characterId=${characterId}, instanceId=${instanceId}`);
+                debugLog(`[OutfitStore] deleteAllPresetsForCharacter called with invalid parameters: characterId=${characterId}, instanceId=${instanceId}`, null, 'warn');
                 return;
             }
             
@@ -346,7 +347,7 @@ class OutfitStore {
         if (type === 'bot') {
             // Check if characterId or instanceId are undefined/null to prevent errors
             if (!characterId || !instanceId) {
-                console.warn(`[OutfitStore] getAllPresets called with invalid parameters: characterId=${characterId}, instanceId=${instanceId}`);
+                debugLog(`[OutfitStore] getAllPresets called with invalid parameters: characterId=${characterId}, instanceId=${instanceId}`, null, 'warn');
                 return {};
             }
             
@@ -463,7 +464,7 @@ class OutfitStore {
         // Emit an event when outfit data is loaded to allow UI refresh
         import('../core/events').then(({extensionEventBus, EXTENSION_EVENTS}) => {
             extensionEventBus.emit(EXTENSION_EVENTS.OUTFIT_DATA_LOADED);
-        }).catch(console.error);
+        }).catch(error => debugLog('Error in store operation', error, 'error'));
     }
 
     flush(): void {

@@ -2,6 +2,7 @@ import {dragElementWithSave, resizeElement} from '../common/shared';
 import {formatSlotName as utilsFormatSlotName} from '../utils/utilities';
 import {areSystemMessagesEnabled} from '../utils/SettingsUtil';
 import {outfitStore} from '../common/Store';
+import {debugLog} from '../logging/DebugLogger';
 
 declare const window: any;
 declare const toastr: any;
@@ -120,7 +121,7 @@ export class UserOutfitPanel {
             }
             return '';
         } catch (error) {
-            console.warn('Could not get first message text for hash generation:', error);
+            debugLog('Could not get first message text for hash generation:', error, 'warn');
             return '';
         }
     }

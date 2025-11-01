@@ -624,7 +624,7 @@ export class DebugPanel {
 
             toastr.success('Outfit data exported!', 'Debug Panel');
         } catch (error) {
-            console.error('Error exporting outfit data:', error);
+            debugLogger.log('Error exporting outfit data:', error, 'error');
             toastr.error('Error exporting outfit data', 'Debug Panel');
         }
     }
@@ -651,7 +651,7 @@ export class DebugPanel {
                     toastr.success('Outfit data imported!', 'Debug Panel');
                 }
             } catch (error) {
-                console.error('Error importing outfit data:', error);
+                debugLogger.log('Error importing outfit data:', error, 'error');
                 toastr.error('Error importing outfit data. Check console for details.', 'Debug Panel');
             }
         };
@@ -677,7 +677,7 @@ export class DebugPanel {
         const state = outfitStore.getState();
 
         if (!state.settings.debugMode) {
-            console.log('Debug mode is disabled. Not showing debug panel.');
+            debugLogger.log('Debug mode is disabled. Not showing debug panel.');
             return;
         }
 

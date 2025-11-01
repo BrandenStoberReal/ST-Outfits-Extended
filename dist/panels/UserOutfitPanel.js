@@ -11,6 +11,7 @@ import { dragElementWithSave, resizeElement } from '../common/shared.js';
 import { formatSlotName as utilsFormatSlotName } from '../utils/utilities.js';
 import { areSystemMessagesEnabled } from '../utils/SettingsUtil.js';
 import { outfitStore } from '../common/Store.js';
+import { debugLog } from '../logging/DebugLogger.js';
 /**
  * UserOutfitPanel - Manages the UI for the user character's outfit tracking
  * This class creates and manages a draggable panel for viewing and modifying
@@ -98,7 +99,7 @@ export class UserOutfitPanel {
             return '';
         }
         catch (error) {
-            console.warn('Could not get first message text for hash generation:', error);
+            debugLog('Could not get first message text for hash generation:', error, 'warn');
             return '';
         }
     }

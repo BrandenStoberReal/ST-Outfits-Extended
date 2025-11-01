@@ -1,6 +1,7 @@
 import {importOutfitFromCharacterCard} from '../services/LLMService';
 import {ACCESSORY_SLOTS, CLOTHING_SLOTS} from '../config/constants';
 import {areSystemMessagesEnabled} from '../utils/SettingsUtil';
+import {debugLog} from '../logging/DebugLogger';
 
 declare const window: any;
 declare const toastr: any;
@@ -33,11 +34,11 @@ export async function registerOutfitCommands(botManager: any, userManager: any, 
         window.SlashCommandParser.addCommandObject(window.SlashCommand.fromProps({
             name: 'outfit-bot',
             callback: async function (args: any) {
-                console.log('Bot Outfit command triggered');
+                debugLog('Bot Outfit command triggered');
                 if (window.botOutfitPanel) {
                     window.botOutfitPanel.toggle();
                 } else {
-                    console.error('[OutfitTracker] Bot outfit panel not available');
+                    debugLog('[OutfitTracker] Bot outfit panel not available', null, 'error');
                     if (!args?.quiet) {
                         toastr.error('Bot outfit panel not available', 'Outfit System');
                     }
@@ -89,11 +90,11 @@ export async function registerOutfitCommands(botManager: any, userManager: any, 
         SlashCommandParser.addCommandObject(SlashCommand.fromProps({
             name: 'outfit-user',
             callback: async function (args: any) {
-                console.log('User Outfit command triggered');
+                debugLog('User Outfit command triggered');
                 if (window.userOutfitPanel) {
                     window.userOutfitPanel.toggle();
                 } else {
-                    console.error('[OutfitTracker] User outfit panel not available');
+                    debugLog('[OutfitTracker] User outfit panel not available', null, 'error');
                     if (!args?.quiet) {
                         toastr.error('User outfit panel not available', 'Outfit System');
                     }
@@ -479,7 +480,7 @@ export async function registerOutfitCommands(botManager: any, userManager: any, 
                     return success;
 
                 } catch (error) {
-                    console.error('Error switching outfit:', error);
+                    debugLog('Error switching outfit:', error, 'error');
                     const error_msg = `Error switching to "${outfitName}" outfit.`;
 
                     if (!isQuiet) {
@@ -538,7 +539,7 @@ export async function registerOutfitCommands(botManager: any, userManager: any, 
                     }
                     return result.message;
                 } catch (error: any) {
-                    console.error('Error importing outfit from character card:', error);
+                    debugLog('Error importing outfit from character card:', error, 'error');
                     const errorMessage = `Error importing outfit: ${error.message}`;
 
                     if (!isQuiet) {
@@ -630,7 +631,7 @@ export async function registerOutfitCommands(botManager: any, userManager: any, 
                     }
                     return message;
                 } catch (error) {
-                    console.error('Error setting outfit item:', error);
+                    debugLog('Error setting outfit item:', error, 'error');
                     const error_msg = `Error setting ${slot} to ${item}.`;
 
                     if (!isQuiet) {
@@ -701,7 +702,7 @@ export async function registerOutfitCommands(botManager: any, userManager: any, 
                     }
                     return message;
                 } catch (error) {
-                    console.error('Error removing outfit item:', error);
+                    debugLog('Error removing outfit item:', error, 'error');
                     const error_msg = `Error removing ${slot}.`;
 
                     if (!isQuiet) {
@@ -786,7 +787,7 @@ export async function registerOutfitCommands(botManager: any, userManager: any, 
                     }
                     return message;
                 } catch (error) {
-                    console.error('Error changing outfit item:', error);
+                    debugLog('Error changing outfit item:', error, 'error');
                     const error_msg = `Error changing ${slot} to ${item}.`;
 
                     if (!isQuiet) {
@@ -872,7 +873,7 @@ export async function registerOutfitCommands(botManager: any, userManager: any, 
                     }
                     return message;
                 } catch (error) {
-                    console.error('Error setting user outfit item:', error);
+                    debugLog('Error setting user outfit item:', error, 'error');
                     const error_msg = `Error setting user ${slot} to ${item}.`;
 
                     if (!isQuiet) {
@@ -943,7 +944,7 @@ export async function registerOutfitCommands(botManager: any, userManager: any, 
                     }
                     return message;
                 } catch (error) {
-                    console.error('Error removing user outfit item:', error);
+                    debugLog('Error removing user outfit item:', error, 'error');
                     const error_msg = `Error removing user ${slot}.`;
 
                     if (!isQuiet) {
@@ -1028,7 +1029,7 @@ export async function registerOutfitCommands(botManager: any, userManager: any, 
                     }
                     return message;
                 } catch (error) {
-                    console.error('Error changing user outfit item:', error);
+                    debugLog('Error changing user outfit item:', error, 'error');
                     const error_msg = `Error changing user ${slot} to ${item}.`;
 
                     if (!isQuiet) {
@@ -1100,7 +1101,7 @@ export async function registerOutfitCommands(botManager: any, userManager: any, 
                     }
                     return message;
                 } catch (error) {
-                    console.error('Error saving outfit preset:', error);
+                    debugLog('Error saving outfit preset:', error, 'error');
                     const error_msg = `Error saving outfit preset "${presetName}".`;
 
                     if (!isQuiet) {
@@ -1171,7 +1172,7 @@ export async function registerOutfitCommands(botManager: any, userManager: any, 
                     }
                     return message;
                 } catch (error) {
-                    console.error('Error deleting outfit preset:', error);
+                    debugLog('Error deleting outfit preset:', error, 'error');
                     const error_msg = `Error deleting outfit preset "${presetName}".`;
 
                     if (!isQuiet) {
@@ -1242,7 +1243,7 @@ export async function registerOutfitCommands(botManager: any, userManager: any, 
                     }
                     return message;
                 } catch (error) {
-                    console.error('Error saving user outfit preset:', error);
+                    debugLog('Error saving user outfit preset:', error, 'error');
                     const error_msg = `Error saving user outfit preset "${presetName}".`;
 
                     if (!isQuiet) {
@@ -1313,7 +1314,7 @@ export async function registerOutfitCommands(botManager: any, userManager: any, 
                     }
                     return message;
                 } catch (error) {
-                    console.error('Error deleting user outfit preset:', error);
+                    debugLog('Error deleting user outfit preset:', error, 'error');
                     const error_msg = `Error deleting user outfit preset "${presetName}".`;
 
                     if (!isQuiet) {
@@ -1394,7 +1395,7 @@ export async function registerOutfitCommands(botManager: any, userManager: any, 
                     }
                     return message;
                 } catch (error) {
-                    console.error('Error listing outfits:', error);
+                    debugLog('Error listing outfits:', error, 'error');
                     const error_msg = 'Error listing outfit information.';
 
                     if (!isQuiet) {
@@ -1456,7 +1457,7 @@ export async function registerOutfitCommands(botManager: any, userManager: any, 
                     }
                     return message;
                 } catch (error) {
-                    console.error('Error overwriting outfit preset:', error);
+                    debugLog('Error overwriting outfit preset:', error, 'error');
                     const error_msg = `Error overwriting outfit preset "${presetName}".`;
 
                     if (!isQuiet) {
@@ -1533,7 +1534,7 @@ export async function registerOutfitCommands(botManager: any, userManager: any, 
                     }
                     return message;
                 } catch (error) {
-                    console.error('Error overwriting user outfit preset:', error);
+                    debugLog('Error overwriting user outfit preset:', error, 'error');
                     const error_msg = `Error overwriting user outfit preset "${presetName}".`;
 
                     if (!isQuiet) {

@@ -1,4 +1,5 @@
 import {outfitStore} from '../common/Store';
+import {debugLog} from '../logging/DebugLogger';
 
 declare global {
     interface Window {
@@ -30,7 +31,7 @@ class ConnectionProfileHelper {
                 throw new Error('Context is null but required for generation');
             }
         } catch (error: any) {
-            console.error(`[LLMUtility] Error during generation with connection profile ${profileId}:`, error);
+            debugLog(`[LLMUtility] Error during generation with connection profile ${profileId}:`, error, 'error');
             throw error;
         } finally {
             if (currentProfile && currentProfile !== profileId) {
@@ -47,7 +48,7 @@ class ConnectionProfileHelper {
                 if (profile) {
                     await window.connectionManager.applyProfile(profile);
                 } else {
-                    console.warn(`[LLMUtility] Profile with ID ${profileId} not found. Falling back to slash command.`);
+                    debugLog(`[LLMUtility] Profile with ID ${profileId} not found. Falling back to slash command.`, null, 'warn');
                     if (window.SlashCommandParser?.commands?.profile) {
                         await window.SlashCommandParser.commands['profile'].callback({}, profileId);
                     }
@@ -55,10 +56,10 @@ class ConnectionProfileHelper {
             } else if (window.SlashCommandParser?.commands?.profile) {
                 await window.SlashCommandParser.commands['profile'].callback({}, profileId);
             } else {
-                console.warn('[LLMUtility] Could not apply connection profile, no implementation found.');
+                debugLog('[LLMUtility] Could not apply connection profile, no implementation found.', null, 'warn');
             }
         } catch (error: any) {
-            console.error(`[LLMUtility] Failed to apply connection profile ${profileId}:`, error);
+            debugLog(`[LLMUtility] Failed to apply connection profile ${profileId}:`, error, 'error');
         }
     }
 
@@ -75,7 +76,7 @@ class ConnectionProfileHelper {
             const storeState = outfitStore.getState();
             return storeState.settings?.autoOutfitConnectionProfile || null;
         } catch (error: any) {
-            console.warn('Could not access store for connection profile:', error);
+            debugLog('Could not access store for connection profile:', error, 'warn');
         }
 
         return null;
@@ -98,7 +99,7 @@ class ConnectionProfileHelper {
             const storeState = outfitStore.getState();
             return null;
         } catch (error) {
-            console.warn('Could not access store for profiles:', error);
+            debugLog('Could not access store for profiles:', error, 'warn');
         }
 
         return null;
@@ -117,7 +118,7 @@ class ConnectionProfileHelper {
             const storeState = outfitStore.getState();
             return [];
         } catch (error) {
-            console.warn('Could not access store for profiles:', error);
+            debugLog('Could not access store for profiles:', error, 'warn');
         }
 
         return [];
@@ -145,7 +146,7 @@ export class LLMUtility {
                 }
 
                 if (!result || result.trim() === '') {
-                    console.warn(`[LLMUtility] Empty response from LLM (attempt ${attempt + 1}/${maxRetries})`);
+                    debugLog(`[LLMUtility] Empty response from LLM (attempt ${attempt + 1}/${maxRetries})`, null, 'warn');
                     attempt++;
                     if (attempt >= maxRetries) {
                         throw new Error('Empty response from LLM after retries');
@@ -155,7 +156,7 @@ export class LLMUtility {
 
                 return result;
             } catch (error: any) {
-                console.error(`[LLMUtility] Generation attempt ${attempt + 1}/${maxRetries} failed:`, error);
+                debugLog(`[LLMUtility] Generation attempt ${attempt + 1}/${maxRetries} failed:`, error, 'error');
                 attempt++;
                 if (attempt >= maxRetries) {
                     throw new Error(`Generation failed after ${maxRetries} attempts: ${error.message}`);
@@ -186,8 +187,8 @@ export class LLMUtility {
             }
             return await this.generateWithRetry(prompt, systemPrompt, context, maxRetries);
         } catch (error: any) {
-            console.error(`[LLMUtility] Profile generation with ${profile ?? 'null'} failed:`, error);
-            console.log('[LLMUtility] Falling back to default generation after profile failures...');
+            debugLog(`[LLMUtility] Profile generation with ${profile ?? 'null'} failed:`, error, 'error');
+            debugLog('[LLMUtility] Falling back to default generation after profile failures...');
             return this.generateWithRetry(prompt, systemPrompt, context, maxRetries);
         }
     }

@@ -8,6 +8,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 import { outfitStore } from '../common/Store.js';
+import { debugLog } from '../logging/DebugLogger.js';
 class ConnectionProfileHelper {
     static withConnectionProfile(profileId_1, generationFunc_1) {
         return __awaiter(this, arguments, void 0, function* (profileId, generationFunc, context = null) {
@@ -30,7 +31,7 @@ class ConnectionProfileHelper {
                 }
             }
             catch (error) {
-                console.error(`[LLMUtility] Error during generation with connection profile ${profileId}:`, error);
+                debugLog(`[LLMUtility] Error during generation with connection profile ${profileId}:`, error, 'error');
                 throw error;
             }
             finally {
@@ -50,7 +51,7 @@ class ConnectionProfileHelper {
                         yield window.connectionManager.applyProfile(profile);
                     }
                     else {
-                        console.warn(`[LLMUtility] Profile with ID ${profileId} not found. Falling back to slash command.`);
+                        debugLog(`[LLMUtility] Profile with ID ${profileId} not found. Falling back to slash command.`, null, 'warn');
                         if ((_b = (_a = window.SlashCommandParser) === null || _a === void 0 ? void 0 : _a.commands) === null || _b === void 0 ? void 0 : _b.profile) {
                             yield window.SlashCommandParser.commands['profile'].callback({}, profileId);
                         }
@@ -60,11 +61,11 @@ class ConnectionProfileHelper {
                     yield window.SlashCommandParser.commands['profile'].callback({}, profileId);
                 }
                 else {
-                    console.warn('[LLMUtility] Could not apply connection profile, no implementation found.');
+                    debugLog('[LLMUtility] Could not apply connection profile, no implementation found.', null, 'warn');
                 }
             }
             catch (error) {
-                console.error(`[LLMUtility] Failed to apply connection profile ${profileId}:`, error);
+                debugLog(`[LLMUtility] Failed to apply connection profile ${profileId}:`, error, 'error');
             }
         });
     }
@@ -81,7 +82,7 @@ class ConnectionProfileHelper {
             return ((_c = storeState.settings) === null || _c === void 0 ? void 0 : _c.autoOutfitConnectionProfile) || null;
         }
         catch (error) {
-            console.warn('Could not access store for connection profile:', error);
+            debugLog('Could not access store for connection profile:', error, 'warn');
         }
         return null;
     }
@@ -101,7 +102,7 @@ class ConnectionProfileHelper {
             return null;
         }
         catch (error) {
-            console.warn('Could not access store for profiles:', error);
+            debugLog('Could not access store for profiles:', error, 'warn');
         }
         return null;
     }
@@ -118,7 +119,7 @@ class ConnectionProfileHelper {
             return [];
         }
         catch (error) {
-            console.warn('Could not access store for profiles:', error);
+            debugLog('Could not access store for profiles:', error, 'warn');
         }
         return [];
     }
@@ -144,7 +145,7 @@ export class LLMUtility {
                         throw new Error('No generation method available in context');
                     }
                     if (!result || result.trim() === '') {
-                        console.warn(`[LLMUtility] Empty response from LLM (attempt ${attempt + 1}/${maxRetries})`);
+                        debugLog(`[LLMUtility] Empty response from LLM (attempt ${attempt + 1}/${maxRetries})`, null, 'warn');
                         attempt++;
                         if (attempt >= maxRetries) {
                             throw new Error('Empty response from LLM after retries');
@@ -154,7 +155,7 @@ export class LLMUtility {
                     return result;
                 }
                 catch (error) {
-                    console.error(`[LLMUtility] Generation attempt ${attempt + 1}/${maxRetries} failed:`, error);
+                    debugLog(`[LLMUtility] Generation attempt ${attempt + 1}/${maxRetries} failed:`, error, 'error');
                     attempt++;
                     if (attempt >= maxRetries) {
                         throw new Error(`Generation failed after ${maxRetries} attempts: ${error.message}`);
@@ -186,8 +187,8 @@ export class LLMUtility {
                 return yield this.generateWithRetry(prompt, systemPrompt, context, maxRetries);
             }
             catch (error) {
-                console.error(`[LLMUtility] Profile generation with ${profile !== null && profile !== void 0 ? profile : 'null'} failed:`, error);
-                console.log('[LLMUtility] Falling back to default generation after profile failures...');
+                debugLog(`[LLMUtility] Profile generation with ${profile !== null && profile !== void 0 ? profile : 'null'} failed:`, error, 'error');
+                debugLog('[LLMUtility] Falling back to default generation after profile failures...');
                 return this.generateWithRetry(prompt, systemPrompt, context, maxRetries);
             }
         });

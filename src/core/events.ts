@@ -1,3 +1,5 @@
+import {debugLog} from '../logging/DebugLogger';
+
 // Define extension-specific events
 export const EXTENSION_EVENTS = {
     CONTEXT_UPDATED: 'outfit-tracker-context-updated',
@@ -35,7 +37,7 @@ class ExtensionEventBus {
                 try {
                     callback(data);
                 } catch (error) {
-                    console.error(`Error in event listener for ${event}:`, error);
+                    debugLog(`Error in event listener for ${event}:`, error, 'error');
                 }
             });
         }

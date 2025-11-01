@@ -5,6 +5,7 @@ import {formatSlotName as utilsFormatSlotName} from '../utils/utilities';
 import {areSystemMessagesEnabled} from '../utils/SettingsUtil';
 import {outfitStore} from '../common/Store';
 import {CharacterInfoType, getCharacterInfoById} from '../utils/CharacterUtils';
+import {debugLog} from '../logging/DebugLogger';
 
 declare const window: any;
 declare const toastr: any;
@@ -128,7 +129,7 @@ export class BotOutfitPanel {
             }
             return '';
         } catch (error) {
-            console.warn('Could not get first message text for hash generation:', error);
+            debugLog('Could not get first message text for hash generation:', error, 'warn');
             return '';
         }
     }
@@ -409,7 +410,7 @@ export class BotOutfitPanel {
             const characterInfo = await this.getCharacterData();
 
             if (characterInfo.error) {
-                console.error('Error getting character data:', characterInfo.error);
+                debugLog('Error getting character data:', characterInfo.error, 'error');
                 if (areSystemMessagesEnabled()) {
                     this.sendSystemMessage(`Error: ${characterInfo.error}`);
                 }
@@ -427,7 +428,7 @@ export class BotOutfitPanel {
                 this.sendSystemMessage('Outfit generated and applied successfully!');
             }
         } catch (error: any) {
-            console.error('Error in generateOutfitFromCharacterInfo:', error);
+            debugLog('Error in generateOutfitFromCharacterInfo:', error, 'error');
             if (areSystemMessagesEnabled()) {
                 this.sendSystemMessage(`Error generating outfit: ${error.message}`);
             }
@@ -527,7 +528,7 @@ export class BotOutfitPanel {
                 connectionProfile
             );
         } catch (error) {
-            console.error('Error generating outfit from LLM:', error);
+            debugLog('Error generating outfit from LLM:', error, 'error');
             throw error;
         }
     }
@@ -537,18 +538,18 @@ export class BotOutfitPanel {
         const commands = extractCommands(response);
 
         if (!commands || commands.length === 0) {
-            console.log('[BotOutfitPanel] No outfit commands found in response');
+            debugLog('[BotOutfitPanel] No outfit commands found in response');
             return;
         }
 
-        console.log(`[BotOutfitPanel] Found ${commands.length} commands to process:`, commands);
+        debugLog(`[BotOutfitPanel] Found ${commands.length} commands to process:`, commands);
 
         // Process each command
         for (const command of commands) {
             try {
                 await this.processSingleCommand(command);
             } catch (error) {
-                console.error(`Error processing command "${command}":`, error);
+                debugLog(`Error processing command "${command}":`, error, 'error');
             }
         }
 
@@ -626,7 +627,7 @@ export class BotOutfitPanel {
 
             const cleanValue = value.split('"').join('').trim();
 
-            console.log(`[BotOutfitPanel] Processing: ${action} ${slot} "${cleanValue}"`);
+            debugLog(`[BotOutfitPanel] Processing: ${action} ${slot} "${cleanValue}"`);
 
             // Apply the outfit change to the bot manager
             const message = await this.outfitManager.setOutfitItem(slot, action === 'remove' ? 'None' : cleanValue);
@@ -637,7 +638,7 @@ export class BotOutfitPanel {
             }
 
         } catch (error) {
-            console.error('Error processing single command:', error);
+            debugLog('Error processing single command:', error, 'error');
             throw error;
         }
     }

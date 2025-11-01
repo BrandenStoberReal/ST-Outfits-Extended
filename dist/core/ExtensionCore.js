@@ -42,7 +42,7 @@ function loadAutoOutfitSystem() {
             debugLog('AutoOutfitSystem module loaded successfully', null, 'info');
         }
         catch (error) {
-            console.error('[OutfitTracker] Failed to load AutoOutfitSystem:', error);
+            debugLog('[OutfitTracker] Failed to load AutoOutfitSystem:', error, 'error');
             debugLog('Failed to load AutoOutfitSystem, using dummy class', error, 'error');
             AutoOutfitSystem = class DummyAutoOutfitSystem {
             };
@@ -215,7 +215,7 @@ globalThis.outfitTrackerInterceptor = function (chat) {
             }
         }
         catch (error) {
-            console.error('[OutfitTracker] Error in interceptor:', error);
+            debugLog('[OutfitTracker] Error in interceptor:', error, 'error');
             debugLog('Error in interceptor', error, 'error');
         }
     });
@@ -234,7 +234,7 @@ export function initializeExtension() {
         debugLog('Starting extension initialization', null, 'info');
         const STContext = ((_b = (_a = window.SillyTavern) === null || _a === void 0 ? void 0 : _a.getContext) === null || _b === void 0 ? void 0 : _b.call(_a)) || ((_c = window.getContext) === null || _c === void 0 ? void 0 : _c.call(window));
         if (!STContext) {
-            console.error('[OutfitTracker] Required SillyTavern context is not available.');
+            debugLog('[OutfitTracker] Required SillyTavern context is not available.', null, 'error');
             throw new Error('Missing required SillyTavern globals.');
         }
         const storageService = new StorageService((data) => STContext.saveSettingsDebounced({ outfit_tracker: data }), () => STContext.extensionSettings.outfit_tracker);

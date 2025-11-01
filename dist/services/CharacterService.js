@@ -9,6 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 import { outfitStore } from '../common/Store.js';
 import { CharacterInfoType, getCharacterInfoById } from '../utils/CharacterUtils.js';
+import { debugLog } from '../logging/DebugLogger.js';
 /**
  * CharacterService - Handles character updates for the Outfit Tracker extension
  */
@@ -43,7 +44,7 @@ function refreshMacroProcessing() {
         }
     }
     catch (error) {
-        console.error('[OutfitTracker] Error refreshing macro processing:', error);
+        debugLog('[OutfitTracker] Error refreshing macro processing:', error, 'error');
     }
 }
 /**
@@ -103,10 +104,10 @@ export function updateForCurrentCharacter(botManager, userManager, botPanel, use
             }
             // Optionally trigger a refresh of macro processing after character change
             refreshMacroProcessing();
-            console.log('[OutfitTracker] Updated outfit managers for current character');
+            debugLog('[OutfitTracker] Updated outfit managers for current character');
         }
         catch (error) {
-            console.error('[OutfitTracker] Error updating for current character:', error);
+            debugLog('[OutfitTracker] Error updating for current character:', error, 'error');
             throw error;
         }
     });

@@ -36,7 +36,7 @@ async function loadAutoOutfitSystem(): Promise<void> {
         AutoOutfitSystem = autoOutfitModule.AutoOutfitService;
         debugLog('AutoOutfitSystem module loaded successfully', null, 'info');
     } catch (error) {
-        console.error('[OutfitTracker] Failed to load AutoOutfitSystem:', error);
+        debugLog('[OutfitTracker] Failed to load AutoOutfitSystem:', error, 'error');
         debugLog('Failed to load AutoOutfitSystem, using dummy class', error, 'error');
         AutoOutfitSystem = class DummyAutoOutfitSystem {
         };
@@ -225,7 +225,7 @@ function isMobileDevice(): boolean {
             debugLog('No outfit information to inject', null, 'debug');
         }
     } catch (error) {
-        console.error('[OutfitTracker] Error in interceptor:', error);
+        debugLog('[OutfitTracker] Error in interceptor:', error, 'error');
         debugLog('Error in interceptor', error, 'error');
     }
 };
@@ -244,7 +244,7 @@ export async function initializeExtension(): Promise<void> {
     const STContext = window.SillyTavern?.getContext?.() || window.getContext?.();
 
     if (!STContext) {
-        console.error('[OutfitTracker] Required SillyTavern context is not available.');
+        debugLog('[OutfitTracker] Required SillyTavern context is not available.', null, 'error');
         throw new Error('Missing required SillyTavern globals.');
     }
 

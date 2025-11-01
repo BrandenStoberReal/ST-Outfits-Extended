@@ -1,6 +1,3 @@
-/**
- * Utility functions for Outfit Tracker Extension
- */
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -10,6 +7,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+import { debugLog } from '../logging/DebugLogger.js';
+/**
+ * Utility functions for Outfit Tracker Extension
+ */
 export function generateShortId(id, maxLength = 8) {
     if (!id) {
         return '';
@@ -76,7 +77,7 @@ export function safeGet(obj, path, defaultValue = null) {
         return path.split('.').reduce((acc, key) => acc && acc[key], obj) || defaultValue;
     }
     catch (error) {
-        console.error(`Error in safeGet for path "${path}":`, error);
+        debugLog(`Error in safeGet for path "${path}":`, error, 'error');
         return defaultValue;
     }
 }
@@ -247,7 +248,7 @@ export function generateInstanceIdFromText(text_1) {
                 return hashArray.map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 16);
             }
             catch (err) {
-                console.warn('Crypto API failed, falling back to simple hash for instance ID generation', err);
+                debugLog('Crypto API failed, falling back to simple hash for instance ID generation', err, 'warn');
                 return generateInstanceIdFromTextSimple(normalizedText);
             }
         }

@@ -1,6 +1,7 @@
 import { outfitStore } from '../common/Store.js';
 import { ACCESSORY_SLOTS, CLOTHING_SLOTS } from '../config/constants.js';
 import { getCharacters } from '../utils/CharacterUtils.js';
+import { debugLog } from '../logging/DebugLogger.js';
 class CustomMacroService {
     constructor() {
         this.clothingSlots = CLOTHING_SLOTS;
@@ -81,7 +82,7 @@ class CustomMacroService {
             return typeof window.name2 !== 'undefined' ? window.name2 : 'Character';
         }
         catch (error) {
-            console.error('Error getting character name:', error);
+            debugLog('Error getting character name:', error, 'error');
             return 'Character';
         }
     }
@@ -182,7 +183,7 @@ class CustomMacroService {
             }
         }
         catch (error) {
-            console.error('Error getting slot value:', error);
+            debugLog('Error getting slot value:', error, 'error');
         }
         const result = 'None';
         this._setCache(cacheKey, result);
@@ -214,7 +215,7 @@ class CustomMacroService {
             return typeof window.name1 !== 'undefined' ? window.name1 : 'User';
         }
         catch (error) {
-            console.error('Error getting user name:', error);
+            debugLog('Error getting user name:', error, 'error');
             return 'User';
         }
     }
@@ -299,7 +300,7 @@ class CustomMacroService {
             return outfitInfo;
         }
         catch (error) {
-            console.error('[CustomMacroSystem] Error generating outfit info string:', error);
+            debugLog('[CustomMacroSystem] Error generating outfit info string:', error, 'error');
             return '';
         }
     }
