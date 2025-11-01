@@ -27,7 +27,7 @@ const mockContext = {
 (global as any).window.SillyTavern.getContext.mockReturnValue(mockContext);
 
 // Mock modules that will be imported
-jest.mock('../src/stores/Store.ts', () => ({
+jest.mock('../src/common/Store.ts', () => ({
     outfitStore: {
         setState: jest.fn(),
         getState: jest.fn(),

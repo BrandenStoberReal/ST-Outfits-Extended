@@ -1,5 +1,5 @@
 import {generateInstanceIdFromText} from '../utils/utilities';
-import {outfitStore} from '../stores/Store';
+import {outfitStore} from '../common/Store';
 import {ALL_SLOTS} from '../config/constants';
 
 

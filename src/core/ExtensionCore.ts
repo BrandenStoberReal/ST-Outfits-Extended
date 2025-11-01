@@ -1,7 +1,7 @@
 import {updateForCurrentCharacter} from '../services/CharacterService';
 import {customMacroSystem} from '../services/CustomMacroService';
 import {extension_api} from '../common/shared';
-import {outfitStore} from '../stores/Store';
+import {outfitStore} from '../common/Store';
 import {NewBotOutfitManager} from '../managers/NewBotOutfitManager';
 import {BotOutfitPanel} from '../panels/BotOutfitPanel';
 import {NewUserOutfitManager} from '../managers/NewUserOutfitManager';
@@ -17,8 +17,6 @@ import {DataManager} from '../managers/DataManager';
 import {OutfitDataService} from '../services/OutfitDataService';
 import {macroProcessor} from '../processors/MacroProcessor';
 import {debugLog} from '../logging/DebugLogger';
-import {PersistenceService} from "../services/PersistenceService";
-import {debouncedStore} from "../stores/DebouncedStore";
 
 declare const window: any;
 
@@ -181,8 +179,8 @@ function isMobileDevice(): boolean {
             return;
         }
 
-        const botManager = botPanel.botOutfitManager;
-        const userManager = userPanel.userOutfitManager;
+        const botManager = botPanel.outfitManager;
+        const userManager = userPanel.outfitManager;
 
         if (!botManager || !userManager) {
             debugLog('Managers not available for interceptor', {
@@ -256,12 +254,12 @@ export async function initializeExtension(): Promise<void> {
     );
 
     const dataManager = new DataManager(storageService);
+
     await dataManager.initialize();
+    outfitStore.setDataManager(dataManager);
 
-    const persistenceService = new PersistenceService(dataManager);
-    debouncedStore.setPersistenceService(persistenceService);
-
-    persistenceService.loadState();
+    // Load the stored state into the outfit store after initialization
+    outfitStore.loadState();
     debugLog('Data manager and outfit store initialized', null, 'info');
 
     const outfitDataService = new OutfitDataService(dataManager);

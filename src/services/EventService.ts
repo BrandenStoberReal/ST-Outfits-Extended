@@ -1,11 +1,10 @@
 import {EXTENSION_EVENTS, extensionEventBus} from '../core/events';
 import {customMacroSystem} from './CustomMacroService';
-import {outfitStore} from '../stores/Store';
+import {outfitStore} from '../common/Store';
 import {generateMessageHash} from '../utils/utilities';
 import {NewBotOutfitManager} from '../managers/NewBotOutfitManager';
 import {NewUserOutfitManager} from '../managers/NewUserOutfitManager';
 import {AutoOutfitService} from './AutoOutfitService';
-import {debouncedStore} from '../stores/DebouncedStore';
 
 
 interface EventServiceContext {
@@ -184,7 +183,8 @@ class EventService {
                 const oldUserOutfitData = {...this.userManager.getCurrentOutfit()};
                 outfitStore.setUserOutfit(oldUserInstanceId, oldUserOutfitData);
             }
-            debouncedStore.saveState();
+
+            outfitStore.saveState();
 
             await this.processMacrosInFirstMessage(this.context);
             await this.updateForCurrentCharacter();
@@ -217,6 +217,8 @@ class EventService {
 
         (window as any).restartLLM = async (...args: any[]) => {
             console.log('[OutfitTracker] Chat reset triggered (restartLLM).');
+
+            outfitStore.flush();
 
             const botOutfitInstanceId = this.botManager.getOutfitInstanceId();
             const userOutfitInstanceId = this.userManager.getOutfitInstanceId();
@@ -296,7 +298,7 @@ class EventService {
                 outfitStore.setUserOutfit(userOutfitInstanceId, userOutfitData);
             }
 
-            debouncedStore.saveState();
+            outfitStore.saveState();
 
             await originalClearChat.apply(this, args);
 

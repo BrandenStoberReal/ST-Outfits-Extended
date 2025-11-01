@@ -1,8 +1,5 @@
-import {presetManager} from './PresetManager';
 import {OutfitManager} from './OutfitManager';
-import {debouncedStore} from '../stores/DebouncedStore';
-import {outfitStore} from '../stores/Store';
-
+import {outfitStore} from '../common/Store';
 
 export class NewUserOutfitManager extends OutfitManager {
 
@@ -48,7 +45,7 @@ export class NewUserOutfitManager extends OutfitManager {
         });
 
         outfitStore.setUserOutfit(this.outfitInstanceId, userOutfit);
-        debouncedStore.saveState();
+        outfitStore.saveState();
     }
 
     async setOutfitItem(slot: string, value: string): Promise<string | null> {
@@ -72,7 +69,8 @@ export class NewUserOutfitManager extends OutfitManager {
             presetData[slot] = this.currentValues[slot];
         });
 
-        presetManager.savePreset(actualInstanceId, presetName, presetData, 'user');
+        outfitStore.savePreset('user', actualInstanceId, presetName, presetData, 'user');
+        outfitStore.saveState(); // Ensure the presets are saved to persistent storage
 
         if (outfitStore.getSetting('enableSysMessages')) {
             return `Saved "${presetName}" outfit for user character (instance: ${actualInstanceId}).`;
@@ -87,7 +85,7 @@ export class NewUserOutfitManager extends OutfitManager {
         }
 
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
-        const presets = presetManager.getPresets(actualInstanceId, 'user');
+        const {user: presets} = outfitStore.getPresets('user', actualInstanceId);
 
         if (!presets || !presets[presetName]) {
             return `[Outfit System] Preset "${presetName}" not found for user instance ${actualInstanceId}.`;
@@ -116,7 +114,7 @@ export class NewUserOutfitManager extends OutfitManager {
         }
 
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
-        const presets = presetManager.getPresets(actualInstanceId, 'user');
+        const {user: presets} = outfitStore.getPresets('user', actualInstanceId);
 
         if (!presets || !presets[presetName]) {
             return `[Outfit System] Preset "${presetName}" not found for user instance ${actualInstanceId}.`;
@@ -129,13 +127,14 @@ export class NewUserOutfitManager extends OutfitManager {
         if (defaultPresetName === presetName) {
             // If we're deleting the preset that's currently set as default, 
             // we need to clear the default status
-            presetManager.deletePreset(actualInstanceId, 'default', 'user');
+            outfitStore.deletePreset('user', actualInstanceId, 'default', 'user');
             message = `Deleted "${presetName}" and cleared it as your default outfit (instance: ${actualInstanceId}).`;
         } else {
             message = `Deleted your "${presetName}" outfit for instance ${actualInstanceId}.`;
         }
 
-        presetManager.deletePreset(actualInstanceId, presetName, 'user');
+        outfitStore.deletePreset('user', actualInstanceId, presetName, 'user');
+        outfitStore.saveState(); // Ensure the presets are saved to persistent storage
 
         if (outfitStore.getSetting('enableSysMessages')) {
             return message;
@@ -146,7 +145,7 @@ export class NewUserOutfitManager extends OutfitManager {
 
     getPresets(instanceId: string | null = null): string[] {
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
-        const presets = presetManager.getPresets(actualInstanceId, 'user');
+        const {user: presets} = outfitStore.getPresets('user', actualInstanceId);
 
         if (!presets) {
             return [];
@@ -163,7 +162,7 @@ export class NewUserOutfitManager extends OutfitManager {
      */
     async loadDefaultOutfit(instanceId: string | null = null): Promise<string> {
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
-        const presets = presetManager.getPresets(actualInstanceId, 'user');
+        const {user: presets} = outfitStore.getPresets('user', actualInstanceId);
 
         if (!presets || !presets['default']) {
             return `[Outfit System] No default outfit set for user (instance: ${actualInstanceId}). Having a default outfit is HEAVILY encouraged.`;
@@ -200,7 +199,7 @@ export class NewUserOutfitManager extends OutfitManager {
         }
 
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
-        const presets = presetManager.getPresets(actualInstanceId, 'user');
+        const {user: presets} = outfitStore.getPresets('user', actualInstanceId);
 
         if (!presets || !presets[presetName]) {
             return `[Outfit System] Preset "${presetName}" does not exist for user (instance: ${actualInstanceId}). Cannot overwrite.`;
@@ -212,7 +211,7 @@ export class NewUserOutfitManager extends OutfitManager {
             presetData[slot] = this.currentValues[slot];
         });
 
-        presetManager.savePreset(actualInstanceId, presetName, presetData, 'user');
+        outfitStore.savePreset('user', actualInstanceId, presetName, presetData, 'user');
 
         if (outfitStore.getSetting('enableSysMessages')) {
             return `Overwrote your "${presetName}" outfit (instance: ${actualInstanceId}).`;
@@ -223,7 +222,7 @@ export class NewUserOutfitManager extends OutfitManager {
 
     getAllPresets(instanceId: string | null = null): { [key: string]: { [key: string]: string; }; } {
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
-        return presetManager.getPresets(actualInstanceId, 'user');
+        return outfitStore.getAllPresets('user', actualInstanceId, 'user');
     }
 
     setPromptInjectionEnabled(enabled: boolean, instanceId: string | null = null): void {
@@ -246,7 +245,7 @@ export class NewUserOutfitManager extends OutfitManager {
         outfitStore.state.userInstances[actualInstanceId] = updatedInstanceData;
 
         outfitStore.notifyListeners();
-        debouncedStore.saveState();
+        outfitStore.saveState();
     }
 
     getPromptInjectionEnabled(instanceId: string | null = null): boolean {
@@ -265,14 +264,14 @@ export class NewUserOutfitManager extends OutfitManager {
 
     hasDefaultOutfit(instanceId: string | null = null): boolean {
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
-        const presets = presetManager.getPresets(actualInstanceId, 'user');
+        const {user: presets} = outfitStore.getPresets('user', actualInstanceId);
 
         return Boolean(presets && presets['default']);
     }
 
     getDefaultPresetName(instanceId: string | null = null): string | null {
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
-        const presets = presetManager.getPresets(actualInstanceId, 'user');
+        const {user: presets} = outfitStore.getPresets('user', actualInstanceId);
 
         if (presets && presets['default']) {
             return 'default';
@@ -283,7 +282,7 @@ export class NewUserOutfitManager extends OutfitManager {
 
     async setPresetAsDefault(presetName: string, instanceId: string | null = null): Promise<string> {
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
-        const presets = presetManager.getPresets(actualInstanceId, 'user');
+        const {user: presets} = outfitStore.getPresets('user', actualInstanceId);
 
         if (!presets || !presets[presetName]) {
             return `[Outfit System] Preset "${presetName}" does not exist for user instance ${actualInstanceId}. Cannot set as default.`;
@@ -291,7 +290,8 @@ export class NewUserOutfitManager extends OutfitManager {
 
         const presetToSetAsDefault = presets[presetName];
 
-        presetManager.savePreset(actualInstanceId, 'default', presetToSetAsDefault, 'user');
+        outfitStore.savePreset('user', actualInstanceId, 'default', presetToSetAsDefault, 'user');
+        outfitStore.saveState(); // Ensure the presets are saved to persistent storage
 
         if (outfitStore.getSetting('enableSysMessages')) {
             return `Set "${presetName}" as your default outfit (instance: ${actualInstanceId}).`;
@@ -326,7 +326,7 @@ export class NewUserOutfitManager extends OutfitManager {
         }
 
         outfitStore.setUserOutfit(instanceId, outfitData);
-        debouncedStore.saveState();
+        outfitStore.saveState();
     }
 
     async applyDefaultOutfitAfterReset(instanceId: string | null = null): Promise<boolean> {

@@ -1,4 +1,4 @@
-import {outfitStore} from '../stores/Store';
+import {outfitStore} from '../common/Store';
 import {ACCESSORY_SLOTS, CLOTHING_SLOTS} from '../config/constants';
 import {getCharacters} from '../utils/CharacterUtils';
 

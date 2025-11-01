@@ -1,9 +1,8 @@
 import {dragElementWithSave, resizeElement} from '../common/shared';
-import {outfitStore} from '../stores/Store';
+import {outfitStore} from '../common/Store';
 import {customMacroSystem} from '../services/CustomMacroService';
 import {debugLogger} from '../logging/DebugLogger';
 import {CharacterInfoType, getCharacterInfoById} from '../utils/CharacterUtils';
-import {debouncedStore} from '../stores/DebouncedStore';
 
 interface OutfitData {
     [key: string]: string;
@@ -647,7 +646,7 @@ export class DebugPanel {
                 if (confirm('Are you sure you want to import this outfit data? This will replace all current data.')) {
                     // Update store state with imported data
                     outfitStore.setState(data);
-                    debouncedStore.saveState(); // Save to storage
+                    outfitStore.saveState(); // Save to storage
                     this.renderContent();
                     toastr.success('Outfit data imported!', 'Debug Panel');
                 }

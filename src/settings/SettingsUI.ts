@@ -1,4 +1,4 @@
-import {outfitStore} from '../stores/Store';
+import {outfitStore} from '../common/Store';
 
 interface IDummyAutoOutfitSystem {
     name: string;

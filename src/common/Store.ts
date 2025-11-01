@@ -1,8 +1,8 @@
 import {DEFAULT_SETTINGS} from '../config/constants';
 import {deepClone} from '../utils/utilities';
-import {debouncedStore} from './DebouncedStore';
+import {DataManager} from '../managers/DataManager';
 
-export interface OutfitData {
+interface OutfitData {
     [key: string]: string;
 }
 
@@ -24,7 +24,7 @@ interface UserInstances {
     [instanceId: string]: any;
 }
 
-export interface Presets {
+interface Presets {
     bot: {
         [key: string]: {
             [presetName: string]: OutfitData;
@@ -82,7 +82,7 @@ interface References {
     autoOutfitSystem: any;
 }
 
-export interface State {
+interface State {
     botOutfits: any;
     userOutfits: any;
     botInstances: BotInstances;
@@ -100,6 +100,7 @@ export interface State {
 
 class OutfitStore {
     state: State;
+    dataManager: DataManager | null;
 
     constructor() {
         this.state = {
@@ -130,6 +131,11 @@ class OutfitStore {
             },
             listeners: [],
         };
+        this.dataManager = null;
+    }
+
+    setDataManager(dataManager: DataManager): void {
+        this.dataManager = dataManager;
     }
 
     subscribe(listener: (state: State) => void): () => void {
@@ -258,6 +264,115 @@ class OutfitStore {
         this.notifyListeners();
     }
 
+    getPresets(characterId: string, instanceId: string): {
+        bot: { [presetName: string]: OutfitData },
+        user: { [presetName: string]: OutfitData }
+    } {
+        const botPresetKey = this._generateBotPresetKey(characterId, instanceId);
+        const userPresetKey = instanceId || 'default';
+
+        // Ensure presets and its sub-properties exist to prevent undefined errors
+        const botPresets = this.state.presets?.bot || {};
+        const userPresets = this.state.presets?.user || {};
+
+        return {
+            bot: deepClone(botPresets[botPresetKey] || {}),
+            user: deepClone(userPresets[userPresetKey] || {}),
+        };
+    }
+
+    savePreset(characterId: string, instanceId: string, presetName: string, outfitData: OutfitData, type: 'bot' | 'user' = 'bot'): void {
+        if (type === 'bot') {
+            const key = this._generateBotPresetKey(characterId, instanceId);
+
+            // Ensure presets.bot exists
+            if (!this.state.presets.bot) {
+                this.state.presets.bot = {};
+            }
+
+            if (!this.state.presets.bot[key]) {
+                this.state.presets.bot[key] = {};
+            }
+            this.state.presets.bot[key][presetName] = {...outfitData};
+        } else {
+            const key = instanceId || 'default';
+
+            // Ensure presets.user exists
+            if (!this.state.presets.user) {
+                this.state.presets.user = {};
+            }
+
+            if (!this.state.presets.user[key]) {
+                this.state.presets.user[key] = {};
+            }
+            this.state.presets.user[key][presetName] = {...outfitData};
+        }
+        this.notifyListeners();
+    }
+
+    deletePreset(characterId: string, instanceId: string, presetName: string, type: 'bot' | 'user' = 'bot'): void {
+        if (type === 'bot') {
+            const key = this._generateBotPresetKey(characterId, instanceId);
+
+            if (this.state.presets.bot?.[key]?.[presetName]) {
+                delete this.state.presets.bot[key][presetName];
+                if (Object.keys(this.state.presets.bot[key]).length === 0) {
+                    delete this.state.presets.bot[key];
+                }
+            }
+        } else {
+            const key = instanceId || 'default';
+
+            if (this.state.presets.user?.[key]?.[presetName]) {
+                delete this.state.presets.user[key][presetName];
+                if (Object.keys(this.state.presets.user[key]).length === 0) {
+                    delete this.state.presets.user[key];
+                }
+            }
+        }
+        this.notifyListeners();
+    }
+
+    deleteAllPresetsForCharacter(characterId: string, instanceId: string, type: 'bot' | 'user' = 'bot'): void {
+        if (type === 'bot') {
+            const key = this._generateBotPresetKey(characterId, instanceId);
+
+            if (this.state.presets.bot?.[key]) {
+                delete this.state.presets.bot[key];
+            }
+        } else {
+            const key = instanceId || 'default';
+
+            if (this.state.presets.user?.[key]) {
+                delete this.state.presets.user[key];
+            }
+        }
+        this.notifyListeners();
+    }
+
+    getAllPresets(characterId: string, instanceId: string, type: 'bot' | 'user' = 'bot'): {
+        [presetName: string]: OutfitData
+    } {
+        if (type === 'bot') {
+            const key = this._generateBotPresetKey(characterId, instanceId);
+
+            return deepClone(this.state.presets.bot?.[key] || {});
+        }
+        const key = instanceId || 'default';
+
+        return deepClone(this.state.presets.user?.[key] || {});
+    }
+
+    _generateBotPresetKey(characterId: string, instanceId: string): string {
+        if (!characterId) {
+            throw new Error('Character ID is required for generating bot preset key');
+        }
+        if (!instanceId) {
+            throw new Error('Instance ID is required for generating bot preset key');
+        }
+        return `${characterId}_${instanceId}`;
+    }
+
     getSetting(key: keyof Settings): any {
         return this.state.settings[key];
     }
@@ -323,7 +438,44 @@ class OutfitStore {
 
     updateAndSave(updates: Partial<State>): void {
         this.setState(updates);
-        debouncedStore.saveState();
+        this.saveState();
+    }
+
+    saveState(): void {
+        if (!this.dataManager) {
+            return;
+        }
+        const {botInstances, userInstances, presets, settings} = this.state;
+
+        this.dataManager.saveOutfitData({botInstances, userInstances, presets});
+        this.dataManager.saveSettings(settings);
+    }
+
+
+    loadState(): void {
+        if (!this.dataManager) {
+            return;
+        }
+        const {botInstances, userInstances, presets} = this.dataManager.loadOutfitData();
+        const settings = this.dataManager.loadSettings();
+
+        // Ensure presets is properly structured even if loaded data is undefined or missing
+        const safePresets = presets || {
+            bot: {},
+            user: {}
+        };
+
+        this.setState({botInstances, userInstances, presets: safePresets, settings});
+
+        // Notify that state has been loaded, which could trigger managers to reload presets if needed
+        this.notifyListeners();
+    }
+
+    flush(): void {
+        if (!this.dataManager) {
+            return;
+        }
+        this.dataManager.flush();
     }
 
     cleanupUnusedInstances(characterId: string, validInstanceIds: string[]): void {

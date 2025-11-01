@@ -1,6 +1,5 @@
 import { DEFAULT_SETTINGS } from '../config/constants.js';
 import { deepClone } from '../utils/utilities.js';
-import { debouncedStore } from './DebouncedStore.js';
 class OutfitStore {
     constructor() {
         this.state = {
@@ -31,6 +30,10 @@ class OutfitStore {
             },
             listeners: [],
         };
+        this.dataManager = null;
+    }
+    setDataManager(dataManager) {
+        this.dataManager = dataManager;
     }
     subscribe(listener) {
         this.state.listeners.push(listener);
@@ -109,6 +112,99 @@ class OutfitStore {
         this.state.userInstances[instanceId] = updatedInstanceData;
         this.notifyListeners();
     }
+    getPresets(characterId, instanceId) {
+        var _a, _b;
+        const botPresetKey = this._generateBotPresetKey(characterId, instanceId);
+        const userPresetKey = instanceId || 'default';
+        // Ensure presets and its sub-properties exist to prevent undefined errors
+        const botPresets = ((_a = this.state.presets) === null || _a === void 0 ? void 0 : _a.bot) || {};
+        const userPresets = ((_b = this.state.presets) === null || _b === void 0 ? void 0 : _b.user) || {};
+        return {
+            bot: deepClone(botPresets[botPresetKey] || {}),
+            user: deepClone(userPresets[userPresetKey] || {}),
+        };
+    }
+    savePreset(characterId, instanceId, presetName, outfitData, type = 'bot') {
+        if (type === 'bot') {
+            const key = this._generateBotPresetKey(characterId, instanceId);
+            // Ensure presets.bot exists
+            if (!this.state.presets.bot) {
+                this.state.presets.bot = {};
+            }
+            if (!this.state.presets.bot[key]) {
+                this.state.presets.bot[key] = {};
+            }
+            this.state.presets.bot[key][presetName] = Object.assign({}, outfitData);
+        }
+        else {
+            const key = instanceId || 'default';
+            // Ensure presets.user exists
+            if (!this.state.presets.user) {
+                this.state.presets.user = {};
+            }
+            if (!this.state.presets.user[key]) {
+                this.state.presets.user[key] = {};
+            }
+            this.state.presets.user[key][presetName] = Object.assign({}, outfitData);
+        }
+        this.notifyListeners();
+    }
+    deletePreset(characterId, instanceId, presetName, type = 'bot') {
+        var _a, _b, _c, _d;
+        if (type === 'bot') {
+            const key = this._generateBotPresetKey(characterId, instanceId);
+            if ((_b = (_a = this.state.presets.bot) === null || _a === void 0 ? void 0 : _a[key]) === null || _b === void 0 ? void 0 : _b[presetName]) {
+                delete this.state.presets.bot[key][presetName];
+                if (Object.keys(this.state.presets.bot[key]).length === 0) {
+                    delete this.state.presets.bot[key];
+                }
+            }
+        }
+        else {
+            const key = instanceId || 'default';
+            if ((_d = (_c = this.state.presets.user) === null || _c === void 0 ? void 0 : _c[key]) === null || _d === void 0 ? void 0 : _d[presetName]) {
+                delete this.state.presets.user[key][presetName];
+                if (Object.keys(this.state.presets.user[key]).length === 0) {
+                    delete this.state.presets.user[key];
+                }
+            }
+        }
+        this.notifyListeners();
+    }
+    deleteAllPresetsForCharacter(characterId, instanceId, type = 'bot') {
+        var _a, _b;
+        if (type === 'bot') {
+            const key = this._generateBotPresetKey(characterId, instanceId);
+            if ((_a = this.state.presets.bot) === null || _a === void 0 ? void 0 : _a[key]) {
+                delete this.state.presets.bot[key];
+            }
+        }
+        else {
+            const key = instanceId || 'default';
+            if ((_b = this.state.presets.user) === null || _b === void 0 ? void 0 : _b[key]) {
+                delete this.state.presets.user[key];
+            }
+        }
+        this.notifyListeners();
+    }
+    getAllPresets(characterId, instanceId, type = 'bot') {
+        var _a, _b;
+        if (type === 'bot') {
+            const key = this._generateBotPresetKey(characterId, instanceId);
+            return deepClone(((_a = this.state.presets.bot) === null || _a === void 0 ? void 0 : _a[key]) || {});
+        }
+        const key = instanceId || 'default';
+        return deepClone(((_b = this.state.presets.user) === null || _b === void 0 ? void 0 : _b[key]) || {});
+    }
+    _generateBotPresetKey(characterId, instanceId) {
+        if (!characterId) {
+            throw new Error('Character ID is required for generating bot preset key');
+        }
+        if (!instanceId) {
+            throw new Error('Instance ID is required for generating bot preset key');
+        }
+        return `${characterId}_${instanceId}`;
+    }
     getSetting(key) {
         return this.state.settings[key];
     }
@@ -160,7 +256,36 @@ class OutfitStore {
     }
     updateAndSave(updates) {
         this.setState(updates);
-        debouncedStore.saveState();
+        this.saveState();
+    }
+    saveState() {
+        if (!this.dataManager) {
+            return;
+        }
+        const { botInstances, userInstances, presets, settings } = this.state;
+        this.dataManager.saveOutfitData({ botInstances, userInstances, presets });
+        this.dataManager.saveSettings(settings);
+    }
+    loadState() {
+        if (!this.dataManager) {
+            return;
+        }
+        const { botInstances, userInstances, presets } = this.dataManager.loadOutfitData();
+        const settings = this.dataManager.loadSettings();
+        // Ensure presets is properly structured even if loaded data is undefined or missing
+        const safePresets = presets || {
+            bot: {},
+            user: {}
+        };
+        this.setState({ botInstances, userInstances, presets: safePresets, settings });
+        // Notify that state has been loaded, which could trigger managers to reload presets if needed
+        this.notifyListeners();
+    }
+    flush() {
+        if (!this.dataManager) {
+            return;
+        }
+        this.dataManager.flush();
     }
     cleanupUnusedInstances(characterId, validInstanceIds) {
         if (!characterId || !this.state.botInstances[characterId]) {

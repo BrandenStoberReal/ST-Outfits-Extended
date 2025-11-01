@@ -7,6 +7,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+import { deepMerge } from '../utils/utilities.js';
 const DATA_VERSION = '1.0.0';
 class DataManager {
     constructor(storageService) {
@@ -30,30 +31,49 @@ class DataManager {
         }
     }
     save(data) {
-        this.data = data;
-        this.storageService.save(this.data);
-    }
-    savePartial(data) {
-        this.data = Object.assign(Object.assign({}, this.data), data);
+        this.data = deepMerge(this.data, data);
         this.storageService.save(this.data);
     }
     load() {
         return this.data;
     }
+    saveOutfitData(outfitData) {
+        this.save({
+            instances: outfitData.botInstances || {},
+            user_instances: outfitData.userInstances || {},
+            presets: outfitData.presets || {},
+        });
+    }
+    // Direct method to save wiped outfit data that bypasses deepMerge for complete wipe operations
+    saveWipedOutfitData() {
+        // Directly set the properties without using deepMerge
+        this.data.instances = {};
+        this.data.user_instances = {};
+        this.data.presets = {};
+        // Save the updated data to storage
+        this.storageService.save(this.data);
+    }
     loadOutfitData() {
         const data = this.load();
         return {
-            botInstances: data.botInstances || {},
-            userInstances: data.userInstances || {},
+            botInstances: data.instances || {},
+            userInstances: data.user_instances || {},
             presets: data.presets || {},
         };
     }
     saveSettings(settings) {
-        this.savePartial({ settings });
+        this.save({ settings });
     }
     loadSettings() {
         const data = this.load();
         return data.settings || {};
+    }
+    flush() {
+        // No flush operation needed as the save function doesn't support it
+        // If needed, this could trigger a save operation
+        if (this.data) {
+            this.storageService.save(this.data);
+        }
     }
 }
 export { DataManager };

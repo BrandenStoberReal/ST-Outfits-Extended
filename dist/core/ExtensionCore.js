@@ -174,8 +174,8 @@ globalThis.outfitTrackerInterceptor = function (chat) {
                 }, 'warn');
                 return;
             }
-            const botManager = botPanel.botOutfitManager;
-            const userManager = userPanel.userOutfitManager;
+            const botManager = botPanel.outfitManager;
+            const userManager = userPanel.outfitManager;
             if (!botManager || !userManager) {
                 debugLog('Managers not available for interceptor', {
                     botManager: Boolean(botManager),
@@ -220,8 +220,6 @@ globalThis.outfitTrackerInterceptor = function (chat) {
         }
     });
 };
-import { PersistenceService } from "../services/PersistenceService.js";
-import { debouncedStore } from "../common/DebouncedStore.js";
 /**
  * Initializes the outfit extension.
  * This is the main initialization function that loads all components of the system,
@@ -242,9 +240,9 @@ export function initializeExtension() {
         const storageService = new StorageService((data) => STContext.saveSettingsDebounced({ outfit_tracker: data }), () => STContext.extensionSettings.outfit_tracker);
         const dataManager = new DataManager(storageService);
         yield dataManager.initialize();
-        const persistenceService = new PersistenceService(dataManager);
-        debouncedStore.setPersistenceService(persistenceService);
-        persistenceService.loadState();
+        outfitStore.setDataManager(dataManager);
+        // Load the stored state into the outfit store after initialization
+        outfitStore.loadState();
         debugLog('Data manager and outfit store initialized', null, 'info');
         const outfitDataService = new OutfitDataService(dataManager);
         const settings = dataManager.loadSettings();
