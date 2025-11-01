@@ -349,9 +349,9 @@ export class DebugPanel {
 
         // Add event listener for macro testing
         setTimeout(() => {
-            document.getElementById('macro-test-btn')?.addEventListener('click', async () => {
+            document.getElementById('macro-test-btn')?.addEventListener('click', () => {
                 const input = (document.getElementById('macro-test-input') as HTMLTextAreaElement).value;
-                const output = await customMacroSystem.replaceMacrosInText(input);
+                const output = customMacroSystem.replaceMacrosInText(input);
 
                 (document.getElementById('macro-test-output') as HTMLElement).innerText = output;
             });

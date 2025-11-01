@@ -1,17 +1,7 @@
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 import { outfitStore } from '../common/Store.js';
 import { ACCESSORY_SLOTS, CLOTHING_SLOTS } from '../config/constants.js';
 import { macroProcessor } from '../processors/MacroProcessor.js';
 import { getCharacters } from '../utils/CharacterUtils.js';
-import { generateInstanceIdFromText } from '../utils/utilities.js';
 class CustomMacroService {
     constructor() {
         this.clothingSlots = CLOTHING_SLOTS;
@@ -27,8 +17,8 @@ class CustomMacroService {
             ctx.registerMacro('char', () => this.getCurrentCharName());
             ctx.registerMacro('user', () => this.getCurrentUserName());
             this.allSlots.forEach(slot => {
-                ctx.registerMacro(`char_${slot}`, () => __awaiter(this, void 0, void 0, function* () { return yield this.getCurrentSlotValue('char', slot); }));
-                ctx.registerMacro(`user_${slot}`, () => __awaiter(this, void 0, void 0, function* () { return yield this.getCurrentSlotValue('user', slot); }));
+                ctx.registerMacro(`char_${slot}`, () => this.getCurrentSlotValue('char', slot));
+                ctx.registerMacro(`user_${slot}`, () => this.getCurrentSlotValue('user', slot));
             });
         }
     }
@@ -55,7 +45,7 @@ class CustomMacroService {
                     ctx.registerMacro(characterName, () => characterName);
                     this.allSlots.forEach(slot => {
                         const macroName = `${characterName}_${slot}`;
-                        ctx.registerMacro(macroName, () => __awaiter(this, void 0, void 0, function* () { return yield this.getCurrentSlotValue(characterName, slot, characterName); }));
+                        ctx.registerMacro(macroName, () => this.getCurrentSlotValue(characterName, slot, characterName));
                     });
                 }
             }
@@ -97,108 +87,111 @@ class CustomMacroService {
             return 'Character';
         }
     }
-    getCurrentSlotValue(macroType_1, slotName_1) {
-        return __awaiter(this, arguments, void 0, function* (macroType, slotName, charNameParam = null) {
-            var _a, _b;
-            if (!this.allSlots.includes(slotName)) {
-                return 'None';
-            }
-            const cacheKey = this._generateCacheKey(macroType, slotName, charNameParam);
-            const cachedValue = this.macroValueCache.get(cacheKey);
-            if (cachedValue && Date.now() - cachedValue.timestamp < this.cacheExpiryTime) {
-                return cachedValue.value;
-            }
-            try {
-                const context = ((_a = window.SillyTavern) === null || _a === void 0 ? void 0 : _a.getContext) ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
-                const characters = getCharacters();
-                let charId = null;
-                if (charNameParam) {
-                    if (context && characters) {
-                        const character = characters.find((c) => c.name === charNameParam);
-                        if (character) {
-                            charId = characters.indexOf(character);
-                        }
-                        else if (context.characterId && context.getName) {
-                            const currentCharName = context.getName();
-                            if (currentCharName === charNameParam) {
-                                charId = context.characterId;
-                            }
-                        }
-                        if (charId === null) {
-                            this._setCache(cacheKey, 'None');
-                            return 'None';
+    getCurrentSlotValue(macroType, slotName, charNameParam = null) {
+        var _a, _b;
+        if (!this.allSlots.includes(slotName)) {
+            return 'None';
+        }
+        const cacheKey = this._generateCacheKey(macroType, slotName, charNameParam);
+        const cachedValue = this.macroValueCache.get(cacheKey);
+        if (cachedValue && Date.now() - cachedValue.timestamp < this.cacheExpiryTime) {
+            return cachedValue.value;
+        }
+        try {
+            const context = ((_a = window.SillyTavern) === null || _a === void 0 ? void 0 : _a.getContext) ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
+            const characters = getCharacters();
+            let charId = null;
+            if (charNameParam) {
+                if (context && characters) {
+                    const character = characters.find((c) => c.name === charNameParam);
+                    if (character) {
+                        charId = characters.indexOf(character);
+                    }
+                    else if (context.characterId && context.getName) {
+                        const currentCharName = context.getName();
+                        if (currentCharName === charNameParam) {
+                            charId = context.characterId;
                         }
                     }
-                }
-                else if (macroType === 'char' || macroType === 'bot') {
-                    charId = (context === null || context === void 0 ? void 0 : context.characterId) || null;
-                }
-                else if (['user'].includes(macroType)) {
-                    charId = null;
-                }
-                else if (context && context.characterId && context.getName) {
-                    const currentCharName = context.getName();
-                    if (currentCharName === macroType) {
-                        charId = context.characterId;
-                    }
-                }
-                const state = outfitStore.getState();
-                let instanceId = state.currentOutfitInstanceId;
-                if (!instanceId) {
-                    const firstBotMessage = (_b = context === null || context === void 0 ? void 0 : context.chat) === null || _b === void 0 ? void 0 : _b.find((message) => !message.is_user && !message.is_system);
-                    if (firstBotMessage) {
-                        const processedMessage = macroProcessor.cleanOutfitMacrosFromText(firstBotMessage.mes);
-                        // Use the same function that is used in MacroProcessor to ensure consistency
-                        instanceId = yield generateInstanceIdFromText(processedMessage);
-                        if (charId !== null && (macroType === 'char' || macroType === 'bot' || charNameParam || (this.isValidCharacterName(macroType) && !['user'].includes(macroType)))) {
-                            const charOutfitData = outfitStore.getBotOutfit(charId.toString(), instanceId);
-                            if (charOutfitData && charOutfitData[slotName]) {
-                                this._setCache(cacheKey, charOutfitData[slotName]);
-                                return charOutfitData[slotName];
-                            }
-                        }
-                        else if (macroType === 'user') {
-                            const userOutfitData = outfitStore.getUserOutfit(instanceId);
-                            if (userOutfitData && userOutfitData[slotName]) {
-                                this._setCache(cacheKey, userOutfitData[slotName]);
-                                return userOutfitData[slotName];
-                            }
-                        }
+                    if (charId === null) {
                         this._setCache(cacheKey, 'None');
                         return 'None';
+                    }
+                }
+            }
+            else if (macroType === 'char' || macroType === 'bot') {
+                charId = (context === null || context === void 0 ? void 0 : context.characterId) || null;
+            }
+            else if (['user'].includes(macroType)) {
+                charId = null;
+            }
+            else if (context && context.characterId && context.getName) {
+                const currentCharName = context.getName();
+                if (currentCharName === macroType) {
+                    charId = context.characterId;
+                }
+            }
+            const state = outfitStore.getState();
+            let instanceId = state.currentOutfitInstanceId;
+            if (!instanceId) {
+                const firstBotMessage = (_b = context === null || context === void 0 ? void 0 : context.chat) === null || _b === void 0 ? void 0 : _b.find((message) => !message.is_user && !message.is_system);
+                if (firstBotMessage) {
+                    const processedMessage = macroProcessor.cleanOutfitMacrosFromText(firstBotMessage.mes);
+                    let hash = 0;
+                    for (let i = 0; i < processedMessage.length; i++) {
+                        const char = processedMessage.charCodeAt(i);
+                        hash = ((hash << 5) - hash) + char;
+                        hash |= 0;
+                    }
+                    instanceId = Math.abs(hash).toString(36);
+                    if (charId !== null && (macroType === 'char' || macroType === 'bot' || charNameParam || (this.isValidCharacterName(macroType) && !['user'].includes(macroType)))) {
+                        const charOutfitData = outfitStore.getBotOutfit(charId.toString(), instanceId);
+                        if (charOutfitData && charOutfitData[slotName]) {
+                            this._setCache(cacheKey, charOutfitData[slotName]);
+                            return charOutfitData[slotName];
+                        }
+                    }
+                    else if (macroType === 'user') {
+                        const userOutfitData = outfitStore.getUserOutfit(instanceId);
+                        if (userOutfitData && userOutfitData[slotName]) {
+                            this._setCache(cacheKey, userOutfitData[slotName]);
+                            return userOutfitData[slotName];
+                        }
                     }
                     this._setCache(cacheKey, 'None');
                     return 'None';
                 }
-                if (charId !== null && (macroType === 'char' || macroType === 'bot' || charNameParam || (this.isValidCharacterName(macroType) && !['user'].includes(macroType)))) {
-                    const botOutfitManager = window.outfitTracker.botOutfitPanel.outfitManager;
-                    if (!botOutfitManager.getPromptInjectionEnabled()) {
-                        return 'None';
-                    }
-                    const outfitData = outfitStore.getBotOutfit(charId.toString(), instanceId);
-                    const result = outfitData[slotName] || 'None';
-                    this._setCache(cacheKey, result);
-                    return result;
-                }
-                else if (macroType === 'user') {
-                    const userOutfitManager = window.outfitTracker.userOutfitPanel.outfitManager;
-                    if (!userOutfitManager.getPromptInjectionEnabled()) {
-                        return 'None';
-                    }
-                    const currentInstanceId = typeof outfitStore.getCurrentInstanceId === 'function' ? outfitStore.getCurrentInstanceId() : null;
-                    const userOutfitData = outfitStore.getUserOutfit(currentInstanceId || 'default');
-                    const result = userOutfitData[slotName] || 'None';
-                    this._setCache(cacheKey, result);
-                    return result;
-                }
+                this._setCache(cacheKey, 'None');
+                return 'None';
             }
-            catch (error) {
-                console.error('Error getting slot value:', error);
+            if (charId !== null && (macroType === 'char' || macroType === 'bot' || charNameParam || (this.isValidCharacterName(macroType) && !['user'].includes(macroType)))) {
+                const botOutfitManager = window.outfitTracker.botOutfitPanel.outfitManager;
+                if (!botOutfitManager.getPromptInjectionEnabled()) {
+                    return 'None';
+                }
+                const outfitData = outfitStore.getBotOutfit(charId.toString(), instanceId);
+                const result = outfitData[slotName] || 'None';
+                this._setCache(cacheKey, result);
+                return result;
             }
-            const result = 'None';
-            this._setCache(cacheKey, result);
-            return result;
-        });
+            else if (macroType === 'user') {
+                const userOutfitManager = window.outfitTracker.userOutfitPanel.outfitManager;
+                if (!userOutfitManager.getPromptInjectionEnabled()) {
+                    return 'None';
+                }
+                const currentInstanceId = typeof outfitStore.getCurrentInstanceId === 'function' ? outfitStore.getCurrentInstanceId() : null;
+                const userOutfitData = outfitStore.getUserOutfit(currentInstanceId || 'default');
+                const result = userOutfitData[slotName] || 'None';
+                this._setCache(cacheKey, result);
+                return result;
+            }
+        }
+        catch (error) {
+            console.error('Error getting slot value:', error);
+        }
+        const result = 'None';
+        this._setCache(cacheKey, result);
+        return result;
     }
     clearCache() {
         this.macroValueCache.clear();
@@ -316,33 +309,31 @@ class CustomMacroService {
         }
     }
     replaceMacrosInText(text) {
-        return __awaiter(this, void 0, void 0, function* () {
-            if (!text || typeof text !== 'string') {
-                return text;
+        if (!text || typeof text !== 'string') {
+            return text;
+        }
+        const macros = this.extractCustomMacros(text);
+        let result = text;
+        for (let i = macros.length - 1; i >= 0; i--) {
+            const macro = macros[i];
+            let replacement;
+            if (macro.slot) {
+                replacement = this.getCurrentSlotValue(macro.type, macro.slot, ['char', 'bot', 'user'].includes(macro.type) ? null : macro.type);
             }
-            const macros = this.extractCustomMacros(text);
-            let result = text;
-            for (let i = macros.length - 1; i >= 0; i--) {
-                const macro = macros[i];
-                let replacement;
-                if (macro.slot) {
-                    replacement = yield this.getCurrentSlotValue(macro.type, macro.slot, ['char', 'bot', 'user'].includes(macro.type) ? null : macro.type);
-                }
-                else if (macro.type === 'char' || macro.type === 'bot') {
-                    replacement = this.getCurrentCharName();
-                }
-                else if (macro.type === 'user') {
-                    replacement = this.getCurrentUserName();
-                }
-                else {
-                    replacement = macro.type;
-                }
-                result = result.substring(0, macro.startIndex) +
-                    replacement +
-                    result.substring(macro.startIndex + macro.fullMatch.length);
+            else if (macro.type === 'char' || macro.type === 'bot') {
+                replacement = this.getCurrentCharName();
             }
-            return result;
-        });
+            else if (macro.type === 'user') {
+                replacement = this.getCurrentUserName();
+            }
+            else {
+                replacement = macro.type;
+            }
+            result = result.substring(0, macro.startIndex) +
+                replacement +
+                result.substring(macro.startIndex + macro.fullMatch.length);
+        }
+        return result;
     }
     _generateCacheKey(macroType, slotName, characterName) {
         var _a;
