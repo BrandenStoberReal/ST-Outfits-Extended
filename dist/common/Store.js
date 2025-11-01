@@ -303,6 +303,10 @@ class OutfitStore {
         const { botInstances, userInstances, presets } = this.dataManager.loadOutfitData();
         const settings = this.dataManager.loadSettings();
         this.setState({ botInstances, userInstances, presets, settings });
+        // Emit an event when outfit data is loaded to allow UI refresh
+        import('../core/events.js').then(({ extensionEventBus, EXTENSION_EVENTS }) => {
+            extensionEventBus.emit(EXTENSION_EVENTS.OUTFIT_DATA_LOADED);
+        }).catch(console.error);
     }
     flush() {
         if (!this.dataManager) {

@@ -51,6 +51,7 @@ class EventService {
     }
     setupExtensionEventListeners() {
         extensionEventBus.on(EXTENSION_EVENTS.CONTEXT_UPDATED, () => this.handleContextUpdate());
+        extensionEventBus.on(EXTENSION_EVENTS.OUTFIT_DATA_LOADED, () => this.handleOutfitDataLoaded());
     }
     handleAppReady() {
         console.log('[OutfitTracker] App ready, marking auto outfit system as initialized');
@@ -155,6 +156,39 @@ class EventService {
         if (this.context) {
             customMacroSystem.deregisterCharacterSpecificMacros(this.context);
             customMacroSystem.registerCharacterSpecificMacros(this.context);
+        }
+    }
+    handleOutfitDataLoaded() {
+        console.log('[OutfitTracker] Outfit data loaded, refreshing macros and UI');
+        // Refresh the macro system to ensure it has the latest data
+        if (this.context) {
+            customMacroSystem.deregisterCharacterSpecificMacros(this.context);
+            customMacroSystem.registerCharacterSpecificMacros(this.context);
+        }
+        // Refresh all outfit panels to show updated values
+        if (window.botOutfitPanel && typeof window.botOutfitPanel.renderContent === 'function') {
+            window.botOutfitPanel.renderContent();
+        }
+        if (window.userOutfitPanel && typeof window.userOutfitPanel.renderContent === 'function') {
+            window.userOutfitPanel.renderContent();
+        }
+        // Try to force a UI refresh of the chat if possible
+        // This is the most important part to address the original issue
+        try {
+            if (window.SillyTavern && typeof window.SillyTavern.redrawCurrentChat === 'function') {
+                window.SillyTavern.redrawCurrentChat();
+            }
+            else if (typeof window.redrawCurrentChat === 'function') {
+                window.redrawCurrentChat();
+            }
+            else {
+                // Alternative: trigger a small change that might cause refresh
+                // This might require accessing the chat container directly
+                console.log('[OutfitTracker] Could not find redrawCurrentChat function, UI may need manual refresh');
+            }
+        }
+        catch (error) {
+            console.log('[OutfitTracker] Error trying to refresh UI:', error);
         }
     }
     generateMessageHash(text) {

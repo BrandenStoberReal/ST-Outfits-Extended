@@ -4,7 +4,8 @@ export const EXTENSION_EVENTS = {
     OUTFIT_CHANGED: 'outfit-tracker-outfit-changed',
     PRESET_LOADED: 'outfit-tracker-preset-loaded',
     PANEL_VISIBILITY_CHANGED: 'outfit-tracker-panel-visibility-changed',
-    CHAT_CLEARED: 'outfit-tracker-chat-cleared'
+    CHAT_CLEARED: 'outfit-tracker-chat-cleared',
+    OUTFIT_DATA_LOADED: 'outfit-tracker-data-loaded'
 };
 // Simple event bus implementation
 class ExtensionEventBus {
