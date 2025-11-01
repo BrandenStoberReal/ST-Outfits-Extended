@@ -143,7 +143,7 @@ class CustomMacroService {
         }
     }
     getCurrentSlotValue(macroType, slotName, charNameParam = null) {
-        var _a, _b, _c, _d, _e;
+        var _a;
         if (!this.allSlots.includes(slotName)) {
             return 'None';
         }
@@ -196,8 +196,8 @@ class CustomMacroService {
                 return 'None';
             }
             if (charId !== null && (macroType === 'char' || macroType === 'bot' || charNameParam || (this.isValidCharacterName(macroType) && !['user'].includes(macroType)))) {
-                const botOutfitManager = (_c = (_b = window.outfitTracker) === null || _b === void 0 ? void 0 : _b.botOutfitPanel) === null || _c === void 0 ? void 0 : _c.outfitManager;
-                if (!botOutfitManager || !botOutfitManager.getPromptInjectionEnabled()) {
+                const botOutfitManager = window.outfitTracker.botOutfitPanel.outfitManager;
+                if (!botOutfitManager.getPromptInjectionEnabled()) {
                     return 'None';
                 }
                 const outfitData = outfitStore.getBotOutfit(charId.toString(), instanceId);
@@ -206,8 +206,8 @@ class CustomMacroService {
                 return result;
             }
             else if (macroType === 'user') {
-                const userOutfitManager = (_e = (_d = window.outfitTracker) === null || _d === void 0 ? void 0 : _d.userOutfitPanel) === null || _e === void 0 ? void 0 : _e.outfitManager;
-                if (!userOutfitManager || !userOutfitManager.getPromptInjectionEnabled()) {
+                const userOutfitManager = window.outfitTracker.userOutfitPanel.outfitManager;
+                if (!userOutfitManager.getPromptInjectionEnabled()) {
                     return 'None';
                 }
                 const currentInstanceId = typeof outfitStore.getCurrentInstanceId === 'function' ? outfitStore.getCurrentInstanceId() : null;
