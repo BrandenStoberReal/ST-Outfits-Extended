@@ -9,7 +9,7 @@ export function dragElementWithSave(element, storageKey) {
     }
     let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
     let initialX = 0, initialY = 0; // Track initial position when drag starts
-    let currentX = 0, currentY = 0; // Track current movement
+    let currentX = 0, currentY = 0; // Track current transform position
     let animationFrameId = null;
     // Define functions before using them
     function elementDrag(e) {
@@ -21,7 +21,7 @@ export function dragElementWithSave(element, storageKey) {
         // Update positions
         pos3 = e.clientX;
         pos4 = e.clientY;
-        // Calculate new position by adding deltas to current position
+        // Update the transform values based on the mouse movement
         currentX += deltaX;
         currentY += deltaY;
         // Cancel any pending animation frame to avoid multiple updates
@@ -30,10 +30,9 @@ export function dragElementWithSave(element, storageKey) {
         }
         // Use requestAnimationFrame for better performance
         animationFrameId = requestAnimationFrame(() => {
-            // Use CSS top/left instead of transform to maintain consistency with storage
+            // Use CSS transform instead of top/left for better performance
             $element.css({
-                top: (initialY + currentY) + 'px',
-                left: (initialX + currentX) + 'px'
+                transform: `translate(${currentX}px, ${currentY}px)`
             });
         });
     }
@@ -45,29 +44,15 @@ export function dragElementWithSave(element, storageKey) {
         if (animationFrameId) {
             cancelAnimationFrame(animationFrameId);
         }
-        // Calculate final position based on initial position + movement
+        // Calculate final position based on initial position + transforms
         const finalTop = initialY + currentY;
         const finalLeft = initialX + currentX;
-        // Apply smooth transition for position change
+        // Remove transform and set actual top/left values
         $element.css({
-            'transition': 'top 0.15s ease, left 0.15s ease'
-        });
-        // Set actual top/left values
-        $element.css({
+            transform: 'none',
             top: finalTop + 'px',
             left: finalLeft + 'px'
         });
-        // Reset transition after a short delay to avoid affecting future drags
-        setTimeout(() => {
-            $element.css({
-                'transition': 'none'
-            });
-        }, 150); // Match the transition duration
-        // Update initialX and initialY to the final position for next drag, and reset currentX and currentY
-        initialX = finalLeft;
-        initialY = finalTop;
-        currentX = 0;
-        currentY = 0;
         // Save the position to localStorage
         const position = {
             top: finalTop || 0,
@@ -81,7 +66,13 @@ export function dragElementWithSave(element, storageKey) {
         // Get the mouse cursor position at startup
         pos3 = e.clientX;
         pos4 = e.clientY;
-        // Store current relative movement (reset to 0 for new drag)
+        // Get the current position for reference
+        const elementTop = parseInt($element.css('top')) || $element[0].offsetTop || 0;
+        const elementLeft = parseInt($element.css('left')) || $element[0].offsetLeft || 0;
+        // Store initial position
+        initialX = elementLeft;
+        initialY = elementTop;
+        // Reset current transform values to 0
         currentX = 0;
         currentY = 0;
         $(document).on('mousemove', elementDrag);
@@ -95,9 +86,6 @@ export function dragElementWithSave(element, storageKey) {
             top: position.top + 'px',
             left: position.left + 'px'
         });
-        // Set the initial position values to the saved position
-        initialX = position.left;
-        initialY = position.top;
     }
     else {
         // Default position if no saved position
@@ -105,9 +93,6 @@ export function dragElementWithSave(element, storageKey) {
             top: '10px',
             left: '10px'
         });
-        // Set the initial position values to default
-        initialX = 10;
-        initialY = 10;
     }
     // Set the element's style
     $element.css({

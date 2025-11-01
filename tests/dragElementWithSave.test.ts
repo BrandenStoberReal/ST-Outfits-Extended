@@ -76,10 +76,7 @@ describe('dragElementWithSave', () => {
                 // It's a set operation, just record it
                 return mockJQueryElement;
             }
-            // It's a get operation - return appropriate values for top/left
-            if (prop === 'top' || prop === 'left') {
-                return '0px';
-            }
+            // It's a get operation - we don't expect this to be called in our implementation
             return '0px';
         });
 
@@ -89,7 +86,6 @@ describe('dragElementWithSave', () => {
 
         // Verify that the element was processed correctly
         expect(global.$).toHaveBeenCalledWith(element);
-        // The function should be called with position and cursor properties
         expect(mockJQueryElement.css).toHaveBeenCalledWith({
             position: 'fixed',
             cursor: 'move'
