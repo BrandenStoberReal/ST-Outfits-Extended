@@ -102,48 +102,16 @@ export class DebugPanel {
             logsHtml += '<p>No logs available.</p>';
         }
         else {
-            logsHtml += logs.map(log => {
-                // Check if log.data is not null or not empty
-                const hasData = log.data !== null && log.data !== undefined &&
-                    ((typeof log.data === 'object' && Object.keys(log.data).length > 0) ||
-                        (typeof log.data === 'string' && log.data.length > 0));
-                return `
-                    <div class="log-item log-${log.level.toLowerCase()}">
-                        <div class="log-header" ${hasData ? 'style="cursor: pointer;"' : ''}>
-                            <span class="log-timestamp">${new Date(log.timestamp).toISOString()}</span>
-                            <span class="log-level">[${log.level}]</span>
-                            <span class="log-message">${log.message}</span>
-                            ${hasData ? '<span class="log-expand">[+]</span>' : ''}
-                        </div>
-                        ${hasData ? `
-                            <div class="log-data" style="display: none;">
-                                <pre>${JSON.stringify(log.data, null, 2)}</pre>
-                            </div>
-                        ` : ''}
-                    </div>
-                `;
-            }).join('');
+            logsHtml += logs.map(log => `
+                <div class="log-item log-${log.level.toLowerCase()}">
+                    <span class="log-timestamp">${new Date(log.timestamp).toISOString()}</span>
+                    <span class="log-level">[${log.level}]</span>
+                    <span class="log-message">${log.message}</span>
+                </div>
+            `).join('');
         }
         logsHtml += '</div>';
         container.innerHTML = logsHtml;
-        // Add click handlers for logs that have data
-        container.querySelectorAll('.log-header').forEach(header => {
-            const hasData = header.nextElementSibling && header.nextElementSibling.classList.contains('log-data');
-            if (hasData) {
-                header.addEventListener('click', () => {
-                    const dataElement = header.nextElementSibling;
-                    const expandElement = header.querySelector('.log-expand');
-                    if (dataElement.style.display === 'none') {
-                        dataElement.style.display = 'block';
-                        expandElement.textContent = '[-]';
-                    }
-                    else {
-                        dataElement.style.display = 'none';
-                        expandElement.textContent = '[+]';
-                    }
-                });
-            }
-        });
     }
     /**
      * Renders the 'Instances' tab with instance browser functionality
