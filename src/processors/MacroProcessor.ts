@@ -204,6 +204,7 @@ class MacroProcessor {
         let resultText = text;
         let startIndex = 0;
 
+        // First, clean outfit macro patterns like {{char_topwear}} -> {{}}
         while (startIndex < resultText.length) {
             const openIdx = resultText.indexOf('{{', startIndex);
 
@@ -237,6 +238,13 @@ class MacroProcessor {
             startIndex = endIdx + 2;
         }
 
+        // Additional cleaning: Remove "None" text that might be the result of macro replacement
+        // This handles cases where "{{char_topwear}}" was replaced with "None" in the message
+        resultText = resultText.replace(/\bNone\b/g, "");
+
+        // Clean up any double spaces that might result from the removal
+        resultText = resultText.replace(/\s+/g, " ").trim();
+        
         return resultText;
     }
 }
