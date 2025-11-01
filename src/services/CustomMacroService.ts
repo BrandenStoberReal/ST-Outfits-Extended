@@ -1,6 +1,5 @@
 import {outfitStore} from '../common/Store';
 import {ACCESSORY_SLOTS, CLOTHING_SLOTS} from '../config/constants';
-import {macroProcessor} from '../processors/MacroProcessor';
 import {getCharacters} from '../utils/CharacterUtils';
 
 declare const window: any;
@@ -161,55 +160,30 @@ class CustomMacroService {
                 }
             }
 
+            // Use the current outfit instance ID if available, or fall back to default
+            // This prevents flip-flopping between instances when macros change
             const state = outfitStore.getState();
-            let instanceId = state.currentOutfitInstanceId;
-            if (!instanceId) {
-                const firstBotMessage = context?.chat?.find((message: any) => !message.is_user && !message.is_system);
-                if (firstBotMessage) {
-                    const processedMessage = macroProcessor.cleanOutfitMacrosFromText(firstBotMessage.mes);
-                    let hash = 0;
-                    for (let i = 0; i < processedMessage.length; i++) {
-                        const char = processedMessage.charCodeAt(i);
-                        hash = ((hash << 5) - hash) + char;
-                        hash |= 0;
-                    }
-                    instanceId = Math.abs(hash).toString(36);
-
-                    if (charId !== null && (macroType === 'char' || macroType === 'bot' || charNameParam || (this.isValidCharacterName(macroType) && !['user'].includes(macroType)))) {
-                        const charOutfitData = outfitStore.getBotOutfit(charId.toString(), instanceId);
-                        if (charOutfitData && charOutfitData[slotName]) {
-                            this._setCache(cacheKey, charOutfitData[slotName]);
-                            return charOutfitData[slotName];
-                        }
-                    } else if (macroType === 'user') {
-                        const userOutfitData = outfitStore.getUserOutfit(instanceId);
-                        if (userOutfitData && userOutfitData[slotName]) {
-                            this._setCache(cacheKey, userOutfitData[slotName]);
-                            return userOutfitData[slotName];
-                        }
-                    }
-                    this._setCache(cacheKey, 'None');
-                    return 'None';
-                }
-                this._setCache(cacheKey, 'None');
-                return 'None';
-            }
-
+            const currentInstanceId = state.currentOutfitInstanceId;
+            
             if (charId !== null && (macroType === 'char' || macroType === 'bot' || charNameParam || (this.isValidCharacterName(macroType) && !['user'].includes(macroType)))) {
-                const botOutfitManager = window.outfitTracker.botOutfitPanel.outfitManager;
-                if (!botOutfitManager.getPromptInjectionEnabled()) {
+                const botOutfitManager = window.outfitTracker?.botOutfitPanel?.outfitManager;
+                if (!botOutfitManager || !botOutfitManager.getPromptInjectionEnabled()) {
                     return 'None';
                 }
-                const outfitData = outfitStore.getBotOutfit(charId.toString(), instanceId);
+
+                // Always use the current instance ID if it's set, otherwise use 'default'
+                const outfitInstanceId = currentInstanceId || 'default';
+                const outfitData = outfitStore.getBotOutfit(charId.toString(), outfitInstanceId);
                 const result = outfitData[slotName] || 'None';
                 this._setCache(cacheKey, result);
                 return result;
             } else if (macroType === 'user') {
-                const userOutfitManager = window.outfitTracker.userOutfitPanel.outfitManager;
-                if (!userOutfitManager.getPromptInjectionEnabled()) {
+                const userOutfitManager = window.outfitTracker?.userOutfitPanel?.outfitManager;
+                if (!userOutfitManager || !userOutfitManager.getPromptInjectionEnabled()) {
                     return 'None';
                 }
-                const currentInstanceId = typeof outfitStore.getCurrentInstanceId === 'function' ? outfitStore.getCurrentInstanceId() : null;
+
+                // Use the current instance ID for user outfits as well
                 const userOutfitData = outfitStore.getUserOutfit(currentInstanceId || 'default');
                 const result = userOutfitData[slotName] || 'None';
                 this._setCache(cacheKey, result);

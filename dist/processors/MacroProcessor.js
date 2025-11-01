@@ -37,12 +37,17 @@ class MacroProcessor {
                     const outfitValues = this.getAllOutfitValuesForCharacter(ctx.characterId);
                     // Generate instance ID from the processed message with outfit values removed for consistent ID calculation
                     const instanceId = yield generateInstanceIdFromText(processedMessage, outfitValues);
-                    outfitStore.setCurrentInstanceId(instanceId);
-                    if ((_b = window.botOutfitPanel) === null || _b === void 0 ? void 0 : _b.outfitManager) {
-                        window.botOutfitPanel.outfitManager.setOutfitInstanceId(instanceId);
-                    }
-                    if ((_c = window.userOutfitPanel) === null || _c === void 0 ? void 0 : _c.outfitManager) {
-                        window.userOutfitPanel.outfitManager.setOutfitInstanceId(instanceId);
+                    // Only update the instance ID if it's different from the current one
+                    // This prevents unnecessary updates that could cause flip-flopping
+                    const currentInstanceId = outfitStore.getCurrentInstanceId();
+                    if (currentInstanceId !== instanceId) {
+                        outfitStore.setCurrentInstanceId(instanceId);
+                        if ((_b = window.botOutfitPanel) === null || _b === void 0 ? void 0 : _b.outfitManager) {
+                            window.botOutfitPanel.outfitManager.setOutfitInstanceId(instanceId);
+                        }
+                        if ((_c = window.userOutfitPanel) === null || _c === void 0 ? void 0 : _c.outfitManager) {
+                            window.userOutfitPanel.outfitManager.setOutfitInstanceId(instanceId);
+                        }
                     }
                 }
             }

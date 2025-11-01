@@ -41,13 +41,18 @@ class MacroProcessor {
                 // Generate instance ID from the processed message with outfit values removed for consistent ID calculation
                 const instanceId = await generateInstanceIdFromText(processedMessage, outfitValues);
 
-                outfitStore.setCurrentInstanceId(instanceId);
+                // Only update the instance ID if it's different from the current one
+                // This prevents unnecessary updates that could cause flip-flopping
+                const currentInstanceId = outfitStore.getCurrentInstanceId();
+                if (currentInstanceId !== instanceId) {
+                    outfitStore.setCurrentInstanceId(instanceId);
 
-                if (window.botOutfitPanel?.outfitManager) {
-                    window.botOutfitPanel.outfitManager.setOutfitInstanceId(instanceId);
-                }
-                if (window.userOutfitPanel?.outfitManager) {
-                    window.userOutfitPanel.outfitManager.setOutfitInstanceId(instanceId);
+                    if (window.botOutfitPanel?.outfitManager) {
+                        window.botOutfitPanel.outfitManager.setOutfitInstanceId(instanceId);
+                    }
+                    if (window.userOutfitPanel?.outfitManager) {
+                        window.userOutfitPanel.outfitManager.setOutfitInstanceId(instanceId);
+                    }
                 }
             }
         } catch (error) {

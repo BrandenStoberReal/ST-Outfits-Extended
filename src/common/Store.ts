@@ -385,8 +385,10 @@ class OutfitStore {
     }
 
     setCurrentInstanceId(instanceId: string): void {
-        this.state.currentOutfitInstanceId = instanceId;
-        this.notifyListeners();
+        if (this.state.currentOutfitInstanceId !== instanceId) {
+            this.state.currentOutfitInstanceId = instanceId;
+            this.notifyListeners();
+        }
     }
 
     setPanelVisibility(panelType: 'bot' | 'user', isVisible: boolean): void {

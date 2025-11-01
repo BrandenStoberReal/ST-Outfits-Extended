@@ -33,11 +33,15 @@ export class OutfitManager {
         this.loadOutfit();
     }
     setOutfitInstanceId(instanceId) {
-        if (this.outfitInstanceId) {
+        // Save the current outfit data if we have a previous instance ID and character ID
+        if (this.outfitInstanceId && this.characterId) {
             this.saveOutfit();
         }
-        this.outfitInstanceId = instanceId;
-        this.loadOutfit();
+        // Only update if the instance ID is actually different
+        if (this.outfitInstanceId !== instanceId) {
+            this.outfitInstanceId = instanceId;
+            this.loadOutfit();
+        }
     }
     getOutfitInstanceId() {
         return this.outfitInstanceId;
