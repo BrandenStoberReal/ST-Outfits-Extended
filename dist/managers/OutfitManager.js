@@ -98,9 +98,15 @@ export class OutfitManager {
     }
     setOutfitItem(slot, value) {
         return __awaiter(this, void 0, void 0, function* () {
+            debugLog('setOutfitItem called', {
+                slot,
+                value,
+                characterId: this.characterId,
+                outfitInstanceId: this.outfitInstanceId
+            }, 'debug');
             if (!this.slots.includes(slot)) {
                 debugLog(`Invalid slot: ${slot}`, null, 'error');
-                return { message: null, newValue: value };
+                return null;
             }
             if (value === undefined || value === null || value === '') {
                 value = 'None';
@@ -119,17 +125,13 @@ export class OutfitManager {
                 this.saveOutfit();
                 invalidateSpecificMacroCaches(this.constructor.name.includes('Bot') ? 'bot' : 'user', this.characterId, this.outfitInstanceId, slot);
             }
-            let message = null;
             if (previousValue === 'None' && value !== 'None') {
-                message = `${this.character} put on ${value}.`;
+                return `${this.character} put on ${value}.`;
             }
             else if (value === 'None') {
-                message = `${this.character} removed ${previousValue}.`;
+                return `${this.character} removed ${previousValue}.`;
             }
-            else if (value !== previousValue) {
-                message = `${this.character} changed from ${previousValue} to ${value}.`;
-            }
-            return { message, newValue: value };
+            return `${this.character} changed from ${previousValue} to ${value}.`;
         });
     }
     changeOutfitItem(slot) {
@@ -161,6 +163,7 @@ export class OutfitManager {
                     newValue = choice.toLowerCase() === 'remove' ? 'None' : choice;
                 }
             }
+            debugLog('changeOutfitItem', { currentValue, newValue }, 'debug');
             if (newValue !== currentValue) {
                 return this.setOutfitItem(slot, newValue);
             }

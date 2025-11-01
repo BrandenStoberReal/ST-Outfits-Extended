@@ -379,6 +379,12 @@ export class NewBotOutfitManager extends OutfitManager {
             return;
         }
 
+        debugLog('NewBotOutfitManager: Saving outfit data to instance', {
+            characterId: this.characterId,
+            instanceId: instanceId,
+            outfitData: outfitData
+        }, 'debug');
+
         outfitStore.setBotOutfit(this.characterId, instanceId, outfitData);
         debouncedStore.saveState();
     }

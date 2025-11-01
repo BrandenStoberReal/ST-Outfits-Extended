@@ -254,7 +254,7 @@ export function initializeExtension() {
         const botManager = new NewBotOutfitManager(ALL_SLOTS);
         const userManager = new NewUserOutfitManager(ALL_SLOTS);
         debugLog('Outfit managers created', { botManager, userManager }, 'info');
-        const botPanel = new BotOutfitPanel(botManager, CLOTHING_SLOTS, ACCESSORY_SLOTS);
+        const botPanel = new BotOutfitPanel(botManager, CLOTHING_SLOTS, ACCESSORY_SLOTS, (data) => STContext.saveSettingsDebounced({ outfit_tracker: data }));
         const userPanel = new UserOutfitPanel(userManager, CLOTHING_SLOTS, ACCESSORY_SLOTS, (data) => STContext.saveSettingsDebounced({ outfit_tracker: data }));
         debugLog('Outfit panels created', { botPanel, userPanel }, 'info');
         const autoOutfitSystem = new AutoOutfitSystem(botManager);

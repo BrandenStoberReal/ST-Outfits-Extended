@@ -279,7 +279,7 @@ export async function initializeExtension(): Promise<void> {
 
     debugLog('Outfit managers created', {botManager, userManager}, 'info');
 
-    const botPanel = new BotOutfitPanel(botManager, CLOTHING_SLOTS, ACCESSORY_SLOTS);
+    const botPanel = new BotOutfitPanel(botManager, CLOTHING_SLOTS, ACCESSORY_SLOTS, (data: any) => STContext.saveSettingsDebounced({outfit_tracker: data}));
     const userPanel = new UserOutfitPanel(userManager, CLOTHING_SLOTS, ACCESSORY_SLOTS, (data: any) => STContext.saveSettingsDebounced({outfit_tracker: data}));
 
     debugLog('Outfit panels created', {botPanel, userPanel}, 'info');

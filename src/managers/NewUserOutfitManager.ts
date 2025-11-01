@@ -67,12 +67,12 @@ export class NewUserOutfitManager extends OutfitManager {
         }, 'debug');
     }
 
-    async setOutfitItem(slot: string, value: string): Promise<{ message: string | null, newValue: string }> {
-        const result = await super.setOutfitItem(slot, value);
-        if (result.message) {
-            result.message = result.message.replace(this.character, 'You');
+    async setOutfitItem(slot: string, value: string): Promise<string | null> {
+        const message = await super.setOutfitItem(slot, value);
+        if (message) {
+            return message.replace(this.character, 'You');
         }
-        return result;
+        return null;
     }
 
     savePreset(presetName: string, instanceId: string | null = null): string {

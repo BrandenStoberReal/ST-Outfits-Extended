@@ -126,10 +126,16 @@ export abstract class OutfitManager {
 
     abstract saveOutfitToInstanceId(outfitData: { [key: string]: string }, instanceId: string): void;
 
-    async setOutfitItem(slot: string, value: string): Promise<{ message: string | null, newValue: string }> {
+    async setOutfitItem(slot: string, value: string): Promise<string | null> {
+        debugLog('setOutfitItem called', {
+            slot,
+            value,
+            characterId: this.characterId,
+            outfitInstanceId: this.outfitInstanceId
+        }, 'debug');
         if (!this.slots.includes(slot)) {
             debugLog(`Invalid slot: ${slot}`, null, 'error');
-            return {message: null, newValue: value};
+            return null;
         }
 
         if (value === undefined || value === null || value === '') {
@@ -162,19 +168,15 @@ export abstract class OutfitManager {
             );
         }
 
-        let message: string | null = null;
         if (previousValue === 'None' && value !== 'None') {
-            message = `${this.character} put on ${value}.`;
+            return `${this.character} put on ${value}.`;
         } else if (value === 'None') {
-            message = `${this.character} removed ${previousValue}.`;
-        } else if (value !== previousValue) {
-            message = `${this.character} changed from ${previousValue} to ${value}.`;
+            return `${this.character} removed ${previousValue}.`;
         }
-
-        return {message, newValue: value};
+        return `${this.character} changed from ${previousValue} to ${value}.`;
     }
 
-    async changeOutfitItem(slot: string): Promise<{ message: string | null, newValue: string } | null> {
+    async changeOutfitItem(slot: string): Promise<string | null> {
         if (!this.slots.includes(slot)) {
             debugLog(`Invalid slot: ${slot}`, null, 'error');
             return null;
@@ -207,6 +209,7 @@ export abstract class OutfitManager {
             }
         }
 
+        debugLog('changeOutfitItem', {currentValue, newValue}, 'debug');
         if (newValue !== currentValue) {
             return this.setOutfitItem(slot, newValue);
         }
