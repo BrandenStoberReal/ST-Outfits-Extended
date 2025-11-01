@@ -36,9 +36,8 @@ class CustomMacroService {
         const ctx = context || (window.SillyTavern?.getContext ? window.SillyTavern.getContext() : window.getContext());
 
         if (ctx && ctx.registerMacro) {
-            ctx.registerMacro('char', () => this.getCurrentCharName());
-            ctx.registerMacro('user', () => this.getCurrentUserName());
-
+            // Don't register {{char}} and {{user}} macros globally as they should be handled manually in prompt injection only
+            // Only register slot-specific macros
             this.allSlots.forEach(slot => {
                 ctx.registerMacro(`char_${slot}`, () => this.getCurrentSlotValue('char', slot));
                 ctx.registerMacro(`user_${slot}`, () => this.getCurrentSlotValue('user', slot));
@@ -50,9 +49,7 @@ class CustomMacroService {
         const ctx = context || (window.SillyTavern?.getContext ? window.SillyTavern.getContext() : window.getContext());
 
         if (ctx && ctx.unregisterMacro) {
-            ctx.unregisterMacro('char');
-            ctx.unregisterMacro('user');
-
+            // Don't deregister {{char}} and {{user}} macros as they weren't registered globally
             this.allSlots.forEach(slot => {
                 ctx.unregisterMacro(`char_${slot}`);
                 ctx.unregisterMacro(`user_${slot}`);
@@ -365,22 +362,17 @@ class CustomMacroService {
 
         for (let i = macros.length - 1; i >= 0; i--) {
             const macro = macros[i];
-            let replacement: string;
 
             if (macro.slot) {
-                replacement = this.getCurrentSlotValue(macro.type, macro.slot,
+                // Handle slot-based macros like {{char_topwear}}, {{user_headwear}}, etc.
+                const replacement = this.getCurrentSlotValue(macro.type, macro.slot,
                     ['char', 'bot', 'user'].includes(macro.type) ? null : macro.type);
-            } else if (macro.type === 'char' || macro.type === 'bot') {
-                replacement = this.getCurrentCharName();
-            } else if (macro.type === 'user') {
-                replacement = this.getCurrentUserName();
-            } else {
-                replacement = macro.type;
-            }
 
-            result = result.substring(0, macro.startIndex) +
-                replacement +
-                result.substring(macro.startIndex + macro.fullMatch.length);
+                result = result.substring(0, macro.startIndex) +
+                    replacement +
+                    result.substring(macro.startIndex + macro.fullMatch.length);
+            }
+            // Skip non-slot macros like {{char}} and {{user}} as they should be handled manually in prompt injection only
         }
 
         return result;

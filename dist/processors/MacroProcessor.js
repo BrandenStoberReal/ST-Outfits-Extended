@@ -58,6 +58,7 @@ class MacroProcessor {
         const actualCharacterId = characterId.toString();
         const state = outfitStore.getState();
         const outfitValues = new Set();
+        // Get all outfit values from all bot instances for this character
         if (state.botInstances && state.botInstances[actualCharacterId]) {
             Object.values(state.botInstances[actualCharacterId]).forEach(instanceData => {
                 if (instanceData && instanceData.bot) {
@@ -69,6 +70,7 @@ class MacroProcessor {
                 }
             });
         }
+        // Get all preset values for this character
         if (state.presets && state.presets.bot) {
             Object.keys(state.presets.bot).forEach(key => {
                 if (key.startsWith(actualCharacterId + '_')) {
