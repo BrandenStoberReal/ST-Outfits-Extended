@@ -42,29 +42,14 @@ export class NewUserOutfitManager extends OutfitManager {
             return;
         }
 
-        debugLog('NewUserOutfitManager: Starting saveOutfit operation', {
-            outfitInstanceId: this.outfitInstanceId,
-            slotCount: this.slots.length
-        }, 'debug');
-
         const userOutfit: { [key: string]: string } = {};
 
         this.slots.forEach(slot => {
             userOutfit[slot] = this.currentValues[slot] || 'None';
         });
 
-        debugLog('NewUserOutfitManager: Prepared outfit data for saving', {
-            instanceId: this.outfitInstanceId,
-            outfitData: userOutfit
-        }, 'debug');
-
         outfitStore.setUserOutfit(this.outfitInstanceId, userOutfit);
-        debugLog('NewUserOutfitManager: Set outfit in store, requesting debounced save', null, 'debug');
         debouncedStore.saveState();
-
-        debugLog('NewUserOutfitManager: SaveOutfit operation completed', {
-            instanceId: this.outfitInstanceId
-        }, 'debug');
     }
 
     async setOutfitItem(slot: string, value: string): Promise<string | null> {
@@ -250,39 +235,19 @@ export class NewUserOutfitManager extends OutfitManager {
             return;
         }
 
-        debugLog('NewUserOutfitManager: Setting prompt injection enabled', {
-            instanceId: actualInstanceId,
-            enabled: enabled
-        }, 'debug');
-
-        // Get current user outfit data for this instance to preserve it
-        const currentUserOutfit = outfitStore.getUserOutfit(actualInstanceId);
-
-        // Create or update the instance data with preserved outfit data
         if (!outfitStore.state.userInstances[actualInstanceId]) {
-            debugLog('NewUserOutfitManager: Creating new user instance data', {instanceId: actualInstanceId}, 'debug');
-            // Create new instance data preserving the outfit and adding prompt injection setting
-            outfitStore.state.userInstances[actualInstanceId] = {
-                ...currentUserOutfit,
-                promptInjectionEnabled: Boolean(enabled)
-            };
-        } else {
-            debugLog('NewUserOutfitManager: Updating existing user instance data', {instanceId: actualInstanceId}, 'debug');
-            // Update existing instance data, preserving outfit data but updating prompt injection setting
-            outfitStore.state.userInstances[actualInstanceId] = {
-                ...currentUserOutfit, // Ensure we preserve all outfit slot data
-                promptInjectionEnabled: Boolean(enabled)
-            };
+            outfitStore.state.userInstances[actualInstanceId] = {};
         }
 
-        outfitStore.notifyListeners();
-        debugLog('NewUserOutfitManager: Requesting debounced save after prompt injection setting change', null, 'debug');
-        debouncedStore.saveState();
+        const updatedInstanceData = {
+            ...outfitStore.state.userInstances[actualInstanceId],
+            promptInjectionEnabled: Boolean(enabled)
+        };
 
-        debugLog('NewUserOutfitManager: Prompt injection setting updated and save requested', {
-            instanceId: actualInstanceId,
-            enabled: enabled
-        }, 'debug');
+        outfitStore.state.userInstances[actualInstanceId] = updatedInstanceData;
+
+        outfitStore.notifyListeners();
+        debouncedStore.saveState();
     }
 
     getPromptInjectionEnabled(instanceId: string | null = null): boolean {

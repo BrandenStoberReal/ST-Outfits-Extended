@@ -285,16 +285,6 @@ export function initializeExtension() {
             setTimeout(() => userPanel.show(), 1000);
         }
         setTimeout(updatePanelStyles, 1500);
-        // Add event listener to save data when the page is about to unload
-        window.addEventListener('beforeunload', () => {
-            try {
-                // Force immediate save of the current state by flushing the debounced store
-                debouncedStore.flush();
-            }
-            catch (error) {
-                debugLog('Error saving data on beforeunload', error, 'error');
-            }
-        });
         debugLog('Extension initialization completed', null, 'info');
     });
 }

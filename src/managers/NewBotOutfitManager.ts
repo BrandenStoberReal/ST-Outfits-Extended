@@ -19,46 +19,26 @@ export class NewBotOutfitManager extends OutfitManager {
             return;
         }
 
-        debugLog('NewBotOutfitManager: Setting prompt injection enabled', {
-            characterId: this.characterId,
-            instanceId: actualInstanceId,
-            enabled: enabled
-        }, 'debug');
-
-        // Get current bot outfit data for this instance to preserve it
-        const currentBotOutfit = outfitStore.getBotOutfit(this.characterId, actualInstanceId);
-
-        // Update the instance data - the save will be handled by the store's method when state changes
         if (!outfitStore.state.botInstances[this.characterId]) {
-            debugLog('NewBotOutfitManager: Initializing botInstances for character', {characterId: this.characterId}, 'debug');
             outfitStore.state.botInstances[this.characterId] = {};
         }
         if (!outfitStore.state.botInstances[this.characterId][actualInstanceId]) {
-            debugLog('NewBotOutfitManager: Creating new instance data', {instanceId: actualInstanceId}, 'debug');
             outfitStore.state.botInstances[this.characterId][actualInstanceId] = {
-                bot: currentBotOutfit,
+                bot: {},
                 user: {},
-                promptInjectionEnabled: Boolean(enabled)
-            };
-        } else {
-            debugLog('NewBotOutfitManager: Updating existing instance data', {instanceId: actualInstanceId}, 'debug');
-            // Preserve existing bot and user data, only update promptInjectionEnabled
-            outfitStore.state.botInstances[this.characterId][actualInstanceId] = {
-                ...outfitStore.state.botInstances[this.characterId][actualInstanceId],
-                bot: currentBotOutfit, // Ensure we preserve the bot outfit data
-                promptInjectionEnabled: Boolean(enabled)
+                promptInjectionEnabled: true
             };
         }
 
-        outfitStore.notifyListeners();
-        debugLog('NewBotOutfitManager: Requesting debounced save after prompt injection setting change', null, 'debug');
-        debouncedStore.saveState();
+        const updatedInstanceData = {
+            ...outfitStore.state.botInstances[this.characterId][actualInstanceId],
+            promptInjectionEnabled: Boolean(enabled)
+        };
 
-        debugLog('NewBotOutfitManager: Prompt injection setting updated and save requested', {
-            characterId: this.characterId,
-            instanceId: actualInstanceId,
-            enabled: enabled
-        }, 'debug');
+        outfitStore.state.botInstances[this.characterId][actualInstanceId] = updatedInstanceData;
+
+        outfitStore.notifyListeners();
+        debouncedStore.saveState();
     }
 
     getPromptInjectionEnabled(instanceId: string | null = null): boolean {
@@ -106,32 +86,14 @@ export class NewBotOutfitManager extends OutfitManager {
             return;
         }
 
-        debugLog('NewBotOutfitManager: Starting saveOutfit operation', {
-            characterId: this.characterId,
-            outfitInstanceId: this.outfitInstanceId,
-            slotCount: this.slots.length
-        }, 'debug');
-
         const botOutfit: { [key: string]: string } = {};
 
         this.slots.forEach(slot => {
             botOutfit[slot] = this.currentValues[slot] || 'None';
         });
 
-        debugLog('NewBotOutfitManager: Prepared outfit data for saving', {
-            characterId: this.characterId,
-            instanceId: this.outfitInstanceId,
-            outfitData: botOutfit
-        }, 'debug');
-
         outfitStore.setBotOutfit(this.characterId, this.outfitInstanceId, botOutfit);
-        debugLog('NewBotOutfitManager: Set outfit in store, requesting debounced save', null, 'debug');
         debouncedStore.saveState();
-
-        debugLog('NewBotOutfitManager: SaveOutfit operation completed', {
-            characterId: this.characterId,
-            instanceId: this.outfitInstanceId
-        }, 'debug');
     }
 
     savePreset(presetName: string, instanceId: string | null = null): string {
@@ -141,34 +103,18 @@ export class NewBotOutfitManager extends OutfitManager {
         }
 
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
-
-        debugLog('NewBotOutfitManager: Starting savePreset operation', {
-            presetName: presetName,
-            instanceId: actualInstanceId,
-            character: this.character
-        }, 'debug');
-
         const presetData: { [key: string]: string } = {};
 
         this.slots.forEach(slot => {
             presetData[slot] = this.currentValues[slot];
         });
 
-        debugLog('NewBotOutfitManager: Prepared preset data for saving', {
-            presetName: presetName,
-            instanceId: actualInstanceId,
-            slotCount: Object.keys(presetData).length
-        }, 'debug');
-
         presetManager.savePreset(actualInstanceId, presetName, presetData, 'bot');
 
         if (outfitStore.getSetting('enableSysMessages')) {
-            const message = `Saved "${presetName}" outfit for ${this.character} (instance: ${actualInstanceId}).`;
-            debugLog('NewBotOutfitManager: Preset saved successfully', {message}, 'debug');
-            return message;
+            return `Saved "${presetName}" outfit for ${this.character} (instance: ${actualInstanceId}).`;
         }
 
-        debugLog('NewBotOutfitManager: Preset saved successfully (system messages disabled)', null, 'debug');
         return '';
     }
 
