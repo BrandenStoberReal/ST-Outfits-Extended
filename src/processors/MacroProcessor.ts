@@ -39,19 +39,23 @@ class MacroProcessor {
                 // Get all outfit values for the character to remove from the processed message during ID calculation
                 const outfitValues = this.getAllOutfitValuesForCharacter(ctx.characterId);
 
+                console.log('[OutfitTracker] Instance ID generation debug:');
+                console.log('[OutfitTracker] Original message text:', originalMessageText);
+                console.log('[OutfitTracker] Processed message text (macros cleaned):', processedMessage);
+                console.log('[OutfitTracker] Outfit values to remove:', outfitValues);
+                
                 // Generate instance ID from the processed message with outfit values removed for consistent ID calculation
                 const instanceId = await generateInstanceIdFromText(processedMessage, outfitValues);
+
+                console.log('[OutfitTracker] Generated instance ID:', instanceId);
 
                 // Only update the instance ID if it's different from the current one
                 // This prevents unnecessary updates that could cause flip-flopping
                 const currentInstanceId = outfitStore.getCurrentInstanceId();
-
-                // Add additional check: if we already have an instance ID and it's the same character,
-                // only update if the raw message text (before macro processing) is different
-                // This prevents flip-flopping when outfit values change but message content stays the same
+                console.log('[OutfitTracker] Current instance ID:', currentInstanceId);
+                
                 if (currentInstanceId !== instanceId) {
-                    // For additional safety, only update if this appears to be a legitimate message change
-                    // (not just macro value changes)
+                    console.log('[OutfitTracker] Instance ID changed from', currentInstanceId, 'to', instanceId, '- updating...');
                     outfitStore.setCurrentInstanceId(instanceId);
 
                     if (window.botOutfitPanel?.outfitManager) {
@@ -60,6 +64,8 @@ class MacroProcessor {
                     if (window.userOutfitPanel?.outfitManager) {
                         window.userOutfitPanel.outfitManager.setOutfitInstanceId(instanceId);
                     }
+                } else {
+                    console.log('[OutfitTracker] Instance ID unchanged - no update needed');
                 }
             }
         } catch (error) {
@@ -69,6 +75,7 @@ class MacroProcessor {
 
     getAllOutfitValuesForCharacter(characterId: string | number): string[] {
         if (!characterId) {
+            console.log('[OutfitTracker] getAllOutfitValuesForCharacter called with no characterId');
             return [];
         }
 
@@ -76,13 +83,18 @@ class MacroProcessor {
         const state = outfitStore.getState();
         const outfitValues = new Set<string>();
 
+        console.log('[OutfitTracker] Collecting outfit values for character:', actualCharacterId);
+        console.log('[OutfitTracker] Current state instance ID:', state.currentOutfitInstanceId);
+
         // Get all outfit values from all bot instances for this character (including "None")
         if (state.botInstances && state.botInstances[actualCharacterId]) {
+            console.log('[OutfitTracker] Found bot instances for character:', Object.keys(state.botInstances[actualCharacterId]));
             Object.values(state.botInstances[actualCharacterId]).forEach(instanceData => {
                 if (instanceData && instanceData.bot) {
                     Object.values(instanceData.bot).forEach(value => {
                         if (value !== undefined && value !== null && typeof value === 'string') {
                             outfitValues.add(value);
+                            console.log('[OutfitTracker] Added outfit value from instance:', value);
                         }
                     });
                 }
@@ -101,6 +113,7 @@ class MacroProcessor {
                                 Object.values(preset).forEach(value => {
                                     if (value !== undefined && value !== null && typeof value === 'string') {
                                         outfitValues.add(value);
+                                        console.log('[OutfitTracker] Added preset value:', value);
                                     }
                                 });
                             }
@@ -117,11 +130,14 @@ class MacroProcessor {
             Object.values(currentOutfit).forEach(value => {
                 if (value !== undefined && value !== null && typeof value === 'string') {
                     outfitValues.add(value);
+                    console.log('[OutfitTracker] Added current outfit value:', value);
                 }
             });
         }
 
-        return Array.from(outfitValues);
+        const allValues = Array.from(outfitValues);
+        console.log('[OutfitTracker] All collected outfit values:', allValues);
+        return allValues;
     }
 
     isAlphaNumericWithUnderscores(str: string): boolean {
