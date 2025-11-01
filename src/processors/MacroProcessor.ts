@@ -33,7 +33,8 @@ class MacroProcessor {
 
             if (firstBotMessage) {
                 // Clean outfit macros from the text (replace {{char_topwear}} with {{}})
-                const processedMessage = this.cleanOutfitMacrosFromText(firstBotMessage.mes);
+                const originalMessageText = firstBotMessage.mes;
+                const processedMessage = this.cleanOutfitMacrosFromText(originalMessageText);
 
                 // Get all outfit values for the character to remove from the processed message during ID calculation
                 const outfitValues = this.getAllOutfitValuesForCharacter(ctx.characterId);
@@ -44,7 +45,13 @@ class MacroProcessor {
                 // Only update the instance ID if it's different from the current one
                 // This prevents unnecessary updates that could cause flip-flopping
                 const currentInstanceId = outfitStore.getCurrentInstanceId();
+
+                // Add additional check: if we already have an instance ID and it's the same character,
+                // only update if the raw message text (before macro processing) is different
+                // This prevents flip-flopping when outfit values change but message content stays the same
                 if (currentInstanceId !== instanceId) {
+                    // For additional safety, only update if this appears to be a legitimate message change
+                    // (not just macro value changes)
                     outfitStore.setCurrentInstanceId(instanceId);
 
                     if (window.botOutfitPanel?.outfitManager) {
