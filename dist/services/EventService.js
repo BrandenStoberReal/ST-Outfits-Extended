@@ -183,6 +183,7 @@ class EventService {
             if (userOutfitInstanceId) {
                 yield this.userManager.saveOutfit();
             }
+            debouncedStore.flush();
             const result = yield originalRestart.apply(this, args);
             if (botOutfitInstanceId) {
                 this.botManager.setOutfitInstanceId(botOutfitInstanceId);
@@ -239,6 +240,7 @@ class EventService {
                 outfitStore.setUserOutfit(userOutfitInstanceId, userOutfitData);
             }
             debouncedStore.saveState();
+            debouncedStore.flush();
             yield originalClearChat.apply(this, args);
             if (botOutfitInstanceId) {
                 this.botManager.setOutfitInstanceId(botOutfitInstanceId);
