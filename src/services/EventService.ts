@@ -225,8 +225,6 @@ class EventService {
                 await this.userManager.saveOutfit();
             }
 
-            debouncedStore.flush();
-
             const result = await originalRestart.apply(this, args);
 
             if (botOutfitInstanceId) {
@@ -296,7 +294,6 @@ class EventService {
             }
 
             debouncedStore.saveState();
-            debouncedStore.flush();
 
             await originalClearChat.apply(this, args);
 
