@@ -226,6 +226,7 @@ export class BotOutfitPanel {
                 if (message && areSystemMessagesEnabled()) {
                     this.sendSystemMessage(message);
                 }
+                this.saveSettingsDebounced();
                 this.renderContent();
             });
 
