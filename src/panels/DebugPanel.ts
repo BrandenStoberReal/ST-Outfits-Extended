@@ -3,7 +3,7 @@ import {outfitStore} from '../stores/Store';
 import {customMacroSystem} from '../services/CustomMacroService';
 import {debugLog, debugLogger} from '../logging/DebugLogger';
 import {CharacterInfoType, getCharacterInfoById} from '../utils/CharacterUtils';
-import {immediateStore} from '../stores/DebouncedStore';
+import {debouncedStore} from '../stores/DebouncedStore';
 import {DataManager} from '../managers/DataManager';
 
 interface OutfitData {
@@ -758,7 +758,7 @@ export class DebugPanel {
                 if (confirm('Are you sure you want to import this outfit data? This will replace all current data.')) {
                     // Update store state with imported data
                     outfitStore.setState(data);
-                    immediateStore.saveState(); // Save to storage
+                    debouncedStore.saveState(); // Save to storage
                     this.renderContent();
                     toastr.success('Outfit data imported!', 'Debug Panel');
                 }

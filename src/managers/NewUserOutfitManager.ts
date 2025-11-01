@@ -1,6 +1,6 @@
 import {presetManager} from './PresetManager';
 import {OutfitManager} from './OutfitManager';
-import {immediateStore} from '../stores/DebouncedStore';
+import {debouncedStore} from '../stores/DebouncedStore';
 import {outfitStore} from '../stores/Store';
 import {debugLog} from '../logging/DebugLogger';
 
@@ -59,7 +59,8 @@ export class NewUserOutfitManager extends OutfitManager {
         }, 'debug');
 
         outfitStore.setUserOutfit(this.outfitInstanceId, userOutfit);
-        immediateStore.saveState();
+        debugLog('NewUserOutfitManager: Set outfit in store, requesting debounced save', null, 'debug');
+        debouncedStore.saveState();
 
         debugLog('NewUserOutfitManager: SaveOutfit operation completed', {
             instanceId: this.outfitInstanceId
@@ -276,7 +277,7 @@ export class NewUserOutfitManager extends OutfitManager {
 
         outfitStore.notifyListeners();
         debugLog('NewUserOutfitManager: Requesting debounced save after prompt injection setting change', null, 'debug');
-        immediateStore.saveState();
+        debouncedStore.saveState();
 
         debugLog('NewUserOutfitManager: Prompt injection setting updated and save requested', {
             instanceId: actualInstanceId,
@@ -361,7 +362,7 @@ export class NewUserOutfitManager extends OutfitManager {
         }
 
         outfitStore.setUserOutfit(instanceId, outfitData);
-        immediateStore.saveState();
+        debouncedStore.saveState();
     }
 
     async applyDefaultOutfitAfterReset(instanceId: string | null = null): Promise<boolean> {

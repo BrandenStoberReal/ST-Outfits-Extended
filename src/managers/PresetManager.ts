@@ -1,5 +1,5 @@
 import {OutfitData, outfitStore} from '../stores/Store';
-import {immediateStore} from '../stores/DebouncedStore';
+import {debouncedStore} from '../stores/DebouncedStore';
 import {debugLog} from '../logging/DebugLogger';
 
 class PresetManager {
@@ -37,7 +37,7 @@ class PresetManager {
 
         // Create a deep clone to avoid reference issues
         outfitStore.state.presets[type][presetKey][presetName] = {...outfitData};
-        immediateStore.saveState();
+        debouncedStore.saveState();
     }
 
     deletePreset(instanceId: string, presetName: string, type: 'bot' | 'user'): void {
@@ -59,7 +59,7 @@ class PresetManager {
             if (Object.keys(outfitStore.state.presets[type][presetKey]).length === 0) {
                 delete outfitStore.state.presets[type][presetKey];
             }
-            immediateStore.saveState();
+            debouncedStore.saveState();
         }
     }
 
@@ -68,7 +68,7 @@ class PresetManager {
 
         if (outfitStore.state.presets[type]?.[presetKey]) {
             delete outfitStore.state.presets[type][presetKey];
-            immediateStore.saveState();
+            debouncedStore.saveState();
         }
     }
 

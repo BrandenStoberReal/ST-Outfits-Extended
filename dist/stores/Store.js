@@ -1,6 +1,6 @@
 import { DEFAULT_SETTINGS } from '../config/constants.js';
 import { deepClone } from '../utils/utilities.js';
-import { immediateStore } from './DebouncedStore.js';
+import { debouncedStore } from './DebouncedStore.js';
 import { debugLog } from '../logging/DebugLogger.js';
 class OutfitStore {
     constructor() {
@@ -135,7 +135,7 @@ class OutfitStore {
                 syncData.settings = this.state.settings;
             }
             if (Object.keys(syncData).length > 0) {
-                immediateStore.saveState();
+                debouncedStore.saveState();
             }
         }
         this.notifyListeners();
@@ -145,7 +145,7 @@ class OutfitStore {
      */
     updateAndSave(updates) {
         this.setState(updates);
-        immediateStore.saveState();
+        debouncedStore.saveState();
     }
     subscribe(listener) {
         this.state.listeners.push(listener);
@@ -194,7 +194,7 @@ class OutfitStore {
         };
         // Synchronize changes to the DataManager if it's available
         if (this.dataManager) {
-            immediateStore.saveState();
+            debouncedStore.saveState();
         }
         this.notifyListeners();
     }
@@ -217,7 +217,7 @@ class OutfitStore {
         this.state.userInstances[instanceId] = updatedInstanceData;
         // Synchronize changes to the DataManager if it's available
         if (this.dataManager) {
-            immediateStore.saveState();
+            debouncedStore.saveState();
         }
         this.notifyListeners();
     }
@@ -228,7 +228,7 @@ class OutfitStore {
         this.state.settings[key] = value;
         // Synchronize settings changes to the DataManager
         if (this.dataManager) {
-            immediateStore.saveState();
+            debouncedStore.saveState();
         }
         this.notifyListeners();
     }
@@ -289,7 +289,7 @@ class OutfitStore {
         }
         // Synchronize changes to the DataManager if it's available
         if (this.dataManager) {
-            immediateStore.saveState();
+            debouncedStore.saveState();
         }
         this.notifyListeners();
     }
@@ -311,7 +311,7 @@ class OutfitStore {
         }
         // Synchronize changes to the DataManager if it's available
         if (this.dataManager) {
-            immediateStore.saveState();
+            debouncedStore.saveState();
         }
         this.notifyListeners();
     }
@@ -330,7 +330,7 @@ class OutfitStore {
         };
         // Synchronize changes to the DataManager if it's available
         if (this.dataManager) {
-            immediateStore.saveState();
+            debouncedStore.saveState();
         }
         this.notifyListeners();
     }

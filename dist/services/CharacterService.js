@@ -8,7 +8,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 import { outfitStore } from '../stores/Store.js';
-import { immediateStore } from '../stores/DebouncedStore.js';
+import { debouncedStore } from '../stores/DebouncedStore.js';
 import { debugLog } from '../logging/DebugLogger.js';
 import { CharacterInfoType, getCharacterInfoById } from '../utils/CharacterUtils.js';
 /**
@@ -107,7 +107,7 @@ export function updateForCurrentCharacter(botManager, userManager, botPanel, use
             if (window.outfitStore) {
                 window.outfitStore.setCurrentCharacter(((_b = context === null || context === void 0 ? void 0 : context.characterId) === null || _b === void 0 ? void 0 : _b.toString()) || null);
                 window.outfitStore.setCurrentChat((context === null || context === void 0 ? void 0 : context.chatId) || null);
-                immediateStore.saveState();
+                debouncedStore.saveState();
             }
             // Optionally trigger a refresh of macro processing after character change
             refreshMacroProcessing();

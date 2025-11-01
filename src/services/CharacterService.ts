@@ -1,5 +1,5 @@
 import {outfitStore} from '../stores/Store';
-import {immediateStore} from '../stores/DebouncedStore';
+import {debouncedStore} from '../stores/DebouncedStore';
 import {debugLog} from '../logging/DebugLogger';
 import {CharacterInfoType, getCharacterInfoById} from '../utils/CharacterUtils';
 
@@ -116,7 +116,7 @@ export async function updateForCurrentCharacter(botManager: any, userManager: an
         if ((window as any).outfitStore) {
             (window as any).outfitStore.setCurrentCharacter(context?.characterId?.toString() || null);
             (window as any).outfitStore.setCurrentChat(context?.chatId || null);
-            immediateStore.saveState();
+            debouncedStore.saveState();
         }
 
         // Optionally trigger a refresh of macro processing after character change
