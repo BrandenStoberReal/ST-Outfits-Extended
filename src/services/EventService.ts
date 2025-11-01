@@ -98,13 +98,17 @@ class EventService {
             if (firstBotMessage) {
                 const firstMessageHash = this.generateMessageHash(firstBotMessage.mes);
 
-                debugLog('CHAT_CHANGED event fired and first message has changed - updating for new conversation context', null, 'log');
-                this.currentFirstMessageHash = firstMessageHash;
-                this.updateForCurrentCharacter();
-                customMacroSystem.deregisterCharacterSpecificMacros(this.context);
-                customMacroSystem.registerCharacterSpecificMacros(this.context);
-                // Clear macro cache to ensure macros use fresh data for the new conversation
-                customMacroSystem.clearCache();
+                if (this.currentFirstMessageHash !== firstMessageHash) {
+                    debugLog('CHAT_CHANGED event fired and first message has changed - updating for new conversation context', null, 'log');
+                    this.currentFirstMessageHash = firstMessageHash;
+                    this.updateForCurrentCharacter();
+                    customMacroSystem.deregisterCharacterSpecificMacros(this.context);
+                    customMacroSystem.registerCharacterSpecificMacros(this.context);
+                    // Clear macro cache to ensure macros use fresh data for the new conversation
+                    customMacroSystem.clearCache();
+                } else {
+                    debugLog('CHAT_CHANGED event fired but first message unchanged - skipping update', null, 'log');
+                }
             } else {
                 this.currentFirstMessageHash = null;
                 debugLog('CHAT_CHANGED event fired with no first bot message - updating for character switch', null, 'log');
