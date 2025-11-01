@@ -66,11 +66,11 @@ export class NewUserOutfitManager extends OutfitManager {
             setOutfitItem: { get: () => super.setOutfitItem }
         });
         return __awaiter(this, void 0, void 0, function* () {
-            const message = yield _super.setOutfitItem.call(this, slot, value);
-            if (message) {
-                return message.replace(this.character, 'You');
+            const result = yield _super.setOutfitItem.call(this, slot, value);
+            if (result.message) {
+                result.message = result.message.replace(this.character, 'You');
             }
-            return null;
+            return result;
         });
     }
     savePreset(presetName, instanceId = null) {
