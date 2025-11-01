@@ -76,12 +76,12 @@ class MacroProcessor {
         const state = outfitStore.getState();
         const outfitValues = new Set<string>();
 
-        // Get all outfit values from all bot instances for this character
+        // Get all outfit values from all bot instances for this character (including "None")
         if (state.botInstances && state.botInstances[actualCharacterId]) {
             Object.values(state.botInstances[actualCharacterId]).forEach(instanceData => {
                 if (instanceData && instanceData.bot) {
                     Object.values(instanceData.bot).forEach(value => {
-                        if (value && typeof value === 'string') { // Include 'None' values as requested
+                        if (value !== undefined && value !== null && typeof value === 'string') {
                             outfitValues.add(value);
                         }
                     });
@@ -89,7 +89,7 @@ class MacroProcessor {
             });
         }
 
-        // Get all preset values for this character
+        // Get all preset values for this character (including "None")
         if (state.presets && state.presets.bot) {
             Object.keys(state.presets.bot).forEach(key => {
                 if (key.startsWith(actualCharacterId + '_')) {
@@ -99,13 +99,24 @@ class MacroProcessor {
                         Object.values(presets).forEach(preset => {
                             if (preset) {
                                 Object.values(preset).forEach(value => {
-                                    if (value && typeof value === 'string') { // Include 'None' values as requested
+                                    if (value !== undefined && value !== null && typeof value === 'string') {
                                         outfitValues.add(value);
                                     }
                                 });
                             }
                         });
                     }
+                }
+            });
+        }
+
+        // Also include current outfit values for this character if available
+        const currentInstanceId = state.currentOutfitInstanceId;
+        if (currentInstanceId && state.botInstances[actualCharacterId]?.[currentInstanceId]?.bot) {
+            const currentOutfit = state.botInstances[actualCharacterId][currentInstanceId].bot;
+            Object.values(currentOutfit).forEach(value => {
+                if (value !== undefined && value !== null && typeof value === 'string') {
+                    outfitValues.add(value);
                 }
             });
         }

@@ -63,25 +63,26 @@ class MacroProcessor {
         });
     }
     getAllOutfitValuesForCharacter(characterId) {
+        var _a, _b;
         if (!characterId) {
             return [];
         }
         const actualCharacterId = characterId.toString();
         const state = outfitStore.getState();
         const outfitValues = new Set();
-        // Get all outfit values from all bot instances for this character
+        // Get all outfit values from all bot instances for this character (including "None")
         if (state.botInstances && state.botInstances[actualCharacterId]) {
             Object.values(state.botInstances[actualCharacterId]).forEach(instanceData => {
                 if (instanceData && instanceData.bot) {
                     Object.values(instanceData.bot).forEach(value => {
-                        if (value && typeof value === 'string') { // Include 'None' values as requested
+                        if (value !== undefined && value !== null && typeof value === 'string') {
                             outfitValues.add(value);
                         }
                     });
                 }
             });
         }
-        // Get all preset values for this character
+        // Get all preset values for this character (including "None")
         if (state.presets && state.presets.bot) {
             Object.keys(state.presets.bot).forEach(key => {
                 if (key.startsWith(actualCharacterId + '_')) {
@@ -90,13 +91,23 @@ class MacroProcessor {
                         Object.values(presets).forEach(preset => {
                             if (preset) {
                                 Object.values(preset).forEach(value => {
-                                    if (value && typeof value === 'string') { // Include 'None' values as requested
+                                    if (value !== undefined && value !== null && typeof value === 'string') {
                                         outfitValues.add(value);
                                     }
                                 });
                             }
                         });
                     }
+                }
+            });
+        }
+        // Also include current outfit values for this character if available
+        const currentInstanceId = state.currentOutfitInstanceId;
+        if (currentInstanceId && ((_b = (_a = state.botInstances[actualCharacterId]) === null || _a === void 0 ? void 0 : _a[currentInstanceId]) === null || _b === void 0 ? void 0 : _b.bot)) {
+            const currentOutfit = state.botInstances[actualCharacterId][currentInstanceId].bot;
+            Object.values(currentOutfit).forEach(value => {
+                if (value !== undefined && value !== null && typeof value === 'string') {
+                    outfitValues.add(value);
                 }
             });
         }
