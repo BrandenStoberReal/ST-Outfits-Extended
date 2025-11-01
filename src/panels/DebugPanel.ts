@@ -787,14 +787,26 @@ export class DebugPanel {
      */
     private getState(): any {
         if (this.dataManager) {
+            // When DataManager is available, use the combined data from both sources
+            // but ensure instance data comes from DataManager for consistency
             const data = this.dataManager.load();
             const storeState = outfitStore.getState();
-            // Merge the data from both sources, with DataManager taking priority for instance data
+
+            // Construct a unified state that prioritizes DataManager for instance data
+            // but gets other properties from the store state
             return {
-                ...storeState,
-                ...data,
+                ...storeState, // Get all other properties from the store state
+                ...data, // Override with DataManager data
+                // Explicitly ensure instance data comes from the proper source
                 botInstances: this.getInstanceData().botInstances,
-                userInstances: this.getInstanceData().userInstances
+                userInstances: this.getInstanceData().userInstances,
+                // Also ensure current instance ID comes from store state (most accurate)
+                currentOutfitInstanceId: storeState.currentOutfitInstanceId,
+                currentCharacterId: storeState.currentCharacterId,
+                currentChatId: storeState.currentChatId,
+                settings: data.settings || storeState.settings,
+                panelVisibility: storeState.panelVisibility,
+                references: storeState.references
             };
         } else {
             return outfitStore.getState();

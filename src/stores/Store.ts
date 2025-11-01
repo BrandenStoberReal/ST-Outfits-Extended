@@ -283,7 +283,7 @@ class OutfitStore {
             }
 
             if (Object.keys(syncData).length > 0) {
-                this.dataManager.savePartial(syncData);
+                debouncedStore.saveState();
             }
         }
         
@@ -355,9 +355,7 @@ class OutfitStore {
 
         // Synchronize changes to the DataManager if it's available
         if (this.dataManager) {
-            this.dataManager.savePartial({
-                botInstances: this.state.botInstances
-            });
+            debouncedStore.saveState();
         }
         
         this.notifyListeners();
@@ -390,9 +388,7 @@ class OutfitStore {
 
         // Synchronize changes to the DataManager if it's available
         if (this.dataManager) {
-            this.dataManager.savePartial({
-                userInstances: this.state.userInstances
-            });
+            debouncedStore.saveState();
         }
         
         this.notifyListeners();
@@ -407,9 +403,7 @@ class OutfitStore {
 
         // Synchronize settings changes to the DataManager
         if (this.dataManager) {
-            this.dataManager.savePartial({
-                settings: this.state.settings
-            });
+            debouncedStore.saveState();
         }
         
         this.notifyListeners();
@@ -488,9 +482,7 @@ class OutfitStore {
 
         // Synchronize changes to the DataManager if it's available
         if (this.dataManager) {
-            this.dataManager.savePartial({
-                botInstances: this.state.botInstances
-            });
+            debouncedStore.saveState();
         }
         
         this.notifyListeners();
@@ -518,10 +510,7 @@ class OutfitStore {
 
         // Synchronize changes to the DataManager if it's available
         if (this.dataManager) {
-            this.dataManager.savePartial({
-                botInstances: this.state.botInstances,
-                presets: this.state.presets
-            });
+            debouncedStore.saveState();
         }
         
         this.notifyListeners();
@@ -545,11 +534,7 @@ class OutfitStore {
 
         // Synchronize changes to the DataManager if it's available
         if (this.dataManager) {
-            this.dataManager.savePartial({
-                botInstances: this.state.botInstances,
-                userInstances: this.state.userInstances,
-                presets: this.state.presets
-            });
+            debouncedStore.saveState();
         }
 
         this.notifyListeners();
