@@ -19,6 +19,8 @@ export class UserOutfitPanel {
     isVisible: boolean;
     domElement: HTMLElement | null;
     currentTab: string;
+    currentPresetCategory: string;
+    presetCategories: string[];
     saveSettingsDebounced: any;
     eventListeners: any[];
     outfitSubscription: any;
@@ -37,6 +39,8 @@ export class UserOutfitPanel {
         this.isVisible = false;
         this.domElement = null;
         this.currentTab = 'clothing';
+        this.currentPresetCategory = 'default';
+        this.presetCategories = ['Default', 'Custom'];
         this.saveSettingsDebounced = saveSettingsDebounced;
         this.eventListeners = [];
         this.outfitSubscription = null;
@@ -214,6 +218,35 @@ export class UserOutfitPanel {
     }
 
     renderPresets(container: HTMLElement): void {
+        const categoryContainer = document.createElement('div');
+        categoryContainer.className = 'preset-category-container';
+
+        const categoryLabel = document.createElement('label');
+        categoryLabel.textContent = 'Category:';
+        categoryLabel.className = 'preset-category-label';
+
+        const categorySelect = document.createElement('select');
+        categorySelect.className = 'preset-category-select';
+
+        this.presetCategories.forEach(category => {
+            const option = document.createElement('option');
+            option.value = category.toLowerCase();
+            option.textContent = category;
+            if (this.currentPresetCategory === category.toLowerCase()) {
+                option.selected = true;
+            }
+            categorySelect.appendChild(option);
+        });
+
+        categorySelect.addEventListener('change', (event) => {
+            this.currentPresetCategory = (event.target as HTMLSelectElement).value;
+            this.renderContent();
+        });
+
+        categoryContainer.appendChild(categoryLabel);
+        categoryContainer.appendChild(categorySelect);
+        container.appendChild(categoryContainer);
+
         const presets = this.outfitManager.getPresets();
 
         // Filter out the 'default' preset from the list of regular presets
@@ -222,12 +255,8 @@ export class UserOutfitPanel {
         // Get the name of the preset that is currently set as default
         const defaultPresetName = this.outfitManager.getDefaultPresetName();
 
-        if (regularPresets.length === 0 && !this.outfitManager.hasDefaultOutfit()) {
-            container.innerHTML = '<div>No saved outfits for this instance.</div>';
-        } else {
-            // Check if we have a default that doesn't match any saved preset (like 'default' preset)
-            if (defaultPresetName === 'default') {
-                // Create a special entry for the unmatched default
+        if (this.currentPresetCategory === 'default') {
+            if (this.outfitManager.hasDefaultOutfit()) {
                 const defaultPresetElement = document.createElement('div');
 
                 defaultPresetElement.className = 'outfit-preset default-preset';
@@ -249,10 +278,13 @@ export class UserOutfitPanel {
                 });
 
                 container.appendChild(defaultPresetElement);
+            } else {
+                container.innerHTML += '<div>No default outfit set for this instance.</div>';
             }
-
-            // Render all presets if the default is not 'default' (meaning we have named presets)
-            if (defaultPresetName !== 'default' && regularPresets.length > 0) {
+        } else {
+            if (regularPresets.length === 0) {
+                container.innerHTML += '<div>No saved outfits for this instance.</div>';
+            } else {
                 regularPresets.forEach((preset: string) => {
                     const isDefault = (defaultPresetName === preset);
                     const presetElement = document.createElement('div');
@@ -339,7 +371,7 @@ export class UserOutfitPanel {
         const saveButton = document.createElement('button');
 
         saveButton.className = 'save-outfit-btn';
-        saveButton.textContent = 'Save Current Outfit';
+        saveButton.textContent = 'Save as Preset';
         saveButton.style.marginTop = '5px';
         saveButton.addEventListener('click', async () => {
             const presetName = prompt('Name this outfit:');
