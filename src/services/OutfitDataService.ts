@@ -90,39 +90,46 @@ class OutfitDataService {
                 userPresetsCount: (storeAfterLoadState.presets && storeAfterLoadState.presets.user) ? Object.keys(storeAfterLoadState.presets.user).length : 0
             });
 
-            // IMPORTANT: Access the SillyTavern context directly to ensure immediate save
+            // IMPORTANT: Access the SillyTavern context directly to ensure immediate save with empty data
             const STContext = window.SillyTavern?.getContext?.() || window.getContext?.();
 
-            if (STContext && typeof STContext.saveSettingsDebounced === 'function') {
+            if (STContext) {
                 console.log('[OutfitDataService] Using direct SillyTavern save to ensure immediate persistence');
 
-                // Get the current state of our data after wiping
-                const currentState = this.dataManager.load();
-
-                // Create the complete outfit tracker object in the format expected by SillyTavern
-                const outfitTrackerData = {
-                    instances: currentState.instances || {},
-                    user_instances: currentState.user_instances || {},
-                    presets: currentState.presets || {},
-                    settings: currentState.settings || {},
-                    version: currentState.version || '1.0.0',
-                    variables: currentState.variables || {}
+                // Create a complete outfit tracker object with empty data in the format expected by SillyTavern
+                const emptyOutfitTrackerData = {
+                    instances: {},
+                    user_instances: {},
+                    presets: {},
+                    settings: outfitStore.getState().settings || {},
+                    version: '1.0.0',
+                    variables: {}
                 };
 
-                console.log('[OutfitDataService] Attempting immediate save with wiped data:', {
-                    instancesCount: outfitTrackerData.instances ? Object.keys(outfitTrackerData.instances).length : 0,
-                    userInstancesCount: outfitTrackerData.user_instances ? Object.keys(outfitTrackerData.user_instances).length : 0,
-                    presetsCount: outfitTrackerData.presets ? Object.keys(outfitTrackerData.presets).length : 0
+                console.log('[OutfitDataService] Attempting immediate save with completely empty data:', {
+                    instancesCount: Object.keys(emptyOutfitTrackerData.instances).length,
+                    userInstancesCount: Object.keys(emptyOutfitTrackerData.user_instances).length,
+                    presetsCount: Object.keys(emptyOutfitTrackerData.presets).length
                 });
 
-                // Try to call the save function directly
-                STContext.saveSettingsDebounced({outfit_tracker: outfitTrackerData});
-
-                // If there's a non-debounced save function available, use that too
+                // Try to call the save function directly with empty data to ensure it gets saved
                 if (typeof STContext.saveSettings === 'function') {
-                    console.log('[OutfitDataService] Found immediate save function, using that as well');
-                    STContext.saveSettings({outfit_tracker: outfitTrackerData});
+                    console.log('[OutfitDataService] Using immediate save function');
+                    STContext.saveSettings({outfit_tracker: emptyOutfitTrackerData});
+                } else if (typeof STContext.saveSettingsDebounced === 'function') {
+                    console.log('[OutfitDataService] Using debounced save function');
+                    STContext.saveSettingsDebounced({outfit_tracker: emptyOutfitTrackerData});
+                } else {
+                    console.error('[OutfitDataService] No save function found on STContext');
+                    // Fallback: try to use the direct storage service save
+                    if (this.dataManager.storageService && this.dataManager.storageService.saveFn) {
+                        console.log('[OutfitDataService] Using fallback direct save');
+                        this.dataManager.storageService.saveFn(emptyOutfitTrackerData);
+                    }
                 }
+
+                // Force a short delay to ensure the save operation completes
+                await new Promise(resolve => setTimeout(resolve, 100));
             } else {
                 console.error('[OutfitDataService] Could not access SillyTavern context for immediate save');
 
@@ -130,15 +137,26 @@ class OutfitDataService {
                 if (this.dataManager.storageService && this.dataManager.storageService.saveFn) {
                     console.log('[OutfitDataService] Using fallback direct save');
 
-                    // Load the current data - this should be the wiped data now
-                    const currentData = this.dataManager.load();
+                    // Create empty data structure to save
+                    const emptyData = {
+                        instances: {},
+                        user_instances: {},
+                        presets: {},
+                        settings: outfitStore.getState().settings,
+                        version: '1.0.0',
+                        variables: {}
+                    };
 
                     // Call the save function directly
-                    this.dataManager.storageService.saveFn(currentData);
+                    this.dataManager.storageService.saveFn(emptyData);
                 }
             }
 
             this.clearGlobalOutfitVariables();
+
+            // Reload the state after wipe to ensure the store is in sync with saved data
+            console.log('[OutfitDataService] Loading wiped data from data manager to store after save');
+            outfitStore.loadState(); // This ensures the store reflects the saved wiped state
 
             // Update the UI to reflect the cleared state
             if (window.botOutfitPanel) {
