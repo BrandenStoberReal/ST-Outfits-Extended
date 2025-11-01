@@ -627,7 +627,7 @@ outfit-system_replace_topwear(\"T-shirt\")\
 
         // Update the outfit store to reflect the new prompt
         outfitStore.setSetting('autoOutfitPrompt', this.systemPrompt);
-
+        
         return '[Outfit System] System prompt updated.';
     }
 
@@ -644,7 +644,7 @@ outfit-system_replace_topwear(\"T-shirt\")\
 
         // Update the outfit store to reflect the new default prompt
         outfitStore.setSetting('autoOutfitPrompt', this.systemPrompt);
-
+        
         return '[Outfit System] Reset to default prompt.';
     }
 

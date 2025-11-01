@@ -31,7 +31,7 @@ class OutfitDataService {
 
     async wipeAllOutfits(): Promise<string> {
         console.log('[OutfitDataService] Starting wipeAllOutfits process');
-
+        
         try {
             // Log initial state before wiping
             const initialStoreState = outfitStore.getState();

@@ -278,8 +278,6 @@ class OutfitStore {
             user: {}
         };
         this.setState({ botInstances, userInstances, presets: safePresets, settings });
-        // Notify that state has been loaded, which could trigger managers to reload presets if needed
-        this.notifyListeners();
     }
     flush() {
         if (!this.dataManager) {

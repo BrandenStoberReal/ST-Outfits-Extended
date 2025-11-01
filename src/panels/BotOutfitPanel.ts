@@ -312,6 +312,8 @@ export class BotOutfitPanel {
                     });
 
 
+
+
                     presetElement.querySelector('.delete-preset')!.addEventListener('click', () => {
                         if (confirm(`Delete "${preset}" outfit?`)) {
                             const message = this.outfitManager.deletePreset(preset);

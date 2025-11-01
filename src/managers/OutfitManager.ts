@@ -45,21 +45,10 @@ export abstract class OutfitManager {
 
         this.outfitInstanceId = instanceId;
         this.loadOutfit();
-        // Load presets for this instance ID after setting it
-        this.loadPresetsForInstanceId(instanceId);
     }
 
     getOutfitInstanceId(): string | null {
         return this.outfitInstanceId;
-    }
-
-    /**
-     * Loads presets specifically for the given instance ID
-     * @param instanceId The instance ID to load presets for
-     */
-    loadPresetsForInstanceId(instanceId: string): void {
-        // This method can be overridden by subclasses if needed
-        // For now, we just ensure the presets are available when the instance ID is set
     }
 
     getCurrentOutfit(): { [key: string]: string } {
@@ -216,29 +205,17 @@ export abstract class OutfitManager {
         }));
     }
 
-    abstract savePreset(presetName: string, instanceId?: string | null): string;
+    abstract savePreset(presetName: string, instanceId?: string | null): void;
 
-    abstract loadPreset(presetName: string, instanceId?: string | null): Promise<string>;
+    abstract loadPreset(presetName: string, instanceId?: string | null): Promise<string | null>;
 
-    abstract deletePreset(presetName: string, instanceId?: string | null): string;
+    abstract deletePreset(presetName: string, instanceId?: string | null): string | null;
 
     abstract getPresets(instanceId?: string | null): string[];
 
     abstract getAllPresets(instanceId?: string | null): { [key: string]: { [key: string]: string } };
 
-    abstract loadDefaultOutfit(instanceId?: string | null): Promise<string>;
+    abstract loadDefaultOutfit(instanceId?: string | null): Promise<string | null>;
 
-    abstract overwritePreset(presetName: string, instanceId?: string | null): string;
-
-    abstract setPromptInjectionEnabled(enabled: boolean, instanceId?: string | null): void;
-
-    abstract getPromptInjectionEnabled(instanceId?: string | null): boolean;
-
-    abstract hasDefaultOutfit(instanceId?: string | null): boolean;
-
-    abstract getDefaultPresetName(instanceId?: string | null): string | null;
-
-    abstract setPresetAsDefault(presetName: string, instanceId?: string | null): Promise<string>;
-
-    abstract applyDefaultOutfitAfterSetCharacter(): Promise<void>;
+    abstract overwritePreset(presetName: string, instanceId?: string | null): string | null;
 }

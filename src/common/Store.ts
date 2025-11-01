@@ -289,7 +289,7 @@ class OutfitStore {
             if (!this.state.presets.bot) {
                 this.state.presets.bot = {};
             }
-
+            
             if (!this.state.presets.bot[key]) {
                 this.state.presets.bot[key] = {};
             }
@@ -301,7 +301,7 @@ class OutfitStore {
             if (!this.state.presets.user) {
                 this.state.presets.user = {};
             }
-
+            
             if (!this.state.presets.user[key]) {
                 this.state.presets.user[key] = {};
             }
@@ -451,7 +451,6 @@ class OutfitStore {
         this.dataManager.saveSettings(settings);
     }
 
-
     loadState(): void {
         if (!this.dataManager) {
             return;
@@ -466,9 +465,6 @@ class OutfitStore {
         };
 
         this.setState({botInstances, userInstances, presets: safePresets, settings});
-
-        // Notify that state has been loaded, which could trigger managers to reload presets if needed
-        this.notifyListeners();
     }
 
     flush(): void {

@@ -998,7 +998,7 @@ export function createSettingsUI(AutoOutfitSystem: IDummyAutoOutfitSystem, autoO
             $selectElement.append(`<option value="claude" ${autoOutfitConnectionProfile === 'claude' ? 'selected' : ''}>Claude</option>`);
         }
     })();
-
+    
     // Only add auto system event listeners if it loaded successfully
     if (hasAutoSystem) {
         $('#outfit-auto-system').on('input', function (this: HTMLInputElement) {

@@ -425,28 +425,6 @@ class CustomMacroService {
         return result;
     }
 
-    /**
-     * Returns an array of currently registered macro names for debugging purposes
-     */
-    getRegisteredMacros(): string[] {
-        return Array.from(this.registeredMacros);
-    }
-
-    /**
-     * Returns the count of currently registered macros
-     */
-    getRegisteredMacroCount(): number {
-        return this.registeredMacros.size;
-    }
-
-    /**
-     * Clears all registered macros without unregistering them from SillyTavern
-     * This should only be used when SillyTavern is resetting all macros
-     */
-    clearRegisteredMacros(): void {
-        this.registeredMacros.clear();
-    }
-
     private _generateCacheKey(macroType: string, slotName: string, characterName: string | null): string {
         const context = window.SillyTavern?.getContext ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null);
         const currentCharacterId = context?.characterId || 'unknown';
@@ -507,6 +485,28 @@ class CustomMacroService {
         result = result.split('-').join(' ');
 
         return result;
+    }
+
+    /**
+     * Returns an array of currently registered macro names for debugging purposes
+     */
+    getRegisteredMacros(): string[] {
+        return Array.from(this.registeredMacros);
+    }
+
+    /**
+     * Returns the count of currently registered macros
+     */
+    getRegisteredMacroCount(): number {
+        return this.registeredMacros.size;
+    }
+
+    /**
+     * Clears all registered macros without unregistering them from SillyTavern
+     * This should only be used when SillyTavern is resetting all macros
+     */
+    clearRegisteredMacros(): void {
+        this.registeredMacros.clear();
     }
 }
 
