@@ -31,17 +31,31 @@ class MacroProcessor {
                 }
                 const firstBotMessage = ctx.chat.find((message) => !message.is_user && !message.is_system);
                 if (firstBotMessage) {
-                    // Clean outfit macros from the text (replace {{char_topwear}} with {{}})
-                    const originalMessageText = firstBotMessage.mes;
-                    const processedMessage = this.cleanOutfitMacrosFromText(originalMessageText);
-                    // Get all outfit values for the character to remove from the processed message during ID calculation
+                    // Get all outfit values for the character to remove from the message during ID calculation
                     const outfitValues = this.getAllOutfitValuesForCharacter(ctx.characterId);
+                    // Start with the original message text
+                    let processedMessage = firstBotMessage.mes;
+                    // Clean outfit macros from the text (replace {{char_topwear}} with {{}})
+                    processedMessage = this.cleanOutfitMacrosFromText(processedMessage);
+                    // Remove all outfit values (including "None" and actual outfit names) from the message text
+                    // This prevents the instance ID from changing when outfit values change
+                    for (const value of outfitValues) {
+                        if (value && typeof value === 'string' && value.trim() !== '') {
+                            // Use a global case-insensitive replace to remove the value
+                            // Escape special regex characters in the value
+                            const escapedValue = value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                            const regex = new RegExp(escapedValue, 'gi');
+                            processedMessage = processedMessage.replace(regex, '');
+                        }
+                    }
+                    // Clean up extra whitespace that might result from replacements
+                    processedMessage = processedMessage.replace(/\s+/g, ' ').trim();
                     console.log('[OutfitTracker] Instance ID generation debug:');
-                    console.log('[OutfitTracker] Original message text:', originalMessageText);
-                    console.log('[OutfitTracker] Processed message text (macros cleaned):', processedMessage);
-                    console.log('[OutfitTracker] Outfit values to remove:', outfitValues);
+                    console.log('[OutfitTracker] Original message text:', firstBotMessage.mes);
+                    console.log('[OutfitTracker] Processed message text (macros and outfit values cleaned):', processedMessage);
+                    console.log('[OutfitTracker] Outfit values removed:', outfitValues);
                     // Generate instance ID from the processed message with outfit values removed for consistent ID calculation
-                    const instanceId = yield generateInstanceIdFromText(processedMessage, outfitValues);
+                    const instanceId = yield generateInstanceIdFromText(processedMessage, []);
                     console.log('[OutfitTracker] Generated instance ID:', instanceId);
                     // Only update the instance ID if it's different from the current one
                     // This prevents unnecessary updates that could cause flip-flopping
