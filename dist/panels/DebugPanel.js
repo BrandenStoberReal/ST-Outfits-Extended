@@ -8,12 +8,11 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 import { dragElementWithSave, resizeElement } from '../common/shared.js';
-import { outfitStore } from '../stores/Store.js';
+import { outfitStore } from '../common/Store.js';
 import { customMacroSystem } from '../services/CustomMacroService.js';
 import { debugLogger } from '../logging/DebugLogger.js';
 import { CharacterInfoType, getCharacterInfoById } from '../utils/CharacterUtils.js';
-import { debouncedStore } from '../stores/DebouncedStore.js';
-import { debugLog } from "../logging/DebugLogger.js";
+import { debouncedStore } from '../common/DebouncedStore.js';
 export class DebugPanel {
     constructor() {
         this.isVisible = false;
@@ -508,7 +507,7 @@ export class DebugPanel {
             toastr.success('Outfit data exported!', 'Debug Panel');
         }
         catch (error) {
-            debugLog('Error exporting outfit data', error, 'error');
+            console.error('Error exporting outfit data:', error);
             toastr.error('Error exporting outfit data', 'Debug Panel');
         }
     }
@@ -533,7 +532,7 @@ export class DebugPanel {
                 }
             }
             catch (error) {
-                debugLog('Error importing outfit data', error, 'error');
+                console.error('Error importing outfit data:', error);
                 toastr.error('Error importing outfit data. Check console for details.', 'Debug Panel');
             }
         };
@@ -558,7 +557,7 @@ export class DebugPanel {
         // Check if debug mode is enabled
         const state = outfitStore.getState();
         if (!state.settings.debugMode) {
-            debugLog('Debug mode is disabled. Not showing debug panel.', null, 'log');
+            console.log('Debug mode is disabled. Not showing debug panel.');
             return;
         }
         if (!this.domElement) {

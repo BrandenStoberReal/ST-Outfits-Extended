@@ -13,9 +13,8 @@ import { extractCommands } from '../processors/StringProcessor.js';
 import { LLMUtility } from '../utils/LLMUtility.js';
 import { formatSlotName as utilsFormatSlotName } from '../utils/utilities.js';
 import { areSystemMessagesEnabled } from '../utils/SettingsUtil.js';
-import { outfitStore } from '../stores/Store.js';
+import { outfitStore } from '../common/Store.js';
 import { CharacterInfoType, getCharacterInfoById } from '../utils/CharacterUtils.js';
-import { debugLog } from '../logging/DebugLogger.js';
 /**
  * BotOutfitPanel - Manages the UI for the bot character's outfit tracking
  * This class creates and manages a draggable panel for viewing and modifying
@@ -105,7 +104,7 @@ export class BotOutfitPanel {
             return '';
         }
         catch (error) {
-            debugLog('Could not get first message text for hash generation', error, 'warn');
+            console.warn('Could not get first message text for hash generation:', error);
             return '';
         }
     }
@@ -218,19 +217,12 @@ export class BotOutfitPanel {
         saveButton.style.marginTop = '5px';
         saveButton.addEventListener('click', () => __awaiter(this, void 0, void 0, function* () {
             const presetName = prompt('Name this outfit:');
-            if (presetName === null) {
-                // User cancelled the prompt
-                return;
-            }
-            if (presetName && presetName.trim() !== '' && presetName.toLowerCase() !== 'default') {
+            if (presetName && presetName.toLowerCase() !== 'default') {
                 const message = yield this.botOutfitManager.savePreset(presetName.trim());
                 if (message && areSystemMessagesEnabled()) {
                     this.sendSystemMessage(message);
                 }
                 this.renderContent();
-            }
-            else if (presetName && presetName.trim() === '') {
-                alert('Preset name cannot be empty.');
             }
             else if (presetName && presetName.toLowerCase() === 'default') {
                 alert('Please save this outfit with a different name, then use the "Set Default" button on that outfit.');
@@ -269,7 +261,7 @@ export class BotOutfitPanel {
                 // Get character data
                 const characterInfo = yield this.getCharacterData();
                 if (characterInfo.error) {
-                    debugLog('Error getting character data', { error: characterInfo.error }, 'error');
+                    console.error('Error getting character data:', characterInfo.error);
                     if (areSystemMessagesEnabled()) {
                         this.sendSystemMessage(`Error: ${characterInfo.error}`);
                     }
@@ -285,7 +277,7 @@ export class BotOutfitPanel {
                 }
             }
             catch (error) {
-                debugLog('Error in generateOutfitFromCharacterInfo', error, 'error');
+                console.error('Error in generateOutfitFromCharacterInfo:', error);
                 if (areSystemMessagesEnabled()) {
                     this.sendSystemMessage(`Error generating outfit: ${error.message}`);
                 }
@@ -372,7 +364,7 @@ export class BotOutfitPanel {
                 return yield LLMUtility.generateWithProfile(prompt, 'You are an outfit generation system. Based on the character information provided, output outfit commands to set the character\'s clothing and accessories.', ((_a = window.SillyTavern) === null || _a === void 0 ? void 0 : _a.getContext) ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null), connectionProfile);
             }
             catch (error) {
-                debugLog('Error generating outfit from LLM', error, 'error');
+                console.error('Error generating outfit from LLM:', error);
                 throw error;
             }
         });
@@ -382,17 +374,17 @@ export class BotOutfitPanel {
             // Use the imported extractCommands function to extract outfit commands
             const commands = extractCommands(response);
             if (!commands || commands.length === 0) {
-                debugLog('No outfit commands found in response', null, 'log');
+                console.log('[BotOutfitPanel] No outfit commands found in response');
                 return;
             }
-            debugLog(`Found ${commands.length} commands to process`, { commands }, 'log');
+            console.log(`[BotOutfitPanel] Found ${commands.length} commands to process:`, commands);
             // Process each command
             for (const command of commands) {
                 try {
                     yield this.processSingleCommand(command);
                 }
                 catch (error) {
-                    debugLog(`Error processing command "${command}":`, error, 'error');
+                    console.error(`Error processing command "${command}":`, error);
                 }
             }
             // Update the outfit panel UI
@@ -458,7 +450,7 @@ export class BotOutfitPanel {
                     }
                 }
                 const cleanValue = value.split('"').join('').trim();
-                debugLog(`Processing: ${action} ${slot} "${cleanValue}"`, null, 'log');
+                console.log(`[BotOutfitPanel] Processing: ${action} ${slot} "${cleanValue}"`);
                 // Apply the outfit change to the bot manager
                 const message = yield this.botOutfitManager.setOutfitItem(slot, action === 'remove' ? 'None' : cleanValue);
                 // Show system message if enabled
@@ -467,7 +459,7 @@ export class BotOutfitPanel {
                 }
             }
             catch (error) {
-                debugLog('Error processing single command:', error, 'error');
+                console.error('Error processing single command:', error);
                 throw error;
             }
         });

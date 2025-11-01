@@ -9,13 +9,16 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 import { initializeExtension } from './core/ExtensionCore.js';
 import { debugLog } from './logging/DebugLogger.js';
+console.log('[OutfitTracker] Starting extension loading...');
 debugLog('Starting extension loading...', null, 'info');
 $(document).ready(() => __awaiter(void 0, void 0, void 0, function* () {
     try {
         yield initializeExtension();
+        console.log('[OutfitTracker] Extension loaded successfully');
         debugLog('Extension loaded successfully', null, 'info');
     }
     catch (error) {
+        console.error('[OutfitTracker] Initialization failed', error);
         debugLog('Extension initialization failed', error, 'error');
     }
 }));

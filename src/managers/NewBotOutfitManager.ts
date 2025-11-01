@@ -2,7 +2,6 @@ import {presetManager} from './PresetManager';
 import {OutfitManager} from './OutfitManager';
 import {debouncedStore} from '../stores/DebouncedStore';
 import {outfitStore} from '../stores/Store';
-import {debugLog} from '../logging/DebugLogger';
 
 
 export class NewBotOutfitManager extends OutfitManager {
@@ -15,7 +14,7 @@ export class NewBotOutfitManager extends OutfitManager {
         const actualInstanceId = instanceId || this.outfitInstanceId;
 
         if (!this.characterId || !actualInstanceId) {
-            debugLog('Cannot set prompt injection - missing characterId or instanceId', null, 'warn');
+            console.warn('[NewBotOutfitManager] Cannot set prompt injection - missing characterId or instanceId');
             return;
         }
 
@@ -45,7 +44,7 @@ export class NewBotOutfitManager extends OutfitManager {
         const actualInstanceId = instanceId || this.outfitInstanceId;
 
         if (!this.characterId || !actualInstanceId) {
-            debugLog('Cannot get prompt injection - missing characterId or instanceId', null, 'warn');
+            console.warn('[NewBotOutfitManager] Cannot get prompt injection - missing characterId or instanceId');
             return true;
         }
 
@@ -65,7 +64,7 @@ export class NewBotOutfitManager extends OutfitManager {
 
     loadOutfit(): void {
         if (!this.characterId || !this.outfitInstanceId) {
-            debugLog('Cannot load outfit - missing characterId or outfitInstanceId', null, 'warn');
+            console.warn('[NewBotOutfitManager] Cannot load outfit - missing characterId or outfitInstanceId');
             this.slots.forEach(slot => {
                 this.currentValues[slot] = 'None';
             });
@@ -82,7 +81,7 @@ export class NewBotOutfitManager extends OutfitManager {
 
     saveOutfit(): void {
         if (!this.characterId || !this.outfitInstanceId) {
-            debugLog('Cannot save outfit - missing characterId or outfitInstanceId', null, 'warn');
+            console.warn('[NewBotOutfitManager] Cannot save outfit - missing characterId or outfitInstanceId');
             return;
         }
 
@@ -98,7 +97,7 @@ export class NewBotOutfitManager extends OutfitManager {
 
     savePreset(presetName: string, instanceId: string | null = null): string {
         if (!presetName || typeof presetName !== 'string' || presetName.trim() === '') {
-            debugLog('Invalid preset name provided', null, 'error');
+            console.error('[NewBotOutfitManager] Invalid preset name provided');
             return '[Outfit System] Invalid preset name provided.';
         }
 
@@ -232,7 +231,7 @@ export class NewBotOutfitManager extends OutfitManager {
 
     overwritePreset(presetName: string, instanceId: string | null = null): string {
         if (!presetName || typeof presetName !== 'string' || presetName.trim() === '') {
-            debugLog('Invalid preset name provided', null, 'error');
+            console.error('[NewBotOutfitManager] Invalid preset name provided');
             return '[Outfit System] Invalid preset name provided.';
         }
 

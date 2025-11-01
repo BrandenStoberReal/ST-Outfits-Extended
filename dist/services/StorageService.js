@@ -1,4 +1,3 @@
-import { debugLog } from "../logging/DebugLogger.js";
 class StorageService {
     constructor(saveFn, loadFn) {
         this.saveFn = saveFn;
@@ -6,14 +5,14 @@ class StorageService {
     }
     save(data) {
         if (typeof this.saveFn !== 'function') {
-            debugLog('Save function is not configured.', null, 'error');
+            console.error('[StorageService] Save function is not configured.');
             return;
         }
         this.saveFn(data);
     }
     load() {
         if (typeof this.loadFn !== 'function') {
-            debugLog('Load function is not configured.', null, 'error');
+            console.error('[StorageService] Load function is not configured.');
             return null;
         }
         return this.loadFn();

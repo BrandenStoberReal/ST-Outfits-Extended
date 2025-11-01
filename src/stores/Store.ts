@@ -1,7 +1,6 @@
 import {DEFAULT_SETTINGS} from '../config/constants';
 import {deepClone} from '../utils/utilities';
 import {debouncedStore} from './DebouncedStore';
-import {debugLog} from '../logging/DebugLogger';
 
 export interface OutfitData {
     [key: string]: string;
@@ -145,56 +144,50 @@ class OutfitStore {
             try {
                 listener(this.state);
             } catch (error) {
-                debugLog('Error in store listener', error, 'error');
+                console.error('Error in store listener:', error);
             }
         });
     }
 
     setState(updates: Partial<State>): void {
-        // Deep clone the current state to avoid reference issues
-        const currentStateClone = deepClone(this.state);
-
-        // Create a deep clone of the updates to avoid reference issues
-        const updatesClone = deepClone(updates);
-
-        // Ensure that critical nested objects maintain their structure with proper deep merging
+        // Ensure that critical nested objects maintain their structure
         this.state = {
-            ...currentStateClone,
-            ...updatesClone,
+            ...this.state,
+            ...updates,
             presets: {
                 bot: {
-                    ...(currentStateClone.presets?.bot || {}),
-                    ...((updatesClone as any)?.presets?.bot || {})
+                    ...(this.state.presets?.bot || {}),
+                    ...((updates as any)?.presets?.bot || {})
                 },
                 user: {
-                    ...(currentStateClone.presets?.user || {}),
-                    ...((updatesClone as any)?.presets?.user || {})
+                    ...(this.state.presets?.user || {}),
+                    ...((updates as any)?.presets?.user || {})
                 }
             },
             botInstances: {
-                ...(currentStateClone.botInstances || {}),
-                ...((updatesClone as any)?.botInstances || {})
+                ...(this.state.botInstances || {}),
+                ...((updates as any)?.botInstances || {})
             },
             userInstances: {
-                ...(currentStateClone.userInstances || {}),
-                ...((updatesClone as any)?.userInstances || {})
+                ...(this.state.userInstances || {}),
+                ...((updates as any)?.userInstances || {})
             },
             // Keep other nested objects safe from undefined values
             panelSettings: {
-                ...currentStateClone.panelSettings,
-                ...((updatesClone as any)?.panelSettings || {})
+                ...this.state.panelSettings,
+                ...((updates as any)?.panelSettings || {})
             },
             settings: {
-                ...currentStateClone.settings,
-                ...((updatesClone as any)?.settings || {})
+                ...this.state.settings,
+                ...((updates as any)?.settings || {})
             },
             panelVisibility: {
-                ...currentStateClone.panelVisibility,
-                ...((updatesClone as any)?.panelVisibility || {})
+                ...this.state.panelVisibility,
+                ...((updates as any)?.panelVisibility || {})
             },
             references: {
-                ...currentStateClone.references,
-                ...((updatesClone as any)?.references || {})
+                ...this.state.references,
+                ...((updates as any)?.references || {})
             }
         };
         this.notifyListeners();

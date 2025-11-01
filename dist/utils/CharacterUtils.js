@@ -112,7 +112,7 @@ export function getCharacterInfoById(charId, infoType) {
         return null;
     }
     catch (error) {
-        debugLog('Error getting character info by ID', error, 'error');
+        console.error('Error getting character info by ID:', error);
         return null;
     }
 }

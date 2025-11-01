@@ -1,35 +1,18 @@
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-/**
- * Creates a debounced function that delays invoking func until after wait milliseconds have elapsed since the last time the debounced function was invoked.
- * @param {Function} func The function to debounce.
- * @param {number} wait The number of milliseconds to delay.
- * @returns {Function} Returns the new debounced function.
- */
-export function debounce(func, wait) {
-    let timeout;
-    return function (...args) {
-        const context = this;
-        if (timeout) {
-            clearTimeout(timeout);
-        }
-        timeout = setTimeout(() => {
-            timeout = null;
-            func.apply(context, args);
-        }, wait);
-    };
-}
+"use strict";
 /**
  * Utility functions for Outfit Tracker Extension
  */
-export function generateShortId(id, maxLength = 8) {
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.generateShortId = generateShortId;
+exports.generateMessageHash = generateMessageHash;
+exports.sleep = sleep;
+exports.isValidSlot = isValidSlot;
+exports.safeGet = safeGet;
+exports.deepClone = deepClone;
+exports.deepMerge = deepMerge;
+exports.formatSlotName = formatSlotName;
+exports.generateInstanceIdFromText = generateInstanceIdFromText;
+function generateShortId(id, maxLength = 8) {
     if (!id) {
         return '';
     }
@@ -53,7 +36,7 @@ export function generateShortId(id, maxLength = 8) {
  * @param {string} text - The text to hash
  * @returns {string} - 8-character hash string
  */
-export function generateMessageHash(text) {
+function generateMessageHash(text) {
     if (!text) {
         return '';
     }
@@ -71,7 +54,7 @@ export function generateMessageHash(text) {
  * @param {number} ms - Milliseconds to sleep
  * @returns {Promise} - Promise that resolves after ms milliseconds
  */
-export function sleep(ms) {
+function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 /**
@@ -80,7 +63,7 @@ export function sleep(ms) {
  * @param {Array} allSlots - Array of all valid slot names
  * @returns {boolean} - True if the slot name is valid
  */
-export function isValidSlot(slotName, allSlots) {
+function isValidSlot(slotName, allSlots) {
     return allSlots && Array.isArray(allSlots) && allSlots.includes(slotName);
 }
 /**
@@ -90,7 +73,7 @@ export function isValidSlot(slotName, allSlots) {
  * @param {*} defaultValue - Value to return if path doesn't exist
  * @returns {*} - The value at the path or the default value
  */
-export function safeGet(obj, path, defaultValue = null) {
+function safeGet(obj, path, defaultValue = null) {
     try {
         return path.split('.').reduce((acc, key) => acc && acc[key], obj) || defaultValue;
     }
@@ -104,7 +87,7 @@ export function safeGet(obj, path, defaultValue = null) {
  * @param {any} obj - The object to clone
  * @returns {any} A deep clone of the input object
  */
-export function deepClone(obj) {
+function deepClone(obj) {
     if (obj === null || typeof obj !== 'object') {
         return obj;
     }
@@ -132,7 +115,7 @@ export function deepClone(obj) {
  * @param {object} source - The source object to merge from
  * @returns {object} A new object that is the deep merge of target and source
  */
-export function deepMerge(target, source) {
+function deepMerge(target, source) {
     const output = Object.assign({}, target);
     if (target && typeof target === 'object' && source && typeof source === 'object') {
         Object.keys(source).forEach((key) => {
@@ -164,7 +147,7 @@ export function deepMerge(target, source) {
  * @param {string} slotName - The raw slot name to format
  * @returns {string} The formatted slot name
  */
-export function formatSlotName(slotName) {
+function formatSlotName(slotName) {
     const slotNameMap = {
         'topunderwear': 'Top Underwear / Inner Top',
         'bottomunderwear': 'Bottom Underwear / Inner Bottom',
@@ -238,50 +221,48 @@ function normalizeTextForInstanceId(text) {
  * @param {Array<string>} [valuesToRemove] - Optional array of values to remove from the text before hashing.
  * @returns {Promise<string>} A promise that resolves to the instance ID.
  */
-export function generateInstanceIdFromText(text_1) {
-    return __awaiter(this, arguments, void 0, function* (text, valuesToRemove = null) {
-        let processedText = text;
-        // If specific values to remove are provided, remove them from the text
-        if (valuesToRemove && Array.isArray(valuesToRemove)) {
-            valuesToRemove.forEach(value => {
-                if (value && typeof value === 'string') {
-                    // Remove the value case-insensitively
-                    let tempText = processedText;
-                    let lowerTempText = tempText.toLowerCase();
-                    let lowerValue = value.toLowerCase();
-                    let startIndex = 0;
-                    while ((startIndex = lowerTempText.indexOf(lowerValue, startIndex)) !== -1) {
-                        // Check if it's a complete word match to avoid partial replacements
-                        const endIndex = startIndex + lowerValue.length;
-                        // Check if it's surrounded by word boundaries
-                        const beforeChar = startIndex > 0 ? lowerTempText.charAt(startIndex - 1) : ' ';
-                        const afterChar = endIndex < lowerTempText.length ? lowerTempText.charAt(endIndex) : ' ';
-                        if ((beforeChar === ' ' || beforeChar === '.' || beforeChar === ',' || beforeChar === '"' || beforeChar === '\'' || beforeChar === '(' || beforeChar === '[') &&
-                            (afterChar === ' ' || afterChar === '.' || afterChar === ',' || afterChar === '"' || afterChar === '\'' || afterChar === ')' || afterChar === ']')) {
-                            processedText = processedText.substring(0, startIndex) + '[OUTFIT_REMOVED]' + processedText.substring(endIndex);
-                            lowerTempText = processedText.toLowerCase();
-                        }
-                        startIndex = endIndex;
+async function generateInstanceIdFromText(text, valuesToRemove = null) {
+    let processedText = text;
+    // If specific values to remove are provided, remove them from the text
+    if (valuesToRemove && Array.isArray(valuesToRemove)) {
+        valuesToRemove.forEach(value => {
+            if (value && typeof value === 'string') {
+                // Remove the value case-insensitively
+                let tempText = processedText;
+                let lowerTempText = tempText.toLowerCase();
+                let lowerValue = value.toLowerCase();
+                let startIndex = 0;
+                while ((startIndex = lowerTempText.indexOf(lowerValue, startIndex)) !== -1) {
+                    // Check if it's a complete word match to avoid partial replacements
+                    const endIndex = startIndex + lowerValue.length;
+                    // Check if it's surrounded by word boundaries
+                    const beforeChar = startIndex > 0 ? lowerTempText.charAt(startIndex - 1) : ' ';
+                    const afterChar = endIndex < lowerTempText.length ? lowerTempText.charAt(endIndex) : ' ';
+                    if ((beforeChar === ' ' || beforeChar === '.' || beforeChar === ',' || beforeChar === '"' || beforeChar === '\'' || beforeChar === '(' || beforeChar === '[') &&
+                        (afterChar === ' ' || afterChar === '.' || afterChar === ',' || afterChar === '"' || afterChar === '\'' || afterChar === ')' || afterChar === ']')) {
+                        processedText = processedText.substring(0, startIndex) + '[OUTFIT_REMOVED]' + processedText.substring(endIndex);
+                        lowerTempText = processedText.toLowerCase();
                     }
+                    startIndex = endIndex;
                 }
-            });
-        }
-        const normalizedText = normalizeTextForInstanceId(processedText);
-        if (typeof crypto !== 'undefined' && crypto.subtle) {
-            try {
-                const encoder = new TextEncoder();
-                const data = encoder.encode(normalizedText);
-                const hashBuffer = yield crypto.subtle.digest('SHA-256', data);
-                const hashArray = Array.from(new Uint8Array(hashBuffer));
-                return hashArray.map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 16);
             }
-            catch (err) {
-                console.warn('Crypto API failed, falling back to simple hash for instance ID generation', err);
-                return generateInstanceIdFromTextSimple(normalizedText);
-            }
+        });
+    }
+    const normalizedText = normalizeTextForInstanceId(processedText);
+    if (typeof crypto !== 'undefined' && crypto.subtle) {
+        try {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(normalizedText);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 16);
         }
-        else {
+        catch (err) {
+            console.warn('Crypto API failed, falling back to simple hash for instance ID generation', err);
             return generateInstanceIdFromTextSimple(normalizedText);
         }
-    });
+    }
+    else {
+        return generateInstanceIdFromTextSimple(normalizedText);
+    }
 }

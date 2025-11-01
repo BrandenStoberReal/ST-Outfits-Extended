@@ -1,6 +1,5 @@
 import {ALL_SLOTS} from '../config/constants';
 import {invalidateSpecificMacroCaches} from '../services/CustomMacroService';
-import {debugLog} from '../logging/DebugLogger';
 
 export abstract class OutfitManager {
     slots: string[];
@@ -27,7 +26,7 @@ export abstract class OutfitManager {
         }
 
         if (!name || typeof name !== 'string') {
-            debugLog(`Invalid character name provided, using "Unknown"`, null, 'warn');
+            console.warn(`[${this.constructor.name}] Invalid character name provided, using "Unknown"`);
             name = 'Unknown';
         }
 
@@ -69,7 +68,7 @@ export abstract class OutfitManager {
 
     setOutfit(outfitData: { [key: string]: string }): void {
         if (!outfitData || typeof outfitData !== 'object') {
-            debugLog(`Invalid outfit data provided to setOutfit`, null, 'warn');
+            console.warn(`[${this.constructor.name}] Invalid outfit data provided to setOutfit`);
             return;
         }
 
@@ -93,7 +92,7 @@ export abstract class OutfitManager {
         const actualInstanceId = instanceId || this.outfitInstanceId;
 
         if (!this.characterId || !actualInstanceId) {
-            debugLog(`Cannot load outfit - missing characterId or instanceId`, null, 'warn');
+            console.warn(`[${this.constructor.name}] Cannot load outfit - missing characterId or instanceId`);
             this.slots.forEach(slot => {
                 this.currentValues[slot] = 'None';
             });
@@ -111,7 +110,7 @@ export abstract class OutfitManager {
         const actualInstanceId = instanceId || this.outfitInstanceId;
 
         if (!this.characterId || !actualInstanceId) {
-            debugLog(`Cannot save outfit - missing characterId or instanceId`, null, 'warn');
+            console.warn(`[${this.constructor.name}] Cannot save outfit - missing characterId or instanceId`);
             return;
         }
 
@@ -128,7 +127,7 @@ export abstract class OutfitManager {
 
     async setOutfitItem(slot: string, value: string): Promise<string | null> {
         if (!this.slots.includes(slot)) {
-            debugLog(`Invalid slot: ${slot}`, null, 'error');
+            console.error(`[${this.constructor.name}] Invalid slot: ${slot}`);
             return null;
         }
 
@@ -144,7 +143,7 @@ export abstract class OutfitManager {
 
         if (value.length > MAX_VALUE_LENGTH) {
             value = value.substring(0, MAX_VALUE_LENGTH);
-            debugLog(`Value truncated to ${MAX_VALUE_LENGTH} characters for slot ${slot}`, null, 'warn');
+            console.warn(`[${this.constructor.name}] Value truncated to ${MAX_VALUE_LENGTH} characters for slot ${slot}`);
         }
 
         const previousValue = this.currentValues[slot];
@@ -172,7 +171,7 @@ export abstract class OutfitManager {
 
     async changeOutfitItem(slot: string): Promise<string | null> {
         if (!this.slots.includes(slot)) {
-            debugLog(`Invalid slot: ${slot}`, null, 'error');
+            console.error(`[${this.constructor.name}] Invalid slot: ${slot}`);
             return null;
         }
 

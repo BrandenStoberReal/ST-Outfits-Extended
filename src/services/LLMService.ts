@@ -1,7 +1,6 @@
 import {LLMUtility} from '../utils/LLMUtility';
 import {extractCommands} from '../processors/StringProcessor';
 import {CharacterInfoType, getCharacterInfoById} from '../utils/CharacterUtils';
-import {debugLog} from '../logging/DebugLogger';
 
 declare const window: any;
 
@@ -23,7 +22,7 @@ async function processSingleCommand(command: string, botManager: any): Promise<v
         const [, action, slot, value] = match;
         const cleanValue = value || '';
 
-        debugLog(`Processing: ${action} ${slot} "${cleanValue}"`, null, 'log');
+        console.log(`[LLMService] Processing: ${action} ${slot} \"${cleanValue}\"`);
 
         let finalAction = action;
 
@@ -37,7 +36,7 @@ async function processSingleCommand(command: string, botManager: any): Promise<v
         await botManager.setOutfitItem(slot, finalAction === 'remove' ? 'None' : cleanValue);
 
     } catch (error) {
-        debugLog('Error processing single command', error, 'error');
+        console.error('Error processing single command:', error);
         throw error;
     }
 }
@@ -73,7 +72,7 @@ export async function generateOutfitFromLLM(options: { prompt: string }, profile
 
         return response;
     } catch (error) {
-        debugLog('Error generating outfit from LLM', error, 'error');
+        console.error('Error generating outfit from LLM:', error);
         throw error;
     }
 }
@@ -137,7 +136,7 @@ export async function importOutfitFromCharacterCard(): Promise<{
 
         // Process the commands to update the current bot outfit
         if (commands && commands.length > 0) {
-            debugLog(`Found ${commands.length} outfit commands to process`, {commands}, 'log');
+            console.log(`[LLMService] Found ${commands.length} outfit commands to process:`, commands);
 
             // Get the global bot outfit manager from window if available
             if (window.botOutfitPanel && window.botOutfitPanel.outfitManager) {
@@ -148,7 +147,7 @@ export async function importOutfitFromCharacterCard(): Promise<{
                     try {
                         await processSingleCommand(command, botManager);
                     } catch (cmdError) {
-                        debugLog(`Error processing command "${command}":`, cmdError, 'error');
+                        console.error(`Error processing command \"${command}\":`, cmdError);
                     }
                 }
 
@@ -162,10 +161,10 @@ export async function importOutfitFromCharacterCard(): Promise<{
                     window.botOutfitPanel.renderContent();
                 }
             } else {
-                debugLog('Bot outfit manager not available to apply imported outfits', null, 'warn');
+                console.warn('[LLMService] Bot outfit manager not available to apply imported outfits');
             }
         } else {
-            debugLog('No outfit commands found in response', null, 'log');
+            console.log('[LLMService] No outfit commands found in response');
         }
 
         return {
@@ -174,7 +173,7 @@ export async function importOutfitFromCharacterCard(): Promise<{
             characterName: characterName
         };
     } catch (error: any) {
-        debugLog('Error importing outfit from character card', error, 'error');
+        console.error('Error importing outfit from character card:', error);
 
         return {
             message: `Error importing outfit: ${error.message}`, // Corrected escaping for \'

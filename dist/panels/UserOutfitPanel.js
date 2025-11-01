@@ -11,8 +11,7 @@ import { PresetItem } from './PresetItem.js';
 import { dragElementWithSave, resizeElement } from '../common/shared.js';
 import { formatSlotName as utilsFormatSlotName } from '../utils/utilities.js';
 import { areSystemMessagesEnabled } from '../utils/SettingsUtil.js';
-import { outfitStore } from '../stores/Store.js';
-import { debugLog } from '../logging/DebugLogger.js';
+import { outfitStore } from '../common/Store.js';
 /**
  * UserOutfitPanel - Manages the UI for the user character's outfit tracking
  * This class creates and manages a draggable panel for viewing and modifying
@@ -98,7 +97,7 @@ export class UserOutfitPanel {
             return '';
         }
         catch (error) {
-            debugLog('Could not get first message text for hash generation', error, 'warn');
+            console.warn('Could not get first message text for hash generation:', error);
             return '';
         }
     }
@@ -196,19 +195,12 @@ export class UserOutfitPanel {
         saveButton.style.marginTop = '5px';
         saveButton.addEventListener('click', () => __awaiter(this, void 0, void 0, function* () {
             const presetName = prompt('Name this outfit:');
-            if (presetName === null) {
-                // User cancelled the prompt
-                return;
-            }
-            if (presetName && presetName.trim() !== '' && presetName.toLowerCase() !== 'default') {
+            if (presetName && presetName.toLowerCase() !== 'default') {
                 const message = yield this.userOutfitManager.savePreset(presetName.trim());
                 if (message && areSystemMessagesEnabled()) {
                     this.sendSystemMessage(message);
                 }
                 this.renderContent();
-            }
-            else if (presetName && presetName.trim() === '') {
-                alert('Preset name cannot be empty.');
             }
             else if (presetName && presetName.toLowerCase() === 'default') {
                 alert('Please save this outfit with a different name, then use the "Set Default" button on that outfit.');

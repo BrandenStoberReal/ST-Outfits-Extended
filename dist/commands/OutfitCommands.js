@@ -10,7 +10,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 import { importOutfitFromCharacterCard } from '../services/LLMService.js';
 import { ACCESSORY_SLOTS, CLOTHING_SLOTS } from '../config/constants.js';
 import { areSystemMessagesEnabled } from '../utils/SettingsUtil.js';
-import { debugLog } from '../logging/DebugLogger.js';
 /**
  * Registers all outfit-related slash commands with SillyTavern's command system.
  * This function sets up commands for outfit management, auto outfit system control,
@@ -34,12 +33,12 @@ export function registerOutfitCommands(botManager, userManager, autoOutfitSystem
                 name: 'outfit-bot',
                 callback: function (args) {
                     return __awaiter(this, void 0, void 0, function* () {
-                        debugLog('Bot Outfit command triggered', null, 'log');
+                        console.log('Bot Outfit command triggered');
                         if (window.botOutfitPanel) {
                             window.botOutfitPanel.toggle();
                         }
                         else {
-                            debugLog('Bot outfit panel not available', null, 'error');
+                            console.error('[OutfitTracker] Bot outfit panel not available');
                             if (!(args === null || args === void 0 ? void 0 : args.quiet)) {
                                 toastr.error('Bot outfit panel not available', 'Outfit System');
                             }
@@ -91,12 +90,12 @@ export function registerOutfitCommands(botManager, userManager, autoOutfitSystem
                 name: 'outfit-user',
                 callback: function (args) {
                     return __awaiter(this, void 0, void 0, function* () {
-                        debugLog('User Outfit command triggered', null, 'log');
+                        console.log('User Outfit command triggered');
                         if (window.userOutfitPanel) {
                             window.userOutfitPanel.toggle();
                         }
                         else {
-                            debugLog('User outfit panel not available', null, 'error');
+                            console.error('[OutfitTracker] User outfit panel not available');
                             if (!(args === null || args === void 0 ? void 0 : args.quiet)) {
                                 toastr.error('User outfit panel not available', 'Outfit System');
                             }

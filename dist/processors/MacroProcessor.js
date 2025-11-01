@@ -8,9 +8,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 import { generateInstanceIdFromText } from '../utils/utilities.js';
-import { outfitStore } from '../stores/Store.js';
+import { outfitStore } from '../common/Store.js';
 import { ALL_SLOTS } from '../config/constants.js';
-import { debugLog } from '../logging/DebugLogger.js';
 class MacroProcessor {
     constructor() {
         this.allSlots = ALL_SLOTS;
@@ -63,7 +62,7 @@ class MacroProcessor {
                 }
             }
             catch (error) {
-                debugLog('Error processing macros in first message', error, 'error');
+                console.error('[OutfitTracker] Error processing macros in first message:', error);
             }
         });
     }

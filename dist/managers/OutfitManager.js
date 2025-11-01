@@ -9,7 +9,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 import { ALL_SLOTS } from '../config/constants.js';
 import { invalidateSpecificMacroCaches } from '../services/CustomMacroService.js';
-import { debugLog } from '../logging/DebugLogger.js';
 export class OutfitManager {
     constructor(slots = ALL_SLOTS) {
         this.slots = slots;
@@ -26,7 +25,7 @@ export class OutfitManager {
             return;
         }
         if (!name || typeof name !== 'string') {
-            debugLog(`Invalid character name provided, using "Unknown"`, null, 'warn');
+            console.warn(`[${this.constructor.name}] Invalid character name provided, using "Unknown"`);
             name = 'Unknown';
         }
         this.character = name;
@@ -58,7 +57,7 @@ export class OutfitManager {
     }
     setOutfit(outfitData) {
         if (!outfitData || typeof outfitData !== 'object') {
-            debugLog(`Invalid outfit data provided to setOutfit`, null, 'warn');
+            console.warn(`[${this.constructor.name}] Invalid outfit data provided to setOutfit`);
             return;
         }
         let changed = false;
@@ -75,7 +74,7 @@ export class OutfitManager {
     loadOutfit(instanceId = null) {
         const actualInstanceId = instanceId || this.outfitInstanceId;
         if (!this.characterId || !actualInstanceId) {
-            debugLog(`Cannot load outfit - missing characterId or instanceId`, null, 'warn');
+            console.warn(`[${this.constructor.name}] Cannot load outfit - missing characterId or instanceId`);
             this.slots.forEach(slot => {
                 this.currentValues[slot] = 'None';
             });
@@ -87,7 +86,7 @@ export class OutfitManager {
     saveOutfit(instanceId = null) {
         const actualInstanceId = instanceId || this.outfitInstanceId;
         if (!this.characterId || !actualInstanceId) {
-            debugLog(`Cannot save outfit - missing characterId or instanceId`, null, 'warn');
+            console.warn(`[${this.constructor.name}] Cannot save outfit - missing characterId or instanceId`);
             return;
         }
         const outfitData = {};
@@ -99,7 +98,7 @@ export class OutfitManager {
     setOutfitItem(slot, value) {
         return __awaiter(this, void 0, void 0, function* () {
             if (!this.slots.includes(slot)) {
-                debugLog(`Invalid slot: ${slot}`, null, 'error');
+                console.error(`[${this.constructor.name}] Invalid slot: ${slot}`);
                 return null;
             }
             if (value === undefined || value === null || value === '') {
@@ -111,7 +110,7 @@ export class OutfitManager {
             const MAX_VALUE_LENGTH = 1000;
             if (value.length > MAX_VALUE_LENGTH) {
                 value = value.substring(0, MAX_VALUE_LENGTH);
-                debugLog(`Value truncated to ${MAX_VALUE_LENGTH} characters for slot ${slot}`, null, 'warn');
+                console.warn(`[${this.constructor.name}] Value truncated to ${MAX_VALUE_LENGTH} characters for slot ${slot}`);
             }
             const previousValue = this.currentValues[slot];
             this.currentValues[slot] = value;
@@ -131,7 +130,7 @@ export class OutfitManager {
     changeOutfitItem(slot) {
         return __awaiter(this, void 0, void 0, function* () {
             if (!this.slots.includes(slot)) {
-                debugLog(`Invalid slot: ${slot}`, null, 'error');
+                console.error(`[${this.constructor.name}] Invalid slot: ${slot}`);
                 return null;
             }
             const currentValue = this.currentValues[slot];

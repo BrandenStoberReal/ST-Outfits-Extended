@@ -1,7 +1,6 @@
 import {generateInstanceIdFromText} from '../utils/utilities';
 import {outfitStore} from '../stores/Store';
 import {ALL_SLOTS} from '../config/constants';
-import {debugLog} from '../logging/DebugLogger';
 
 
 class MacroProcessor {
@@ -68,7 +67,7 @@ class MacroProcessor {
                 }
             }
         } catch (error) {
-            debugLog('Error processing macros in first message', error, 'error');
+            console.error('[OutfitTracker] Error processing macros in first message:', error);
         }
     }
 

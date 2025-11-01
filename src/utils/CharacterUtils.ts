@@ -119,7 +119,7 @@ export function getCharacterInfoById(charId: string, infoType: CharacterInfoType
         debugLog(`Resolving character information (${infoType}) from ID failed. Returning null. Faulty ID: ${charId}`, null, 'error');
         return null;
     } catch (error) {
-        debugLog('Error getting character info by ID', error, 'error');
+        console.error('Error getting character info by ID:', error);
         return null;
     }
 }

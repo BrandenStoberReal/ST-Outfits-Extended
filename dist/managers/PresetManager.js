@@ -1,6 +1,5 @@
-import { outfitStore } from '../stores/Store.js';
-import { debouncedStore } from '../stores/DebouncedStore.js';
-import { debugLog } from '../logging/DebugLogger.js';
+import { outfitStore } from '../common/Store.js';
+import { debouncedStore } from '../common/DebouncedStore.js';
 class PresetManager {
     getPresets(instanceId, type) {
         const presetKey = this._generatePresetKey(instanceId, type);
@@ -8,19 +7,6 @@ class PresetManager {
         return presets[presetKey] || {};
     }
     savePreset(instanceId, presetName, outfitData, type) {
-        // Validate inputs
-        if (!instanceId) {
-            debugLog('Instance ID is required for saving preset', null, 'error');
-            return;
-        }
-        if (!presetName || typeof presetName !== 'string' || presetName.trim() === '') {
-            debugLog('Valid preset name is required', null, 'error');
-            return;
-        }
-        if (!outfitData || typeof outfitData !== 'object') {
-            debugLog('Valid outfit data is required', null, 'error');
-            return;
-        }
         const presetKey = this._generatePresetKey(instanceId, type);
         if (!outfitStore.state.presets[type]) {
             outfitStore.state.presets[type] = {};
@@ -28,21 +14,11 @@ class PresetManager {
         if (!outfitStore.state.presets[type][presetKey]) {
             outfitStore.state.presets[type][presetKey] = {};
         }
-        // Create a deep clone to avoid reference issues
         outfitStore.state.presets[type][presetKey][presetName] = Object.assign({}, outfitData);
         debouncedStore.saveState();
     }
     deletePreset(instanceId, presetName, type) {
         var _a, _b;
-        // Validate inputs
-        if (!instanceId) {
-            debugLog('Instance ID is required for deleting preset', null, 'error');
-            return;
-        }
-        if (!presetName || typeof presetName !== 'string' || presetName.trim() === '') {
-            debugLog('Valid preset name is required for deletion', null, 'error');
-            return;
-        }
         const presetKey = this._generatePresetKey(instanceId, type);
         if ((_b = (_a = outfitStore.state.presets[type]) === null || _a === void 0 ? void 0 : _a[presetKey]) === null || _b === void 0 ? void 0 : _b[presetName]) {
             delete outfitStore.state.presets[type][presetKey][presetName];
