@@ -32,8 +32,25 @@ class MacroProcessor {
             const firstBotMessage = ctx.chat.find((message: any) => !message.is_user && !message.is_system);
 
             if (firstBotMessage) {
+                // Try to get characterId from context first, then from the first bot message
+                let characterId = ctx.characterId;
+
+                if (!characterId && firstBotMessage.name) {
+                    // Look for the character in the context's characters array based on the message name
+                    if (ctx.characters && Array.isArray(ctx.characters)) {
+                        const characterIndex = ctx.characters.findIndex((char: any) => char?.name === firstBotMessage.name);
+                        if (characterIndex !== -1) {
+                            characterId = characterIndex;
+                        }
+                    }
+                }
+
                 // Get all outfit values for the character to remove from the message during ID calculation
-                const outfitValues = this.getAllOutfitValuesForCharacter(ctx.characterId);
+                // Only proceed if we have a valid characterId
+                let outfitValues: string[] = [];
+                if (characterId !== undefined && characterId !== null) {
+                    outfitValues = this.getAllOutfitValuesForCharacter(characterId);
+                }
 
                 // Start with the original message text
                 let processedMessage = firstBotMessage.mes;
@@ -59,6 +76,7 @@ class MacroProcessor {
                 console.log('[OutfitTracker] Instance ID generation debug:');
                 console.log('[OutfitTracker] Original message text:', firstBotMessage.mes);
                 console.log('[OutfitTracker] Processed message text (macros and outfit values cleaned):', processedMessage);
+                console.log('[OutfitTracker] Character ID used:', characterId);
                 console.log('[OutfitTracker] Outfit values removed:', outfitValues);
                 
                 // Generate instance ID from the processed message with outfit values removed for consistent ID calculation
