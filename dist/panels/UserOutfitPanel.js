@@ -31,8 +31,8 @@ export class UserOutfitPanel {
         this.isVisible = false;
         this.domElement = null;
         this.currentTab = 'clothing';
-        this.currentPresetCategory = 'default';
-        this.presetCategories = ['Default', 'Custom'];
+        this.currentPresetCategory = 'all'; // Change to show all presets
+        this.presetCategories = ['All']; // Simplified to just show all presets
         this.saveSettingsDebounced = saveSettingsDebounced;
         this.eventListeners = [];
         this.outfitSubscription = null;
@@ -176,129 +176,79 @@ export class UserOutfitPanel {
         });
     }
     renderPresets(container) {
-        const categoryContainer = document.createElement('div');
-        categoryContainer.className = 'preset-category-container';
-        const categoryLabel = document.createElement('label');
-        categoryLabel.textContent = 'Category:';
-        categoryLabel.className = 'preset-category-label';
-        const categorySelect = document.createElement('select');
-        categorySelect.className = 'preset-category-select';
-        this.presetCategories.forEach(category => {
-            const option = document.createElement('option');
-            option.value = category.toLowerCase();
-            option.textContent = category;
-            if (this.currentPresetCategory === category.toLowerCase()) {
-                option.selected = true;
-            }
-            categorySelect.appendChild(option);
-        });
-        categorySelect.addEventListener('change', (event) => {
-            this.currentPresetCategory = event.target.value;
-            this.renderContent();
-        });
-        categoryContainer.appendChild(categoryLabel);
-        categoryContainer.appendChild(categorySelect);
-        container.appendChild(categoryContainer);
         const presets = this.outfitManager.getPresets();
-        // Filter out the 'default' preset from the list of regular presets
-        const regularPresets = presets.filter((preset) => preset !== 'default');
         // Get the name of the preset that is currently set as default
         const defaultPresetName = this.outfitManager.getDefaultPresetName();
-        if (this.currentPresetCategory === 'default') {
-            if (this.outfitManager.hasDefaultOutfit()) {
-                const defaultPresetElement = document.createElement('div');
-                defaultPresetElement.className = 'outfit-preset default-preset';
-                defaultPresetElement.innerHTML = `
-                    <div class="preset-name">Default: Current Setup</div>
+        if (presets.length === 0) {
+            container.innerHTML += '<div>No saved outfits for this instance.</div>';
+        }
+        else {
+            // Show all presets including the default one
+            presets.forEach((preset) => {
+                const isDefault = (defaultPresetName === preset);
+                const presetElement = document.createElement('div');
+                presetElement.className = `outfit-preset ${isDefault ? 'default-preset-highlight' : ''}`;
+                presetElement.innerHTML = `
+                    <div class="preset-name">${preset}${isDefault ? ' (Default)' : ''}</div>
                     <div class="preset-actions">
-                        <button class="load-preset" data-preset="default">Wear</button>
+                        <button class="load-preset" data-preset="${preset}">Wear</button>
+                        <button class="set-default-preset" data-preset="${preset}" ${isDefault ? 'style="display:none;"' : ''}>Set Default</button>
+                        <button class="overwrite-preset" data-preset="${preset}">Overwrite</button>
+                        <button class="delete-preset" data-preset="${preset}">×</button>
                     </div>
                 `;
-                defaultPresetElement.querySelector('.load-preset').addEventListener('click', () => __awaiter(this, void 0, void 0, function* () {
-                    const message = yield this.outfitManager.loadDefaultOutfit();
+                presetElement.querySelector('.load-preset').addEventListener('click', () => __awaiter(this, void 0, void 0, function* () {
+                    const message = yield this.outfitManager.loadPreset(preset);
+                    if (message && areSystemMessagesEnabled()) {
+                        this.sendSystemMessage(message);
+                    }
+                    this.saveSettingsDebounced();
+                    this.renderContent();
+                }));
+                presetElement.querySelector('.set-default-preset').addEventListener('click', () => __awaiter(this, void 0, void 0, function* () {
+                    const message = yield this.outfitManager.setPresetAsDefault(preset);
+                    if (message && areSystemMessagesEnabled()) {
+                        this.sendSystemMessage(message);
+                    }
+                    this.saveSettingsDebounced();
+                    this.renderContent();
+                }));
+                const clearDefaultButton = document.createElement('button');
+                clearDefaultButton.className = 'clear-default-preset';
+                clearDefaultButton.textContent = 'Clear Default';
+                clearDefaultButton.style.display = isDefault ? 'inline-block' : 'none';
+                clearDefaultButton.addEventListener('click', () => __awaiter(this, void 0, void 0, function* () {
+                    const message = yield this.outfitManager.clearDefaultPreset();
                     if (areSystemMessagesEnabled()) {
                         this.sendSystemMessage(message);
                     }
                     this.saveSettingsDebounced();
                     this.renderContent();
                 }));
-                container.appendChild(defaultPresetElement);
-            }
-            else {
-                container.innerHTML += '<div>No default outfit set for this instance.</div>';
-            }
-        }
-        else {
-            if (regularPresets.length === 0) {
-                container.innerHTML += '<div>No saved outfits for this instance.</div>';
-            }
-            else {
-                regularPresets.forEach((preset) => {
-                    const isDefault = (defaultPresetName === preset);
-                    const presetElement = document.createElement('div');
-                    presetElement.className = `outfit-preset ${isDefault ? 'default-preset-highlight' : ''}`;
-                    presetElement.innerHTML = `
-                        <div class="preset-name">${preset}${isDefault ? ' (Default)' : ''}</div>
-                        <div class="preset-actions">
-                            <button class="load-preset" data-preset="${preset}">Wear</button>
-                            <button class="set-default-preset" data-preset="${preset}" ${isDefault ? 'style="display:none;"' : ''}>Set Default</button>
-                            <button class="overwrite-preset" data-preset="${preset}">Overwrite</button>
-                            <button class="delete-preset" data-preset="${preset}">×</button>
-                        </div>
-                    `;
-                    presetElement.querySelector('.load-preset').addEventListener('click', () => __awaiter(this, void 0, void 0, function* () {
-                        const message = yield this.outfitManager.loadPreset(preset);
+                presetElement.querySelector('.preset-actions').appendChild(clearDefaultButton);
+                presetElement.querySelector('.delete-preset').addEventListener('click', () => {
+                    if (confirm(`Delete "${preset}" outfit?`)) {
+                        const message = this.outfitManager.deletePreset(preset);
                         if (message && areSystemMessagesEnabled()) {
                             this.sendSystemMessage(message);
                         }
                         this.saveSettingsDebounced();
                         this.renderContent();
-                    }));
-                    presetElement.querySelector('.set-default-preset').addEventListener('click', () => __awaiter(this, void 0, void 0, function* () {
-                        const message = yield this.outfitManager.setPresetAsDefault(preset);
-                        if (message && areSystemMessagesEnabled()) {
-                            this.sendSystemMessage(message);
-                        }
-                        this.saveSettingsDebounced();
-                        this.renderContent();
-                    }));
-                    const clearDefaultButton = document.createElement('button');
-                    clearDefaultButton.className = 'clear-default-preset';
-                    clearDefaultButton.textContent = 'Clear Default';
-                    clearDefaultButton.style.display = isDefault ? 'inline-block' : 'none';
-                    clearDefaultButton.addEventListener('click', () => __awaiter(this, void 0, void 0, function* () {
-                        const message = yield this.outfitManager.clearDefaultPreset();
-                        if (areSystemMessagesEnabled()) {
-                            this.sendSystemMessage(message);
-                        }
-                        this.saveSettingsDebounced();
-                        this.renderContent();
-                    }));
-                    presetElement.querySelector('.preset-actions').appendChild(clearDefaultButton);
-                    presetElement.querySelector('.delete-preset').addEventListener('click', () => {
-                        if (confirm(`Delete "${preset}" outfit?`)) {
-                            const message = this.outfitManager.deletePreset(preset);
-                            if (areSystemMessagesEnabled()) {
-                                this.sendSystemMessage(message);
-                            }
-                            this.saveSettingsDebounced();
-                            this.renderContent();
-                        }
-                    });
-                    presetElement.querySelector('.overwrite-preset').addEventListener('click', () => {
-                        // Confirmation dialog to confirm overwriting the preset
-                        if (confirm(`Overwrite "${preset}" with current outfit?`)) {
-                            const message = this.outfitManager.overwritePreset(preset);
-                            if (message && areSystemMessagesEnabled()) {
-                                this.sendSystemMessage(message);
-                            }
-                            this.saveSettingsDebounced();
-                            this.renderContent();
-                        }
-                    });
-                    container.appendChild(presetElement);
+                    }
                 });
-            }
+                presetElement.querySelector('.overwrite-preset').addEventListener('click', () => {
+                    // Confirmation dialog to confirm overwriting the preset
+                    if (confirm(`Overwrite "${preset}" with current outfit?`)) {
+                        const message = this.outfitManager.overwritePreset(preset);
+                        if (message && areSystemMessagesEnabled()) {
+                            this.sendSystemMessage(message);
+                        }
+                        this.saveSettingsDebounced();
+                        this.renderContent();
+                    }
+                });
+                container.appendChild(presetElement);
+            });
         }
         // Add save regular outfit button
         const saveButton = document.createElement('button');
