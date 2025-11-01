@@ -102,8 +102,6 @@ class EventService {
                     this.updateForCurrentCharacter();
                     customMacroSystem.deregisterCharacterSpecificMacros(this.context);
                     customMacroSystem.registerCharacterSpecificMacros(this.context);
-                    // Clear macro cache to ensure macros use fresh data for the new conversation
-                    customMacroSystem.clearCache();
                 } else {
                     console.log('[OutfitTracker] CHAT_CHANGED event fired but first message unchanged - skipping update');
                 }
@@ -113,8 +111,6 @@ class EventService {
                 this.updateForCurrentCharacter();
                 customMacroSystem.deregisterCharacterSpecificMacros(this.context);
                 customMacroSystem.registerCharacterSpecificMacros(this.context);
-                // Clear macro cache to ensure macros use fresh data for the new conversation/character
-                customMacroSystem.clearCache();
             }
         }
     }
@@ -145,8 +141,6 @@ class EventService {
 
             await this.processMacrosInFirstMessage(this.context);
             await this.updateForCurrentCharacter();
-            // Clear macro cache after processing first message to ensure fresh data
-            customMacroSystem.clearCache();
         }
     }
 
@@ -188,8 +182,6 @@ class EventService {
 
             await this.processMacrosInFirstMessage(this.context);
             await this.updateForCurrentCharacter();
-            // Clear macro cache after processing first message to ensure fresh data
-            customMacroSystem.clearCache();
         }
     }
 
@@ -198,8 +190,6 @@ class EventService {
         if (this.context) {
             customMacroSystem.deregisterCharacterSpecificMacros(this.context);
             customMacroSystem.registerCharacterSpecificMacros(this.context);
-            // Clear macro cache to ensure macros reflect current outfit data
-            customMacroSystem.clearCache();
         }
     }
 
@@ -263,9 +253,6 @@ class EventService {
                     (window as any).userOutfitPanel.renderContent();
                 }
             }
-
-            // Clear macro cache to ensure macros use the new default outfit data
-            customMacroSystem.clearCache();
 
             console.log('[OutfitTracker] Restored outfits after chat reset.');
 
@@ -333,9 +320,6 @@ class EventService {
                     (window as any).userOutfitPanel.renderContent();
                 }
             }
-
-            // Clear macro cache to ensure macros use the new default outfit data
-            customMacroSystem.clearCache();
 
             console.log('[OutfitTracker] Restored outfits after chat clear.');
 
