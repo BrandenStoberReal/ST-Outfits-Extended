@@ -1,6 +1,6 @@
 import {DEFAULT_SETTINGS} from '../config/constants';
 import {deepClone} from '../utils/utilities';
-import {debouncedStore} from './DebouncedStore';
+import {immediateStore} from './DebouncedStore';
 import {debugLog} from '../logging/DebugLogger';
 import {DataManager} from '../managers/DataManager';
 
@@ -283,7 +283,7 @@ class OutfitStore {
             }
 
             if (Object.keys(syncData).length > 0) {
-                debouncedStore.saveState();
+                immediateStore.saveState();
             }
         }
         
@@ -295,7 +295,7 @@ class OutfitStore {
      */
     updateAndSave(updates: Partial<State>): void {
         this.setState(updates);
-        debouncedStore.saveState();
+        immediateStore.saveState();
     }
 
     subscribe(listener: (state: State) => void): () => void {
@@ -355,7 +355,7 @@ class OutfitStore {
 
         // Synchronize changes to the DataManager if it's available
         if (this.dataManager) {
-            debouncedStore.saveState();
+            immediateStore.saveState();
         }
         
         this.notifyListeners();
@@ -388,7 +388,7 @@ class OutfitStore {
 
         // Synchronize changes to the DataManager if it's available
         if (this.dataManager) {
-            debouncedStore.saveState();
+            immediateStore.saveState();
         }
         
         this.notifyListeners();
@@ -403,7 +403,7 @@ class OutfitStore {
 
         // Synchronize settings changes to the DataManager
         if (this.dataManager) {
-            debouncedStore.saveState();
+            immediateStore.saveState();
         }
         
         this.notifyListeners();
@@ -482,7 +482,7 @@ class OutfitStore {
 
         // Synchronize changes to the DataManager if it's available
         if (this.dataManager) {
-            debouncedStore.saveState();
+            immediateStore.saveState();
         }
         
         this.notifyListeners();
@@ -510,7 +510,7 @@ class OutfitStore {
 
         // Synchronize changes to the DataManager if it's available
         if (this.dataManager) {
-            debouncedStore.saveState();
+            immediateStore.saveState();
         }
         
         this.notifyListeners();
@@ -534,7 +534,7 @@ class OutfitStore {
 
         // Synchronize changes to the DataManager if it's available
         if (this.dataManager) {
-            debouncedStore.saveState();
+            immediateStore.saveState();
         }
 
         this.notifyListeners();

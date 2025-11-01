@@ -1,5 +1,5 @@
 import { outfitStore } from '../stores/Store.js';
-import { debouncedStore } from '../stores/DebouncedStore.js';
+import { immediateStore } from '../stores/DebouncedStore.js';
 import { debugLog } from '../logging/DebugLogger.js';
 class PresetManager {
     getPresets(instanceId, type) {
@@ -30,7 +30,7 @@ class PresetManager {
         }
         // Create a deep clone to avoid reference issues
         outfitStore.state.presets[type][presetKey][presetName] = Object.assign({}, outfitData);
-        debouncedStore.saveState();
+        immediateStore.saveState();
     }
     deletePreset(instanceId, presetName, type) {
         var _a, _b;
@@ -49,7 +49,7 @@ class PresetManager {
             if (Object.keys(outfitStore.state.presets[type][presetKey]).length === 0) {
                 delete outfitStore.state.presets[type][presetKey];
             }
-            debouncedStore.saveState();
+            immediateStore.saveState();
         }
     }
     deleteAllPresetsForInstance(instanceId, type) {
@@ -57,7 +57,7 @@ class PresetManager {
         const presetKey = this._generatePresetKey(instanceId, type);
         if ((_a = outfitStore.state.presets[type]) === null || _a === void 0 ? void 0 : _a[presetKey]) {
             delete outfitStore.state.presets[type][presetKey];
-            debouncedStore.saveState();
+            immediateStore.saveState();
         }
     }
     _generatePresetKey(instanceId, type) {

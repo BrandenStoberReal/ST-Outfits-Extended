@@ -5,7 +5,7 @@ import {generateMessageHash} from '../utils/utilities';
 import {NewBotOutfitManager} from '../managers/NewBotOutfitManager';
 import {NewUserOutfitManager} from '../managers/NewUserOutfitManager';
 import {AutoOutfitService} from './AutoOutfitService';
-import {debouncedStore} from '../stores/DebouncedStore';
+import {immediateStore} from '../stores/DebouncedStore';
 import {debugLog} from '../logging/DebugLogger';
 
 
@@ -181,9 +181,7 @@ class EventService {
                 const oldUserOutfitData = {...this.userManager.getCurrentOutfit()};
                 outfitStore.setUserOutfit(oldUserInstanceId, oldUserOutfitData);
             }
-            debouncedStore.saveState();
-
-            await this.processMacrosInFirstMessage(this.context);
+            immediateStore.saveState();
             await this.updateForCurrentCharacter();
             // Clear macro cache after processing first message to ensure fresh data
             customMacroSystem.clearCache();
@@ -225,7 +223,7 @@ class EventService {
                 await this.userManager.saveOutfit();
             }
 
-            debouncedStore.flush();
+            immediateStore.flush();
 
             const result = await originalRestart.apply(this, args);
 
@@ -295,8 +293,8 @@ class EventService {
                 outfitStore.setUserOutfit(userOutfitInstanceId, userOutfitData);
             }
 
-            debouncedStore.saveState();
-            debouncedStore.flush();
+            immediateStore.saveState();
+            immediateStore.flush();
 
             await originalClearChat.apply(this, args);
 

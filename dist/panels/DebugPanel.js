@@ -12,7 +12,7 @@ import { outfitStore } from '../stores/Store.js';
 import { customMacroSystem } from '../services/CustomMacroService.js';
 import { debugLog, debugLogger } from '../logging/DebugLogger.js';
 import { CharacterInfoType, getCharacterInfoById } from '../utils/CharacterUtils.js';
-import { debouncedStore } from '../stores/DebouncedStore.js';
+import { immediateStore } from '../stores/DebouncedStore.js';
 export class DebugPanel {
     constructor(dataManager) {
         this.isVisible = false;
@@ -626,7 +626,7 @@ export class DebugPanel {
                 if (confirm('Are you sure you want to import this outfit data? This will replace all current data.')) {
                     // Update store state with imported data
                     outfitStore.setState(data);
-                    debouncedStore.saveState(); // Save to storage
+                    immediateStore.saveState(); // Save to storage
                     this.renderContent();
                     toastr.success('Outfit data imported!', 'Debug Panel');
                 }

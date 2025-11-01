@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 import { presetManager } from './PresetManager.js';
 import { OutfitManager } from './OutfitManager.js';
-import { debouncedStore } from '../stores/DebouncedStore.js';
+import { immediateStore } from '../stores/DebouncedStore.js';
 import { outfitStore } from '../stores/Store.js';
 import { debugLog } from '../logging/DebugLogger.js';
 export class NewBotOutfitManager extends OutfitManager {
@@ -49,7 +49,7 @@ export class NewBotOutfitManager extends OutfitManager {
         }
         outfitStore.notifyListeners();
         debugLog('NewBotOutfitManager: Requesting debounced save after prompt injection setting change', null, 'debug');
-        debouncedStore.saveState();
+        immediateStore.saveState();
         debugLog('NewBotOutfitManager: Prompt injection setting updated and save requested', {
             characterId: this.characterId,
             instanceId: actualInstanceId,
@@ -108,7 +108,7 @@ export class NewBotOutfitManager extends OutfitManager {
         }, 'debug');
         outfitStore.setBotOutfit(this.characterId, this.outfitInstanceId, botOutfit);
         debugLog('NewBotOutfitManager: Set outfit in store, requesting debounced save', null, 'debug');
-        debouncedStore.saveState();
+        immediateStore.saveState();
         debugLog('NewBotOutfitManager: SaveOutfit operation completed', {
             characterId: this.characterId,
             instanceId: this.outfitInstanceId
@@ -311,7 +311,7 @@ export class NewBotOutfitManager extends OutfitManager {
             return;
         }
         outfitStore.setBotOutfit(this.characterId, instanceId, outfitData);
-        debouncedStore.saveState();
+        immediateStore.saveState();
     }
     applyDefaultOutfitAfterReset() {
         return __awaiter(this, arguments, void 0, function* (instanceId = null) {

@@ -27,7 +27,7 @@ import { OutfitDataService } from '../services/OutfitDataService.js';
 import { macroProcessor } from '../processors/MacroProcessor.js';
 import { debugLog } from '../logging/DebugLogger.js';
 import { PersistenceService } from "../services/PersistenceService.js";
-import { debouncedStore } from "../stores/DebouncedStore.js";
+import { immediateStore } from "../stores/DebouncedStore.js";
 let AutoOutfitSystem;
 /**
  * Loads the AutoOutfitSystem module dynamically.
@@ -242,7 +242,7 @@ export function initializeExtension() {
         const dataManager = new DataManager(storageService);
         yield dataManager.initialize();
         const persistenceService = new PersistenceService(dataManager);
-        debouncedStore.setPersistenceService(persistenceService);
+        immediateStore.setPersistenceService(persistenceService);
         // Set the data manager in the outfit store for synchronization
         outfitStore.setDataManager(dataManager);
         // Load initial state from DataManager to outfit store
@@ -293,7 +293,7 @@ export function initializeExtension() {
         window.addEventListener('beforeunload', () => {
             try {
                 // Force immediate save of the current state by flushing the debounced store
-                debouncedStore.flush();
+                immediateStore.flush();
             }
             catch (error) {
                 debugLog('Error saving data on beforeunload', error, 'error');

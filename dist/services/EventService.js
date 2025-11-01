@@ -11,7 +11,7 @@ import { EXTENSION_EVENTS, extensionEventBus } from '../core/events.js';
 import { customMacroSystem } from './CustomMacroService.js';
 import { outfitStore } from '../stores/Store.js';
 import { generateMessageHash } from '../utils/utilities.js';
-import { debouncedStore } from '../stores/DebouncedStore.js';
+import { immediateStore } from '../stores/DebouncedStore.js';
 import { debugLog } from '../logging/DebugLogger.js';
 class EventService {
     constructor(context) {
@@ -147,8 +147,7 @@ class EventService {
                     const oldUserOutfitData = Object.assign({}, this.userManager.getCurrentOutfit());
                     outfitStore.setUserOutfit(oldUserInstanceId, oldUserOutfitData);
                 }
-                debouncedStore.saveState();
-                yield this.processMacrosInFirstMessage(this.context);
+                immediateStore.saveState();
                 yield this.updateForCurrentCharacter();
                 // Clear macro cache after processing first message to ensure fresh data
                 customMacroSystem.clearCache();
@@ -183,7 +182,7 @@ class EventService {
             if (userOutfitInstanceId) {
                 yield this.userManager.saveOutfit();
             }
-            debouncedStore.flush();
+            immediateStore.flush();
             const result = yield originalRestart.apply(this, args);
             if (botOutfitInstanceId) {
                 this.botManager.setOutfitInstanceId(botOutfitInstanceId);
@@ -239,8 +238,8 @@ class EventService {
                 const userOutfitData = Object.assign({}, this.userManager.getCurrentOutfit());
                 outfitStore.setUserOutfit(userOutfitInstanceId, userOutfitData);
             }
-            debouncedStore.saveState();
-            debouncedStore.flush();
+            immediateStore.saveState();
+            immediateStore.flush();
             yield originalClearChat.apply(this, args);
             if (botOutfitInstanceId) {
                 this.botManager.setOutfitInstanceId(botOutfitInstanceId);

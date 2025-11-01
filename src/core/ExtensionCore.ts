@@ -18,7 +18,7 @@ import {OutfitDataService} from '../services/OutfitDataService';
 import {macroProcessor} from '../processors/MacroProcessor';
 import {debugLog} from '../logging/DebugLogger';
 import {PersistenceService} from "../services/PersistenceService";
-import {debouncedStore} from "../stores/DebouncedStore";
+import {immediateStore} from "../stores/DebouncedStore";
 
 declare const window: any;
 
@@ -258,7 +258,7 @@ export async function initializeExtension(): Promise<void> {
     await dataManager.initialize();
 
     const persistenceService = new PersistenceService(dataManager);
-    debouncedStore.setPersistenceService(persistenceService);
+    immediateStore.setPersistenceService(persistenceService);
 
     // Set the data manager in the outfit store for synchronization
     outfitStore.setDataManager(dataManager);
@@ -328,7 +328,7 @@ export async function initializeExtension(): Promise<void> {
     window.addEventListener('beforeunload', () => {
         try {
             // Force immediate save of the current state by flushing the debounced store
-            debouncedStore.flush();
+            immediateStore.flush();
         } catch (error) {
             debugLog('Error saving data on beforeunload', error, 'error');
         }
