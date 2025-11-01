@@ -229,69 +229,112 @@ class OutfitStore {
         bot: { [presetName: string]: OutfitData },
         user: { [presetName: string]: OutfitData }
     } {
+        // Check if characterId or instanceId are undefined/null to prevent errors
+        if (!characterId || !instanceId) {
+            console.warn(`[OutfitStore] getPresets called with invalid parameters: characterId=${characterId}, instanceId=${instanceId}`);
+            return {
+                bot: {},
+                user: deepClone(this.state.presets.user[instanceId || 'default'] || {})
+            };
+        }
+
         const botPresetKey = this._generateBotPresetKey(characterId, instanceId);
         const userPresetKey = instanceId || 'default';
 
+        // Ensure presets objects exist before accessing them
+        const botPresets = this.state.presets?.bot || {};
+        const userPresets = this.state.presets?.user || {};
+
         return {
-            bot: deepClone(this.state.presets.bot[botPresetKey] || {}),
-            user: deepClone(this.state.presets.user[userPresetKey] || {}),
+            bot: deepClone(botPresets[botPresetKey] || {}),
+            user: deepClone(userPresets[userPresetKey] || {}),
         };
     }
 
     savePreset(characterId: string, instanceId: string, presetName: string, outfitData: OutfitData, type: 'bot' | 'user' = 'bot'): void {
         if (type === 'bot') {
+            // Check if characterId or instanceId are undefined/null to prevent errors
+            if (!characterId || !instanceId) {
+                console.warn(`[OutfitStore] savePreset called with invalid parameters: characterId=${characterId}, instanceId=${instanceId}`);
+                return;
+            }
+            
             const key = this._generateBotPresetKey(characterId, instanceId);
 
-            if (!this.state.presets.bot[key]) {
-                this.state.presets.bot[key] = {};
+            const botPresets = this.state.presets?.bot || {};
+            if (!botPresets[key]) {
+                botPresets[key] = {};
             }
-            this.state.presets.bot[key][presetName] = {...outfitData};
+            botPresets[key][presetName] = {...outfitData};
+            this.state.presets.bot = botPresets;
         } else {
             const key = instanceId || 'default';
 
-            if (!this.state.presets.user[key]) {
-                this.state.presets.user[key] = {};
+            const userPresets = this.state.presets?.user || {};
+            if (!userPresets[key]) {
+                userPresets[key] = {};
             }
-            this.state.presets.user[key][presetName] = {...outfitData};
+            userPresets[key][presetName] = {...outfitData};
+            this.state.presets.user = userPresets;
         }
         this.notifyListeners();
     }
 
     deletePreset(characterId: string, instanceId: string, presetName: string, type: 'bot' | 'user' = 'bot'): void {
         if (type === 'bot') {
+            // Check if characterId or instanceId are undefined/null to prevent errors
+            if (!characterId || !instanceId) {
+                console.warn(`[OutfitStore] deletePreset called with invalid parameters: characterId=${characterId}, instanceId=${instanceId}`);
+                return;
+            }
+            
             const key = this._generateBotPresetKey(characterId, instanceId);
 
-            if (this.state.presets.bot[key]?.[presetName]) {
-                delete this.state.presets.bot[key][presetName];
-                if (Object.keys(this.state.presets.bot[key]).length === 0) {
-                    delete this.state.presets.bot[key];
+            const botPresets = this.state.presets?.bot || {};
+            if (botPresets[key]?.[presetName]) {
+                delete botPresets[key][presetName];
+                if (Object.keys(botPresets[key] || {}).length === 0) {
+                    delete botPresets[key];
                 }
             }
+            this.state.presets.bot = botPresets;
         } else {
             const key = instanceId || 'default';
 
-            if (this.state.presets.user[key]?.[presetName]) {
-                delete this.state.presets.user[key][presetName];
-                if (Object.keys(this.state.presets.user[key]).length === 0) {
-                    delete this.state.presets.user[key];
+            const userPresets = this.state.presets?.user || {};
+            if (userPresets[key]?.[presetName]) {
+                delete userPresets[key][presetName];
+                if (Object.keys(userPresets[key] || {}).length === 0) {
+                    delete userPresets[key];
                 }
             }
+            this.state.presets.user = userPresets;
         }
         this.notifyListeners();
     }
 
     deleteAllPresetsForCharacter(characterId: string, instanceId: string, type: 'bot' | 'user' = 'bot'): void {
         if (type === 'bot') {
+            // Check if characterId or instanceId are undefined/null to prevent errors
+            if (!characterId || !instanceId) {
+                console.warn(`[OutfitStore] deleteAllPresetsForCharacter called with invalid parameters: characterId=${characterId}, instanceId=${instanceId}`);
+                return;
+            }
+            
             const key = this._generateBotPresetKey(characterId, instanceId);
 
-            if (this.state.presets.bot[key]) {
-                delete this.state.presets.bot[key];
+            const botPresets = this.state.presets?.bot || {};
+            if (botPresets[key]) {
+                delete botPresets[key];
+                this.state.presets.bot = botPresets;
             }
         } else {
             const key = instanceId || 'default';
 
-            if (this.state.presets.user[key]) {
-                delete this.state.presets.user[key];
+            const userPresets = this.state.presets?.user || {};
+            if (userPresets[key]) {
+                delete userPresets[key];
+                this.state.presets.user = userPresets;
             }
         }
         this.notifyListeners();
@@ -301,13 +344,21 @@ class OutfitStore {
         [presetName: string]: OutfitData
     } {
         if (type === 'bot') {
+            // Check if characterId or instanceId are undefined/null to prevent errors
+            if (!characterId || !instanceId) {
+                console.warn(`[OutfitStore] getAllPresets called with invalid parameters: characterId=${characterId}, instanceId=${instanceId}`);
+                return {};
+            }
+            
             const key = this._generateBotPresetKey(characterId, instanceId);
 
-            return deepClone(this.state.presets.bot[key] || {});
+            const botPresets = this.state.presets?.bot || {};
+            return deepClone(botPresets[key] || {});
         }
         const key = instanceId || 'default';
 
-        return deepClone(this.state.presets.user[key] || {});
+        const userPresets = this.state.presets?.user || {};
+        return deepClone(userPresets[key] || {});
     }
 
     _generateBotPresetKey(characterId: string, instanceId: string): string {

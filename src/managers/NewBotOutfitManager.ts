@@ -120,6 +120,12 @@ export class NewBotOutfitManager extends OutfitManager {
         }
 
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
+
+        // Ensure character and instanceId are defined before attempting to get presets
+        if (!this.character || !actualInstanceId) {
+            return `[Outfit System] Invalid character or instance ID: character=${this.character}, instanceId=${actualInstanceId}`;
+        }
+        
         const {bot: presets} = outfitStore.getPresets(this.character, actualInstanceId);
 
         if (!presets || !presets[presetName]) {
@@ -149,6 +155,12 @@ export class NewBotOutfitManager extends OutfitManager {
         }
 
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
+
+        // Ensure character and instanceId are defined before attempting to get presets
+        if (!this.character || !actualInstanceId) {
+            return `[Outfit System] Invalid character or instance ID: character=${this.character}, instanceId=${actualInstanceId}`;
+        }
+        
         const {bot: presets} = outfitStore.getPresets(this.character, actualInstanceId);
 
         if (!presets || !presets[presetName]) {
@@ -166,6 +178,13 @@ export class NewBotOutfitManager extends OutfitManager {
 
     getPresets(instanceId: string | null = null): string[] {
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
+
+        // Ensure character is defined before attempting to get presets
+        if (!this.character || !actualInstanceId) {
+            console.warn(`[NewBotOutfitManager] getPresets called with invalid parameters: character=${this.character}, instanceId=${actualInstanceId}`);
+            return [];
+        }
+        
         const {bot: presets} = outfitStore.getPresets(this.character, actualInstanceId);
 
         if (!presets) {
@@ -177,6 +196,12 @@ export class NewBotOutfitManager extends OutfitManager {
 
     async loadDefaultOutfit(instanceId: string | null = null): Promise<string> {
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
+
+        // Ensure character and instanceId are defined before attempting to get presets
+        if (!this.character || !actualInstanceId) {
+            return `[Outfit System] Invalid character or instance ID: character=${this.character}, instanceId=${actualInstanceId}`;
+        }
+        
         const {bot: presets} = outfitStore.getPresets(this.character, actualInstanceId);
 
         if (!presets || !presets['default']) {
@@ -214,6 +239,12 @@ export class NewBotOutfitManager extends OutfitManager {
         }
 
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
+
+        // Ensure character and instanceId are defined before attempting to get presets
+        if (!this.character || !actualInstanceId) {
+            return `[Outfit System] Invalid character or instance ID: character=${this.character}, instanceId=${actualInstanceId}`;
+        }
+        
         const {bot: presets} = outfitStore.getPresets(this.character, actualInstanceId);
 
         if (!presets || !presets[presetName]) {
@@ -242,6 +273,13 @@ export class NewBotOutfitManager extends OutfitManager {
 
     hasDefaultOutfit(instanceId: string | null = null): boolean {
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
+
+        // Ensure character and instanceId are defined before attempting to get presets
+        if (!this.character || !actualInstanceId) {
+            console.warn(`[NewBotOutfitManager] hasDefaultOutfit called with invalid parameters: character=${this.character}, instanceId=${actualInstanceId}`);
+            return false;
+        }
+        
         const {bot: presets} = outfitStore.getPresets(this.character, actualInstanceId);
 
         return Boolean(presets && presets['default']);
@@ -249,6 +287,13 @@ export class NewBotOutfitManager extends OutfitManager {
 
     getDefaultPresetName(instanceId: string | null = null): string | null {
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
+
+        // Ensure character and instanceId are defined before attempting to get presets
+        if (!this.character || !actualInstanceId) {
+            console.warn(`[NewBotOutfitManager] getDefaultPresetName called with invalid parameters: character=${this.character}, instanceId=${actualInstanceId}`);
+            return null;
+        }
+        
         const {bot: presets} = outfitStore.getPresets(this.character, actualInstanceId);
 
         if (presets && presets['default']) {
@@ -260,6 +305,12 @@ export class NewBotOutfitManager extends OutfitManager {
 
     async setPresetAsDefault(presetName: string, instanceId: string | null = null): Promise<string> {
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
+
+        // Ensure character and instanceId are defined before attempting to get presets
+        if (!this.character || !actualInstanceId) {
+            return `[Outfit System] Invalid character or instance ID: character=${this.character}, instanceId=${actualInstanceId}`;
+        }
+        
         const {bot: presets} = outfitStore.getPresets(this.character, actualInstanceId);
 
         if (!presets || !presets[presetName]) {
@@ -278,6 +329,12 @@ export class NewBotOutfitManager extends OutfitManager {
 
     async clearDefaultPreset(instanceId: string | null = null): Promise<string> {
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
+
+        // Ensure character and instanceId are defined before attempting to get presets
+        if (!this.character || !actualInstanceId) {
+            return `[Outfit System] Invalid character or instance ID: character=${this.character}, instanceId=${actualInstanceId}`;
+        }
+        
         const {bot: presets} = outfitStore.getPresets(this.character, actualInstanceId);
 
         if (!presets || !presets['default']) {

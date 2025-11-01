@@ -84,6 +84,12 @@ export class NewUserOutfitManager extends OutfitManager {
         }
 
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
+
+        // Ensure instanceId is defined before attempting to get presets
+        if (!actualInstanceId) {
+            return `[Outfit System] Invalid instance ID: ${actualInstanceId}`;
+        }
+        
         const {user: presets} = outfitStore.getPresets('user', actualInstanceId);
 
         if (!presets || !presets[presetName]) {
@@ -113,6 +119,12 @@ export class NewUserOutfitManager extends OutfitManager {
         }
 
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
+
+        // Ensure instanceId is defined before attempting to get presets
+        if (!actualInstanceId) {
+            return `[Outfit System] Invalid instance ID: ${actualInstanceId}`;
+        }
+        
         const {user: presets} = outfitStore.getPresets('user', actualInstanceId);
 
         if (!presets || !presets[presetName]) {
@@ -130,6 +142,13 @@ export class NewUserOutfitManager extends OutfitManager {
 
     getPresets(instanceId: string | null = null): string[] {
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
+
+        // Ensure instanceId is defined before attempting to get presets
+        if (!actualInstanceId) {
+            console.warn(`[NewUserOutfitManager] getPresets called with invalid parameters: instanceId=${actualInstanceId}`);
+            return [];
+        }
+        
         const {user: presets} = outfitStore.getPresets('user', actualInstanceId);
 
         if (!presets) {
@@ -141,6 +160,12 @@ export class NewUserOutfitManager extends OutfitManager {
 
     async loadDefaultOutfit(instanceId: string | null = null): Promise<string> {
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
+
+        // Ensure instanceId is defined before attempting to get presets
+        if (!actualInstanceId) {
+            return `[Outfit System] Invalid instance ID: ${actualInstanceId}`;
+        }
+        
         const {user: presets} = outfitStore.getPresets('user', actualInstanceId);
 
         if (!presets || !presets['default']) {
@@ -178,6 +203,12 @@ export class NewUserOutfitManager extends OutfitManager {
         }
 
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
+
+        // Ensure instanceId is defined before attempting to get presets
+        if (!actualInstanceId) {
+            return `[Outfit System] Invalid instance ID: ${actualInstanceId}`;
+        }
+        
         const {user: presets} = outfitStore.getPresets('user', actualInstanceId);
 
         if (!presets || !presets[presetName]) {
@@ -243,6 +274,13 @@ export class NewUserOutfitManager extends OutfitManager {
 
     hasDefaultOutfit(instanceId: string | null = null): boolean {
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
+
+        // Ensure instanceId is defined before attempting to get presets
+        if (!actualInstanceId) {
+            console.warn(`[NewUserOutfitManager] hasDefaultOutfit called with invalid parameters: instanceId=${actualInstanceId}`);
+            return false;
+        }
+        
         const {user: presets} = outfitStore.getPresets('user', actualInstanceId);
 
         return Boolean(presets && presets['default']);
@@ -250,6 +288,13 @@ export class NewUserOutfitManager extends OutfitManager {
 
     getDefaultPresetName(instanceId: string | null = null): string | null {
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
+
+        // Ensure instanceId is defined before attempting to get presets
+        if (!actualInstanceId) {
+            console.warn(`[NewUserOutfitManager] getDefaultPresetName called with invalid parameters: instanceId=${actualInstanceId}`);
+            return null;
+        }
+        
         const {user: presets} = outfitStore.getPresets('user', actualInstanceId);
 
         if (presets && presets['default']) {
@@ -261,6 +306,12 @@ export class NewUserOutfitManager extends OutfitManager {
 
     async setPresetAsDefault(presetName: string, instanceId: string | null = null): Promise<string> {
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
+
+        // Ensure instanceId is defined before attempting to get presets
+        if (!actualInstanceId) {
+            return `[Outfit System] Invalid instance ID: ${actualInstanceId}`;
+        }
+        
         const {user: presets} = outfitStore.getPresets('user', actualInstanceId);
 
         if (!presets || !presets[presetName]) {
@@ -279,6 +330,12 @@ export class NewUserOutfitManager extends OutfitManager {
 
     async clearDefaultPreset(instanceId: string | null = null): Promise<string> {
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
+
+        // Ensure instanceId is defined before attempting to get presets
+        if (!actualInstanceId) {
+            return `[Outfit System] Invalid instance ID: ${actualInstanceId}`;
+        }
+        
         const {user: presets} = outfitStore.getPresets('user', actualInstanceId);
 
         if (!presets || !presets['default']) {
