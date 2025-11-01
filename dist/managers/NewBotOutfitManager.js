@@ -87,13 +87,7 @@ export class NewBotOutfitManager extends OutfitManager {
         this.slots.forEach(slot => {
             presetData[slot] = this.currentValues[slot];
         });
-        // Use characterId instead of character name for bot presets
-        const characterId = this.characterId;
-        if (!characterId) {
-            console.error('[NewBotOutfitManager] Cannot save preset - missing characterId');
-            return '[Outfit System] Cannot save preset - missing characterId';
-        }
-        outfitStore.savePreset(characterId, actualInstanceId, presetName, presetData, 'bot');
+        outfitStore.savePreset(this.character, actualInstanceId, presetName, presetData, 'bot');
         outfitStore.saveState(); // Ensure the presets are saved to persistent storage
         if (outfitStore.getSetting('enableSysMessages')) {
             return `Saved "${presetName}" outfit for ${this.character} (instance: ${actualInstanceId}).`;
@@ -106,12 +100,7 @@ export class NewBotOutfitManager extends OutfitManager {
                 return `[Outfit System] Invalid preset name: ${presetName}`;
             }
             const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
-            const characterId = this.characterId;
-            if (!characterId) {
-                console.error('[NewBotOutfitManager] Cannot load preset - missing characterId');
-                return `[Outfit System] Cannot load preset - missing characterId`;
-            }
-            const { bot: presets } = outfitStore.getPresets(characterId, actualInstanceId);
+            const { bot: presets } = outfitStore.getPresets(this.character, actualInstanceId);
             if (!presets || !presets[presetName]) {
                 return `[Outfit System] Preset "${presetName}" not found for instance ${actualInstanceId}.`;
             }
@@ -134,12 +123,7 @@ export class NewBotOutfitManager extends OutfitManager {
             return `[Outfit System] Invalid preset name: ${presetName}`;
         }
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
-        const characterId = this.characterId;
-        if (!characterId) {
-            console.error('[NewBotOutfitManager] Cannot delete preset - missing characterId');
-            return `[Outfit System] Cannot delete preset - missing characterId`;
-        }
-        const { bot: presets } = outfitStore.getPresets(characterId, actualInstanceId);
+        const { bot: presets } = outfitStore.getPresets(this.character, actualInstanceId);
         if (!presets || !presets[presetName]) {
             return `[Outfit System] Preset "${presetName}" not found for instance ${actualInstanceId}.`;
         }
@@ -149,13 +133,13 @@ export class NewBotOutfitManager extends OutfitManager {
         if (defaultPresetName === presetName) {
             // If we're deleting the preset that's currently set as default, 
             // we need to clear the default status
-            outfitStore.deletePreset(characterId, actualInstanceId, 'default', 'bot');
+            outfitStore.deletePreset(this.character, actualInstanceId, 'default', 'bot');
             message = `Deleted "${presetName}" and cleared it as the default outfit for ${this.character} (instance: ${actualInstanceId}).`;
         }
         else {
             message = `Deleted "${presetName}" outfit for instance ${actualInstanceId}.`;
         }
-        outfitStore.deletePreset(characterId, actualInstanceId, presetName, 'bot');
+        outfitStore.deletePreset(this.character, actualInstanceId, presetName, 'bot');
         outfitStore.saveState(); // Ensure the presets are saved to persistent storage
         if (outfitStore.getSetting('enableSysMessages')) {
             return message;
@@ -164,12 +148,7 @@ export class NewBotOutfitManager extends OutfitManager {
     }
     getPresets(instanceId = null) {
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
-        const characterId = this.characterId;
-        if (!characterId) {
-            console.error('[NewBotOutfitManager] Cannot get presets - missing characterId');
-            return [];
-        }
-        const { bot: presets } = outfitStore.getPresets(characterId, actualInstanceId);
+        const { bot: presets } = outfitStore.getPresets(this.character, actualInstanceId);
         if (!presets) {
             return [];
         }
@@ -184,12 +163,7 @@ export class NewBotOutfitManager extends OutfitManager {
     loadDefaultOutfit() {
         return __awaiter(this, arguments, void 0, function* (instanceId = null) {
             const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
-            const characterId = this.characterId;
-            if (!characterId) {
-                console.error('[NewBotOutfitManager] Cannot load default outfit - missing characterId');
-                return `[Outfit System] Cannot load default outfit - missing characterId`;
-            }
-            const { bot: presets } = outfitStore.getPresets(characterId, actualInstanceId);
+            const { bot: presets } = outfitStore.getPresets(this.character, actualInstanceId);
             if (!presets || !presets['default']) {
                 return `[Outfit System] No default outfit set for ${this.character} (instance: ${actualInstanceId}). Having a default outfit is HEAVILY encouraged.`;
             }
@@ -219,12 +193,7 @@ export class NewBotOutfitManager extends OutfitManager {
             return '[Outfit System] Invalid preset name provided.';
         }
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
-        const characterId = this.characterId;
-        if (!characterId) {
-            console.error('[NewBotOutfitManager] Cannot overwrite preset - missing characterId');
-            return '[Outfit System] Cannot overwrite preset - missing characterId';
-        }
-        const { bot: presets } = outfitStore.getPresets(characterId, actualInstanceId);
+        const { bot: presets } = outfitStore.getPresets(this.character, actualInstanceId);
         if (!presets || !presets[presetName]) {
             return `[Outfit System] Preset "${presetName}" does not exist for instance ${actualInstanceId}. Cannot overwrite.`;
         }
@@ -232,8 +201,7 @@ export class NewBotOutfitManager extends OutfitManager {
         this.slots.forEach(slot => {
             presetData[slot] = this.currentValues[slot];
         });
-        // characterId was already declared above
-        outfitStore.savePreset(characterId, actualInstanceId, presetName, presetData, 'bot');
+        outfitStore.savePreset(this.character, actualInstanceId, presetName, presetData, 'bot');
         if (outfitStore.getSetting('enableSysMessages')) {
             return `Overwrote "${presetName}" outfit for ${this.character} (instance: ${actualInstanceId}).`;
         }
@@ -241,31 +209,16 @@ export class NewBotOutfitManager extends OutfitManager {
     }
     getAllPresets(instanceId = null) {
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
-        const characterId = this.characterId;
-        if (!characterId) {
-            console.error('[NewBotOutfitManager] Cannot get all presets - missing characterId');
-            return {};
-        }
-        return outfitStore.getAllPresets(characterId, actualInstanceId, 'bot');
+        return outfitStore.getAllPresets(this.character, actualInstanceId, 'bot');
     }
     hasDefaultOutfit(instanceId = null) {
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
-        const characterId = this.characterId;
-        if (!characterId) {
-            console.error('[NewBotOutfitManager] Cannot check default outfit - missing characterId');
-            return false;
-        }
-        const { bot: presets } = outfitStore.getPresets(characterId, actualInstanceId);
+        const { bot: presets } = outfitStore.getPresets(this.character, actualInstanceId);
         return Boolean(presets && presets['default']);
     }
     getDefaultPresetName(instanceId = null) {
         const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
-        const characterId = this.characterId;
-        if (!characterId) {
-            console.error('[NewBotOutfitManager] Cannot get default preset name - missing characterId');
-            return null;
-        }
-        const { bot: presets } = outfitStore.getPresets(characterId, actualInstanceId);
+        const { bot: presets } = outfitStore.getPresets(this.character, actualInstanceId);
         if (presets && presets['default']) {
             return 'default';
         }
@@ -274,30 +227,17 @@ export class NewBotOutfitManager extends OutfitManager {
     setPresetAsDefault(presetName_1) {
         return __awaiter(this, arguments, void 0, function* (presetName, instanceId = null) {
             const actualInstanceId = instanceId || this.outfitInstanceId || 'default';
-            const characterId = this.characterId;
-            if (!characterId) {
-                console.error('[NewBotOutfitManager] Cannot set preset as default - missing characterId');
-                return '[Outfit System] Cannot set preset as default - missing characterId';
-            }
-            const { bot: presets } = outfitStore.getPresets(characterId, actualInstanceId);
+            const { bot: presets } = outfitStore.getPresets(this.character, actualInstanceId);
             if (!presets || !presets[presetName]) {
                 return `[Outfit System] Preset "${presetName}" does not exist for instance ${actualInstanceId}. Cannot set as default.`;
             }
             const presetToSetAsDefault = presets[presetName];
-            // characterId was already declared above
-            outfitStore.savePreset(characterId, actualInstanceId, 'default', presetToSetAsDefault, 'bot');
+            outfitStore.savePreset(this.character, actualInstanceId, 'default', presetToSetAsDefault, 'bot');
             outfitStore.saveState(); // Ensure the presets are saved to persistent storage
             if (outfitStore.getSetting('enableSysMessages')) {
                 return `Set "${presetName}" as the default outfit for ${this.character} (instance: ${actualInstanceId}).`;
             }
             return '';
-        });
-    }
-    applyDefaultOutfitAfterSetCharacter() {
-        return __awaiter(this, void 0, void 0, function* () {
-            if (this.outfitInstanceId) {
-                yield this.applyDefaultOutfitAfterReset(this.outfitInstanceId);
-            }
         });
     }
     loadOutfitFromInstanceId(instanceId) {

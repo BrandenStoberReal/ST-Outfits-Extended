@@ -245,13 +245,6 @@ export class NewUserOutfitManager extends OutfitManager {
             return '';
         });
     }
-    applyDefaultOutfitAfterSetCharacter() {
-        return __awaiter(this, void 0, void 0, function* () {
-            if (this.outfitInstanceId) {
-                yield this.applyDefaultOutfitAfterReset(this.outfitInstanceId);
-            }
-        });
-    }
     loadOutfitFromInstanceId(instanceId) {
         if (!instanceId) {
             console.warn('[NewUserOutfitManager] Cannot load outfit - missing instanceId');
