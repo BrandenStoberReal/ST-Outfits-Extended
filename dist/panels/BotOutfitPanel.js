@@ -11,6 +11,7 @@ import { PresetItem } from './PresetItem.js';
 import { dragElementWithSave, resizeElement } from '../common/shared.js';
 import { formatSlotName as utilsFormatSlotName } from '../utils/utilities.js';
 import { areSystemMessagesEnabled } from '../utils/SettingsUtil.js';
+import { outfitStore } from '../stores/Store.js';
 export class BotOutfitPanel {
     constructor(botOutfitManager, clothingSlots, accessorySlots) {
         this.botOutfitManager = botOutfitManager;
@@ -199,6 +200,18 @@ export class BotOutfitPanel {
             this.domElement.style.display = 'none';
         }
         this.isVisible = false;
+    }
+    applyPanelColors() {
+        var _a;
+        if (this.domElement) {
+            const storeState = outfitStore.getState();
+            const colors = (_a = storeState.panelSettings) === null || _a === void 0 ? void 0 : _a.botPanelColors;
+            if (colors) {
+                this.domElement.style.background = colors.primary;
+                this.domElement.style.border = `1px solid ${colors.border}`;
+                this.domElement.style.boxShadow = `0 8px 32px ${colors.shadow}`;
+            }
+        }
     }
     updateCharacter(name) {
         this.botOutfitManager.setCharacter(name);

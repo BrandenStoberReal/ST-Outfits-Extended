@@ -3,6 +3,7 @@ import {NewBotOutfitManager} from '../managers/NewBotOutfitManager';
 import {dragElementWithSave, resizeElement} from '../common/shared';
 import {formatSlotName as utilsFormatSlotName} from '../utils/utilities';
 import {areSystemMessagesEnabled} from '../utils/SettingsUtil';
+import {outfitStore} from '../stores/Store';
 
 declare const window: any;
 declare const toastr: any;
@@ -227,6 +228,19 @@ export class BotOutfitPanel {
             this.domElement.style.display = 'none';
         }
         this.isVisible = false;
+    }
+
+    applyPanelColors(): void {
+        if (this.domElement) {
+            const storeState = outfitStore.getState();
+            const colors = storeState.panelSettings?.botPanelColors;
+
+            if (colors) {
+                this.domElement.style.background = colors.primary;
+                this.domElement.style.border = `1px solid ${colors.border}`;
+                this.domElement.style.boxShadow = `0 8px 32px ${colors.shadow}`;
+            }
+        }
     }
 
     updateCharacter(name: string): void {
