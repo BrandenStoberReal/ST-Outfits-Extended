@@ -282,10 +282,10 @@ export class BotOutfitPanel {
 
                     presetElement.className = `outfit-preset ${isDefault ? 'default-preset-highlight' : ''}`;
                     presetElement.innerHTML = `
-                        <div class="preset-name">${isDefault ? '👑 ' : ''}${preset}${isDefault ? '' : ''}</div>
+                        <div class="preset-name">${preset}${isDefault ? ' (Default)' : ''}</div>
                         <div class="preset-actions">
                             <button class="load-preset" data-preset="${preset}">Wear</button>
-                            <button class="set-default-preset" data-preset="${preset}" ${isDefault ? 'style="display:none;"' : ''}>👑</button>
+                            <button class="set-default-preset" data-preset="${preset}" ${isDefault ? 'style="display:none;"' : ''}>Set Default</button>
                             <button class="overwrite-preset" data-preset="${preset}">Overwrite</button>
                             <button class="delete-preset" data-preset="${preset}">×</button>
                         </div>
@@ -314,8 +314,7 @@ export class BotOutfitPanel {
                     const clearDefaultButton = document.createElement('button');
 
                     clearDefaultButton.className = 'clear-default-preset';
-                    clearDefaultButton.textContent = '👑';
-                    clearDefaultButton.title = 'Clear Default';
+                    clearDefaultButton.textContent = 'Clear Default';
                     clearDefaultButton.style.display = isDefault ? 'inline-block' : 'none';
                     clearDefaultButton.addEventListener('click', async () => {
                         const message = await this.outfitManager.clearDefaultPreset();
@@ -387,8 +386,7 @@ export class BotOutfitPanel {
         const clearDefaultButton = document.createElement('button');
 
         clearDefaultButton.className = 'clear-default-preset-btn';
-        clearDefaultButton.textContent = '👑 Clear Default Outfit';
-        clearDefaultButton.title = 'Clear the current default outfit';
+        clearDefaultButton.textContent = 'Clear Default Outfit';
         clearDefaultButton.style.marginTop = '5px';
         clearDefaultButton.style.display = this.outfitManager.hasDefaultOutfit() ? 'block' : 'none';
         clearDefaultButton.addEventListener('click', async () => {
