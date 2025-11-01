@@ -310,11 +310,6 @@ export class NewBotOutfitManager extends OutfitManager {
             console.warn('[NewBotOutfitManager] Cannot save outfit - missing characterId or instanceId');
             return;
         }
-        debugLog('NewBotOutfitManager: Saving outfit data to instance', {
-            characterId: this.characterId,
-            instanceId: instanceId,
-            outfitData: outfitData
-        }, 'debug');
         outfitStore.setBotOutfit(this.characterId, instanceId, outfitData);
         debouncedStore.saveState();
     }
