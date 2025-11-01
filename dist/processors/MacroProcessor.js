@@ -23,7 +23,7 @@ class MacroProcessor {
     }
     processMacrosInFirstMessage(context) {
         return __awaiter(this, void 0, void 0, function* () {
-            var _a, _b, _c, _d, _e;
+            var _a, _b, _c;
             try {
                 const ctx = context || (((_a = window.SillyTavern) === null || _a === void 0 ? void 0 : _a.getContext) ? window.SillyTavern.getContext() : (window.getContext ? window.getContext() : null));
                 if (!ctx || !ctx.chat) {
@@ -31,32 +31,14 @@ class MacroProcessor {
                 }
                 const firstBotMessage = ctx.chat.find((message) => !message.is_user && !message.is_system);
                 if (firstBotMessage) {
-                    // Get ALL outfit values for the character, including "None" fields
-                    const allOutfitValues = this.getAllOutfitValuesForCharacter(ctx.characterId);
-                    // Also include any outfit values that might be in the current managers
-                    if ((_b = window.botOutfitPanel) === null || _b === void 0 ? void 0 : _b.outfitManager) {
-                        const currentOutfit = window.botOutfitPanel.outfitManager.getCurrentOutfit();
-                        Object.values(currentOutfit).forEach(value => {
-                            if (value && typeof value === 'string' && !allOutfitValues.includes(value)) {
-                                allOutfitValues.push(value);
-                            }
-                        });
-                    }
-                    if ((_c = window.userOutfitPanel) === null || _c === void 0 ? void 0 : _c.outfitManager) {
-                        const currentUserOutfit = window.userOutfitPanel.outfitManager.getCurrentOutfit();
-                        Object.values(currentUserOutfit).forEach(value => {
-                            if (value && typeof value === 'string' && !allOutfitValues.includes(value)) {
-                                allOutfitValues.push(value);
-                            }
-                        });
-                    }
                     const processedMessage = this.cleanOutfitMacrosFromText(firstBotMessage.mes);
-                    const instanceId = yield generateInstanceIdFromText(processedMessage, allOutfitValues);
+                    const outfitValues = this.getAllOutfitValuesForCharacter(ctx.characterId);
+                    const instanceId = yield generateInstanceIdFromText(processedMessage, outfitValues);
                     outfitStore.setCurrentInstanceId(instanceId);
-                    if ((_d = window.botOutfitPanel) === null || _d === void 0 ? void 0 : _d.outfitManager) {
+                    if ((_b = window.botOutfitPanel) === null || _b === void 0 ? void 0 : _b.outfitManager) {
                         window.botOutfitPanel.outfitManager.setOutfitInstanceId(instanceId);
                     }
-                    if ((_e = window.userOutfitPanel) === null || _e === void 0 ? void 0 : _e.outfitManager) {
+                    if ((_c = window.userOutfitPanel) === null || _c === void 0 ? void 0 : _c.outfitManager) {
                         window.userOutfitPanel.outfitManager.setOutfitInstanceId(instanceId);
                     }
                 }

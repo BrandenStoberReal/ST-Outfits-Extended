@@ -32,30 +32,9 @@ class MacroProcessor {
             const firstBotMessage = ctx.chat.find((message: any) => !message.is_user && !message.is_system);
 
             if (firstBotMessage) {
-                // Get ALL outfit values for the character, including "None" fields
-                const allOutfitValues = this.getAllOutfitValuesForCharacter(ctx.characterId);
-
-                // Also include any outfit values that might be in the current managers
-                if (window.botOutfitPanel?.outfitManager) {
-                    const currentOutfit = window.botOutfitPanel.outfitManager.getCurrentOutfit();
-                    Object.values(currentOutfit).forEach(value => {
-                        if (value && typeof value === 'string' && !allOutfitValues.includes(value)) {
-                            allOutfitValues.push(value);
-                        }
-                    });
-                }
-
-                if (window.userOutfitPanel?.outfitManager) {
-                    const currentUserOutfit = window.userOutfitPanel.outfitManager.getCurrentOutfit();
-                    Object.values(currentUserOutfit).forEach(value => {
-                        if (value && typeof value === 'string' && !allOutfitValues.includes(value)) {
-                            allOutfitValues.push(value);
-                        }
-                    });
-                }
-
                 const processedMessage = this.cleanOutfitMacrosFromText(firstBotMessage.mes);
-                const instanceId = await generateInstanceIdFromText(processedMessage, allOutfitValues);
+                const outfitValues = this.getAllOutfitValuesForCharacter(ctx.characterId);
+                const instanceId = await generateInstanceIdFromText(processedMessage, outfitValues);
 
                 outfitStore.setCurrentInstanceId(instanceId);
 
