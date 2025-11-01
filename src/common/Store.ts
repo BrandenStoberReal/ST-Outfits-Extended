@@ -156,46 +156,7 @@ class OutfitStore {
     }
 
     setState(updates: Partial<State>): void {
-        // Ensure that critical nested objects maintain their structure
-        this.state = {
-            ...this.state,
-            ...updates,
-            presets: {
-                bot: {
-                    ...(this.state.presets?.bot || {}),
-                    ...((updates as any)?.presets?.bot || {})
-                },
-                user: {
-                    ...(this.state.presets?.user || {}),
-                    ...((updates as any)?.presets?.user || {})
-                }
-            },
-            botInstances: {
-                ...(this.state.botInstances || {}),
-                ...((updates as any)?.botInstances || {})
-            },
-            userInstances: {
-                ...(this.state.userInstances || {}),
-                ...((updates as any)?.userInstances || {})
-            },
-            // Keep other nested objects safe from undefined values
-            panelSettings: {
-                ...this.state.panelSettings,
-                ...((updates as any)?.panelSettings || {})
-            },
-            settings: {
-                ...this.state.settings,
-                ...((updates as any)?.settings || {})
-            },
-            panelVisibility: {
-                ...this.state.panelVisibility,
-                ...((updates as any)?.panelVisibility || {})
-            },
-            references: {
-                ...this.state.references,
-                ...((updates as any)?.references || {})
-            }
-        };
+        this.state = {...this.state, ...updates};
         this.notifyListeners();
     }
 
@@ -271,13 +232,9 @@ class OutfitStore {
         const botPresetKey = this._generateBotPresetKey(characterId, instanceId);
         const userPresetKey = instanceId || 'default';
 
-        // Ensure presets and its sub-properties exist to prevent undefined errors
-        const botPresets = this.state.presets?.bot || {};
-        const userPresets = this.state.presets?.user || {};
-
         return {
-            bot: deepClone(botPresets[botPresetKey] || {}),
-            user: deepClone(userPresets[userPresetKey] || {}),
+            bot: deepClone(this.state.presets.bot[botPresetKey] || {}),
+            user: deepClone(this.state.presets.user[userPresetKey] || {}),
         };
     }
 
@@ -285,11 +242,6 @@ class OutfitStore {
         if (type === 'bot') {
             const key = this._generateBotPresetKey(characterId, instanceId);
 
-            // Ensure presets.bot exists
-            if (!this.state.presets.bot) {
-                this.state.presets.bot = {};
-            }
-            
             if (!this.state.presets.bot[key]) {
                 this.state.presets.bot[key] = {};
             }
@@ -297,11 +249,6 @@ class OutfitStore {
         } else {
             const key = instanceId || 'default';
 
-            // Ensure presets.user exists
-            if (!this.state.presets.user) {
-                this.state.presets.user = {};
-            }
-            
             if (!this.state.presets.user[key]) {
                 this.state.presets.user[key] = {};
             }
@@ -314,7 +261,7 @@ class OutfitStore {
         if (type === 'bot') {
             const key = this._generateBotPresetKey(characterId, instanceId);
 
-            if (this.state.presets.bot?.[key]?.[presetName]) {
+            if (this.state.presets.bot[key]?.[presetName]) {
                 delete this.state.presets.bot[key][presetName];
                 if (Object.keys(this.state.presets.bot[key]).length === 0) {
                     delete this.state.presets.bot[key];
@@ -323,7 +270,7 @@ class OutfitStore {
         } else {
             const key = instanceId || 'default';
 
-            if (this.state.presets.user?.[key]?.[presetName]) {
+            if (this.state.presets.user[key]?.[presetName]) {
                 delete this.state.presets.user[key][presetName];
                 if (Object.keys(this.state.presets.user[key]).length === 0) {
                     delete this.state.presets.user[key];
@@ -337,13 +284,13 @@ class OutfitStore {
         if (type === 'bot') {
             const key = this._generateBotPresetKey(characterId, instanceId);
 
-            if (this.state.presets.bot?.[key]) {
+            if (this.state.presets.bot[key]) {
                 delete this.state.presets.bot[key];
             }
         } else {
             const key = instanceId || 'default';
 
-            if (this.state.presets.user?.[key]) {
+            if (this.state.presets.user[key]) {
                 delete this.state.presets.user[key];
             }
         }
@@ -356,11 +303,11 @@ class OutfitStore {
         if (type === 'bot') {
             const key = this._generateBotPresetKey(characterId, instanceId);
 
-            return deepClone(this.state.presets.bot?.[key] || {});
+            return deepClone(this.state.presets.bot[key] || {});
         }
         const key = instanceId || 'default';
 
-        return deepClone(this.state.presets.user?.[key] || {});
+        return deepClone(this.state.presets.user[key] || {});
     }
 
     _generateBotPresetKey(characterId: string, instanceId: string): string {
@@ -458,13 +405,7 @@ class OutfitStore {
         const {botInstances, userInstances, presets} = this.dataManager.loadOutfitData();
         const settings = this.dataManager.loadSettings();
 
-        // Ensure presets is properly structured even if loaded data is undefined or missing
-        const safePresets = presets || {
-            bot: {},
-            user: {}
-        };
-
-        this.setState({botInstances, userInstances, presets: safePresets, settings});
+        this.setState({botInstances, userInstances, presets, settings});
     }
 
     flush(): void {
