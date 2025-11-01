@@ -127,6 +127,12 @@ export abstract class OutfitManager {
     abstract saveOutfitToInstanceId(outfitData: { [key: string]: string }, instanceId: string): void;
 
     async setOutfitItem(slot: string, value: string): Promise<string | null> {
+        debugLog('setOutfitItem called', {
+            slot,
+            value,
+            characterId: this.characterId,
+            outfitInstanceId: this.outfitInstanceId
+        }, 'debug');
         if (!this.slots.includes(slot)) {
             debugLog(`Invalid slot: ${slot}`, null, 'error');
             return null;

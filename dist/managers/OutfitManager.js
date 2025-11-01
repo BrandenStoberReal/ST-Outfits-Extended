@@ -98,6 +98,7 @@ export class OutfitManager {
     }
     setOutfitItem(slot, value) {
         return __awaiter(this, void 0, void 0, function* () {
+            debugLog('setOutfitItem called', { slot, value, characterId: this.characterId, outfitInstanceId: this.outfitInstanceId }, 'debug');
             if (!this.slots.includes(slot)) {
                 debugLog(`Invalid slot: ${slot}`, null, 'error');
                 return null;
