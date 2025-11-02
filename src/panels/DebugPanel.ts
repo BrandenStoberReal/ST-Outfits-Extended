@@ -3,6 +3,7 @@ import {outfitStore} from '../common/Store';
 import {customMacroSystem} from '../services/CustomMacroService';
 import {debugLogger} from '../logging/DebugLogger';
 import {CharacterInfoType, getCharacterInfoById} from '../utils/CharacterUtils';
+import {EXTENSION_EVENTS, extensionEventBus} from '../core/events';
 
 interface OutfitData {
     [key: string]: string;
@@ -25,6 +26,12 @@ interface UserOutfit {
 declare const toastr: any;
 declare const $: any;
 
+interface RecordedEvent {
+    timestamp: string;
+    event: string;
+    data: any;
+}
+
 export class DebugPanel {
     private isVisible: boolean = false;
     private domElement: HTMLElement | null = null;
@@ -32,8 +39,36 @@ export class DebugPanel {
     private eventListeners: any[] = [];
     private storeSubscription: (() => void) | null = null;
     private previousInstanceId: string | null = null;
+    private recordedEvents: RecordedEvent[] = [];
 
     constructor() {
+        // Subscribe to all extension events to record them
+        Object.values(EXTENSION_EVENTS).forEach(event => {
+            extensionEventBus.on(event, (data) => {
+                this.recordEvent(event, data);
+            });
+        });
+    }
+
+    /**
+     * Records an event for display in the debug panel
+     */
+    recordEvent(event: string, data: any): void {
+        this.recordedEvents.push({
+            timestamp: new Date().toISOString(),
+            event,
+            data
+        });
+
+        // Keep the list of events from growing too large
+        if (this.recordedEvents.length > 100) {
+            this.recordedEvents.shift();
+        }
+
+        // If the events tab is active, re-render it
+        if (this.isVisible && this.currentTab === 'events') {
+            this.renderContent();
+        }
     }
 
     /**
@@ -60,10 +95,12 @@ export class DebugPanel {
             <div class="outfit-debug-tabs">
                 <button class="outfit-debug-tab ${this.currentTab === 'instances' ? 'active' : ''}" data-tab="instances">Instances</button>
                 <button class="outfit-debug-tab ${this.currentTab === 'macros' ? 'active' : ''}" data-tab="macros">Macros</button>
-                <button class="outfit-debug-tab ${this.currentTab === 'pointers' ? 'active' : ''}" data-tab="pointers">Pointers</button>
-                <button class="outfit-debug-tab ${this.currentTab === 'performance' ? 'active' : ''}" data-tab="performance">Performance</button>
-                <button class="outfit-debug-tab ${this.currentTab === 'logs' ? 'active' : ''}" data-tab="logs">Logs</button>
-                <button class="outfit-debug-tab ${this.currentTab === 'misc' ? 'active' : ''}" data-tab="misc">Misc</button>
+                 <button class="outfit-debug-tab ${this.currentTab === 'pointers' ? 'active' : ''}" data-tab="pointers">Pointers</button>
+                 <button class="outfit-debug-tab ${this.currentTab === 'performance' ? 'active' : ''}" data-tab="performance">Performance</button>
+                 <button class="outfit-debug-tab ${this.currentTab === 'logs' ? 'active' : ''}" data-tab="logs">Logs</button>
+                 <button class="outfit-debug-tab ${this.currentTab === 'events' ? 'active' : ''}" data-tab="events">Events</button>
+                 <button class="outfit-debug-tab ${this.currentTab === 'state' ? 'active' : ''}" data-tab="state">State</button>
+                 <button class="outfit-debug-tab ${this.currentTab === 'misc' ? 'active' : ''}" data-tab="misc">Misc</button>
             </div>
             <div class="outfit-debug-content" id="outfit-debug-tab-content"></div>
         `;
@@ -113,6 +150,8 @@ export class DebugPanel {
             pointers: this.renderPointersTab.bind(this),
             performance: this.renderPerformanceTab.bind(this),
             logs: this.renderLogsTab.bind(this),
+            events: this.renderEventsTab.bind(this),
+            state: this.renderStateTab.bind(this),
             misc: this.renderMiscTab.bind(this),
         };
 
@@ -129,23 +168,90 @@ export class DebugPanel {
     renderLogsTab(container: HTMLElement): void {
         const logs = debugLogger.getLogs();
 
-        let logsHtml = '<div class="debug-logs-list">';
+        let logsHtml = `
+            <div class="debug-logs-header">
+                <input type="text" id="log-search" placeholder="Search logs...">
+                <select id="log-level-filter">
+                    <option value="all">All Levels</option>
+                    <option value="info">Info</option>
+                    <option value="warn">Warn</option>
+                    <option value="error">Error</option>
+                </select>
+                <button id="clear-logs-btn" class="menu_button">Clear Logs</button>
+            </div>
+            <div class="debug-logs-list">
+        `;
 
         if (logs.length === 0) {
             logsHtml += '<p>No logs available.</p>';
         } else {
-            logsHtml += logs.map(log => `
-                <div class="log-item log-${log.level.toLowerCase()}">
-                    <span class="log-timestamp">${new Date(log.timestamp).toISOString()}</span>
-                    <span class="log-level">[${log.level}]</span>
-                    <span class="log-message">${log.message}</span>
-                </div>
-            `).join('');
+            logsHtml += logs.map(log => {
+                const hasData = log.data !== null && log.data !== undefined;
+                const logItemClasses = `log-item log-${log.level.toLowerCase()}`;
+                const logItemAttributes = `data-level="${log.level.toLowerCase()}" data-message="${log.message.toLowerCase()}"`;
+
+                if (hasData) {
+                    return `
+                        <div class="${logItemClasses}" ${logItemAttributes}>
+                            <details>
+                                <summary>
+                                    <span class="log-timestamp">${new Date(log.timestamp).toISOString()}</span>
+                                    <span class="log-level">[${log.level}]</span>
+                                    <span class="log-message">${log.message}</span>
+                                </summary>
+                                <div class="log-data">
+                                    <pre>${JSON.stringify(log.data, null, 2)}</pre>
+                                </div>
+                            </details>
+                        </div>
+                    `;
+                } else {
+                    return `
+                        <div class="${logItemClasses}" ${logItemAttributes}>
+                            <span class="log-timestamp">${new Date(log.timestamp).toISOString()}</span>
+                            <span class="log-level">[${log.level}]</span>
+                            <span class="log-message">${log.message}</span>
+                        </div>
+                    `;
+                }
+            }).join('');
         }
 
         logsHtml += '</div>';
 
         container.innerHTML = logsHtml;
+
+        const searchInput = container.querySelector('#log-search') as HTMLInputElement;
+        const levelFilter = container.querySelector('#log-level-filter') as HTMLSelectElement;
+        const clearBtn = container.querySelector('#clear-logs-btn') as HTMLButtonElement;
+
+        const filterLogs = () => {
+            const searchTerm = searchInput.value.toLowerCase();
+            const selectedLevel = levelFilter.value;
+            const logItems = container.querySelectorAll('.log-item');
+
+            logItems.forEach(item => {
+                const level = (item as HTMLElement).dataset.level;
+                const message = (item as HTMLElement).dataset.message;
+                const isLevelMatch = selectedLevel === 'all' || level === selectedLevel;
+                const isSearchMatch = message?.includes(searchTerm);
+
+                if (isLevelMatch && isSearchMatch) {
+                    (item as HTMLElement).style.display = '';
+                } else {
+                    (item as HTMLElement).style.display = 'none';
+                }
+            });
+        };
+
+        searchInput.addEventListener('input', filterLogs);
+        levelFilter.addEventListener('change', filterLogs);
+
+        clearBtn.addEventListener('click', () => {
+            debugLogger.clearLogs();
+            this.renderContent();
+            toastr.success('Logs cleared!', 'Debug Panel');
+        });
     }
 
     /**
@@ -184,12 +290,18 @@ export class DebugPanel {
                     };
 
                     instancesHtml += `
-                    <div class="instance-item ${isCurrent ? 'current-instance' : ''}" data-character="${charName}" data-instance="${instId}">
-                        <div class="instance-id">${instId} ${isCurrent ? ' <span class="current-marker">[CURRENT]</span>' : ''}</div>
-                        <div class="instance-data">
-                            <pre>${JSON.stringify(formattedBotData, null, 2)}</pre>
-                        </div>
-                    </div>
+                     <div class="instance-item ${isCurrent ? 'current-instance' : ''}" data-character="${charName}" data-instance="${instId}" data-type="bot">
+                         <div class="instance-id">
+                             <span>${instId} ${isCurrent ? ' <span class="current-marker">[CURRENT]</span>' : ''}</span>
+                             <div class="instance-actions">
+                                 <button class="copy-instance-btn" title="Copy to Clipboard">📋</button>
+                                 <button class="delete-instance-btn" title="Delete Instance">🗑️</button>
+                             </div>
+                         </div>
+                         <div class="instance-data">
+                             <pre>${JSON.stringify(formattedBotData, null, 2)}</pre>
+                         </div>
+                     </div>
                     `;
                 }
             }
@@ -212,12 +324,18 @@ export class DebugPanel {
                 };
 
                 instancesHtml += `
-                    <div class="instance-item ${isCurrent ? 'current-instance' : ''}" data-character="user" data-instance="${instId}">
-                        <div class="instance-id">${instId} ${isCurrent ? ' <span class="current-marker">[CURRENT]</span>' : ''}</div>
-                        <div class="instance-data">
-                            <pre>${JSON.stringify(formattedUserData, null, 2)}</pre>
-                        </div>
-                    </div>
+                     <div class="instance-item ${isCurrent ? 'current-instance' : ''}" data-character="user" data-instance="${instId}" data-type="user">
+                         <div class="instance-id">
+                             <span>${instId} ${isCurrent ? ' <span class="current-marker">[CURRENT]</span>' : ''}</span>
+                             <div class="instance-actions">
+                                 <button class="copy-instance-btn" title="Copy to Clipboard">📋</button>
+                                 <button class="delete-instance-btn" title="Delete Instance">🗑️</button>
+                             </div>
+                         </div>
+                         <div class="instance-data">
+                             <pre>${JSON.stringify(formattedUserData, null, 2)}</pre>
+                         </div>
+                     </div>
                 `;
             }
         }
@@ -250,16 +368,54 @@ export class DebugPanel {
         const instanceItems = container.querySelectorAll('.instance-item');
 
         instanceItems.forEach(item => {
-            item.addEventListener('click', (e) => {
-                // Expand or collapse the instance data
-                const dataElement = (e.currentTarget as HTMLElement).querySelector('.instance-data') as HTMLElement;
+            const instanceIdElement = item.querySelector('.instance-id');
+            if (instanceIdElement) {
+                instanceIdElement.addEventListener('click', (e) => {
+                    // Stop propagation to prevent the buttons from triggering this
+                    if ((e.target as HTMLElement).tagName === 'BUTTON') {
+                        return;
+                    }
 
-                if (dataElement.style.display === 'none' || !dataElement.style.display) {
-                    dataElement.style.display = 'block';
-                } else {
-                    dataElement.style.display = 'none';
-                }
-            });
+                    // Expand or collapse the instance data
+                    const dataElement = (item as HTMLElement).querySelector('.instance-data') as HTMLElement;
+
+                    if (dataElement.style.display === 'none' || !dataElement.style.display) {
+                        dataElement.style.display = 'block';
+                    } else {
+                        dataElement.style.display = 'none';
+                    }
+                });
+            }
+
+            // Add event listener for copy button
+            const copyBtn = item.querySelector('.copy-instance-btn');
+            if (copyBtn) {
+                copyBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const dataElement = (item.querySelector('.instance-data pre') as HTMLElement);
+                    navigator.clipboard.writeText(dataElement.innerText);
+                    toastr.success('Instance data copied to clipboard!', 'Debug Panel');
+                });
+            }
+
+            // Add event listener for delete button
+            const deleteBtn = item.querySelector('.delete-instance-btn');
+            if (deleteBtn) {
+                deleteBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const instanceId = (item as HTMLElement).dataset.instance;
+                    const instanceType = (item as HTMLElement).dataset.type;
+                    const characterId = (item as HTMLElement).dataset.character;
+
+                    if (instanceId && instanceType) {
+                        if (confirm(`Are you sure you want to delete instance ${instanceId}?`)) {
+                            outfitStore.deleteInstance(instanceId, instanceType as 'bot' | 'user', characterId !== 'user' ? characterId : undefined);
+                            this.renderContent();
+                            toastr.success(`Instance ${instanceId} deleted!`, 'Debug Panel');
+                        }
+                    }
+                });
+            }
         });
     }
 
@@ -528,6 +684,74 @@ export class DebugPanel {
                 <li>Avg store access: ${(storeTestTime / 1000).toFixed(4)}ms</li>
             </ul>
         `;
+    }
+
+    /**
+     * Renders the 'Events' tab with a log of dispatched events
+     */
+    renderEventsTab(container: HTMLElement): void {
+        let eventsHtml = `
+            <div class="debug-events-header">
+                <button id="clear-events-btn" class="menu_button">Clear Events</button>
+            </div>
+            <div class="debug-events-list">
+        `;
+
+        if (this.recordedEvents.length === 0) {
+            eventsHtml += '<p>No events recorded yet.</p>';
+        } else {
+            eventsHtml += `
+                <table class="events-table">
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>Event</th>
+                        <th>Data</th>
+                    </tr>
+                    ${this.recordedEvents.slice().reverse().map(event => `
+                        <tr>
+                            <td>${event.timestamp}</td>
+                            <td>${event.event}</td>
+                            <td><pre>${JSON.stringify(event.data, null, 2)}</pre></td>
+                        </tr>
+                    `).join('')}
+                </table>
+            `;
+        }
+
+        eventsHtml += '</div>';
+
+        container.innerHTML = eventsHtml;
+
+        const clearBtn = container.querySelector('#clear-events-btn') as HTMLButtonElement;
+        clearBtn.addEventListener('click', () => {
+            this.recordedEvents = [];
+            this.renderContent();
+            toastr.success('Event log cleared!', 'Debug Panel');
+        });
+    }
+
+    /**
+     * Renders the 'State' tab with the current store state
+     */
+    renderStateTab(container: HTMLElement): void {
+        const state = outfitStore.getState();
+
+        let stateHtml = '<div class="debug-state-content">';
+        stateHtml += '<h4>Current Store State</h4>';
+        stateHtml += '<button id="copy-state-btn" class="menu_button">Copy to Clipboard</button>';
+        stateHtml += '<div class="state-info">';
+        stateHtml += '<pre>' + JSON.stringify(state, null, 2) + '</pre>';
+        stateHtml += '</div>';
+        stateHtml += '</div>';
+
+        container.innerHTML = stateHtml;
+
+        setTimeout(() => {
+            document.getElementById('copy-state-btn')?.addEventListener('click', () => {
+                navigator.clipboard.writeText(JSON.stringify(state, null, 2));
+                toastr.success('State copied to clipboard!', 'Debug Panel');
+            });
+        }, 100);
     }
 
     /**

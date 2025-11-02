@@ -79,7 +79,10 @@ class MacroProcessor {
                     const currentInstanceId = outfitStore.getCurrentInstanceId();
                     debugLog('[OutfitTracker] Current instance ID:', currentInstanceId);
                     if (currentInstanceId !== instanceId) {
-                        debugLog('[OutfitTracker] Instance ID changed from', { from: currentInstanceId, to: instanceId }, 'log');
+                        debugLog('[OutfitTracker] Instance ID changed from', {
+                            from: currentInstanceId,
+                            to: instanceId
+                        }, 'log');
                         outfitStore.setCurrentInstanceId(instanceId);
                         if ((_b = window.botOutfitPanel) === null || _b === void 0 ? void 0 : _b.outfitManager) {
                             window.botOutfitPanel.outfitManager.setOutfitInstanceId(instanceId);

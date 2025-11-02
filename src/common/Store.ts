@@ -516,6 +516,25 @@ class OutfitStore {
     }
 
     /**
+     * Deletes a specific outfit instance
+     */
+    deleteInstance(instanceId: string, instanceType: 'bot' | 'user', characterId?: string): void {
+        if (instanceType === 'bot' && characterId) {
+            if (this.state.botInstances[characterId]?.[instanceId]) {
+                delete this.state.botInstances[characterId][instanceId];
+                if (Object.keys(this.state.botInstances[characterId]).length === 0) {
+                    delete this.state.botInstances[characterId];
+                }
+            }
+        } else if (instanceType === 'user') {
+            if (this.state.userInstances[instanceId]) {
+                delete this.state.userInstances[instanceId];
+            }
+        }
+        this.notifyListeners();
+    }
+
+    /**
      * Wipes all outfit data including bot instances, user instances, and presets
      */
     wipeAllOutfitData(): void {
