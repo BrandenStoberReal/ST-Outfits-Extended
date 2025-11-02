@@ -395,31 +395,109 @@ export class DebugPanel {
     }
 
     /**
+     * Renders the 'Macros' tab to showcase current instances and derivations
+     */
+    renderMacrosTab(container: HTMLElement): void {
+        const state = outfitStore.getState();
+        const botInstances = state.botInstances;
+        const userInstances = state.userInstances;
+
+        let macrosHtml = '<div class="debug-macros-list">';
+
+        // Show macro information
+        macrosHtml += '<h4>Current Macro Values</h4>';
+        macrosHtml += '<div class="macro-info">';
+
+        // Get current character and user names
+        const currentCharName = customMacroSystem.getCurrentCharName();
+        const currentUserName = customMacroSystem.getCurrentUserName();
+
+        macrosHtml += `<div><strong>Current Character:</strong> ${currentCharName}</div>`;
+        macrosHtml += `<div><strong>Current User:</strong> ${currentUserName}</div>`;
+        macrosHtml += `<div><strong>Current Instance ID:</strong> ${state.currentOutfitInstanceId || 'None'}</div>`;
+
+        // Show some example macro values
+        macrosHtml += '<h5>Example Macro Values:</h5>';
+        macrosHtml += '<table class="macro-values-table">';
+        macrosHtml += '<tr><th>Macro</th><th>Value</th><th>Source</th></tr>';
+
+        // Get current character's outfit data if available
+        const currentCharacterId = state.currentCharacterId;
+        const currentInstanceId = state.currentOutfitInstanceId;
+
+        if (currentCharacterId && currentInstanceId && botInstances[currentCharacterId] && botInstances[currentCharacterId][currentInstanceId]) {
+            const botOutfitData = botInstances[currentCharacterId][currentInstanceId].bot;
+
+            for (const [slot, value] of Object.entries(botOutfitData)) {
+                macrosHtml += `<tr><td>{{char_${slot}}}</td><td>${value}</td><td>Bot Outfit Data</td></tr>`;
+            }
+        }
+
+        // Get current user's outfit data if available
+        if (currentInstanceId && userInstances[currentInstanceId]) {
+            const userOutfitData = userInstances[currentInstanceId];
+
+            for (const [slot, value] of Object.entries(userOutfitData as any)) {
+                macrosHtml += `<tr><td>{{user_${slot}}}</td><td>${value}</td><td>User Outfit Data</td></tr>`;
+            }
+        }
+
+        macrosHtml += '</table>';
+
+        // Show macro cache information
+        macrosHtml += '<h5>Macro Cache Info:</h5>';
+        macrosHtml += `<div class="macro-cache-info">Cached entries: ${customMacroSystem.macroValueCache.size} <small>(Updated: ${new Date().toLocaleTimeString()})</small></div>`;
+
+        macrosHtml += '<table class="macro-cache-table">';
+        macrosHtml += '<thead><tr><th>Cache Key</th><th>Value</th><th>Timestamp</th></tr></thead>';
+        macrosHtml += '<tbody>';
+
+        for (const [key, entry] of customMacroSystem.macroValueCache.entries()) {
+            const timestamp = new Date(entry.timestamp).toISOString();
+
+            macrosHtml += `<tr><td>${key}</td><td>${entry.value}</td><td>${timestamp}</td></tr>`;
+        }
+
+        macrosHtml += '</tbody></table>';
+
+        // Add more detailed macro processing information
+        macrosHtml += '<h5>Detailed Macro Processing Info:</h5>';
+        macrosHtml += '<div class="macro-processing-info">';
+        macrosHtml += `<div><strong>Current Chat ID:</strong> ${state.currentChatId || 'None'}</div>`;
+        macrosHtml += `<div><strong>Current Character:</strong> ${currentCharName}</div>`;
+        macrosHtml += '</div>';
+
+        macrosHtml += '</div></div>';
+
+        // Add macro testing section
+        macrosHtml += '<h5>Test Macro Processing</h5>';
+        macrosHtml += '<div class="macro-testing-area">';
+        macrosHtml += '<textarea id="macro-test-input" placeholder="Enter text with macros to test..."></textarea>';
+        macrosHtml += '<button id="macro-test-btn" class="menu_button">Process Macros</button>';
+        macrosHtml += '<div id="macro-test-output"></div>';
+        macrosHtml += '</div>';
+
+        container.innerHTML = macrosHtml;
+
+        // Add event listener for macro testing
+        setTimeout(() => {
+            document.getElementById('macro-test-btn')?.addEventListener('click', () => {
+                const input = (document.getElementById('macro-test-input') as HTMLTextAreaElement).value;
+                const output = customMacroSystem.replaceMacrosInText(input);
+
+                (document.getElementById('macro-test-output') as HTMLElement).innerText = output;
+            });
+        }, 100);
+    }
+
+    /**
      * Updates tabs that need real-time data based on store changes
      */
     private updateRealTimeTabs(newState: any): void {
         if (!this.isVisible) return;
 
-        switch (this.currentTab) {
-            case 'instances':
-                // Already handled by existing logic
-                break;
-            case 'macros':
-                this.updateMacrosTab();
-                break;
-            case 'pointers':
-                this.updatePointersTab();
-                break;
-            case 'performance':
-                this.updatePerformanceTab();
-                break;
-            case 'state':
-                this.updateStateTab();
-                break;
-            case 'misc':
-                this.updateMiscTab();
-                break;
-        }
+        // Note: Real-time updates are handled by intervals in startRealTimeUpdates()
+        // This method is kept for future use if needed
     }
 
     /**
@@ -428,6 +506,10 @@ export class DebugPanel {
     private updateLogsTab(): void {
         const contentArea = this.domElement?.querySelector('.outfit-debug-content');
         if (!contentArea || contentArea.getAttribute('data-tab') !== 'logs') return;
+
+        // Check if content has been rendered
+        const logList = contentArea.querySelector('.debug-logs-list');
+        if (!logList) return;
 
         const logs = debugLogger.getLogs();
         const logItems = contentArea.querySelectorAll('.log-item');
@@ -445,66 +527,24 @@ export class DebugPanel {
         const contentArea = this.domElement?.querySelector('.outfit-debug-content');
         if (!contentArea || contentArea.getAttribute('data-tab') !== 'macros') return;
 
-        // Update macro cache info
+        // Check if content has been rendered
         const cacheInfo = contentArea.querySelector('.macro-cache-info');
-        if (cacheInfo) {
-            const updateTime = new Date().toLocaleTimeString();
-            cacheInfo.innerHTML = `Cached entries: ${customMacroSystem.macroValueCache.size} <small>(Updated: ${updateTime})</small>`;
-        }
+        const cacheTable = contentArea.querySelector('.macro-cache-table');
+        if (!cacheInfo || !cacheTable) return;
+
+        // Update macro cache info
+        const updateTime = new Date().toLocaleTimeString();
+        cacheInfo.innerHTML = `Cached entries: ${customMacroSystem.macroValueCache.size} <small>(Updated: ${updateTime})</small>`;
 
         // Update macro cache table
-        const cacheTable = contentArea.querySelector('.macro-cache-table') as HTMLTableElement;
-        if (cacheTable) {
-            const tbody = cacheTable.querySelector('tbody') || cacheTable.createTBody();
-            tbody.innerHTML = '';
-
+        const tbody = (cacheTable as HTMLTableElement).querySelector('tbody');
+        if (tbody) {
+            let tbodyHtml = '';
             for (const [key, entry] of customMacroSystem.macroValueCache.entries()) {
                 const timestamp = new Date(entry.timestamp).toISOString();
-                const row = tbody.insertRow();
-                row.innerHTML = `<td>${key}</td><td>${entry.value}</td><td>${timestamp}</td>`;
+                tbodyHtml += `<tr><td>${key}</td><td>${entry.value}</td><td>${timestamp}</td></tr>`;
             }
-        }
-    }
-
-    /**
-     * Updates pointers tab with current reference status
-     */
-    private updatePointersTab(): void {
-        const contentArea = this.domElement?.querySelector('.outfit-debug-content');
-        if (!contentArea || contentArea.getAttribute('data-tab') !== 'pointers') return;
-
-        const state = outfitStore.getState();
-        const references = state.references;
-
-        // Update global references
-        const pointerInfo = contentArea.querySelector('.pointer-info');
-        if (pointerInfo) {
-            let refsHtml = '<h4>Global References</h4>';
-            for (const [key, value] of Object.entries(references)) {
-                refsHtml += `<div><strong>${key}:</strong> ${value ? 'Available' : 'Not Set'}</div>`;
-            }
-
-            // Update global API references
-            const globalRefs = [
-                {name: 'window.botOutfitPanel', exists: Boolean((window as any).botOutfitPanel)},
-                {name: 'window.userOutfitPanel', exists: Boolean((window as any).userOutfitPanel)},
-                {name: 'window.outfitTracker', exists: Boolean((window as any).outfitTracker)},
-                {name: 'window.outfitTrackerInterceptor', exists: Boolean((window as any).outfitTrackerInterceptor)},
-                {name: 'window.getOutfitExtensionStatus', exists: Boolean((window as any).getOutfitExtensionStatus)},
-                {name: 'outfitStore', exists: Boolean(outfitStore)},
-                {name: 'customMacroSystem', exists: Boolean(customMacroSystem)},
-            ];
-
-            refsHtml += '<h5>Extension API References:</h5>';
-            refsHtml += '<table class="pointer-values-table">';
-            refsHtml += '<tr><th>Reference</th><th>Status</th></tr>';
-
-            for (const ref of globalRefs) {
-                refsHtml += `<tr><td>${ref.name}</td><td>${ref.exists ? 'Available' : 'Not Available'}</td></tr>`;
-            }
-
-            refsHtml += '</table>';
-            pointerInfo.innerHTML = refsHtml;
+            tbody.innerHTML = tbodyHtml;
         }
     }
 
@@ -801,98 +841,46 @@ export class DebugPanel {
     }
 
     /**
-     * Renders the 'Macros' tab to showcase current instances and derivations
+     * Updates pointers tab with current reference status
      */
-    renderMacrosTab(container: HTMLElement): void {
+    private updatePointersTab(): void {
+        const contentArea = this.domElement?.querySelector('.outfit-debug-content');
+        if (!contentArea || contentArea.getAttribute('data-tab') !== 'pointers') return;
+
+        // Check if content has been rendered
+        const pointerInfo = contentArea.querySelector('.pointer-info');
+        if (!pointerInfo) return;
+
         const state = outfitStore.getState();
-        const botInstances = state.botInstances;
-        const userInstances = state.userInstances;
+        const references = state.references;
 
-        let macrosHtml = '<div class="debug-macros-list">';
-
-        // Show macro information
-        macrosHtml += '<h4>Current Macro Values</h4>';
-        macrosHtml += '<div class="macro-info">';
-
-        // Get current character and user names
-        const currentCharName = customMacroSystem.getCurrentCharName();
-        const currentUserName = customMacroSystem.getCurrentUserName();
-
-        macrosHtml += `<div><strong>Current Character:</strong> ${currentCharName}</div>`;
-        macrosHtml += `<div><strong>Current User:</strong> ${currentUserName}</div>`;
-        macrosHtml += `<div><strong>Current Instance ID:</strong> ${state.currentOutfitInstanceId || 'None'}</div>`;
-
-        // Show some example macro values
-        macrosHtml += '<h5>Example Macro Values:</h5>';
-        macrosHtml += '<table class="macro-values-table">';
-        macrosHtml += '<tr><th>Macro</th><th>Value</th><th>Source</th></tr>';
-
-        // Get current character's outfit data if available
-        const currentCharacterId = state.currentCharacterId;
-        const currentInstanceId = state.currentOutfitInstanceId;
-
-        if (currentCharacterId && currentInstanceId && botInstances[currentCharacterId] && botInstances[currentCharacterId][currentInstanceId]) {
-            const botOutfitData = botInstances[currentCharacterId][currentInstanceId].bot;
-
-            for (const [slot, value] of Object.entries(botOutfitData)) {
-                macrosHtml += `<tr><td>{{char_${slot}}}</td><td>${value}</td><td>Bot Outfit Data</td></tr>`;
-            }
+        // Update global references
+        let refsHtml = '<h4>Global References</h4>';
+        for (const [key, value] of Object.entries(references)) {
+            refsHtml += `<div><strong>${key}:</strong> ${value ? 'Available' : 'Not Set'}</div>`;
         }
 
-        // Get current user's outfit data if available
-        if (currentInstanceId && userInstances[currentInstanceId]) {
-            const userOutfitData = userInstances[currentInstanceId];
+        // Update global API references
+        const globalRefs = [
+            {name: 'window.botOutfitPanel', exists: Boolean((window as any).botOutfitPanel)},
+            {name: 'window.userOutfitPanel', exists: Boolean((window as any).userOutfitPanel)},
+            {name: 'window.outfitTracker', exists: Boolean((window as any).outfitTracker)},
+            {name: 'window.outfitTrackerInterceptor', exists: Boolean((window as any).outfitTrackerInterceptor)},
+            {name: 'window.getOutfitExtensionStatus', exists: Boolean((window as any).getOutfitExtensionStatus)},
+            {name: 'outfitStore', exists: Boolean(outfitStore)},
+            {name: 'customMacroSystem', exists: Boolean(customMacroSystem)},
+        ];
 
-            for (const [slot, value] of Object.entries(userOutfitData as any)) {
-                macrosHtml += `<tr><td>{{user_${slot}}}</td><td>${value}</td><td>User Outfit Data</td></tr>`;
-            }
+        refsHtml += '<h5>Extension API References:</h5>';
+        refsHtml += '<table class="pointer-values-table">';
+        refsHtml += '<tr><th>Reference</th><th>Status</th></tr>';
+
+        for (const ref of globalRefs) {
+            refsHtml += `<tr><td>${ref.name}</td><td>${ref.exists ? 'Available' : 'Not Available'}</td></tr>`;
         }
 
-        macrosHtml += '</table>';
-
-        // Show macro cache information
-        macrosHtml += '<h5>Macro Cache Info:</h5>';
-        macrosHtml += `<div>Cached entries: ${customMacroSystem.macroValueCache.size}</div>`;
-
-        macrosHtml += '<table class="macro-cache-table">';
-        macrosHtml += '<tr><th>Cache Key</th><th>Value</th><th>Timestamp</th></tr>';
-
-        for (const [key, entry] of customMacroSystem.macroValueCache.entries()) {
-            const timestamp = new Date(entry.timestamp).toISOString();
-
-            macrosHtml += `<tr><td>${key}</td><td>${entry.value}</td><td>${timestamp}</td></tr>`;
-        }
-
-        macrosHtml += '</table>';
-
-        // Add more detailed macro processing information
-        macrosHtml += '<h5>Detailed Macro Processing Info:</h5>';
-        macrosHtml += '<div class="macro-processing-info">';
-        macrosHtml += `<div><strong>Current Chat ID:</strong> ${state.currentChatId || 'None'}</div>`;
-        macrosHtml += `<div><strong>Current Character:</strong> ${currentCharName}</div>`;
-        macrosHtml += '</div>';
-
-        macrosHtml += '</div></div>';
-
-        // Add macro testing section
-        macrosHtml += '<h5>Test Macro Processing</h5>';
-        macrosHtml += '<div class="macro-testing-area">';
-        macrosHtml += '<textarea id="macro-test-input" placeholder="Enter text with macros to test..."></textarea>';
-        macrosHtml += '<button id="macro-test-btn" class="menu_button">Process Macros</button>';
-        macrosHtml += '<div id="macro-test-output"></div>';
-        macrosHtml += '</div>';
-
-        container.innerHTML = macrosHtml;
-
-        // Add event listener for macro testing
-        setTimeout(() => {
-            document.getElementById('macro-test-btn')?.addEventListener('click', () => {
-                const input = (document.getElementById('macro-test-input') as HTMLTextAreaElement).value;
-                const output = customMacroSystem.replaceMacrosInText(input);
-
-                (document.getElementById('macro-test-output') as HTMLElement).innerText = output;
-            });
-        }, 100);
+        refsHtml += '</table>';
+        pointerInfo.innerHTML = refsHtml;
     }
 
     /**
@@ -1074,6 +1062,10 @@ export class DebugPanel {
         const contentArea = this.domElement?.querySelector('.outfit-debug-content');
         if (!contentArea || contentArea.getAttribute('data-tab') !== 'performance') return;
 
+        // Check if content has been rendered
+        const perfInfo = contentArea.querySelector('.performance-info');
+        if (!perfInfo) return;
+
         const state = outfitStore.getState();
 
         // Calculate performance metrics
@@ -1086,46 +1078,43 @@ export class DebugPanel {
         const updateTime = new Date().toLocaleTimeString();
 
         // Update performance info
-        const perfInfo = contentArea.querySelector('.performance-info');
-        if (perfInfo) {
-            let infoHtml = '<h4>Performance Metrics</h4>';
-            infoHtml += `<div><strong>Total Bot Instances:</strong> ${botInstanceCount}</div>`;
-            infoHtml += `<div><strong>Total User Instances:</strong> ${userInstanceCount}</div>`;
-            infoHtml += `<div><strong>Total Outfit Slots:</strong> ${(botInstanceCount + userInstanceCount) * 19}</div>`;
-            infoHtml += `<div><strong>Estimated Storage Size:</strong> ${estimatedStorageSize}</div>`;
-            infoHtml += `<div><strong>Current Cache Size:</strong> ${customMacroSystem.macroValueCache.size} items</div>`;
-            infoHtml += `<div><small>Last updated: ${updateTime}</small></div>`;
+        let infoHtml = '<h4>Performance Metrics</h4>';
+        infoHtml += `<div><strong>Total Bot Instances:</strong> ${botInstanceCount}</div>`;
+        infoHtml += `<div><strong>Total User Instances:</strong> ${userInstanceCount}</div>`;
+        infoHtml += `<div><strong>Total Outfit Slots:</strong> ${(botInstanceCount + userInstanceCount) * 19}</div>`;
+        infoHtml += `<div><strong>Estimated Storage Size:</strong> ${estimatedStorageSize}</div>`;
+        infoHtml += `<div><strong>Current Cache Size:</strong> ${customMacroSystem.macroValueCache.size} items</div>`;
+        infoHtml += `<div><small>Last updated: ${updateTime}</small></div>`;
 
-            // Update performance indicators
-            infoHtml += '<h5>Performance Indicators:</h5>';
-            infoHtml += '<div class="performance-indicators">';
+        // Update performance indicators
+        infoHtml += '<h5>Performance Indicators:</h5>';
+        infoHtml += '<div class="performance-indicators">';
 
-            if (botInstanceCount > 50) {
-                infoHtml += '<div class="warning">⚠️ High number of bot instances detected</div>';
-            } else if (botInstanceCount > 20) {
-                infoHtml += '<div class="info">ℹ️ Moderate number of bot instances</div>';
-            } else {
-                infoHtml += '<div class="good">✅ Low number of bot instances</div>';
-            }
-
-            if (userInstanceCount > 10) {
-                infoHtml += '<div class="warning">⚠️ High number of user instances detected</div>';
-            } else {
-                infoHtml += '<div class="good">✅ Reasonable number of user instances</div>';
-            }
-
-            const storageKB = new Blob([stateStr]).size / 1024;
-            if (storageKB > 1000) {
-                infoHtml += '<div class="warning">⚠️ Large storage size detected</div>';
-            } else if (storageKB > 500) {
-                infoHtml += '<div class="info">ℹ️ Moderate storage size</div>';
-            } else {
-                infoHtml += '<div class="good">✅ Reasonable storage size</div>';
-            }
-
-            infoHtml += '</div>';
-            perfInfo.innerHTML = infoHtml;
+        if (botInstanceCount > 50) {
+            infoHtml += '<div class="warning">⚠️ High number of bot instances detected</div>';
+        } else if (botInstanceCount > 20) {
+            infoHtml += '<div class="info">ℹ️ Moderate number of bot instances</div>';
+        } else {
+            infoHtml += '<div class="good">✅ Low number of bot instances</div>';
         }
+
+        if (userInstanceCount > 10) {
+            infoHtml += '<div class="warning">⚠️ High number of user instances detected</div>';
+        } else {
+            infoHtml += '<div class="good">✅ Reasonable number of user instances</div>';
+        }
+
+        const storageKB = new Blob([stateStr]).size / 1024;
+        if (storageKB > 1000) {
+            infoHtml += '<div class="warning">⚠️ Large storage size detected</div>';
+        } else if (storageKB > 500) {
+            infoHtml += '<div class="info">ℹ️ Moderate storage size</div>';
+        } else {
+            infoHtml += '<div class="good">✅ Reasonable storage size</div>';
+        }
+
+        infoHtml += '</div>';
+        perfInfo.innerHTML = infoHtml;
     }
 
     /**
@@ -1135,13 +1124,14 @@ export class DebugPanel {
         const contentArea = this.domElement?.querySelector('.outfit-debug-content');
         if (!contentArea || contentArea.getAttribute('data-tab') !== 'state') return;
 
-        const state = outfitStore.getState();
+        // Check if content has been rendered
         const stateInfo = contentArea.querySelector('.state-info');
-        if (stateInfo) {
-            const preElement = stateInfo.querySelector('pre');
-            if (preElement) {
-                preElement.textContent = JSON.stringify(state, null, 2);
-            }
+        if (!stateInfo) return;
+
+        const state = outfitStore.getState();
+        const preElement = stateInfo.querySelector('pre');
+        if (preElement) {
+            preElement.textContent = JSON.stringify(state, null, 2);
         }
     }
 
@@ -1152,20 +1142,21 @@ export class DebugPanel {
         const contentArea = this.domElement?.querySelector('.outfit-debug-content');
         if (!contentArea || contentArea.getAttribute('data-tab') !== 'misc') return;
 
-        const state = outfitStore.getState();
+        // Check if content has been rendered
         const storeInfo = contentArea.querySelector('.store-info');
-        if (storeInfo) {
-            const currentCharName = state.currentCharacterId ? getCharacterInfoById(state.currentCharacterId, CharacterInfoType.Name) : 'None';
+        if (!storeInfo) return;
 
-            let infoHtml = '<h4>Store State Information</h4>';
-            infoHtml += `<div><strong>Current Character:</strong> ${currentCharName}</div>`;
-            infoHtml += `<div><strong>Current Chat ID:</strong> ${state.currentChatId || 'None'}</div>`;
-            infoHtml += `<div><strong>Current Outfit Instance ID:</strong> ${state.currentOutfitInstanceId || 'None'}</div>`;
-            infoHtml += `<div><strong>Bot Panels Visible:</strong> ${state.panelVisibility.bot ? 'Yes' : 'No'}</div>`;
-            infoHtml += `<div><strong>User Panels Visible:</strong> ${state.panelVisibility.user ? 'Yes' : 'No'}</div>`;
+        const state = outfitStore.getState();
+        const currentCharName = state.currentCharacterId ? getCharacterInfoById(state.currentCharacterId, CharacterInfoType.Name) : 'None';
 
-            storeInfo.innerHTML = infoHtml;
-        }
+        let infoHtml = '<h4>Store State Information</h4>';
+        infoHtml += `<div><strong>Current Character:</strong> ${currentCharName}</div>`;
+        infoHtml += `<div><strong>Current Chat ID:</strong> ${state.currentChatId || 'None'}</div>`;
+        infoHtml += `<div><strong>Current Outfit Instance ID:</strong> ${state.currentOutfitInstanceId || 'None'}</div>`;
+        infoHtml += `<div><strong>Bot Panels Visible:</strong> ${state.panelVisibility.bot ? 'Yes' : 'No'}</div>`;
+        infoHtml += `<div><strong>User Panels Visible:</strong> ${state.panelVisibility.user ? 'Yes' : 'No'}</div>`;
+
+        storeInfo.innerHTML = infoHtml;
     }
 
     /**
