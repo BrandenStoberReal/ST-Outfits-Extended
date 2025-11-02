@@ -47,11 +47,12 @@ export function dragElementWithSave(element, storageKey) {
         // Calculate final position based on initial position + transforms
         const finalTop = initialY + currentY;
         const finalLeft = initialX + currentX;
-        // Remove transform and set actual top/left values
+        // Set the final position by updating top/left and removing transform in one operation
+        // This prevents any visual jumping or bouncing
         $element.css({
-            transform: 'none',
             top: finalTop + 'px',
-            left: finalLeft + 'px'
+            left: finalLeft + 'px',
+            transform: 'none'
         });
         // Save the position to localStorage
         const position = {
@@ -66,12 +67,11 @@ export function dragElementWithSave(element, storageKey) {
         // Get the mouse cursor position at startup
         pos3 = e.clientX;
         pos4 = e.clientY;
-        // Get the current position for reference
-        const elementTop = parseInt($element.css('top')) || $element[0].offsetTop || 0;
-        const elementLeft = parseInt($element.css('left')) || $element[0].offsetLeft || 0;
-        // Store initial position
-        initialX = elementLeft;
-        initialY = elementTop;
+        // Get the current visual position using getBoundingClientRect for accuracy
+        const rect = $element[0].getBoundingClientRect();
+        // Store initial position (visual position)
+        initialX = rect.left;
+        initialY = rect.top;
         // Reset current transform values to 0
         currentX = 0;
         currentY = 0;
