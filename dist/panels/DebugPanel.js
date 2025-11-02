@@ -322,6 +322,80 @@ export class DebugPanel {
         }
     }
     /**
+     * Renders the 'Macros' tab to showcase current instances and derivations
+     */
+    renderMacrosTab(container) {
+        const state = outfitStore.getState();
+        const botInstances = state.botInstances;
+        const userInstances = state.userInstances;
+        let macrosHtml = '<div class="debug-macros-list">';
+        // Show macro information
+        macrosHtml += '<h4>Current Macro Values</h4>';
+        macrosHtml += '<div class="macro-info">';
+        // Get current character and user names
+        const currentCharName = customMacroSystem.getCurrentCharName();
+        const currentUserName = customMacroSystem.getCurrentUserName();
+        macrosHtml += `<div><strong>Current Character:</strong> ${currentCharName}</div>`;
+        macrosHtml += `<div><strong>Current User:</strong> ${currentUserName}</div>`;
+        macrosHtml += `<div><strong>Current Instance ID:</strong> ${state.currentOutfitInstanceId || 'None'}</div>`;
+        // Show some example macro values
+        macrosHtml += '<h5>Example Macro Values:</h5>';
+        macrosHtml += '<table class="macro-values-table">';
+        macrosHtml += '<tr><th>Macro</th><th>Value</th><th>Source</th></tr>';
+        // Get current character's outfit data if available
+        const currentCharacterId = state.currentCharacterId;
+        const currentInstanceId = state.currentOutfitInstanceId;
+        if (currentCharacterId && currentInstanceId && botInstances[currentCharacterId] && botInstances[currentCharacterId][currentInstanceId]) {
+            const botOutfitData = botInstances[currentCharacterId][currentInstanceId].bot;
+            for (const [slot, value] of Object.entries(botOutfitData)) {
+                macrosHtml += `<tr><td>{{char_${slot}}}</td><td>${value}</td><td>Bot Outfit Data</td></tr>`;
+            }
+        }
+        // Get current user's outfit data if available
+        if (currentInstanceId && userInstances[currentInstanceId]) {
+            const userOutfitData = userInstances[currentInstanceId];
+            for (const [slot, value] of Object.entries(userOutfitData)) {
+                macrosHtml += `<tr><td>{{user_${slot}}}</td><td>${value}</td><td>User Outfit Data</td></tr>`;
+            }
+        }
+        macrosHtml += '</table>';
+        // Show macro cache information
+        macrosHtml += '<h5>Macro Cache Info:</h5>';
+        macrosHtml += `<div class="macro-cache-info">Cached entries: ${customMacroSystem.macroValueCache.size} <small>(Updated: ${new Date().toLocaleTimeString()})</small></div>`;
+        macrosHtml += '<table class="macro-cache-table">';
+        macrosHtml += '<thead><tr><th>Cache Key</th><th>Value</th><th>Timestamp</th></tr></thead>';
+        macrosHtml += '<tbody>';
+        for (const [key, entry] of customMacroSystem.macroValueCache.entries()) {
+            const timestamp = new Date(entry.timestamp).toISOString();
+            macrosHtml += `<tr><td>${key}</td><td>${entry.value}</td><td>${timestamp}</td></tr>`;
+        }
+        macrosHtml += '</tbody></table>';
+        // Add more detailed macro processing information
+        macrosHtml += '<h5>Detailed Macro Processing Info:</h5>';
+        macrosHtml += '<div class="macro-processing-info">';
+        macrosHtml += `<div><strong>Current Chat ID:</strong> ${state.currentChatId || 'None'}</div>`;
+        macrosHtml += `<div><strong>Current Character:</strong> ${currentCharName}</div>`;
+        macrosHtml += '</div>';
+        macrosHtml += '</div></div>';
+        // Add macro testing section
+        macrosHtml += '<h5>Test Macro Processing</h5>';
+        macrosHtml += '<div class="macro-testing-area">';
+        macrosHtml += '<textarea id="macro-test-input" placeholder="Enter text with macros to test..."></textarea>';
+        macrosHtml += '<button id="macro-test-btn" class="menu_button">Process Macros</button>';
+        macrosHtml += '<div id="macro-test-output"></div>';
+        macrosHtml += '</div>';
+        container.innerHTML = macrosHtml;
+        // Add event listener for macro testing
+        setTimeout(() => {
+            var _a;
+            (_a = document.getElementById('macro-test-btn')) === null || _a === void 0 ? void 0 : _a.addEventListener('click', () => {
+                const input = document.getElementById('macro-test-input').value;
+                const output = customMacroSystem.replaceMacrosInText(input);
+                document.getElementById('macro-test-output').innerText = output;
+            });
+        }, 100);
+    }
+    /**
      * Updates tabs that need real-time data based on store changes
      */
     updateRealTimeTabs(newState) {
@@ -375,44 +449,6 @@ export class DebugPanel {
             }
             tbody.innerHTML = tbodyHtml;
         }
-    }
-    /**
-     * Updates pointers tab with current reference status
-     */
-    updatePointersTab() {
-        var _a;
-        const contentArea = (_a = this.domElement) === null || _a === void 0 ? void 0 : _a.querySelector('.outfit-debug-content');
-        if (!contentArea || contentArea.getAttribute('data-tab') !== 'pointers')
-            return;
-        // Check if content has been rendered
-        const pointerInfo = contentArea.querySelector('.pointer-info');
-        if (!pointerInfo)
-            return;
-        const state = outfitStore.getState();
-        const references = state.references;
-        // Update global references
-        let refsHtml = '<h4>Global References</h4>';
-        for (const [key, value] of Object.entries(references)) {
-            refsHtml += `<div><strong>${key}:</strong> ${value ? 'Available' : 'Not Set'}</div>`;
-        }
-        // Update global API references
-        const globalRefs = [
-            { name: 'window.botOutfitPanel', exists: Boolean(window.botOutfitPanel) },
-            { name: 'window.userOutfitPanel', exists: Boolean(window.userOutfitPanel) },
-            { name: 'window.outfitTracker', exists: Boolean(window.outfitTracker) },
-            { name: 'window.outfitTrackerInterceptor', exists: Boolean(window.outfitTrackerInterceptor) },
-            { name: 'window.getOutfitExtensionStatus', exists: Boolean(window.getOutfitExtensionStatus) },
-            { name: 'outfitStore', exists: Boolean(outfitStore) },
-            { name: 'customMacroSystem', exists: Boolean(customMacroSystem) },
-        ];
-        refsHtml += '<h5>Extension API References:</h5>';
-        refsHtml += '<table class="pointer-values-table">';
-        refsHtml += '<tr><th>Reference</th><th>Status</th></tr>';
-        for (const ref of globalRefs) {
-            refsHtml += `<tr><td>${ref.name}</td><td>${ref.exists ? 'Available' : 'Not Available'}</td></tr>`;
-        }
-        refsHtml += '</table>';
-        pointerInfo.innerHTML = refsHtml;
     }
     /**
      * Renders the content of the currently selected tab
@@ -673,78 +709,42 @@ export class DebugPanel {
         });
     }
     /**
-     * Renders the 'Macros' tab to showcase current instances and derivations
+     * Updates pointers tab with current reference status
      */
-    renderMacrosTab(container) {
+    updatePointersTab() {
+        var _a;
+        const contentArea = (_a = this.domElement) === null || _a === void 0 ? void 0 : _a.querySelector('.outfit-debug-content');
+        if (!contentArea || contentArea.getAttribute('data-tab') !== 'pointers')
+            return;
+        // Check if content has been rendered
+        const pointerInfo = contentArea.querySelector('.pointer-info');
+        if (!pointerInfo)
+            return;
         const state = outfitStore.getState();
-        const botInstances = state.botInstances;
-        const userInstances = state.userInstances;
-        let macrosHtml = '<div class="debug-macros-list">';
-        // Show macro information
-        macrosHtml += '<h4>Current Macro Values</h4>';
-        macrosHtml += '<div class="macro-info">';
-        // Get current character and user names
-        const currentCharName = customMacroSystem.getCurrentCharName();
-        const currentUserName = customMacroSystem.getCurrentUserName();
-        macrosHtml += `<div><strong>Current Character:</strong> ${currentCharName}</div>`;
-        macrosHtml += `<div><strong>Current User:</strong> ${currentUserName}</div>`;
-        macrosHtml += `<div><strong>Current Instance ID:</strong> ${state.currentOutfitInstanceId || 'None'}</div>`;
-        // Show some example macro values
-        macrosHtml += '<h5>Example Macro Values:</h5>';
-        macrosHtml += '<table class="macro-values-table">';
-        macrosHtml += '<tr><th>Macro</th><th>Value</th><th>Source</th></tr>';
-        // Get current character's outfit data if available
-        const currentCharacterId = state.currentCharacterId;
-        const currentInstanceId = state.currentOutfitInstanceId;
-        if (currentCharacterId && currentInstanceId && botInstances[currentCharacterId] && botInstances[currentCharacterId][currentInstanceId]) {
-            const botOutfitData = botInstances[currentCharacterId][currentInstanceId].bot;
-            for (const [slot, value] of Object.entries(botOutfitData)) {
-                macrosHtml += `<tr><td>{{char_${slot}}}</td><td>${value}</td><td>Bot Outfit Data</td></tr>`;
-            }
+        const references = state.references;
+        // Update global references
+        let refsHtml = '<h4>Global References</h4>';
+        for (const [key, value] of Object.entries(references)) {
+            refsHtml += `<div><strong>${key}:</strong> ${value ? 'Available' : 'Not Set'}</div>`;
         }
-        // Get current user's outfit data if available
-        if (currentInstanceId && userInstances[currentInstanceId]) {
-            const userOutfitData = userInstances[currentInstanceId];
-            for (const [slot, value] of Object.entries(userOutfitData)) {
-                macrosHtml += `<tr><td>{{user_${slot}}}</td><td>${value}</td><td>User Outfit Data</td></tr>`;
-            }
+        // Update global API references
+        const globalRefs = [
+            { name: 'window.botOutfitPanel', exists: Boolean(window.botOutfitPanel) },
+            { name: 'window.userOutfitPanel', exists: Boolean(window.userOutfitPanel) },
+            { name: 'window.outfitTracker', exists: Boolean(window.outfitTracker) },
+            { name: 'window.outfitTrackerInterceptor', exists: Boolean(window.outfitTrackerInterceptor) },
+            { name: 'window.getOutfitExtensionStatus', exists: Boolean(window.getOutfitExtensionStatus) },
+            { name: 'outfitStore', exists: Boolean(outfitStore) },
+            { name: 'customMacroSystem', exists: Boolean(customMacroSystem) },
+        ];
+        refsHtml += '<h5>Extension API References:</h5>';
+        refsHtml += '<table class="pointer-values-table">';
+        refsHtml += '<tr><th>Reference</th><th>Status</th></tr>';
+        for (const ref of globalRefs) {
+            refsHtml += `<tr><td>${ref.name}</td><td>${ref.exists ? 'Available' : 'Not Available'}</td></tr>`;
         }
-        macrosHtml += '</table>';
-        // Show macro cache information
-        macrosHtml += '<h5>Macro Cache Info:</h5>';
-        macrosHtml += `<div class="macro-cache-info">Cached entries: ${customMacroSystem.macroValueCache.size} <small>(Updated: ${new Date().toLocaleTimeString()})</small></div>`;
-        macrosHtml += '<table class="macro-cache-table">';
-        macrosHtml += '<thead><tr><th>Cache Key</th><th>Value</th><th>Timestamp</th></tr></thead>';
-        macrosHtml += '<tbody>';
-        for (const [key, entry] of customMacroSystem.macroValueCache.entries()) {
-            const timestamp = new Date(entry.timestamp).toISOString();
-            macrosHtml += `<tr><td>${key}</td><td>${entry.value}</td><td>${timestamp}</td></tr>`;
-        }
-        macrosHtml += '</tbody></table>';
-        // Add more detailed macro processing information
-        macrosHtml += '<h5>Detailed Macro Processing Info:</h5>';
-        macrosHtml += '<div class="macro-processing-info">';
-        macrosHtml += `<div><strong>Current Chat ID:</strong> ${state.currentChatId || 'None'}</div>`;
-        macrosHtml += `<div><strong>Current Character:</strong> ${currentCharName}</div>`;
-        macrosHtml += '</div>';
-        macrosHtml += '</div></div>';
-        // Add macro testing section
-        macrosHtml += '<h5>Test Macro Processing</h5>';
-        macrosHtml += '<div class="macro-testing-area">';
-        macrosHtml += '<textarea id="macro-test-input" placeholder="Enter text with macros to test..."></textarea>';
-        macrosHtml += '<button id="macro-test-btn" class="menu_button">Process Macros</button>';
-        macrosHtml += '<div id="macro-test-output"></div>';
-        macrosHtml += '</div>';
-        container.innerHTML = macrosHtml;
-        // Add event listener for macro testing
-        setTimeout(() => {
-            var _a;
-            (_a = document.getElementById('macro-test-btn')) === null || _a === void 0 ? void 0 : _a.addEventListener('click', () => {
-                const input = document.getElementById('macro-test-input').value;
-                const output = customMacroSystem.replaceMacrosInText(input);
-                document.getElementById('macro-test-output').innerText = output;
-            });
-        }, 100);
+        refsHtml += '</table>';
+        pointerInfo.innerHTML = refsHtml;
     }
     /**
      * Renders the 'Pointers' tab
@@ -909,8 +909,7 @@ export class DebugPanel {
         const estimatedStorageSize = `${(new Blob([stateStr]).size / 1024).toFixed(2)} KB`;
         const updateTime = new Date().toLocaleTimeString();
         // Update performance info
-        let infoHtml = '<h4>Performance Metrics</h4>';
-        infoHtml += `<div><strong>Total Bot Instances:</strong> ${botInstanceCount}</div>`;
+        let infoHtml = `<div><strong>Total Bot Instances:</strong> ${botInstanceCount}</div>`;
         infoHtml += `<div><strong>Total User Instances:</strong> ${userInstanceCount}</div>`;
         infoHtml += `<div><strong>Total Outfit Slots:</strong> ${(botInstanceCount + userInstanceCount) * 19}</div>`;
         infoHtml += `<div><strong>Estimated Storage Size:</strong> ${estimatedStorageSize}</div>`;
@@ -979,12 +978,13 @@ export class DebugPanel {
             return;
         const state = outfitStore.getState();
         const currentCharName = state.currentCharacterId ? getCharacterInfoById(state.currentCharacterId, CharacterInfoType.Name) : 'None';
-        let infoHtml = '<h4>Store State Information</h4>';
-        infoHtml += `<div><strong>Current Character:</strong> ${currentCharName}</div>`;
+        let infoHtml = `<div><strong>Current Character:</strong> ${currentCharName}</div>`;
         infoHtml += `<div><strong>Current Chat ID:</strong> ${state.currentChatId || 'None'}</div>`;
         infoHtml += `<div><strong>Current Outfit Instance ID:</strong> ${state.currentOutfitInstanceId || 'None'}</div>`;
         infoHtml += `<div><strong>Bot Panels Visible:</strong> ${state.panelVisibility.bot ? 'Yes' : 'No'}</div>`;
         infoHtml += `<div><strong>User Panels Visible:</strong> ${state.panelVisibility.user ? 'Yes' : 'No'}</div>`;
+        infoHtml += '<h5>Settings:</h5>';
+        infoHtml += '<pre>' + JSON.stringify(state.settings, null, 2) + '</pre>';
         storeInfo.innerHTML = infoHtml;
     }
     /**

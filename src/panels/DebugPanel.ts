@@ -1078,8 +1078,7 @@ export class DebugPanel {
         const updateTime = new Date().toLocaleTimeString();
 
         // Update performance info
-        let infoHtml = '<h4>Performance Metrics</h4>';
-        infoHtml += `<div><strong>Total Bot Instances:</strong> ${botInstanceCount}</div>`;
+        let infoHtml = `<div><strong>Total Bot Instances:</strong> ${botInstanceCount}</div>`;
         infoHtml += `<div><strong>Total User Instances:</strong> ${userInstanceCount}</div>`;
         infoHtml += `<div><strong>Total Outfit Slots:</strong> ${(botInstanceCount + userInstanceCount) * 19}</div>`;
         infoHtml += `<div><strong>Estimated Storage Size:</strong> ${estimatedStorageSize}</div>`;
@@ -1149,12 +1148,14 @@ export class DebugPanel {
         const state = outfitStore.getState();
         const currentCharName = state.currentCharacterId ? getCharacterInfoById(state.currentCharacterId, CharacterInfoType.Name) : 'None';
 
-        let infoHtml = '<h4>Store State Information</h4>';
-        infoHtml += `<div><strong>Current Character:</strong> ${currentCharName}</div>`;
+        let infoHtml = `<div><strong>Current Character:</strong> ${currentCharName}</div>`;
         infoHtml += `<div><strong>Current Chat ID:</strong> ${state.currentChatId || 'None'}</div>`;
         infoHtml += `<div><strong>Current Outfit Instance ID:</strong> ${state.currentOutfitInstanceId || 'None'}</div>`;
         infoHtml += `<div><strong>Bot Panels Visible:</strong> ${state.panelVisibility.bot ? 'Yes' : 'No'}</div>`;
         infoHtml += `<div><strong>User Panels Visible:</strong> ${state.panelVisibility.user ? 'Yes' : 'No'}</div>`;
+
+        infoHtml += '<h5>Settings:</h5>';
+        infoHtml += '<pre>' + JSON.stringify(state.settings, null, 2) + '</pre>';
 
         storeInfo.innerHTML = infoHtml;
     }
