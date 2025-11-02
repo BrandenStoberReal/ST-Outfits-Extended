@@ -54,6 +54,8 @@ export function dragElementWithSave(element, storageKey) {
             left: finalLeft + 'px',
             transform: 'none'
         });
+        // Remove dragging class to re-enable transitions
+        $element.removeClass('dragging');
         // Save the position to localStorage
         const position = {
             top: finalTop || 0,
@@ -64,6 +66,8 @@ export function dragElementWithSave(element, storageKey) {
     function dragMouseDown(e) {
         e = e || window.event;
         e.preventDefault();
+        // Add dragging class to disable transitions
+        $element.addClass('dragging');
         // Get the mouse cursor position at startup
         pos3 = e.clientX;
         pos4 = e.clientY;

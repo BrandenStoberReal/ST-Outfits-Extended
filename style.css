@@ -24,6 +24,11 @@
     transform: translateZ(0); /* Enable hardware acceleration */
 }
 
+/* Disable transitions during dragging to prevent bouncing */
+.dragging {
+    transition: none !important;
+}
+
 #bot-outfit-panel {
     background: linear-gradient(135deg, #6a4fc1 0%, #5a49d0 50%, #4a43c0 100%);
     border: 1px solid #8a7fdb;
