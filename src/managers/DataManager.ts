@@ -31,6 +31,48 @@ class DataManager {
     migrateData(): void {
         if (!this.data.version || this.data.version < this.version) {
             console.log(`[DataManager] Migrating data from version ${this.data.version} to ${this.version}`);
+
+            // Migration: Convert 'default' presets to settings-based default preset names
+            if (this.data.presets) {
+                const settings = this.data.settings || {};
+
+                // Migrate bot presets
+                if (this.data.presets.bot) {
+                    for (const [key, presetGroup] of Object.entries(this.data.presets.bot as any)) {
+                        if (presetGroup && (presetGroup as any)['default']) {
+                            // Extract character and instance from key
+                            const parts = key.split('_');
+                            if (parts.length >= 2) {
+                                const characterId = parts.slice(0, -1).join('_');
+                                const instanceId = parts[parts.length - 1];
+
+                                if (!settings.defaultBotPresets) {
+                                    settings.defaultBotPresets = {};
+                                }
+                                if (!settings.defaultBotPresets[characterId]) {
+                                    settings.defaultBotPresets[characterId] = {};
+                                }
+                                settings.defaultBotPresets[characterId][instanceId] = 'default';
+                            }
+                        }
+                    }
+                }
+
+                // Migrate user presets
+                if (this.data.presets.user) {
+                    for (const [instanceId, presetGroup] of Object.entries(this.data.presets.user as any)) {
+                        if (presetGroup && (presetGroup as any)['default']) {
+                            if (!settings.defaultUserPresets) {
+                                settings.defaultUserPresets = {};
+                            }
+                            settings.defaultUserPresets[instanceId] = 'default';
+                        }
+                    }
+                }
+
+                this.data.settings = settings;
+            }
+
             this.data.version = this.version;
         }
     }

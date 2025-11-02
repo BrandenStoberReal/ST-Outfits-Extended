@@ -25,6 +25,12 @@ export function initSettings(autoOutfitSystem, AutoOutfitSystemClass, context) {
             shadow: 'rgba(26, 120, 209, 0.4)'
         };
     }
+    if (!settings[MODULE_NAME].defaultBotPresets) {
+        settings[MODULE_NAME].defaultBotPresets = {};
+    }
+    if (!settings[MODULE_NAME].defaultUserPresets) {
+        settings[MODULE_NAME].defaultUserPresets = {};
+    }
     if (settings[MODULE_NAME].autoOutfitSystem && autoOutfitSystem) {
         // Set the prompt regardless of whether it's truthy - if not set, use default
         autoOutfitSystem.setPrompt(settings[MODULE_NAME].autoOutfitPrompt || DEFAULT_SETTINGS.autoOutfitPrompt);

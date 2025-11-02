@@ -166,14 +166,22 @@ export class NewUserOutfitManager extends OutfitManager {
         if (!actualInstanceId) {
             return `[Outfit System] Invalid instance ID: ${actualInstanceId}`;
         }
-        
-        const {user: presets} = outfitStore.getPresets('user', actualInstanceId);
 
-        if (!presets || !presets['default']) {
+        const settings = outfitStore.getState().settings;
+        const defaultUserPresets = settings.defaultUserPresets || {};
+        const defaultPresetName = defaultUserPresets[actualInstanceId];
+
+        if (!defaultPresetName) {
             return `[Outfit System] No default outfit set for user (instance: ${actualInstanceId}).`;
         }
 
-        const preset = presets['default'];
+        const {user: presets} = outfitStore.getPresets('user', actualInstanceId);
+
+        if (!presets || !presets[defaultPresetName]) {
+            return `[Outfit System] Default preset "${defaultPresetName}" not found for user (instance: ${actualInstanceId}).`;
+        }
+
+        const preset = presets[defaultPresetName];
         let changed = false;
 
         for (const [slot, value] of Object.entries(preset)) {
@@ -281,10 +289,11 @@ export class NewUserOutfitManager extends OutfitManager {
             debugLog(`[NewUserOutfitManager] hasDefaultOutfit called with invalid parameters: instanceId=${actualInstanceId}`, null, 'warn');
             return false;
         }
-        
-        const {user: presets} = outfitStore.getPresets('user', actualInstanceId);
 
-        return Boolean(presets && presets['default']);
+        const settings = outfitStore.getState().settings;
+        const defaultUserPresets = settings.defaultUserPresets || {};
+
+        return Boolean(defaultUserPresets[actualInstanceId]);
     }
 
     getDefaultPresetName(instanceId: string | null = null): string | null {
@@ -295,14 +304,11 @@ export class NewUserOutfitManager extends OutfitManager {
             debugLog(`[NewUserOutfitManager] getDefaultPresetName called with invalid parameters: instanceId=${actualInstanceId}`, null, 'warn');
             return null;
         }
-        
-        const {user: presets} = outfitStore.getPresets('user', actualInstanceId);
 
-        if (presets && presets['default']) {
-            return 'default';
-        }
+        const settings = outfitStore.getState().settings;
+        const defaultUserPresets = settings.defaultUserPresets || {};
 
-        return null;
+        return defaultUserPresets[actualInstanceId] || null;
     }
 
     async setPresetAsDefault(presetName: string, instanceId: string | null = null): Promise<string> {
@@ -312,16 +318,18 @@ export class NewUserOutfitManager extends OutfitManager {
         if (!actualInstanceId) {
             return `[Outfit System] Invalid instance ID: ${actualInstanceId}`;
         }
-        
+
         const {user: presets} = outfitStore.getPresets('user', actualInstanceId);
 
         if (!presets || !presets[presetName]) {
             return `[Outfit System] Preset "${presetName}" does not exist for user instance ${actualInstanceId}. Cannot set as default.`;
         }
 
-        const presetToSetAsDefault = presets[presetName];
-
-        outfitStore.savePreset('user', actualInstanceId, 'default', presetToSetAsDefault, 'user');
+        // Store the default preset name in settings instead of creating a duplicate preset
+        const state = outfitStore.getState();
+        const defaultUserPresets = {...(state.settings.defaultUserPresets || {})};
+        defaultUserPresets[actualInstanceId] = presetName;
+        outfitStore.setSetting('defaultUserPresets', defaultUserPresets);
 
         if (outfitStore.getSetting('enableSysMessages')) {
             return `Set "${presetName}" as your default outfit (instance: ${actualInstanceId}).`;
@@ -336,14 +344,19 @@ export class NewUserOutfitManager extends OutfitManager {
         if (!actualInstanceId) {
             return `[Outfit System] Invalid instance ID: ${actualInstanceId}`;
         }
-        
-        const {user: presets} = outfitStore.getPresets('user', actualInstanceId);
 
-        if (!presets || !presets['default']) {
+        const settings = outfitStore.getState().settings;
+        const defaultUserPresets = settings.defaultUserPresets || {};
+
+        if (!defaultUserPresets[actualInstanceId]) {
             return `[Outfit System] No default outfit set for user (instance: ${actualInstanceId}).`;
         }
 
-        outfitStore.deletePreset('user', actualInstanceId, 'default', 'user');
+        // Clear the default preset setting
+        const state = outfitStore.getState();
+        const updatedDefaultUserPresets = {...(state.settings.defaultUserPresets || {})};
+        delete updatedDefaultUserPresets[actualInstanceId];
+        outfitStore.setSetting('defaultUserPresets', updatedDefaultUserPresets);
 
         if (outfitStore.getSetting('enableSysMessages')) {
             return `Default outfit cleared for user (instance: ${actualInstanceId}).`;

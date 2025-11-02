@@ -15,6 +15,14 @@ interface DefaultSettings {
     autoOutfitConnectionProfile: string | null;
     botPanelColors: PanelColors;
     userPanelColors: PanelColors;
+    defaultBotPresets: {
+        [characterId: string]: {
+            [instanceId: string]: string | null;
+        };
+    };
+    defaultUserPresets: {
+        [instanceId: string]: string | null;
+    };
 }
 
 // Constants for Outfit Tracker Extension
@@ -83,7 +91,9 @@ export const DEFAULT_SETTINGS: DefaultSettings = Object.freeze({
         primary: 'linear-gradient(135deg, #1a78d1 0%, #2a68c1 50%, #1a58b1 100%)',
         border: '#5da6f0',
         shadow: 'rgba(26, 120, 209, 0.4)'
-    }
+    },
+    defaultBotPresets: {},
+    defaultUserPresets: {}
 });
 
 /**

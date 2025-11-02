@@ -70,6 +70,14 @@ interface Settings {
         border: string;
         shadow: string;
     };
+    defaultBotPresets: {
+        [characterId: string]: {
+            [instanceId: string]: string | null;
+        };
+    };
+    defaultUserPresets: {
+        [instanceId: string]: string | null;
+    };
 }
 
 interface PanelVisibility {

@@ -59,7 +59,9 @@ export const DEFAULT_SETTINGS = Object.freeze({
         primary: 'linear-gradient(135deg, #1a78d1 0%, #2a68c1 50%, #1a58b1 100%)',
         border: '#5da6f0',
         shadow: 'rgba(26, 120, 209, 0.4)'
-    }
+    },
+    defaultBotPresets: {},
+    defaultUserPresets: {}
 });
 /**
  * Constants for outfit command types
